@@ -1,0 +1,101 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+	.border-border {
+		border-color: hsl(var(--border));
+	}
+}
+
+@layer base {
+	:root {
+		/* Colores base */
+		--background: 340 100% 98%;
+		--foreground: 340 10% 15%;
+		--card: 0 0% 100%;
+		--card-foreground: 340 10% 15%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 340 10% 15%;
+		--primary: 340 100% 76%; /* #FF8FB2 */
+		--primary-foreground: 0 0% 98%;
+		--secondary: 340 100% 89%; /* #FFD4E0 */
+		--secondary-foreground: 340 10% 15%;
+		--muted: 340 30% 95%;
+		--muted-foreground: 340 10% 40%;
+		--accent: 340 100% 82%; /* #FFB1C8 */
+		--accent-foreground: 340 10% 15%;
+		--destructive: 0 84.2% 60.2%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 340 30% 85%;
+		--input: 340 30% 90%;
+		--ring: 340 100% 76%;
+		--radius: 0.5rem;
+
+		/* Sidebar */
+		--sidebar-background: 340 100% 99%;
+		--sidebar-foreground: 340 10% 15%;
+		--sidebar-primary: 340 100% 76%;
+		--sidebar-primary-foreground: 0 0% 98%;
+		--sidebar-accent: 340 100% 95%;
+		--sidebar-accent-foreground: 340 100% 76%;
+		--sidebar-border: 340 30% 85%;
+		--sidebar-ring: 340 100% 76%;
+
+		font-family: "Inter", sans-serif;
+	}
+
+	.dark {
+		--background: 340 15% 10%;
+		--foreground: 340 30% 90%;
+		--card: 340 15% 12%;
+		--card-foreground: 340 30% 90%;
+		--popover: 340 15% 12%;
+		--popover-foreground: 340 30% 90%;
+		--primary: 340 100% 76%;
+		--primary-foreground: 340 15% 10%;
+		--secondary: 340 20% 20%;
+		--secondary-foreground: 340 30% 90%;
+		--muted: 340 15% 25%;
+		--muted-foreground: 340 15% 60%;
+		--accent: 340 100% 70%;
+		--accent-foreground: 340 15% 10%;
+		--destructive: 0 62.8% 30.6%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 340 15% 25%;
+		--input: 340 15% 25%;
+		--ring: 340 100% 76%;
+
+		/* Sidebar oscuro */
+		--sidebar-background: 340 15% 12%;
+		--sidebar-foreground: 340 30% 90%;
+		--sidebar-primary: 340 100% 76%;
+		--sidebar-primary-foreground: 340 15% 10%;
+		--sidebar-accent: 340 20% 20%;
+		--sidebar-accent-foreground: 340 100% 82%;
+		--sidebar-border: 340 15% 25%;
+		--sidebar-ring: 340 100% 76%;
+	}
+
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground;
+		font-feature-settings: "rlig" 1, "calt" 1;
+	}
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+	background: hsl(340 30% 75%);
+	border-radius: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+	background: hsl(340 100% 76%);
+	box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
+}
+.custom-scroll::-webkit-scrollbar-thumb:active {
+	background-color: hsl(340 100% 70%);
+}

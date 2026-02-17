@@ -1,5 +1,12 @@
 {
 	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["packages/ui/src/*"],
+			"@repo/common": ["packages/common/src"],
+			"@repo/hooks": ["packages/hooks/src"]
+		},
+
 		// Enable latest features
 		"lib": ["ESNext", "DOM"],
 		"target": "ESNext",

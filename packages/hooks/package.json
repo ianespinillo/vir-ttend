@@ -1,0 +1,30 @@
+{
+	"name": "@repo/hooks",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch"
+	},
+	"dependencies": {
+		"@repo/common": "workspace:*",
+		"@tanstack/react-query": "^5.59.0",
+		"@tanstack/react-query-devtools": "^5.74.3",
+		"axios": "^1.13.2"
+	},
+	"peerDependencies": {
+		"react": ">=18.0.0"
+	},
+	"devDependencies": {
+		"tsup": "^8.3.0",
+		"typescript": "^5.6.3"
+	}
+}

@@ -13,12 +13,18 @@
 				"noShadowRestrictedNames": "warn",
 				"noRedeclare": "off"
 			},
+			"correctness": {
+				"useExhaustiveDependencies": "off"
+			},
 			"complexity": {
 				"noForEach": "off",
 				"noStaticOnlyClass": "off"
 			},
 			"style": {
 				"useImportType": "off"
+			},
+			"security": {
+				"noDangerouslySetInnerHtml": "off"
 			}
 		}
 	},

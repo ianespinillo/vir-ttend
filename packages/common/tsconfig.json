@@ -1,0 +1,14 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES6",
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"module": "NodeNext",
+		"noEmit": true,
+		"skipLibCheck": true,
+		"rootDir": "./src"
+	},
+	"include": ["src/**/*.ts", "src/constants/roles.ts"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
