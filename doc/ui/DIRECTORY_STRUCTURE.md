@@ -9,247 +9,236 @@
 ## 1. Estructura General del Frontend
 
 ```
-apps/client/
-├── public/                     # Archivos estáticos
-│   ├── images/
-│   ├── icons/
-│   └── fonts/
-├── src/
-│   ├── app/                    # Next.js App Router (Pages/Routes)
-│   ├── components/             # Componentes React
-│   ├── lib/                    # Utilidades y configuraciones
-│   ├── hooks/                 # Custom hooks (locales)
-│   ├── stores/                # Estado global (Zustand/Jotai)
-│   └── styles/               # Estilos globales
-├── package.json
-├── next.config.mjs
-├── tailwind.config.ts
-└── tsconfig.json
+vir-ttend/
+├── apps/
+│   ├── client/                  # Next.js Frontend (solo presenta/páginas)
+│   │   ├── public/
+│   │   ├── src/
+│   │   │   └── app/             # Next.js App Router (Páginas)
+│   │   ├── package.json
+│   │   ├── next.config.mjs
+│   │   ├── tailwind.config.ts
+│   │   └── tsconfig.json
+│   └── api/                     # NestJS Backend
+│
+└── packages/
+    ├── ui/                      # Componentes React (UI Kit)
+    ├── common/                  # DTOs, tipos, constantes
+    └── hooks/                   # TanStack Query hooks
 ```
 
 ---
 
 ## 2. Estructura del App Router (Next.js 15)
 
+**Nota:** Las páginas en `apps/client/src/app` solo presentan componentes. Toda la lógica de UI está en `packages/ui`.
+
 ```
-src/app/
+apps/client/src/app/
 ├── (auth)/                     # Route Group: Auth (sin layout)
 │   ├── login/
-│   │   ├── page.tsx
-│   │   └── components/
-│   │       └── login-form.tsx
+│   │   └── page.tsx          # @vir-ttend/ui LoginPage
 │   ├── register/
-│   │   ├── page.tsx
-│   │   └── components/
-│   │       └── register-form.tsx
-│   └── layout.tsx             # Minimal layout (solo loading/error)
+│   │   └── page.tsx         # @vir-ttend/ui RegisterPage
+│   └── layout.tsx
 │
 ├── (dashboard)/                # Route Group: Dashboard
-│   ├── layout.tsx             # Dashboard layout (sidebar, header)
-│   ├── page.tsx               # Dashboard home (/dashboard)
+│   ├── layout.tsx
+│   ├── page.tsx              # @vir-ttend/ui DashboardHome
 │   ├── students/
-│   │   ├── page.tsx          # Lista de estudiantes
-│   │   ├── [id]/
-│   │   │   ├── page.tsx      # Detalle de estudiante
-│   │   │   └── components/
-│   │   │       └── student-profile.tsx
-│   │   └── components/
-│   │       ├── students-table.tsx
-│   │       └── students-filters.tsx
+│   │   ├── page.tsx          # @vir-ttend/ui StudentsListPage
+│   │   └── [id]/
+│   │       └── page.tsx      # @vir-ttend/ui StudentDetailPage
 │   ├── attendance/
-│   │   ├── page.tsx          # Panel de asistencia (preceptor)
+│   │   ├── page.tsx          # @vir-ttend/ui AttendancePanelPage
 │   │   ├── daily/
-│   │   │   ├── page.tsx      # Asistencia diaria (primaria)
-│   │   │   └── components/
-│   │   │       └── daily-attendance-grid.tsx
-│   │   ├── subject/
-│   │   │   ├── page.tsx      # Asistencia por materia (secundaria)
-│   │   │   └── components/
-│   │   │       └── subject-attendance-grid.tsx
-│   │   └── components/
-│   │       ├── attendance-toolbar.tsx
-│   │       └── attendance-summary.tsx
+│   │   │   └── page.tsx     # @vir-ttend/ui DailyAttendancePage
+│   │   └── subject/
+│   │       └── page.tsx      # @vir-ttend/ui SubjectAttendancePage
 │   ├── courses/
-│   │   ├── page.tsx          # Lista de cursos
-│   │   ├── [id]/
-│   │   │   ├── page.tsx      # Detalle del curso
-│   │   │   └── components/
-│   │   │       ├── course-header.tsx
-│   │   │       └── course-students.tsx
-│   │   └── components/
-│   │       └── courses-list.tsx
+│   │   ├── page.tsx          # @vir-ttend/ui CoursesListPage
+│   │   └── [id]/
+│   │       └── page.tsx      # @vir-ttend/ui CourseDetailPage
 │   ├── reports/
-│   │   ├── page.tsx          # Dashboard de reportes
+│   │   ├── page.tsx          # @vir-ttend/ui ReportsDashboardPage
 │   │   ├── monthly/
-│   │   │   ├── page.tsx      # Reporte mensual
-│   │   │   └── components/
-│   │   │       └── monthly-report.tsx
-│   │   ├── student/
-│   │   │   ├── page.tsx      # Historial de estudiante
-│   │   │   └── components/
-│   │   │       └── student-history.tsx
-│   │   └── export/
-│   │       ├── page.tsx      # Exportar reportes
-│   │       └── components/
-│   │           └── export-form.tsx
+│   │   │   └── page.tsx      # @vir-ttend/ui MonthlyReportPage
+│   │   └── student/
+│   │       └── page.tsx      # @vir-ttend/ui StudentReportPage
 │   ├── announcements/
-│   │   ├── page.tsx          # Lista de comunicados
+│   │   ├── page.tsx          # @vir-ttend/ui AnnouncementsListPage
 │   │   ├── [id]/
-│   │   │   └── page.tsx      # Detalle de comunicado
-│   │   ├── create/
-│   │   │   ├── page.tsx      # Crear comunicado
-│   │   │   └── components/
-│   │   │       └── announcement-form.tsx
-│   │   └── components/
-│   │       └── announcements-list.tsx
+│   │   │   └── page.tsx      # @vir-ttend/ui AnnouncementDetailPage
+│   │   └── create/
+│   │       └── page.tsx      # @vir-ttend/ui CreateAnnouncementPage
 │   └── settings/
-│       ├── page.tsx          # Configuración general
-│       ├── profile/
-│       │   ├── page.tsx      # Perfil de usuario
-│       │   └── components/
-│       │       └── profile-form.tsx
-│       ├── school/
-│       │   ├── page.tsx      # Configuración de escuela
-│       │   └── components/
-│       │       └── school-settings.tsx
-│       └── components/
-│           └── settings-nav.tsx
+│       ├── page.tsx          # @vir-ttend/ui SettingsPage
+│       └── profile/
+│           └── page.tsx      # @vir-ttend/ui ProfileSettingsPage
 │
-├── api/                        # API Routes (BFF si es necesario)
+├── api/
 │   └── health/
 │       └── route.ts
 │
-├── layout.tsx                 # Root layout
-├── loading.tsx                # Root loading
-├── error.tsx                 # Root error
-├── not-found.tsx             # 404
-└── globals.css               # Tailwind + variables CSS
+├── layout.tsx
+├── loading.tsx
+├── error.tsx
+├── not-found.tsx
+└── globals.css
 ```
 
 ---
 
-## 3. Estructura de Componentes
+## 3. Estructura de Componentes (packages/ui)
+
+**IMPORTANTE:** Todos los componentes van en `packages/ui/src/components`. `apps/client` solo consume estos componentes.
 
 ### 3.1 Organización por features
 
 ```
-src/components/
-├── ui/                        # Componentes base (shadcn/ui)
-│   ├── button/
-│   ├── input/
-│   ├── card/
-│   ├── table/
-│   ├── dialog/
-│   ├── form/
-│   ├── dropdown-menu/
-│   └── ...
+packages/ui/src/
+├── components/
+│   ├── ui/                        # Componentes base (shadcn/ui)
+│   │   ├── button/
+│   │   ├── input/
+│   │   ├── card/
+│   │   ├── table/
+│   │   ├── dialog/
+│   │   ├── form/
+│   │   ├── dropdown-menu/
+│   │   └── ...
+│   │
+│   ├── layout/                    # Componentes de layout
+│   │   ├── sidebar/
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── sidebar-item.tsx
+│   │   │   ├── sidebar-group.tsx
+│   │   │   └── index.ts
+│   │   ├── header/
+│   │   │   ├── header.tsx
+│   │   │   ├── header-user-menu.tsx
+│   │   │   └── index.ts
+│   │   ├── footer/
+│   │   │   └── footer.tsx
+│   │   └── responsive-wrapper/
+│   │       └── responsive-wrapper.tsx
+│   │
+│   ├── features/                  # Componentes por feature (domain-driven)
+│   │   ├── auth/
+│   │   │   ├── login-form.tsx
+│   │   │   ├── register-form.tsx
+│   │   │   └── password-input.tsx
+│   │   │
+│   │   ├── attendance/
+│   │   │   ├── attendance-grid/
+│   │   │   │   ├── attendance-grid.tsx
+│   │   │   │   ├── attendance-row.tsx
+│   │   │   │   ├── attendance-cell.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── attendance-toolbar/
+│   │   │   │   ├── attendance-toolbar.tsx
+│   │   │   │   ├── date-picker.tsx
+│   │   │   │   ├── course-selector.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── attendance-summary/
+│   │   │   │   ├── attendance-summary.tsx
+│   │   │   │   ├── metrics-card.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── attendance-form/
+│   │   │   │   ├── attendance-form.tsx
+│   │   │   │   └── status-select.tsx
+│   │   │   └── alert-badge/
+│   │   │       ├── alert-badge.tsx
+│   │   │       └── index.ts
+│   │   │
+│   │   ├── students/
+│   │   │   ├── students-table/
+│   │   │   │   ├── students-table.tsx
+│   │   │   │   ├── student-row.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── student-card/
+│   │   │   │   ├── student-card.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── student-filters/
+│   │   │   │   ├── student-filters.tsx
+│   │   │   │   └── index.ts
+│   │   │   └── student-form/
+│   │   │       ├── student-form.tsx
+│   │   │       └── index.ts
+│   │   │
+│   │   ├── courses/
+│   │   │   ├── courses-list/
+│   │   │   ├── course-card/
+│   │   │   └── course-form/
+│   │   │
+│   │   ├── reports/
+│   │   │   ├── report-export/
+│   │   │   ├── monthly-report/
+│   │   │   ├── student-history/
+│   │   │   └── chart/
+│   │   │       ├── attendance-chart.tsx
+│   │   │       └── index.ts
+│   │   │
+│   │   └── announcements/
+│   │       ├── announcements-list/
+│   │       ├── announcement-card/
+│   │       └── announcement-form/
+│   │
+│   └── shared/                    # Componentes reutilizables
+│       ├── data-table/
+│       │   ├── data-table.tsx
+│       │   ├── data-table-column-header.tsx
+│       │   ├── data-table-pagination.tsx
+│       │   ├── data-table-row-actions.tsx
+│       │   └── index.ts
+│       ├── page-header/
+│       │   ├── page-header.tsx
+│       │   └── index.ts
+│       ├── empty-state/
+│       │   ├── empty-state.tsx
+│       │   └── index.ts
+│       ├── loading-spinner/
+│       │   ├── loading-spinner.tsx
+│       │   └── index.ts
+│       └── confirmation-dialog/
+│           ├── confirmation-dialog.tsx
+│           └── index.ts
 │
-├── layout/                    # Componentes de layout
-│   ├── sidebar/
-│   │   ├── sidebar.tsx
-│   │   ├── sidebar-item.tsx
-│   │   ├── sidebar-group.tsx
-│   │   └── index.ts
-│   ├── header/
-│   │   ├── header.tsx
-│   │   ├── header-user-menu.tsx
-│   │   └── index.ts
-│   ├── footer/
-│   │   └── footer.tsx
-│   └── responsive-wrapper/
-│       └── responsive-wrapper.tsx
+├── lib/
+│   ├── utils/
+│   │   ├── cn.ts
+│   │   ├── date.ts
+│   │   └── format.ts
+│   │
+│   └── config/
+│       └── site-config.ts
 │
-├── features/                  # Componentes por feature (domain-driven)
-│   ├── auth/
-│   │   ├── login-form.tsx
-│   │   ├── register-form.tsx
-│   │   └── password-input.tsx
-│   │
-│   ├── attendance/
-│   │   ├── attendance-grid/
-│   │   │   ├── attendance-grid.tsx
-│   │   │   ├── attendance-row.tsx
-│   │   │   ├── attendance-cell.tsx
-│   │   │   └── index.ts
-│   │   ├── attendance-toolbar/
-│   │   │   ├── attendance-toolbar.tsx
-│   │   │   ├── date-picker.tsx
-│   │   │   ├── course-selector.tsx
-│   │   │   └── index.ts
-│   │   ├── attendance-summary/
-│   │   │   ├── attendance-summary.tsx
-│   │   │   ├── metrics-card.tsx
-│   │   │   └── index.ts
-│   │   ├── attendance-form/
-│   │   │   ├── attendance-form.tsx
-│   │   │   └── status-select.tsx
-│   │   └── alert-badge/
-│   │       ├── alert-badge.tsx
-│   │       └── index.ts
-│   │
-│   ├── students/
-│   │   ├── students-table/
-│   │   │   ├── students-table.tsx
-│   │   │   ├── student-row.tsx
-│   │   │   └── index.ts
-│   │   ├── student-card/
-│   │   │   ├── student-card.tsx
-│   │   │   └── index.ts
-│   │   ├── student-filters/
-│   │   │   ├── student-filters.tsx
-│   │   │   └── index.ts
-│   │   └── student-form/
-│   │       ├── student-form.tsx
-│   │       └── index.ts
-│   │
-│   ├── courses/
-│   │   ├── courses-list/
-│   │   ├── course-card/
-│   │   └── course-form/
-│   │
-│   ├── reports/
-│   │   ├── report-export/
-│   │   ├── monthly-report/
-│   │   ├── student-history/
-│   │   └── chart/
-│   │       ├── attendance-chart.tsx
-│   │       └── index.ts
-│   │
-│   └── announcements/
-│       ├── announcements-list/
-│       ├── announcement-card/
-│       └── announcement-form/
+├── hooks/
+│   ├── use-toast.ts
+│   └── use-media-query.ts
 │
-└── shared/                    # Componentes reutilizables
-    ├── data-table/
-    │   ├── data-table.tsx
-    │   ├── data-table-column-header.tsx
-    │   ├── data-table-pagination.tsx
-    │   ├── data-table-row-actions.tsx
-    │   └── index.ts
-    ├── page-header/
-    │   ├── page-header.tsx
-    │   └── index.ts
-    ├── empty-state/
-    │   ├── empty-state.tsx
-    │   └── index.ts
-    ├── loading-spinner/
-    │   ├── loading-spinner.tsx
-    │   └── index.ts
-    └── confirmation-dialog/
-        ├── confirmation-dialog.tsx
-        └── index.ts
+├── styles/
+│   └── globals.css
+│
+└── index.ts                      # Export centralizado
 ```
 
 ---
 
-## 4. Estructura de hooks y API
+## 4. Estructura de hooks (packages/hooks)
 
-### 4.1 TanStack Query Hooks (packages/hooks)
+**Nota:** Los hooks de TanStack Query están en `packages/hooks`. El API client va incluido para que los hooks puedan hacer requests.
 
 ```
 packages/hooks/
 ├── src/
+│   ├── api/
+│   │   ├── client.ts              # Axios/Fetch client configurado
+│   │   ├── endpoints.ts           # Definición de endpoints
+│   │   └── interceptors/
+│   │       ├── auth.interceptor.ts
+│   │       └── error.interceptor.ts
+│   │
 │   ├── index.ts
 │   │
 │   ├── auth/
@@ -322,12 +311,15 @@ export function useDailyAttendance({ courseId, date, enabled = true }: UseDailyA
 
 ---
 
-## 5. Estructura de tipos y DTOs (packages/common)
+## 4. Estructura de Site Config y Tipos (packages/common)
 
 ```
 packages/common/
 ├── src/
 │   ├── index.ts
+│   │
+│   ├── config/
+│   │   └── site.config.ts      # Configuración global del sitio
 │   │
 │   ├── types/
 │   │   ├── user.types.ts
@@ -368,103 +360,41 @@ packages/common/
 
 ---
 
-## 6. Estructura de lib (utilidades)
+## 5. Estructura de Client App (apps/client)
 
 ```
-src/lib/
-├── api/
-│   ├── client.ts              # Axios/Fetch client configurado
-│   ├── endpoints.ts           # Definición de endpoints
-│   └── interceptors/
-│       ├── auth.interceptor.ts
-│       └── error.interceptor.ts
+apps/client/src/
+├── app/                       # Next.js App Router (páginas)
+│   ├── (auth)/
+│   │   ├── login/
+│   │   └── register/
+│   └── (dashboard)/
+│       └── ...
 │
-├── auth/
-│   ├── provider.tsx           # AuthProvider (React Context)
-│   ├── utils.ts                # Funciones de auth
-│   └── config.ts              # Config de auth
+├── stores/                    # Estado global (Zustand/Jotai)
+│   ├── auth-store.ts
+│   ├── sidebar-store.ts
+│   └── notification-store.ts
 │
-├── utils/
-│   ├── cn.ts                  # classnames + tailwind merge
-│   ├── date.ts                # Utilidades de fecha
-│   ├── format.ts              # Formateo de datos
-│   └── validation.ts          # Funciones de validación
-│
-├── validations/
-│   ├── auth.validation.ts
-│   ├── student.validation.ts
-│   └── attendance.validation.ts
-│
-└── config/
-    └── site-config.ts          # Configuración del sitio
+└── lib/
+    └── cn.ts                  # Re-export de @vir-ttend/ui
 ```
 
----
+## 6. Convenciones de Nombrado
 
-## 7. Estructura de stores (Estado Global)
+### 6.1 Componentes
 
-```
-src/stores/
-├── auth-store.ts              # Estado de autenticación
-├── sidebar-store.ts           # Estado del sidebar
-├── attendance-store.ts        # Estado temporal de asistencia
-└── notification-store.ts     # Notificaciones/toasts
-```
+| Tipo | Patrón | Ubicación |
+|------|--------|-----------|
+| Componente de página | `<Name>Page.tsx` | `packages/ui/src/components/features/...` |
+| Componente de UI | `<Name>.tsx` | `packages/ui/src/components/ui/...` |
+| Componente de feature | `<Feature><Component>.tsx` | `packages/ui/src/components/features/...` |
+| Componente de layout | `<Layout><Name>.tsx` | `packages/ui/src/components/layout/...` |
+| Componente de formulario | `<Name>Form.tsx` | `packages/ui/src/components/features/...` |
+| Componente de tabla | `<Name>Table.tsx` | `packages/ui/src/components/features/...` |
+| Página (apps/client) | `page.tsx` | `apps/client/src/app/...` |
 
----
-
-## 8. Estructura de UI Components (shadcn/ui)
-
-```
-packages/ui/
-├── src/
-│   ├── components/
-│   │   ├── ui/                # Componentes base shadcn
-│   │   │   ├── button.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── card.tsx
-│   │   │   ├── table.tsx
-│   │   │   ├── dialog.tsx
-│   │   │   ├── select.tsx
-│   │   │   └── ...
-│   │   │
-│   │   └── index.ts          # Export centralizado
-│   │
-│   ├── lib/
-│   │   ├── utils.ts           # Utils de shadcn
-│   │   └── cn.ts              # classnames helper
-│   │
-│   ├── hooks/
-│   │   ├── use-toast.ts
-│   │   └── use-media-query.ts
-│   │
-│   ├── types/
-│   │   └── index.d.ts
-│   │
-│   └── styles/
-│       └── globals.css
-│
-├── package.json
-├── tailwind.config.js
-└── tsconfig.json
-```
-
----
-
-## 9. Convenciones de Nombrado
-
-### 9.1 Componentes
-
-| Tipo | Patrón | Ejemplo |
-|------|--------|---------|
-| Componente de página | `page.tsx` | `attendance/page.tsx` |
-| Componente de UI | `<Name>.tsx` | `Button.tsx` |
-| Componente de feature | `<Feature><Component>.tsx` | `AttendanceGrid.tsx` |
-| Componente de layout | `<Layout><Name>.tsx` | `Sidebar.tsx` |
-| Componente de formulario | `<Name>Form.tsx` | `LoginForm.tsx` |
-| Componente de tabla | `<Name>Table.tsx` | `StudentsTable.tsx` |
-
-### 9.2 Hooks
+### 6.2 Hooks
 
 | Tipo | Patrón | Ejemplo |
 |------|--------|---------|
@@ -472,7 +402,7 @@ packages/ui/
 | Mutation hook | `use<Action><Resource>.ts` | `useCreateStudent.ts` |
 | Custom hook | `use<Function>.ts` | `useMediaQuery.ts` |
 
-### 9.3 Archivos de barrel
+### 6.3 Archivos de barrel
 
 ```typescript
 // components/attendance/attendance-grid/index.ts
@@ -485,6 +415,36 @@ export { AttendanceCell } from './attendance-cell';
 
 ## 10. Flujo de Datos
 
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    APPS/CLIENT (PAGE)                            │
+│                    page.tsx + loading.tsx + error.tsx           │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ (importa)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    PACKAGES/UI (COMPONENTS)                     │
+│              <Feature>Page / <Feature>Grid / <Feature>Form      │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ (usa)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    PACKAGES/HOOKS (TANSTACK QUERY)              │
+│              useStudents() / useRegisterAttendance()             │
+│                    (Server State + Caching)                      │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ (llama)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    APPS/CLIENT (API CLIENT)                     │
+│                  api.client.ts + interceptors                    │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ (pide)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    APPS/API (NESTJS BACKEND)                    │
+│                         /api/attendance                           │
+└─────────────────────────────────────────────────────────────────┘
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         PAGE (React Server Component)           │
@@ -519,12 +479,12 @@ export { AttendanceCell } from './attendance-cell';
 
 ---
 
-## 11. Patrones de Componentes
+## 8. Patrones de Componentes
 
-### 11.1 Feature Component con Hooks
+### 8.1 Ejemplo: Componente en packages/ui
 
 ```typescript
-// src/components/features/attendance/attendance-grid/attendance-grid.tsx
+// packages/ui/src/components/features/attendance/attendance-grid/attendance-grid.tsx
 'use client';
 
 import { useDailyAttendance } from '@vir-ttend/hooks';
@@ -551,110 +511,86 @@ export function AttendancePanel({ courseId, date }: AttendancePanelProps) {
 }
 ```
 
-### 11.2 Composable Component
+### 8.2 Ejemplo: Página en apps/client (solo presenta)
 
 ```typescript
-// src/components/shared/data-table/data-table.tsx
-'use client';
+// apps/client/src/app/attendance/page.tsx
+import { AttendancePanel } from '@vir-ttend/ui';
 
-import { ColumnDef } from '@tanstack/react-table';
-import { DataTable } from './data-table';
-
-interface StudentsTableProps {
-  data: Student[];
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
-}
-
-const columns: ColumnDef<Student>[] = [
-  {
-    accessorKey: 'name',
-    header: 'Nombre',
-  },
-  // ...
-];
-
-export function StudentsTable({ data, onEdit, onDelete }: StudentsTableProps) {
-  return (
-    <DataTable
-      columns={columns}
-      data={data}
-      onEdit={onEdit}
-      onDelete={onDelete}
-    />
-  );
+export default function AttendancePage() {
+  return <AttendancePanel />;
 }
 ```
 
 ---
 
-## 12. Estructura de testing
+## 9. Estructura de testing
 
 ```
-apps/client/
+packages/ui/
 ├── src/
-│   └── ... (components, app, etc.)
+│   └── components/
+│       └── ... (componentes)
 ├── __tests__/
 │   ├── components/
 │   │   ├── attendance-grid.spec.tsx
 │   │   └── login-form.spec.tsx
 │   ├── hooks/
-│   │   └── use-students.spec.ts
-│   ├── utils/
-│   │   └── date.utils.spec.ts
+│   │   └── use-media-query.spec.ts
 │   └── mocks/
-│       ├── handlers.ts       # MSW handlers
 │       └── fixtures/
-│           └── students.json
 ├── vitest.config.ts
 └── package.json
 ```
 
 ---
 
-## 13. Resumen Visual
+## 10. Resumen de la Estructura
 
 ```
-apps/client/src/
-├── app/                       # Next.js App Router
-│   ├── (auth)/               # Auth routes
-│   │   ├── login/
-│   │   └── register/
-│   ├── (dashboard)/          # Protected routes
-│   │   ├── attendance/
-│   │   ├── students/
-│   │   ├── courses/
-│   │   ├── reports/
-│   │   └── settings/
-│   └── layout.tsx
+vir-ttend/
+├── apps/
+│   ├── client/                    # Next.js (solo presenta/páginas)
+│   │   └── src/app/              # Páginas que importan de @vir-ttend/ui
+│   └── api/                      # NestJS Backend
 │
-├── components/
-│   ├── ui/                   # shadcn/ui components
-│   ├── layout/               # Layout components
-│   ├── features/             # Feature components
-│   │   ├── attendance/
-│   │   ├── students/
-│   │   ├── courses/
-│   │   └── ...
-│   └── shared/               # Shared components
-│
-├── lib/
-│   ├── api/                  # API client
-│   ├── auth/                 # Auth utilities
-│   ├── utils/                # Helpers
-│   └── validations/          # Zod schemas
-│
-├── hooks/                    # Custom hooks
-├── stores/                   # Global state
-└── styles/                   # Global styles
+└── packages/
+    ├── ui/                       # Componentes React (UI Kit)
+    │   └── src/components/
+    │       ├── ui/              # shadcn/ui base
+    │       ├── layout/          # Layout components
+    │       ├── features/        # Feature components
+    │       └── shared/          # Shared components
+    │
+    ├── common/                  # Tipos, DTOs, constantes
+    ├── hooks/                   # TanStack Query hooks
+    └── ...
+```
+
+### Flujo de datos:
+
+```
+apps/client/src/app/page.tsx
+    │
+    ▼ (importa)
+@vir-ttend/ui (componentes)
+    │
+    ▼ (usa)
+@vir-ttend/hooks (TanStack Query)
+    │
+    ▼ (llama)
+API Client (apps/client)
+    │
+    ▼ (pide)
+apps/api (NestJS)
 ```
 
 ---
 
-## 14. Rutas del Sistema
+## 11. Rutas del Sistema
 
-| Ruta | Componente | Descripción |
-|------|------------|-------------|
+| Ruta | Componente (en @vir-ttend/ui) | Descripción |
+|------|-------------------------------|-------------|
 | `/login` | LoginPage | Autenticación |
 | `/register` | RegisterPage | Registro |
 | `/dashboard` | DashboardHome | Panel principal |
