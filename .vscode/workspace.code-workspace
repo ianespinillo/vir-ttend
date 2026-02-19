@@ -1,0 +1,36 @@
+{
+	"folders": [
+		{
+			"name": "root",
+			"path": ".."
+		},
+		{
+			"name": "api",
+			"path": "../apps/api"
+		},
+		{
+			"name": "client",
+			"path": "../apps/client"
+		},
+		{
+			"name": "@repo/common",
+			"path": "../packages/common"
+		},
+		{
+			"name": "@repo/eslint-config",
+			"path": "../packages/eslint-config"
+		},
+		{
+			"name": "@repo/hooks",
+			"path": "../packages/hooks"
+		},
+		{
+			"name": "@repo/typescript-config",
+			"path": "../packages/typescript-config"
+		},
+		{
+			"name": "@repo/ui",
+			"path": "../packages/ui"
+		}
+	]
+}

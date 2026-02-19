@@ -14,6 +14,21 @@
 			"require": "./dist/index.cjs",
 			"import": "./dist/index.js",
 			"types": "./dist/index.d.ts"
+		},
+		"./types": {
+			"require": "./dist/types/index.cjs",
+			"import": "./dist/types/index.js",
+			"types": "./dist/types/index.d.ts"
+		},
+		"./constants": {
+			"require": "./dist/constants/index.cjs",
+			"import": "./dist/constants/index.js",
+			"types": "./dist/constants/index.d.ts"
+		},
+		"./routes": {
+			"require": "./dist/routes/index.cjs",
+			"import": "./dist/routes/index.js",
+			"types": "./dist/routes/index.d.ts"
 		}
 	},
 	"dependencies": {
