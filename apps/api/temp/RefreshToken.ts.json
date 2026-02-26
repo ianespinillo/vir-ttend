@@ -1,0 +1,29 @@
+{
+	"data": {
+		"_id": 0,
+		"properties": {},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "RefreshToken",
+		"abstract": true,
+		"internal": true,
+		"constructorParams": [
+			"id",
+			"userId",
+			"tenantId",
+			"token",
+			"expiresAt",
+			"createdAt",
+			"revokedAt"
+		],
+		"toJsonParams": [],
+		"useCache": true,
+		"path": "./src/modules/identity/domain/entities/refresh-token.entity.ts"
+	},
+	"origin": "./src/modules/identity/domain/entities/refresh-token.entity.ts",
+	"hash": "c6398a8c176327b01ac8b372fb174e52",
+	"version": "6.6.7"
+}

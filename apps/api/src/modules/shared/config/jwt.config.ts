@@ -9,4 +9,4 @@ export const jwtConfig = {
 		secret: getEnvs().JWT_REFRESH_SECRET,
 		expiresIn: '7d',
 	},
-};
+} as const;

@@ -1,0 +1,72 @@
+{
+	"data": {
+		"_id": 1000,
+		"properties": {
+			"userId": {
+				"name": "userId",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"tenantId": {
+				"name": "tenantId",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"token": {
+				"name": "token",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"expiresAt": {
+				"name": "expiresAt",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "Date",
+				"array": false,
+				"runtimeType": "Date"
+			},
+			"revokedAt": {
+				"name": "revokedAt",
+				"kind": "scalar",
+				"nullable": true,
+				"getter": false,
+				"setter": false,
+				"type": "Date",
+				"array": false,
+				"optional": true,
+				"runtimeType": "Date"
+			}
+		},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "RefreshTokenOrmEntity",
+		"path": "./src/modules/identity/infrastructure/persistence/entities/refresh-token.orm-entity.ts",
+		"collection": "refresh_tokens",
+		"name": "RefreshTokenOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"extends": "BaseEntity",
+		"useCache": true
+	},
+	"origin": "./src/modules/identity/infrastructure/persistence/entities/refresh-token.orm-entity.ts",
+	"hash": "7a16ba169a2c564f309c98450ca6036d",
+	"version": "6.6.7"
+}

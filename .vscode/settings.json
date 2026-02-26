@@ -1,0 +1,30 @@
+{
+	"typescript.preferences.includePackageJsonAutoImports": "off",
+	"typescript.suggest.autoImports": true,
+	"typescript.updateImportsOnFileMove.enabled": "always",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit",
+		"source.organizeImports": "explicit"
+	},
+	"jest.rootPath": "apps/api",
+	"jest.autoEnable": true,
+	"jest.showCoverageOnLoad": true,
+	"jest.enableCodeLens": true,
+	"jest.debugCodeLens": {
+		"showWhenTestStateIn": ["fail", "unknown", "pass"]
+	},
+	"jest.testExplorer": {
+		"enabled": true
+	},
+	"files.associations": {
+		"*.spec.ts": "typescript",
+		"*.test.ts": "typescript"
+	},
+	"typescript.preferences.importModuleSpecifier": "relative",
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/dist": true,
+		"**/coverage": true
+	}
+}

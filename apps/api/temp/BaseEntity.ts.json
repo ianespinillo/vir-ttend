@@ -1,0 +1,53 @@
+{
+	"data": {
+		"_id": 6000,
+		"properties": {
+			"_id": {
+				"name": "_id",
+				"kind": "scalar",
+				"primary": true,
+				"type": "uuid",
+				"defaultRaw": "gen_random_uuid()",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"_createdAt": {
+				"name": "_createdAt",
+				"kind": "scalar",
+				"type": "timestamp",
+				"defaultRaw": "now()",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Date"
+			},
+			"_updatedAt": {
+				"name": "_updatedAt",
+				"kind": "scalar",
+				"type": "timestamp",
+				"defaultRaw": "now()",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Date"
+			}
+		},
+		"primaryKeys": ["_id"],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "BaseEntity",
+		"path": "./src/modules/shared/database/entities/base.entity.ts",
+		"abstract": true,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"useCache": true,
+		"compositePK": false,
+		"simplePK": true
+	},
+	"origin": "./src/modules/shared/database/entities/base.entity.ts",
+	"hash": "313e0bcd72aa84e77f0ded80aa02bbdf",
+	"version": "6.6.7"
+}

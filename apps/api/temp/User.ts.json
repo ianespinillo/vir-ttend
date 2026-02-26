@@ -1,0 +1,31 @@
+{
+	"data": {
+		"_id": 4000,
+		"properties": {},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "User",
+		"abstract": true,
+		"internal": true,
+		"constructorParams": [
+			"id",
+			"email",
+			"password",
+			"firstName",
+			"lastName",
+			"isActive",
+			"mustChangePassword",
+			"createdAt",
+			"updatedAt"
+		],
+		"toJsonParams": [],
+		"useCache": true,
+		"path": "./src/modules/identity/domain/entities/user.entity.ts"
+	},
+	"origin": "./src/modules/identity/domain/entities/user.entity.ts",
+	"hash": "5261b05edba880dbad5ae3c3526799bb",
+	"version": "6.6.7"
+}

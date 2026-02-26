@@ -1,7 +1,27 @@
 # Sprint 01 — Autenticación JWT
 
-> **Objetivo:** Implementar autenticación JWT completa: registro, login, logout, refresh de tokens y protección de rutas.
+> **Objetivo:** Implementar autenticación JWT completa con login en dos pasos, gestión de sesión por tenant y protección de rutas.
 > **Duración:** 1 semana · **Estimación:** 40 h · **Dependencias:** Sprint 00
+
+---
+
+## Decisiones de diseño
+
+**Login en dos pasos:** el usuario primero valida credenciales y recibe la lista de tenants a los que pertenece. Luego elige un tenant y recibe el JWT con el rol correspondiente a ese tenant. El `superadmin` es la excepción — hace login directo sin elegir tenant.
+
+**`UserTenantMembership`:** el rol no vive en `User` sino en una entidad separada que relaciona usuario + tenant + rol. Un usuario puede ser `admin` en un tenant y `preceptor` en otro.
+
+**`User` sin `role` ni `tenantId`:** la entidad `User` solo tiene datos personales. El rol y el tenant vienen del membership activo de la sesión.
+
+**JWT payload:**
+```ts
+{
+  sub:      userId,
+  tenantId: tenantId,  // null para superadmin
+  role:     role,      // el rol en ese tenant
+  email:    email,
+}
+```
 
 ---
 
@@ -9,106 +29,228 @@
 
 | Área | Horas |
 |---|---|
-| Domain Layer | 8 |
-| Application Layer | 8 |
+| Domain Layer | 10 |
+| Application Layer | 10 |
 | Infrastructure Layer | 8 |
 | Presentation Layer | 6 |
-| Frontend (UI + hooks + páginas) | 10 |
+| Frontend (UI + hooks + páginas) | 6 |
 | **Total** | **40** |
 
 ---
 
 ## 1. Domain Layer — `modules/identity/domain`
 
-> El dominio de identidad define qué significa un usuario y un token en el sistema. No depende de NestJS ni de la base de datos.
-
 ```
 apps/api/src/modules/identity/domain/
 ├── entities/
-│   ├── user.entity.ts                      # Entidad User con campos de dominio
-│   └── refresh-token.entity.ts             # Entidad RefreshToken con fecha de expiración
+│   ├── user.entity.ts                      # Datos personales del usuario — sin role ni tenantId
+│   ├── user-tenant-membership.entity.ts    # Relación usuario + tenant + rol
+│   └── refresh-token.entity.ts             # Token de refresh con hash, expiración y revocación
 ├── value-objects/
-│   ├── email.value-object.ts               # Valida formato, normaliza a lowercase
-│   ├── password.value-object.ts            # Encapsula hash — nunca expone el raw password
-│   └── token.value-object.ts              # Encapsula el JWT string
+│   ├── email.vo.ts                         # Valida formato RFC 5322, normaliza a lowercase
+│   ├── password.vo.ts                      # Valida reglas (8+ chars, mayúscula, número, especial)
+│   │                                       # getRawValue(): string — evita toString() accidental
+│   │                                       # static generateRandomPassword(): Password
+│   └── password-hashed.vo.ts              # Wrapper del hash — static fromHash(hash): PasswordHashed
+│                                           # getRaw(): string
 ├── services/
-│   ├── password.service.ts                 # hash(plain) y compare(plain, hash) con bcrypt
-│   └── token.service.ts                    # generateAccessToken, generateRefreshToken, verify
+│   ├── password.service.ts                 # hashPassword(password: Password): Promise<PasswordHashed>
+│   │                                       # compare(password: Password, hashed: PasswordHashed): Promise<boolean>
+│   │                                       # Usa bcryptjs con cost 10
+│   └── token.service.ts                    # generateAccessToken(payload: JwtPayload): string
+│                                           # generateRefreshToken(): string — string aleatorio opaco, no JWT
+│                                           # verifyAccessToken(token: string): JwtPayload
+│                                           # hashToken(token: string): string — SHA-256
 ├── events/
-│   ├── user-registered.event.ts            # Se emite cuando un usuario se registra exitosamente
-│   └── user-logged-in.event.ts             # Se emite en cada login exitoso
+│   ├── user-created.event.ts               # { userId, email, rawPassword, occurredAt }
+│   │                                       # rawPassword incluido para que el listener envíe el email SMTP
+│   ├── user-tenant-linked.event.ts         # { userId, email, tenantId, role, occurredAt }
+│   │                                       # se emite cuando un usuario existente es vinculado a un nuevo tenant
+│   └── user-logged-in.event.ts             # { userId, tenantId, ipAddress?, userAgent?, occurredAt }
 └── repositories/
-    ├── user.repository.interface.ts        # IUserRepository: findByEmail, findById, save, exists
-    └── refresh-token.repository.interface.ts # IRefreshTokenRepository: save, findByHash, revoke
+    ├── user.repository.interface.ts        # findById, findByEmail, save, exists(email)
+    ├── user-tenant-membership.repository.interface.ts # findByUserId, findByUserAndTenant, save
+    └── refresh-token.repository.interface.ts          # save, findByHash, revokeAllByUserId
 ```
 
 ### Esquema de entidades
 
 | Entidad | Campos |
 |---|---|
-| `User` | `id`, `tenantId` (nullable — superadmin no tiene tenant), `email`, `passwordHash`, `name`, `role`, `status`, `createdAt` |
-| `RefreshToken` | `id`, `userId`, `tokenHash`, `expiresAt`, `revokedAt` (nullable) |
+| `User` | `id`, `email` (EmailVO), `password` (PasswordHashed), `firstName`, `lastName`, `isActive`, `mustChangePassword`, `createdAt`, `updatedAt` |
+| `UserTenantMembership` | `id`, `userId`, `tenantId`, `role` (Roles), `isActive`, `createdAt` |
+| `RefreshToken` | `id`, `userId`, `token` (hash SHA-256), `expiresAt`, `createdAt`, `revokedAt?` |
 
-### `email.value-object.ts` — comportamiento
+### `user.entity.ts` — comportamiento
 
 ```ts
-// constructor valida con regex RFC 5322
-// getter .value devuelve el email en lowercase
-// lanza InvalidEmailException si el formato es inválido
+// constructor privado — solo accesible via create() y reconstitute()
+// static create(props: CreateUserProps): User
+//   → genera id con randomUUID()
+//   → isActive = true, mustChangePassword = true
+// static reconstitute(props): User
+//   → hidrata sin aplicar lógica de negocio
+// changePassword(newPassword: PasswordHashed): void → actualiza _updatedAt
+// deactivate(): void → isActive = false, actualiza _updatedAt
+// get password(): string → delega en PasswordHashed.getRaw()
 ```
 
-### `password.service.ts` — comportamiento
+### `user-tenant-membership.entity.ts` — comportamiento
 
 ```ts
-// hash(plain: string): Promise<string>  → bcrypt con cost 12
-// compare(plain: string, hash: string): Promise<boolean>
-// Nunca loguea el password en ninguna circunstancia
+// static create(userId, tenantId, role): UserTenantMembership
+// static reconstitute(props): UserTenantMembership
+// deactivate(): void → isActive = false
+// changeRole(newRole: Roles): void
+```
+
+### `refresh-token.entity.ts` — comportamiento
+
+```ts
+// static create(userId, tokenHash, expiresAt): RefreshToken
+// static reconstitute(props): RefreshToken
+// revoke(): void → _revokedAt = new Date()
+// isExpired(): boolean → new Date() > _expiresAt
+// isRevoked(): boolean → _revokedAt !== undefined
+// isValid(): boolean → !isExpired() && !isRevoked()
 ```
 
 ---
 
 ## 2. Application Layer — `modules/identity/application`
 
-> Los command/query handlers orquestan el flujo: reciben un input, llaman al dominio y persisten a través de interfaces de repositorio.
-
 ```
 apps/api/src/modules/identity/application/
 ├── commands/
-│   ├── register/
-│   │   ├── register.command.ts             # { name, email, password }
-│   │   └── register.handler.ts             # valida unicidad de email, hashea password, guarda User, emite UserRegistered
+│   ├── create-user/
+│   │   ├── create-user.command.ts          # { email, firstName, lastName, role, tenantId?, createdByRole }
+│   │   └── create-user.handler.ts          # ver flujo detallado abajo
 │   ├── login/
-│   │   ├── login.command.ts                # { email, password }
-│   │   └── login.handler.ts                # verifica credenciales, genera access+refresh token, guarda RefreshToken, emite UserLoggedIn
+│   │   ├── login.command.ts                # { email, password, ipAddress?, userAgent? }
+│   │   └── login.handler.ts                # paso 1 — valida credenciales, retorna tenants disponibles
+│   ├── select-tenant/
+│   │   ├── select-tenant.command.ts        # { userId, tenantId }
+│   │   └── select-tenant.handler.ts        # paso 2 — genera JWT con rol del membership, guarda RefreshToken
 │   ├── logout/
-│   │   ├── logout.command.ts               # { refreshTokenHash }
-│   │   └── logout.handler.ts               # marca el RefreshToken como revocado
+│   │   ├── logout.command.ts               # { refreshToken }
+│   │   └── logout.handler.ts               # hashea token, busca y revoca el RefreshToken
 │   └── refresh-token/
-│       ├── refresh-token.command.ts        # { refreshTokenHash }
-│       └── refresh-token.handler.ts        # verifica token no revocado ni expirado, genera nuevo access token
+│       ├── refresh-token.command.ts        # { refreshToken }
+│       └── refresh-token.handler.ts        # verifica validez, genera nuevo accessToken
 ├── queries/
 │   └── get-current-user/
-│       ├── get-current-user.query.ts       # { userId }
-│       └── get-current-user.handler.ts     # retorna UserResponseDto sin datos sensibles
+│       ├── get-current-user.query.ts       # { userId, tenantId }
+│       └── get-current-user.handler.ts     # retorna UserResponseDto con datos del membership activo
 ├── dtos/
-│   ├── register.request.dto.ts             # name, email, password (con validaciones class-validator)
+│   ├── create-user.request.dto.ts          # email, firstName, lastName, role, tenantId?
 │   ├── login.request.dto.ts                # email, password
-│   ├── auth.response.dto.ts                # accessToken (solo en la cookie, no en body), user: UserResponseDto
-│   └── user.response.dto.ts               # id, name, email, role, tenantId
-└── identity.module.ts                      # registra commands, queries, repositorios y servicios
+│   ├── login.response.dto.ts              # tenants: TenantOptionDto[] — para mostrar el selector
+│   ├── tenant-option.dto.ts               # tenantId, tenantName, role — para el selector de tenant
+│   ├── select-tenant.request.dto.ts       # userId, tenantId
+│   ├── auth.response.dto.ts               # user: UserResponseDto — tokens van en cookies, no en body
+│   └── user.response.dto.ts              # id, email, firstName, lastName, role, tenantId, mustChangePassword
+└── identity.module.ts
 ```
 
-### Flujo de login
+### Flujo `CreateUserHandler`
 
+```ts
+// 1. Validar jerarquía de roles
+const canCreate: Record<Roles, Roles[]> = {
+  [ROLES.SUPERADMIN]: [ROLES.ADMIN],
+  [ROLES.ADMIN]:      [ROLES.PRECEPTOR, ROLES.TEACHER],
+  [ROLES.PRECEPTOR]:  [],
+  [ROLES.TEACHER]:    [],
+};
+if (!canCreate[command.createdByRole]?.includes(command.role)) throw new Error(...)
+
+// 2. Buscar si el usuario ya existe
+let user = await userRepository.findByEmail(command.email);
+let isNewUser = false;
+
+if (!user) {
+  // caso 1 — usuario nuevo: crear User + generar password temporal
+  const rawPassword = Password.generateRandomPassword();
+  const hashed = await passwordService.hashPassword(rawPassword);
+  user = User.create({ email, firstName, lastName, password: hashed });
+  await userRepository.save(user);
+  isNewUser = true;
+}
+
+// 3. Verificar que no esté ya vinculado a este tenant (superadmin no tiene tenant)
+if (command.tenantId) {
+  const existing = await membershipRepository.findByUserAndTenant(user.id, command.tenantId);
+  if (existing) throw new Error('User already belongs to this tenant');
+
+  const membership = UserTenantMembership.create(user.id, command.tenantId, command.role);
+  await membershipRepository.save(membership);
+}
+
+// 4. Emitir evento según el caso
+if (isNewUser) {
+  eventEmitter.emit('user.created', new UserCreatedEvent(user.id, user.email, rawPassword.getRawValue()));
+} else {
+  eventEmitter.emit('user.tenant.linked', new UserTenantLinkedEvent(user.id, user.email, command.tenantId, command.role));
+}
 ```
-LoginCommand
-  → verificar email existe (IUserRepository.findByEmail)
-  → comparar password (PasswordService.compare)
-  → generar accessToken (TokenService.generateAccessToken)
-  → generar refreshToken (TokenService.generateRefreshToken)
-  → guardar hash del refreshToken (IRefreshTokenRepository.save)
-  → emitir UserLoggedIn event
-  → retornar AuthResponseDto
+
+### Flujo `LoginHandler` (paso 1)
+
+```ts
+// 1. Buscar usuario por email (sin filtrar por tenant — aún no sabe a cuál va)
+const user = await userRepository.findByEmail(command.email);
+if (!user) throw new Error('Invalid credentials');
+if (!user.isActive) throw new Error('Invalid credentials');
+
+// 2. Verificar password
+const valid = await passwordService.compare(new Password(command.password), user.password);
+if (!valid) throw new Error('Invalid credentials');
+
+// 3. Obtener memberships activos
+const memberships = await membershipRepository.findByUserId(user.id);
+
+// 4. Si es superadmin (sin memberships) → ir directo a generar token
+// Si tiene memberships → retornar lista para que el cliente muestre el selector
+if (memberships.length === 0) {
+  // superadmin — retornar flag especial
+  return { isSuperAdmin: true, userId: user.id, tenants: [] };
+}
+
+return {
+  isSuperAdmin: false,
+  userId: user.id,
+  tenants: memberships.map(m => ({ tenantId: m.tenantId, role: m.role }))
+};
+```
+
+### Flujo `SelectTenantHandler` (paso 2)
+
+```ts
+// 1. Verificar que el membership existe y está activo
+const membership = await membershipRepository.findByUserAndTenant(command.userId, command.tenantId);
+if (!membership || !membership.isActive) throw new Error('Invalid tenant selection');
+
+const user = await userRepository.findById(command.userId);
+
+// 2. Generar tokens
+const accessToken = tokenService.generateAccessToken({
+  sub: user.id, tenantId: membership.tenantId,
+  role: membership.role, email: user.email,
+});
+const refreshToken = tokenService.generateRefreshToken();
+const refreshTokenHash = tokenService.hashToken(refreshToken);
+
+// 3. Guardar refresh token
+await refreshTokenRepository.save(RefreshToken.create(
+  user.id, refreshTokenHash,
+  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+));
+
+// 4. Emitir evento
+eventEmitter.emit('user.logged-in', new UserLoggedInEvent(user.id, membership.tenantId));
+
+// 5. Retornar tokens — el controller los mete en cookies
+return { accessToken, refreshToken, user };
 ```
 
 ---
@@ -119,34 +261,43 @@ LoginCommand
 apps/api/src/modules/identity/infrastructure/
 ├── persistence/
 │   ├── entities/
-│   │   ├── user.orm-entity.ts              # @Entity() User con decoradores MikroORM
-│   │   └── refresh-token.orm-entity.ts     # @Entity() RefreshToken
+│   │   ├── user.orm-entity.ts                      # @Entity('users') — solo datos personales
+│   │   ├── user-tenant-membership.orm-entity.ts    # @Entity('user_tenant_memberships')
+│   │   └── refresh-token.orm-entity.ts             # @Entity('refresh_tokens')
 │   ├── repositories/
-│   │   ├── user.repository.ts              # implementa IUserRepository usando EntityManager
-│   │   └── refresh-token.repository.ts     # implementa IRefreshTokenRepository
+│   │   ├── user.repository.ts                      # implementa IUserRepository con MikroORM
+│   │   ├── user-tenant-membership.repository.ts    # implementa IUserTenantMembershipRepository
+│   │   └── refresh-token.repository.ts             # implementa IRefreshTokenRepository
 │   ├── mappers/
-│   │   └── user.mapper.ts                  # convierte entre UserOrmEntity ↔ User (dominio)
-│   └── identity.persistence.module.ts     # registra ORM entities y repositorios
+│   │   ├── user.mapper.ts                          # UserOrmEntity ↔ User (dominio)
+│   │   │                                           # toDomain() usa User.reconstitute()
+│   │   │                                           # toOrm() mapea cada campo sin lógica
+│   │   ├── user-tenant-membership.mapper.ts        # UserTenantMembershipOrmEntity ↔ UserTenantMembership
+│   │   └── refresh-token.mapper.ts                 # RefreshTokenOrmEntity ↔ RefreshToken
+│   └── identity.persistence.module.ts
 ├── auth/
-│   ├── strategies/
-│   │   ├── jwt.strategy.ts                 # PassportStrategy(Strategy) — valida access token de la cookie
-│   │   └── local.strategy.ts               # PassportStrategy(Strategy) — valida email/password en login
-│   └── identity.auth.module.ts            # registra JwtModule, PassportModule y estrategias
+│   └── strategies/
+│       └── jwt.strategy.ts                         # PassportStrategy — lee JWT de la cookie access_token
+│                                                   # valida firma y expiry, popula request.user con JwtPayload
 └── events/
-    ├── user-registered.listener.ts         # @OnEvent('user.registered') → loguea, (futuro: enviar email)
-    └── identity.events.module.ts          # registra listeners
+    ├── user-created.listener.ts                    # @OnEvent('user.created') → loguea (SMTP en sprint futuro)
+    ├── user-tenant-linked.listener.ts              # @OnEvent('user.tenant.linked') → loguea
+    └── identity.events.module.ts
 ```
 
 ### Migración a generar
 
 ```bash
-# Ejecutar tras crear las ORM entities:
-pnpm mikro-orm migration:create --name=create_users_and_refresh_tokens
+pnpm mikro-orm migration:create --name=create_identity_tables
 ```
 
-Tablas que genera:
-- `users` (id, tenant_id, email, password_hash, name, role, status, created_at, updated_at)
-- `refresh_tokens` (id, user_id, token_hash, expires_at, revoked_at, created_at)
+Tablas:
+- `users` (id, email, password_hash, first_name, last_name, is_active, must_change_password, created_at, updated_at)
+- `user_tenant_memberships` (id, user_id FK, tenant_id, role, is_active, created_at)
+- `refresh_tokens` (id, user_id FK, token, expires_at, revoked_at, created_at)
+- Índice único: `(email)` en `users`
+- Índice único: `(user_id, tenant_id)` en `user_tenant_memberships`
+- Índice: `(token)` en `refresh_tokens`
 
 ---
 
@@ -155,36 +306,38 @@ Tablas que genera:
 ```
 apps/api/src/modules/identity/presentation/
 ├── controllers/
-│   ├── auth.controller.ts                  # POST /auth/register, /auth/login, /auth/logout, /auth/refresh
-│   └── users.controller.ts                 # GET /users/me (protegido con JwtAuthGuard)
-└── identity.presentation.module.ts        # registra controllers
+│   ├── auth.controller.ts                  # endpoints de autenticación
+│   └── users.controller.ts                 # GET /users/me
+└── identity.presentation.module.ts
 ```
 
 ### Endpoints
 
 | Método | Ruta | Guard | Descripción |
 |---|---|---|---|
-| `POST` | `/auth/register` | público | Crea usuario, devuelve tokens en cookies HttpOnly |
-| `POST` | `/auth/login` | público | Autentica, devuelve tokens en cookies HttpOnly |
+| `POST` | `/auth/login` | público | Paso 1: valida credenciales, retorna lista de tenants |
+| `POST` | `/auth/select-tenant` | público | Paso 2: elige tenant, recibe JWT en cookies |
 | `POST` | `/auth/logout` | `JwtAuthGuard` | Revoca refresh token, limpia cookies |
-| `POST` | `/auth/refresh` | público | Renueva access token usando refresh token de la cookie |
-| `GET` | `/users/me` | `JwtAuthGuard` | Retorna datos del usuario autenticado |
+| `POST` | `/auth/refresh` | público | Renueva access token con refresh token de la cookie |
+| `GET` | `/users/me` | `JwtAuthGuard` | Retorna datos del usuario + rol del tenant activo |
 
 ### Configuración de cookies
 
 ```ts
-// access_token
+// access_token — duración: 15 minutos
 { httpOnly: true, secure: true, sameSite: 'strict', maxAge: 15 * 60 * 1000, path: '/' }
 
-// refresh_token
+// refresh_token — duración: 7 días, solo accesible en /auth/refresh
 { httpOnly: true, secure: true, sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000, path: '/auth/refresh' }
 ```
 
-### `common/guards/auth.guard.ts` — actualizar
+### `JwtAuthGuard` — implementar (reemplaza placeholder del Sprint 00)
 
 ```ts
-// Implementar JwtAuthGuard real usando JwtStrategy de Passport
-// Reemplaza el guard placeholder del Sprint 00
+// Extiende AuthGuard('jwt') de @nestjs/passport
+// Lee el token de la cookie access_token (no del header Authorization)
+// Si el token es válido, popula request.user con JwtPayload
+// Si es inválido o expirado, retorna 401
 ```
 
 ---
@@ -193,20 +346,16 @@ apps/api/src/modules/identity/presentation/
 
 ### 5.1 `packages/ui` — componentes nuevos
 
-> Toda la lógica visual de auth vive en `packages/ui`. El cliente solo importa y presenta.
-
 ```
 packages/ui/src/components/features/auth/
-├── login-form.tsx                          # Formulario con email, password y submit
-│                                           # Usa react-hook-form + zod schema
-│                                           # Muestra errores inline por campo
+├── login-form.tsx                          # Formulario: email + password
 │                                           # Props: onSubmit(data), isLoading, error
-├── register-form.tsx                       # Formulario con name, email, password, confirmPassword
-│                                           # Mismas props que LoginForm
+├── tenant-selector.tsx                     # Lista de tenants para elegir tras el login
+│                                           # Props: tenants: TenantOptionDto[], onSelect, isLoading
+│                                           # Muestra: nombre del tenant + badge del rol
 ├── password-input.tsx                      # Input de password con toggle show/hide
-│                                           # Reutilizable en login y register
+│                                           # Reutilizable en login y change-password
 └── auth-layout.tsx                         # Layout centrado con logo, card y footer
-                                            # Envuelve login y register pages
 ```
 
 ### 5.2 `packages/hooks` — hooks nuevos
@@ -217,56 +366,51 @@ packages/hooks/src/
 │   └── axios-client.ts                     # ya creado en Sprint 00 — no modificar
 ├── auth/
 │   ├── use-login.ts                        # useMutation → apiClient.post(AUTH_ROUTES.login)
+│   │                                       # onSuccess: guarda tenants en estado local para mostrar selector
+│   ├── use-select-tenant.ts               # useMutation → apiClient.post(AUTH_ROUTES.selectTenant)
 │   │                                       # onSuccess: llama AuthContext.setUser(user)
-│   ├── use-register.ts                     # useMutation → apiClient.post(AUTH_ROUTES.register)
 │   ├── use-logout.ts                       # useMutation → apiClient.post(AUTH_ROUTES.logout)
 │   │                                       # onSuccess: llama AuthContext.clearUser()
-│   ├── use-refresh-token.ts                # useMutation → apiClient.post(AUTH_ROUTES.refresh)
-│   │                                       # el interceptor de axios-client lo llama automáticamente en 401
-│   └── use-current-user.ts                 # useQuery → apiClient.get(AUTH_ROUTES.me)
+│   └── use-current-user.ts                # useQuery → apiClient.get(AUTH_ROUTES.me)
 │                                           # usado por AuthProvider al montar para restaurar sesión
-└── index.ts                                # re-exporta todos los hooks de auth
+└── index.ts
 ```
 
-### 5.3 `apps/client` — páginas
-
-```
-apps/client/src/app/
-├── (auth)/
-│   ├── layout.tsx                          # Importa AuthLayout de @vir-ttend/ui
-│   ├── login/
-│   │   └── page.tsx                        # Importa LoginForm de @vir-ttend/ui
-│   │                                       # Usa useLogin de @vir-ttend/hooks
-│   │                                       # En éxito: redirige a /dashboard
-│   └── register/
-│       └── page.tsx                        # Importa RegisterForm de @vir-ttend/ui
-│                                           # Usa useRegister de @vir-ttend/hooks
-```
-
-### 5.4 `apps/client/src/lib/auth/provider.tsx` — implementar
+### 5.3 `packages/common/routes` — actualizar
 
 ```ts
-// AuthContext real — solo estado React, sin fetching:
-// - estado: user: UserResponseDto | null, isAuthenticated: boolean, isLoading: boolean
-// - al montar: llama useCurrentUser() (del hook) para restaurar sesión desde la cookie
-// - setUser(user): llamado por useLogin y useRegister tras éxito
-// - clearUser(): llamado por useLogout tras éxito
-// No importa axios ni endpoints — eso vive en @vir-ttend/hooks
+// auth.routes.ts — agregar:
+export const AUTH_ROUTES = {
+  login:        '/auth/login',
+  selectTenant: '/auth/select-tenant',   // nuevo
+  logout:       '/auth/logout',
+  refresh:      '/auth/refresh',
+  me:           '/users/me',
+} as const;
 ```
 
-### 5.5 `packages/hooks/src/auth/` — patrón de uso de rutas
+### 5.4 `apps/client` — páginas
+
+```
+apps/client/src/app/(auth)/
+├── layout.tsx                              # Importa AuthLayout de @vir-ttend/ui
+├── login/
+│   └── page.tsx                            # Importa LoginForm de @vir-ttend/ui
+│                                           # Usa useLogin — en éxito: muestra TenantSelector o redirige
+└── login/
+    └── select-tenant/
+        └── page.tsx                        # Importa TenantSelector de @vir-ttend/ui
+                                            # Usa useSelectTenant — en éxito: redirige a /dashboard
+```
+
+### 5.5 `apps/client/src/lib/auth/provider.tsx`
 
 ```ts
-// Todos los hooks importan rutas desde @vir-ttend/common, no las hardcodean:
-import { AUTH_ROUTES } from '@vir-ttend/common';
-import { apiClient } from '../lib/axios-client';
-
-export function useLogin() {
-  return useMutation({
-    mutationFn: (data: LoginRequestDto) =>
-      apiClient.post(AUTH_ROUTES.login, data).then(r => r.data),
-  });
-}
+// AuthContext — solo estado React, sin fetching
+// estado: user: UserResponseDto | null, isAuthenticated, isLoading
+// setUser(user): llamado por useSelectTenant tras éxito
+// clearUser(): llamado por useLogout tras éxito
+// Al montar: llama useCurrentUser() para restaurar sesión desde la cookie
 ```
 
 ---
@@ -275,72 +419,74 @@ export function useLogin() {
 
 ```
 apps/api/test/unit/identity/
-├── register.handler.spec.ts                # mock IUserRepository, PasswordService — verifica que hashea y guarda
-├── login.handler.spec.ts                   # mock credenciales correctas e incorrectas
+├── create-user.handler.spec.ts             # los 3 casos: nuevo, existente+nuevo tenant, ya vinculado
+├── login.handler.spec.ts                   # credenciales correctas, incorrectas, usuario inactivo
+├── select-tenant.handler.spec.ts           # membership válido, inválido, inactivo
+├── logout.handler.spec.ts                  # token válido, token ya revocado
+├── refresh-token.handler.spec.ts           # token válido, expirado, revocado
 ├── password.service.spec.ts               # hash + compare
-└── token.service.spec.ts                  # generate + verify (expirado, inválido)
+└── token.service.spec.ts                  # generateAccessToken, verifyAccessToken, hashToken
 ```
 
 ---
 
 ## 7. Tareas por día
 
-### Día 1: Domain Layer
-- [ ] Crear `User` entity y `RefreshToken` entity
-- [ ] Crear Value Objects: `EmailVO`, `PasswordVO`, `TokenVO`
-- [ ] Implementar `PasswordService` con bcrypt
-- [ ] Implementar `TokenService` con jsonwebtoken
-- [ ] Definir interfaces `IUserRepository` y `IRefreshTokenRepository`
+### Día 1: Domain Layer — entidades y VOs
+- [ ] `User` entity sin role ni tenantId
+- [ ] `UserTenantMembership` entity
+- [ ] `RefreshToken` entity con `isValid()`
+- [ ] `EmailVO`, `Password`, `PasswordHashed`
+- [ ] Interfaces de repositorios
 
-### Día 2: Application Layer
-- [ ] Crear `RegisterCommand` + `RegisterHandler`
-- [ ] Crear `LoginCommand` + `LoginHandler`
-- [ ] Crear `LogoutCommand` + `LogoutHandler`
-- [ ] Crear `RefreshTokenCommand` + `RefreshTokenHandler`
-- [ ] Crear `GetCurrentUserQuery` + Handler
-- [ ] Crear todos los DTOs con validaciones
+### Día 2: Domain Layer — servicios
+- [ ] `PasswordService` con bcryptjs
+- [ ] `TokenService` con jsonwebtoken + hashToken con crypto
+- [ ] Eventos: `UserCreatedEvent`, `UserTenantLinkedEvent`, `UserLoggedInEvent`
 
-### Día 3: Infrastructure Layer
-- [ ] Crear ORM entities con decoradores MikroORM
-- [ ] Implementar `UserRepository` y `RefreshTokenRepository`
-- [ ] Crear `UserMapper`
+### Día 3: Application Layer
+- [ ] `CreateUserCommand` + handler (3 casos)
+- [ ] `LoginCommand` + handler (paso 1)
+- [ ] `SelectTenantCommand` + handler (paso 2)
+- [ ] `LogoutCommand` + handler
+- [ ] `RefreshTokenCommand` + handler
+- [ ] `GetCurrentUserQuery` + handler
+- [ ] Todos los DTOs
+
+### Día 4: Infrastructure Layer
+- [ ] ORM entities para User, UserTenantMembership, RefreshToken
+- [ ] Repositorios con MikroORM
+- [ ] Mappers (con `reconstitute()`)
+- [ ] `JwtStrategy` que lee de cookie
 - [ ] Generar y ejecutar migración
-- [ ] Implementar `JwtStrategy` y `LocalStrategy`
 
-### Día 4: Presentation Layer
-- [ ] Crear `AuthController` con los 4 endpoints
-- [ ] Crear `UsersController` con `GET /users/me`
-- [ ] Implementar `JwtAuthGuard` real (reemplaza placeholder)
-- [ ] Probar flujo completo con Postman/curl
+### Día 5: Presentation Layer
+- [ ] `AuthController` con los 5 endpoints
+- [ ] `UsersController` con `GET /users/me`
+- [ ] `JwtAuthGuard` real
+- [ ] Probar flujo completo con Postman: login → select-tenant → /users/me → logout
 
-### Día 5–6: Frontend
-- [ ] Crear `LoginForm`, `RegisterForm`, `PasswordInput`, `AuthLayout` en `packages/ui`
-- [ ] Crear hooks en `packages/hooks`
-- [ ] Implementar `AuthContext` real en `apps/client`
-- [ ] Crear páginas `/login` y `/register` en `apps/client`
-- [ ] Conectar formularios con API
-
-### Día 7: Integración y tests
-- [ ] Tests unitarios de handlers y servicios
-- [ ] Test end-to-end del flujo completo (register → login → /users/me → logout)
-- [ ] Verificar cookies HttpOnly en navegador
+### Día 6–7: Frontend
+- [ ] `LoginForm`, `TenantSelector`, `PasswordInput`, `AuthLayout` en `packages/ui`
+- [ ] Hooks en `packages/hooks`
+- [ ] Páginas en `apps/client`
+- [ ] Actualizar `AUTH_ROUTES` en `packages/common`
 
 ---
 
 ## 8. Criterios de aceptación
 
-- [ ] Usuario puede registrarse con nombre, email y password
-- [ ] Usuario puede iniciar sesión y recibe tokens en cookies HttpOnly
-- [ ] `GET /users/me` retorna datos correctos con token válido
-- [ ] `GET /users/me` retorna 401 sin token
-- [ ] Access token expira en 15 minutos; refresh token en 7 días
+- [ ] Login paso 1 retorna lista de tenants del usuario
+- [ ] `superadmin` hace login directo sin selector de tenant
+- [ ] Login paso 2 genera JWT con el rol correcto del membership elegido
+- [ ] Tokens se entregan en cookies HttpOnly
+- [ ] `GET /users/me` retorna datos con el rol del tenant activo
 - [ ] Logout revoca el refresh token en base de datos
-- [ ] El interceptor de `axios-client.ts` renueva el token automáticamente ante un 401
-- [ ] `apps/client` no importa axios ni tiene lógica de fetching — solo usa hooks de `@vir-ttend/hooks`
-- [ ] `AuthContext` en `apps/client` solo maneja estado React — no fetchea directamente
-- [ ] Frontend redirige a `/dashboard` tras login exitoso
-- [ ] Frontend redirige a `/login` si `/dashboard` se accede sin autenticar
+- [ ] Interceptor de axios renueva el access token automáticamente ante un 401
+- [ ] Un usuario puede pertenecer a múltiples tenants con distintos roles
+- [ ] `CreateUserHandler` crea membership sin duplicar el `User` si el email ya existe
+- [ ] `apps/client` no importa axios directamente
 
 ---
 
-**Siguiente sprint →** Sprint 02: Gestión de Usuarios y Tenants
+**Siguiente sprint →** Sprint 02: Gestión de Tenants y Usuarios

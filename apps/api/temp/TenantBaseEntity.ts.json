@@ -1,0 +1,32 @@
+{
+	"data": {
+		"_id": 8000,
+		"properties": {
+			"_tenant_id": {
+				"name": "_tenant_id",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			}
+		},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "TenantBaseEntity",
+		"path": "./src/modules/shared/database/entities/tenant-base.entity.ts",
+		"abstract": true,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"extends": "BaseEntity",
+		"useCache": true
+	},
+	"origin": "./src/modules/shared/database/entities/tenant-base.entity.ts",
+	"hash": "91c70a92046f4d27b20676beddd719b3",
+	"version": "6.6.7"
+}

@@ -1,0 +1,61 @@
+{
+	"data": {
+		"_id": 3000,
+		"properties": {
+			"userId": {
+				"name": "userId",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"tenantId": {
+				"name": "tenantId",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"role": {
+				"name": "role",
+				"kind": "scalar",
+				"type": "string",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Roles"
+			},
+			"isActive": {
+				"name": "isActive",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "boolean",
+				"array": false,
+				"runtimeType": "boolean"
+			}
+		},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "UserTenantMembershipOrmEntity",
+		"path": "./src/modules/identity/infrastructure/persistence/entities/user-tenant-membership.orm-entity.ts",
+		"collection": "user_tenant_memberships",
+		"name": "UserTenantMembershipOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"extends": "BaseEntity",
+		"useCache": true
+	},
+	"origin": "./src/modules/identity/infrastructure/persistence/entities/user-tenant-membership.orm-entity.ts",
+	"hash": "feb69e95db83d3b0cef81c8b576e744e",
+	"version": "6.6.7"
+}

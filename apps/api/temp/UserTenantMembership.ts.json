@@ -1,0 +1,21 @@
+{
+	"data": {
+		"_id": 2000,
+		"properties": {},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "UserTenantMembership",
+		"abstract": true,
+		"internal": true,
+		"constructorParams": [null],
+		"toJsonParams": [],
+		"useCache": true,
+		"path": "./src/modules/identity/domain/entities/user-tenant-membership.entity.ts"
+	},
+	"origin": "./src/modules/identity/domain/entities/user-tenant-membership.entity.ts",
+	"hash": "893bfaf5db0642afc95a2cd51fb0feb3",
+	"version": "6.6.7"
+}

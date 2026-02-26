@@ -3,14 +3,17 @@ import { Migrator } from '@mikro-orm/migrations';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { TsMorphMetadataProvider } from '@mikro-orm/reflection';
 import { SqlHighlighter } from '@mikro-orm/sql-highlighter';
+import { config } from 'dotenv';
 import { getEnvs } from '../config/app.config';
+
+config();
 
 export default defineConfig({
 	driver: PostgreSqlDriver,
 	clientUrl: getEnvs().DATABASE_URL,
 	dbName: 'public',
-	entities: ['dist/**/*.entity.js'],
-	entitiesTs: ['./src/**/*.entity.ts'],
+	entities: ['dist/**/*.orm-entity.js'],
+	entitiesTs: ['./src/**/*.orm-entity.ts'],
 	extensions: [Migrator],
 	migrations: {
 		tableName: 'mikro_orm_migrations',

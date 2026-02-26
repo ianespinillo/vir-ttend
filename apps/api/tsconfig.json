@@ -16,6 +16,14 @@
 		"noImplicitAny": false,
 		"strictBindCallApply": false,
 		"forceConsistentCasingInFileNames": false,
-		"noFallthroughCasesInSwitch": false
-	}
+		"noFallthroughCasesInSwitch": false,
+		"types": ["node", "jest"]
+	},
+	"include": [
+		"src/**/*",
+		"src/types/**/*.d.ts",
+		"src/**/*.spec.ts",
+		"src/**/*.test.ts",
+		"test/**/*"
+	]
 }
