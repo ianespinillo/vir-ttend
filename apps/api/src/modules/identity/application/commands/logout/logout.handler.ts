@@ -1,6 +1,9 @@
+import { Injectable } from '@nestjs/common';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import { TokenService } from '../../../domain/services/token.service';
 import { LogoutCommand } from './logout.command';
+
+@Injectable()
 export class LogoutHandler {
 	constructor(
 		private readonly refreshTokenRepository: IRefreshTokenRepository,

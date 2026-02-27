@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RefreshToken } from '../../../domain/entities/refresh-token.entity';
 import { User } from '../../../domain/entities/user.entity';
@@ -15,6 +16,7 @@ interface ExpectedReturn {
 	user: UserResponseDto;
 }
 
+@Injectable()
 export class SelectTenantHandler {
 	constructor(
 		private readonly userRepo: IUserRepository,

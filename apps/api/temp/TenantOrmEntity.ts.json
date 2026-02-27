@@ -1,0 +1,62 @@
+{
+	"data": {
+		"_id": 3000,
+		"properties": {
+			"name": {
+				"name": "name",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"subdomain": {
+				"name": "subdomain",
+				"kind": "scalar",
+				"unique": true,
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"contactEmail": {
+				"name": "contactEmail",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"isActive": {
+				"name": "isActive",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "boolean",
+				"array": false,
+				"runtimeType": "boolean"
+			}
+		},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "TenantOrmEntity",
+		"path": "./src/modules/identity/infrastructure/persistence/entities/tenant.orm-entity.ts",
+		"collection": "tenants",
+		"name": "TenantOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"extends": "BaseEntity",
+		"useCache": true
+	},
+	"origin": "./src/modules/identity/infrastructure/persistence/entities/tenant.orm-entity.ts",
+	"hash": "778564355dbd77f3d4965084846e5d31",
+	"version": "6.6.7"
+}
