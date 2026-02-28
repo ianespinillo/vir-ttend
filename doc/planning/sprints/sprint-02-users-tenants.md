@@ -15,14 +15,14 @@ El JWT lleva `tenantId` y `role` del membership elegido. El `TenantMiddleware` e
 
 ## Resumen de horas
 
-| Área | Horas |
-|---|---|
-| Domain Layer | 4 |
-| Application Layer | 8 |
-| Infrastructure Layer | 8 |
-| Presentation Layer | 5 |
-| Tests | 5 |
-| **Total** | **30** |
+| Área                 | Horas  |
+| -------------------- | ------ |
+| Domain Layer         | 4      |
+| Application Layer    | 8      |
+| Infrastructure Layer | 8      |
+| Presentation Layer   | 5      |
+| Tests                | 5      |
+| **Total**            | **30** |
 
 ---
 
@@ -44,8 +44,8 @@ apps/api/src/modules/identity/domain/
 
 ### Esquema de entidad
 
-| Entidad | Campos |
-|---|---|
+| Entidad  | Campos                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------- |
 | `Tenant` | `id`, `name`, `subdomain` (SubdomainVO), `contactEmail`, `isActive`, `createdAt`, `updatedAt` |
 
 ### `tenant.entity.ts` — comportamiento
@@ -119,6 +119,8 @@ apps/api/src/modules/identity/application/
 │   └── users-list.response.dto.ts         # items: UserWithMembershipResponseDto[], total, page
 └── identity.module.ts                      # actualizar: registrar nuevos commands, queries y AuthorizationService
 ```
+
+
 
 ### `ListUsersByTenantHandler` — detalle
 
@@ -208,6 +210,7 @@ pnpm mikro-orm migration:create --name=create_tenants
 ```
 
 Tabla:
+
 - `tenants` (id, name, subdomain, contact_email, is_active, created_at, updated_at)
 - Índice único: `(subdomain)`
 
@@ -226,17 +229,17 @@ apps/api/src/modules/identity/presentation/
 
 ### Endpoints
 
-| Método | Ruta | Roles | Descripción |
-|---|---|---|---|
-| `GET` | `/tenants` | `superadmin` | Listar todos los tenants |
-| `POST` | `/tenants` | `superadmin` | Crear tenant |
-| `GET` | `/tenants/:id` | `superadmin` | Obtener tenant |
-| `PUT` | `/tenants/:id` | `superadmin` | Actualizar tenant |
-| `PATCH` | `/tenants/:id/status` | `superadmin` | Activar/desactivar tenant |
-| `GET` | `/users?role=&page=&limit=` | `admin`, `superadmin` | Listar usuarios del tenant del JWT |
-| `POST` | `/users` | `admin`, `superadmin` | Crear usuario o vincular existente |
-| `PUT` | `/users/:id/role` | `admin`, `superadmin` | Cambiar rol del membership |
-| `DELETE` | `/users/:id/membership` | `admin`, `superadmin` | Desactivar membership |
+| Método   | Ruta                        | Roles                 | Descripción                        |
+| -------- | --------------------------- | --------------------- | ---------------------------------- |
+| `GET`    | `/tenants`                  | `superadmin`          | Listar todos los tenants           |
+| `POST`   | `/tenants`                  | `superadmin`          | Crear tenant                       |
+| `GET`    | `/tenants/:id`              | `superadmin`          | Obtener tenant                     |
+| `PUT`    | `/tenants/:id`              | `superadmin`          | Actualizar tenant                  |
+| `PATCH`  | `/tenants/:id/status`       | `superadmin`          | Activar/desactivar tenant          |
+| `GET`    | `/users?role=&page=&limit=` | `admin`, `superadmin` | Listar usuarios del tenant del JWT |
+| `POST`   | `/users`                    | `admin`, `superadmin` | Crear usuario o vincular existente |
+| `PUT`    | `/users/:id/role`           | `admin`, `superadmin` | Cambiar rol del membership         |
+| `DELETE` | `/users/:id/membership`     | `admin`, `superadmin` | Desactivar membership              |
 
 ### `AppModule` — descomentar en este sprint
 
@@ -275,12 +278,14 @@ apps/api/test/unit/identity/
 ## 6. Tareas por día
 
 ### Día 1: Domain Layer
+
 - [ ] `Tenant` entity con factory methods
 - [ ] `SubdomainVO`
 - [ ] `AuthorizationService`
 - [ ] `ITenantRepository` interface
 
 ### Día 2: Application Layer — commands
+
 - [ ] `CreateTenantCommand` + handler
 - [ ] `UpdateTenantCommand` + handler
 - [ ] `ToggleTenantStatusCommand` + handler
@@ -288,6 +293,7 @@ apps/api/test/unit/identity/
 - [ ] `DeactivateMembershipCommand` + handler
 
 ### Día 3: Application Layer — queries + DTOs
+
 - [ ] `GetTenantQuery` + handler
 - [ ] `ListTenantsQuery` + handler
 - [ ] `ListUsersByTenantQuery` + handler
@@ -295,6 +301,7 @@ apps/api/test/unit/identity/
 - [ ] Todos los DTOs
 
 ### Día 4: Infrastructure Layer
+
 - [ ] `TenantOrmEntity`, `TenantRepository`, `TenantMapper`
 - [ ] `RolesGuard` + `@Roles()` decorator
 - [ ] `TenantGuard`
@@ -302,12 +309,14 @@ apps/api/test/unit/identity/
 - [ ] Generar y ejecutar migración
 
 ### Día 5: Presentation Layer + integración
+
 - [ ] `TenantsController`
 - [ ] Actualizar `UsersController`
 - [ ] Descomentar `TenantModule` y `TenantMiddleware` en `AppModule`
 - [ ] Probar aislamiento: tenant A no ve datos de tenant B
 
 ### Día 6–7: Tests
+
 - [ ] Tests de handlers y servicios
 - [ ] Test de aislamiento con dos tenants distintos
 - [ ] Test de roles: preceptor no accede a endpoints de admin
