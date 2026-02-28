@@ -67,6 +67,6 @@
 		"useCache": true
 	},
 	"origin": "./src/modules/identity/infrastructure/persistence/entities/refresh-token.orm-entity.ts",
-	"hash": "7a16ba169a2c564f309c98450ca6036d",
+	"hash": "5910a9f94090bdc5d6a74ffb975fd7a1",
 	"version": "6.6.7"
 }

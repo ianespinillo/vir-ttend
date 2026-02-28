@@ -1,9 +1,9 @@
 {
 	"data": {
-		"_id": 6000,
+		"_id": 0,
 		"properties": {
-			"_id": {
-				"name": "_id",
+			"id": {
+				"name": "id",
 				"kind": "scalar",
 				"primary": true,
 				"type": "uuid",
@@ -11,8 +11,8 @@
 				"array": false,
 				"runtimeType": "string"
 			},
-			"_createdAt": {
-				"name": "_createdAt",
+			"createdAt": {
+				"name": "createdAt",
 				"kind": "scalar",
 				"type": "timestamp",
 				"defaultRaw": "now()",
@@ -21,8 +21,8 @@
 				"array": false,
 				"runtimeType": "Date"
 			},
-			"_updatedAt": {
-				"name": "_updatedAt",
+			"updatedAt": {
+				"name": "updatedAt",
 				"kind": "scalar",
 				"type": "timestamp",
 				"defaultRaw": "now()",
@@ -32,7 +32,7 @@
 				"runtimeType": "Date"
 			}
 		},
-		"primaryKeys": ["_id"],
+		"primaryKeys": ["id"],
 		"filters": {},
 		"hooks": {},
 		"indexes": [],
@@ -48,6 +48,6 @@
 		"simplePK": true
 	},
 	"origin": "./src/modules/shared/database/entities/base.entity.ts",
-	"hash": "313e0bcd72aa84e77f0ded80aa02bbdf",
+	"hash": "4723ed87e01f31f1b4406b60071e1235",
 	"version": "6.6.7"
 }

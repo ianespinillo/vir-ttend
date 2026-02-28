@@ -1,10 +1,12 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CacheModule } from './modules/shared/cache/cache.module';
 import { getEnvs } from './modules/shared/config/app.config';
+import { TenantMiddleware } from './modules/shared/tenants/tenant.middleware';
+import { TenantModule } from './modules/shared/tenants/tenant.module';
 
 // app.module.ts
 @Module({
@@ -26,14 +28,12 @@ import { getEnvs } from './modules/shared/config/app.config';
 		}),
 		EventEmitterModule.forRoot(),
 		CacheModule,
-		//   TenantModule, TODO: Implement in sprint 2
+		TenantModule,
 		IdentityModule,
 	],
 })
 export class AppModule {
-	// configure(consumer: MiddlewareConsumer) {
-	//   consumer
-	// 	.apply(TenantMiddleware)
-	// 	.forRoutes('*');
-	// }
+	configure(consumer: MiddlewareConsumer) {
+		consumer.apply(TenantMiddleware).forRoutes('*');
+	}
 }

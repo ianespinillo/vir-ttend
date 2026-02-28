@@ -7,7 +7,7 @@ const config: Config.InitialOptions = {
 	moduleFileExtensions: ['js', 'json', 'ts'],
 	rootDir: '.',
 	testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/test/**/*.spec.ts'],
-	// setupFiles: ['<rootDir>/../jest.setup.ts'],
+	setupFiles: ['<rootDir>/jest.setup.ts'],
 	transform: {
 		'^.+\\.(t|j)s$': 'ts-jest',
 	},

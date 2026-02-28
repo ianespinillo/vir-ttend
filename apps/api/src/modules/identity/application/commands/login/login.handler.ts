@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { Roles } from '@repo/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -10,7 +11,7 @@ export interface LoginResult {
 	sub: string;
 	tenants: { tenantId: string; role: Roles }[];
 }
-
+@Injectable()
 export class LoginHandler {
 	constructor(
 		private readonly userRepository: IUserRepository,
