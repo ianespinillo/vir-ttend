@@ -19,6 +19,7 @@
 	},
 	"scripts": {
 		"test": "turbo run test",
+		"build": "turbo run build",
 		"dev": "turbo run dev",
 		"lint:check": "biome check .",
 		"lint:fix": "biome check . --write",
