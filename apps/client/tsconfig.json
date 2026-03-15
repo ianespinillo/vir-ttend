@@ -18,7 +18,12 @@
 			}
 		],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@/hooks/*": ["../../packages/hooks/src/*"],
+			"@/lib/*": ["../../packages/ui/src/lib/*"],
+			"@/ui/*": ["../../packages/ui/src/ui/*"],
+			"@repo/hooks": ["../../packages/hooks/src"],
+			"@repo/ui": ["../../packages/ui/src"]
 		},
 		"target": "ES2017"
 	},
