@@ -7,14 +7,14 @@
 
 ## Resumen de horas
 
-| Área | Horas |
-|---|---|
-| Domain Layer | 7 |
-| Application Layer | 8 |
-| Infrastructure Layer | 5 |
-| Presentation Layer | 5 |
-| Frontend (UI + hooks + páginas) | 10 |
-| **Total** | **35** |
+| Área                            | Horas  |
+| ------------------------------- | ------ |
+| Domain Layer                    | 7      |
+| Application Layer               | 8      |
+| Infrastructure Layer            | 5      |
+| Presentation Layer              | 5      |
+| Frontend (UI + hooks + páginas) | 10     |
+| **Total**                       | **35** |
 
 ---
 
@@ -39,9 +39,6 @@ apps/api/src/modules/academic/domain/
 │   ├── academic-year-id.value-object.ts    # UUID tipado
 │   ├── course-id.value-object.ts           # UUID tipado
 │   ├── subject-id.value-object.ts          # UUID tipado
-│   ├── level.value-object.ts               # 'primary' | 'secondary' — con validación
-│   ├── shift.value-object.ts               # 'morning' | 'afternoon' | 'evening'
-│   └── day-of-week.value-object.ts         # 'monday'...'friday' — con validación
 ├── services/
 │   ├── course.service.ts                   # calcularNombreCompleto(course): "3° B Mañana"
 │   │                                       # validarSolapamientoHorario(slots[])
@@ -60,12 +57,12 @@ apps/api/src/modules/academic/domain/
 
 ### Esquema de entidades
 
-| Entidad | Campos |
-|---|---|
-| `AcademicYear` | `id`, `schoolId`, `year` (int), `startDate`, `endDate`, `nonWorkingDays` (Date[]), `absenceThresholdPercent` (default 75), `lateCountsAsAbsenceAfterMinutes` (default 15), `status` (active/closed) |
-| `Course` | `id`, `schoolId`, `tenantId`, `academicYearId`, `preceptorId`, `level`, `yearNumber` (1-7), `division` (A/B/C...), `shift` |
-| `Subject` | `id`, `courseId`, `teacherId`, `name`, `area`, `weeklyHours` |
-| `ScheduleSlot` | `id`, `subjectId`, `dayOfWeek`, `startTime` (HH:mm), `endTime` (HH:mm) |
+| Entidad        | Campos                                                                                                                                                                                              |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AcademicYear` | `id`, `tenantId`, `year` (int), `startDate`, `endDate`, `nonWorkingDays` (Date[]), `absenceThresholdPercent` (default 75), `lateCountsAsAbsenceAfterMinutes` (default 15), `status` (active/closed) |
+| `Course`       | `id`, `tenantId`, `academicYearId`, `preceptorId`, `level`, `yearNumber` (1-7), `division` (A/B/C...), `shift`                                                                                      |
+| `Subject`      | `id`, `courseId`, `teacherId`, `name`, `area`, `weeklyHours`                                                                                                                                        |
+| `ScheduleSlot` | `id`, `subjectId`, `dayOfWeek`, `startTime` (HH:mm), `endTime` (HH:mm)                                                                                                                              |
 
 ### `schedule.service.ts` — comportamiento clave
 
@@ -185,6 +182,7 @@ pnpm mikro-orm migration:create --name=create_academic_structure
 ```
 
 Tablas:
+
 - `academic_years` (id, school_id, year, start_date, end_date, non_working_days, absence_threshold_percent, late_counts_as_absence_after_minutes, status)
 - `courses` (id, school_id, tenant_id, academic_year_id, preceptor_id, level, year_number, division, shift)
 - `subjects` (id, course_id, teacher_id, name, area, weekly_hours)
@@ -206,25 +204,25 @@ apps/api/src/modules/academic/presentation/
 
 ### Endpoints
 
-| Método | Ruta | Roles | Descripción |
-|---|---|---|---|
-| `GET` | `/academic-years?schoolId=` | `admin`, `preceptor` | Listar años académicos |
-| `POST` | `/academic-years` | `admin` | Crear año académico |
-| `GET` | `/academic-years/:id` | `admin`, `preceptor` | Obtener año académico |
-| `PUT` | `/academic-years/:id` | `admin` | Actualizar año académico |
-| `GET` | `/courses?academicYearId=&level=` | `admin`, `preceptor` | Listar cursos |
-| `POST` | `/courses` | `admin` | Crear curso |
-| `GET` | `/courses/:id` | `admin`, `preceptor`, `teacher` | Obtener curso con subjects y schedule |
-| `PUT` | `/courses/:id` | `admin` | Actualizar curso |
-| `DELETE` | `/courses/:id` | `admin` | Eliminar curso (sin asistencias) |
-| `PUT` | `/courses/:id/preceptor` | `admin` | Asignar preceptor |
-| `GET` | `/subjects?courseId=` | `admin`, `preceptor`, `teacher` | Listar materias del curso |
-| `POST` | `/subjects` | `admin` | Crear materia |
-| `PUT` | `/subjects/:id` | `admin` | Actualizar materia |
-| `DELETE` | `/subjects/:id` | `admin` | Eliminar materia |
-| `PUT` | `/subjects/:id/teacher` | `admin` | Asignar docente |
-| `GET` | `/schedule?courseId=` | todos | Horario del curso |
-| `POST` | `/schedule` | `admin` | Configurar horario de una materia |
+| Método   | Ruta                              | Roles                           | Descripción                           |
+| -------- | --------------------------------- | ------------------------------- | ------------------------------------- |
+| `GET`    | `/academic-years?schoolId=`       | `admin`, `preceptor`            | Listar años académicos                |
+| `POST`   | `/academic-years`                 | `admin`                         | Crear año académico                   |
+| `GET`    | `/academic-years/:id`             | `admin`, `preceptor`            | Obtener año académico                 |
+| `PUT`    | `/academic-years/:id`             | `admin`                         | Actualizar año académico              |
+| `GET`    | `/courses?academicYearId=&level=` | `admin`, `preceptor`            | Listar cursos                         |
+| `POST`   | `/courses`                        | `admin`                         | Crear curso                           |
+| `GET`    | `/courses/:id`                    | `admin`, `preceptor`, `teacher` | Obtener curso con subjects y schedule |
+| `PUT`    | `/courses/:id`                    | `admin`                         | Actualizar curso                      |
+| `DELETE` | `/courses/:id`                    | `admin`                         | Eliminar curso (sin asistencias)      |
+| `PUT`    | `/courses/:id/preceptor`          | `admin`                         | Asignar preceptor                     |
+| `GET`    | `/subjects?courseId=`             | `admin`, `preceptor`, `teacher` | Listar materias del curso             |
+| `POST`   | `/subjects`                       | `admin`                         | Crear materia                         |
+| `PUT`    | `/subjects/:id`                   | `admin`                         | Actualizar materia                    |
+| `DELETE` | `/subjects/:id`                   | `admin`                         | Eliminar materia                      |
+| `PUT`    | `/subjects/:id/teacher`           | `admin`                         | Asignar docente                       |
+| `GET`    | `/schedule?courseId=`             | todos                           | Horario del curso                     |
+| `POST`   | `/schedule`                       | `admin`                         | Configurar horario de una materia     |
 
 ---
 
@@ -319,30 +317,36 @@ apps/api/test/unit/academic/
 ## 7. Tareas por día
 
 ### Día 1: Domain Layer
+
 - [ ] Crear entidades de dominio (AcademicYear, Course, Subject, ScheduleSlot)
 - [ ] Crear Value Objects (Level, Shift, DayOfWeek)
 - [ ] Implementar `CourseService` y `ScheduleService`
 - [ ] Definir interfaces de repositorios
 
 ### Día 2: Application Layer — commands
+
 - [ ] Commands y handlers de AcademicYear
 - [ ] Commands y handlers de Course
 - [ ] Commands y handlers de Subject y Schedule
 
 ### Día 3: Application Layer — queries + DTOs
+
 - [ ] Queries y handlers de Course/Subject/Schedule
 - [ ] Todos los DTOs con validaciones
 
 ### Día 4: Infrastructure Layer
+
 - [ ] ORM entities y mappers
 - [ ] Repositorios
 - [ ] Generar y ejecutar migración
 
 ### Día 5: Presentation Layer
+
 - [ ] Controllers con guards y roles
 - [ ] Probar todos los endpoints con Postman
 
 ### Día 6–7: Frontend
+
 - [ ] Componentes en `packages/ui`
 - [ ] Hooks en `packages/hooks`
 - [ ] Páginas en `apps/client`
@@ -361,3 +365,5 @@ apps/api/test/unit/academic/
 ---
 
 **Siguiente sprint →** Sprint 04: Gestión de Estudiantes
+
+- 

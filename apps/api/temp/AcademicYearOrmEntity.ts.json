@@ -1,0 +1,97 @@
+{
+	"data": {
+		"_id": 1000,
+		"properties": {
+			"schoolId": {
+				"name": "schoolId",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"year": {
+				"name": "year",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "number",
+				"array": false,
+				"runtimeType": "number"
+			},
+			"startDate": {
+				"name": "startDate",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "Date",
+				"array": false,
+				"runtimeType": "Date"
+			},
+			"endDate": {
+				"name": "endDate",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "Date",
+				"array": false,
+				"runtimeType": "Date"
+			},
+			"isActive": {
+				"name": "isActive",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "boolean",
+				"array": false,
+				"runtimeType": "boolean"
+			},
+			"nonWorkingDays": {
+				"name": "nonWorkingDays",
+				"kind": "scalar",
+				"type": "json",
+				"getter": false,
+				"setter": false,
+				"array": true,
+				"runtimeType": "Date[]"
+			},
+			"absenceThresholdPercent": {
+				"name": "absenceThresholdPercent",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "number",
+				"array": false,
+				"runtimeType": "number"
+			},
+			"lateCountAbscenseAfterMinutes": {
+				"name": "lateCountAbscenseAfterMinutes",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "number",
+				"array": false,
+				"runtimeType": "number"
+			}
+		},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "AcademicYearOrmEntity",
+		"path": "./src/modules/academic/infrastructure/persistence/entities/academic-year.orm-entity.ts",
+		"collection": "academic_years",
+		"name": "AcademicYearOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"extends": "BaseEntity",
+		"useCache": true
+	},
+	"origin": "./src/modules/academic/infrastructure/persistence/entities/academic-year.orm-entity.ts",
+	"hash": "376441215c652edd8ceffbb21373f2b7",
+	"version": "6.6.7"
+}
