@@ -4,6 +4,10 @@ import { ScheduleSlot } from '../entities/schedule-slot.entity';
 export interface IScheduleRepository {
 	findBySubject(subjectId: string): Promise<ScheduleSlot[]>;
 	findByCourse(courseId: string): Promise<ScheduleSlot[]>;
+	findByCourseAndSubject(
+		courseId: string,
+		subjectId: string,
+	): Promise<ScheduleSlot[]>;
 	findByCourseAndDay(
 		subjectId: string,
 		day: DAYOFWEEK,

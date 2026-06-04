@@ -9,6 +9,13 @@ export class ScheduleSlotRepository
 	extends EntityRepository<ScheduleSlotOrmEntity>
 	implements IScheduleRepository
 {
+	async findByCourseAndSubject(
+		courseId: string,
+		subjectId: string,
+	): Promise<ScheduleSlot[]> {
+		const orms = await this.find({ courseId, subjectId });
+		return orms.map((orm) => ScheduleSlotMapper.toDomain(orm));
+	}
 	async findBySubject(subjectId: string): Promise<ScheduleSlot[]> {
 		const orms = await this.find({ subjectId });
 		return orms.map((orm) => ScheduleSlotMapper.toDomain(orm));

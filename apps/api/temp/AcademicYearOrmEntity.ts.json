@@ -92,6 +92,6 @@
 		"useCache": true
 	},
 	"origin": "./src/modules/academic/infrastructure/persistence/entities/academic-year.orm-entity.ts",
-	"hash": "376441215c652edd8ceffbb21373f2b7",
+	"hash": "8ced335b686a7114eb47d59f54f55812",
 	"version": "6.6.7"
 }
