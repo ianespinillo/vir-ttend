@@ -76,6 +76,6 @@
 		"useCache": true
 	},
 	"origin": "./src/modules/academic/infrastructure/persistence/entities/schedule-slot.orm-entity.ts",
-	"hash": "98b5791e0b66c744e04dffd7d92f183d",
+	"hash": "633d59594ecce90ebd7677511eca5ed7",
 	"version": "6.6.7"
 }

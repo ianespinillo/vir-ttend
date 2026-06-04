@@ -4,12 +4,17 @@ import { AssignPreceptorHandler } from './application/commands/assign-preceptor/
 import { AssignTeacherHandler } from './application/commands/assign-teaher/assign-teacher.handler';
 import { CreateAcademicYearHandler } from './application/commands/create-academic-year/create-academic-year.handler';
 import { CreateCourseHandler } from './application/commands/create-course/create-course.handler';
+import { CreateStudentHandler } from './application/commands/create-student/create-student.handler';
 import { CreateSubjectHandler } from './application/commands/create-subject/create-subject.handler';
 import { DeleteCourseHandler } from './application/commands/delete-course/delete-course.handler';
+import { DeleteStudentHandler } from './application/commands/delete-student/delete-student.handler';
 import { DeleteSubjectHandler } from './application/commands/delete-subject/delete-subject.handler';
+import { EnrollStudentHandler } from './application/commands/enroll-student/enroll-student.handler';
 import { SetScheduleHandler } from './application/commands/set-schedule/set-schedule.handler';
+import { TransferStudentHandler } from './application/commands/transer-student/transer-student.handler';
 import { UpdateAcademicYearHandler } from './application/commands/update-academic-year/update-academic-year.handler';
 import { UpdateCourseHandler } from './application/commands/update-course/update-course.handler';
+import { UpdateStudentHandler } from './application/commands/update-student/update-student.handler';
 import { UpdateSubjectHandler } from './application/commands/update-subject/update-subject.handler';
 import { GetAcademicYearsHandler } from './application/queries/get-academic-years/get-academic-years.handler';
 import { GetActiveAcademicYearHandler } from './application/queries/get-active-academic-year/get-active-academic-year.handler';
@@ -17,7 +22,11 @@ import { GetCourseHandler } from './application/queries/get-course/get-course.ha
 import { GetCoursesByPreceptorHandler } from './application/queries/get-courses-by-preceptor/get-courses-by-preceptor.handler';
 import { GetCoursesHandler } from './application/queries/get-courses/get-courses.handler';
 import { GetScheduleHandler } from './application/queries/get-schedule/get-schedule.handler';
+import { GetStudentHandler } from './application/queries/get-student/get-student.handler';
+import { GetStudentsByCourseHandler } from './application/queries/get-students-by-course/get-students-by-course.handler';
+import { GetStudentsByGradeHandler } from './application/queries/get-students-by-grade/get-students-by-grade.handler';
 import { GetSubjectsByCourseHandler } from './application/queries/get-subjects-by-course/get-subjects-by-course.handler';
+import { SearchStudentsHandler } from './application/queries/search-students/search-students.handler';
 import { MembershipAdapter } from './infrastructure/adapters/membership.adapter';
 import { AcademicPersistenceModule } from './infrastructure/persistence/academic.persistence.module';
 import { AcademicPresentationModule } from './presentation/academic.presentation.module';
@@ -41,6 +50,11 @@ import { AcademicPresentationModule } from './presentation/academic.presentation
 		UpdateAcademicYearHandler,
 		UpdateCourseHandler,
 		UpdateSubjectHandler,
+		CreateStudentHandler,
+		UpdateStudentHandler,
+		DeleteStudentHandler,
+		EnrollStudentHandler,
+		TransferStudentHandler,
 
 		// Handler de queries
 		GetAcademicYearsHandler,
@@ -50,6 +64,10 @@ import { AcademicPresentationModule } from './presentation/academic.presentation
 		GetCoursesByPreceptorHandler,
 		GetSubjectsByCourseHandler,
 		GetScheduleHandler,
+		GetStudentHandler,
+		GetStudentsByCourseHandler,
+		GetStudentsByGradeHandler,
+		SearchStudentsHandler,
 
 		// Adapters
 		MembershipAdapter,

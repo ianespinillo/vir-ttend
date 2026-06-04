@@ -85,6 +85,6 @@
 		"useCache": true
 	},
 	"origin": "./src/modules/academic/infrastructure/persistence/entities/subject.orm-entity.ts",
-	"hash": "e08d1b2f63849446d9db1d0863450501",
+	"hash": "0906add31fe09455f933a14377c8dca4",
 	"version": "6.6.7"
 }
