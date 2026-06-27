@@ -28,10 +28,22 @@ import { GetStudentsByGradeHandler } from './application/queries/get-students-by
 import { GetSubjectsByCourseHandler } from './application/queries/get-subjects-by-course/get-subjects-by-course.handler';
 import { SearchStudentsHandler } from './application/queries/search-students/search-students.handler';
 import { MembershipAdapter } from './infrastructure/adapters/membership.adapter';
+import { StudentAdapter } from './infrastructure/adapters/student.adapter';
 import { AcademicPersistenceModule } from './infrastructure/persistence/academic.persistence.module';
+import { AcademicYearRepository } from './infrastructure/persistence/repositories/academic-year.repository';
+import { ScheduleSlotRepository } from './infrastructure/persistence/repositories/schedule-slot.repository';
+import { StudentRepository } from './infrastructure/persistence/repositories/student.repository';
 import { AcademicPresentationModule } from './presentation/academic.presentation.module';
 
 @Module({
+	exports: [
+		StudentRepository,
+		{ provide: 'IStudentRepository', useClass: StudentRepository },
+		AcademicYearRepository,
+		{ provide: 'IAcademicYearRepository', useClass: AcademicYearRepository },
+		ScheduleSlotRepository,
+		{ provide: 'IScheduleRepository', useClass: ScheduleSlotRepository },
+	],
 	imports: [
 		IdentityModule,
 		AcademicPersistenceModule,
@@ -71,6 +83,7 @@ import { AcademicPresentationModule } from './presentation/academic.presentation
 
 		// Adapters
 		MembershipAdapter,
+		StudentAdapter,
 	],
 })
 export class AcademicModule {}

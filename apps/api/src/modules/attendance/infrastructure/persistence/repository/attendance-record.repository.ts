@@ -1,0 +1,97 @@
+import { EntityRepository } from '@mikro-orm/postgresql';
+import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
+import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
+import { AttendanceRecordOrmEntity } from '../entities/attendance-record.orm-entity';
+import { AttendanceRecordMapper } from '../mappers/attendance-record.mapper';
+
+export class AttendanceRecordRepository
+	extends EntityRepository<AttendanceRecordOrmEntity>
+	implements IAttendanceRecordRepository
+{
+	async bulkSave(records: AttendanceRecord[]): Promise<void> {
+		for (const record of records) {
+			this.em.persist(AttendanceRecordMapper.toOrm(record));
+		}
+		await this.em.flush();
+	}
+
+	async findByCourseAndDate(
+		courseId: string,
+		date: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			courseId,
+			date,
+		});
+		if (!orms) return [];
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async findByCourseAndRange(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			courseId,
+			date: {
+				$gt: from,
+				$lt: to,
+			},
+		});
+		if (!orms) return [];
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async findByDateRange(from: Date, to: Date): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			date: {
+				$gt: from,
+				$lt: to,
+			},
+		});
+		if (!orms) return [];
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async findById(id: string): Promise<AttendanceRecord | null> {
+		const orm = await this.findOne(id);
+		if (!orm) return null;
+		return AttendanceRecordMapper.toDomain(orm);
+	}
+
+	async findByStudentAndCourseAndDate(
+		courseId: string,
+		studentId: string,
+		date: Date,
+	): Promise<AttendanceRecord | null> {
+		const orm = await this.findOne({
+			courseId,
+			studentId,
+			date,
+		});
+		if (!orm) return null;
+		return AttendanceRecordMapper.toDomain(orm);
+	}
+
+	async findByStudentAndDateRange(
+		id: string,
+		from: Date,
+		to: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			studentId: id,
+			date: {
+				$gt: from,
+				$lt: to,
+			},
+		});
+		if (!orms) return [];
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async save(record: AttendanceRecord): Promise<void> {
+		this.em.persist(AttendanceRecordMapper.toOrm(record));
+		await this.em.flush();
+	}
+}

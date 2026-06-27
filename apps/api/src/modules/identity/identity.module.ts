@@ -24,6 +24,7 @@ import { TokenService } from './domain/services/token.service';
 import { JwtStrategy } from './infrastructure/auth/strategies/jwt.startegy';
 import { IdentityEventsModule } from './infrastructure/events/identity.events.module';
 import { IdentityPersistenceModule } from './infrastructure/persistence/identity.persistene.module';
+import { UserTenantMembershipRepository } from './infrastructure/persistence/repositories/user-tenant-membership.repository';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { UsersController } from './presentation/controllers/users.controller';
 
@@ -40,6 +41,12 @@ import { UsersController } from './presentation/controllers/users.controller';
 			}),
 			inject: [ConfigService],
 		}),
+	],
+	exports: [
+		{
+			provide: 'IUserTenantMembershipRepository',
+			useClass: UserTenantMembershipRepository,
+		},
 	],
 	providers: [
 		// Servicios de dominio
