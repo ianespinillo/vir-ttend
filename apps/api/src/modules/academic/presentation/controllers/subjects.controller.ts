@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -26,6 +27,8 @@ import { CreateSubjectRequestDto } from '../../application/dtos/create-subject.r
 import { UpdateSubjectRequestDto } from '../../application/dtos/update-subject.request.dto';
 import { GetSubjectsByCourseHandler } from '../../application/queries/get-subjects-by-course/get-subjects-by-course.handler';
 import { GetSubjectsByCourseQuery } from '../../application/queries/get-subjects-by-course/get-subjects-by-course.query';
+import { GetTeacherSubjectsQueryHandler } from '../../application/queries/get-teacher-subjects/get-teacher-subjects.handler';
+import { GetTeacherSubjectsQuery } from '../../application/queries/get-teacher-subjects/get-teacher-subjects.query';
 // subjects.controller.ts
 @Controller('subjects')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -36,6 +39,7 @@ export class SubjectsController {
 		private readonly deleteSubjectHandler: DeleteSubjectHandler,
 		private readonly assignTeacherHandler: AssignTeacherHandler,
 		private readonly getSubjectsByCourseHandler: GetSubjectsByCourseHandler,
+		private readonly getTeacherSubjectsQueryHandler: GetTeacherSubjectsQueryHandler,
 	) {}
 
 	@Post()
@@ -71,6 +75,16 @@ export class SubjectsController {
 				dto.area,
 				dto.weeklyHours,
 			),
+		);
+	}
+	@Get()
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER)
+	async getSubjects(
+		@Query('teacherId') teacherId: string,
+		@Query('academicYearId') academicYearId: string,
+	) {
+		return this.getTeacherSubjectsQueryHandler.execute(
+			new GetTeacherSubjectsQuery(teacherId, academicYearId),
 		);
 	}
 

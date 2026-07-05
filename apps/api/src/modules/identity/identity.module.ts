@@ -42,13 +42,13 @@ import { UsersController } from './presentation/controllers/users.controller';
 			inject: [ConfigService],
 		}),
 	],
-	exports: [
+	exports: ['UserTenantMembershipRepository'],
+	providers: [
+		UserTenantMembershipRepository,
 		{
 			provide: 'IUserTenantMembershipRepository',
 			useClass: UserTenantMembershipRepository,
 		},
-	],
-	providers: [
 		// Servicios de dominio
 		PasswordService,
 		TokenService,

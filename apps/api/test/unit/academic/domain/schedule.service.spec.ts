@@ -39,14 +39,14 @@ describe('ScheduleService', () => {
 		];
 
 		it('should return slots for the given day', () => {
-			const monday = new Date('2025-03-10'); // lunes
+			const monday = new Date('2025-03-10T12:00:00'); // lunes
 			const result = service.getSlotsForDate(monday, slots);
 			expect(result).toHaveLength(2);
 			expect(result.every((s) => s.dayOfWeek === DAYOFWEEK.MONDAY)).toBe(true);
 		});
 
 		it('should return empty when no slots match the day', () => {
-			const wednesday = new Date('2025-03-12'); // miércoles
+			const wednesday = new Date('2025-03-12T12:00:00'); // miércoles
 			const result = service.getSlotsForDate(wednesday, slots);
 			expect(result).toHaveLength(0);
 		});
@@ -63,9 +63,9 @@ describe('ScheduleService', () => {
 			id: 'ay-1',
 			tenantId: 'tenant-1',
 			year: 2025,
-			startDate: new Date('2025-03-01'),
-			endDate: new Date('2025-03-31'),
-			nonWorkingDays: [new Date('2025-03-24')], // feriado
+			startDate: new Date('2025-03-01T12:00:00'),
+			endDate: new Date('2025-03-31T12:00:00'),
+			nonWorkingDays: [new Date('2025-03-24T12:00:00')], // feriado
 			absenceThresholdPercent: 75,
 			lateCountAbscenseAfterMinutes: 15,
 			isActive: true,
@@ -94,8 +94,8 @@ describe('ScheduleService', () => {
 
 		it('should return correct working days in full month', () => {
 			const result = service.getWorkingDaysOnPeriod(
-				new Date('2025-03-01'),
-				new Date('2025-03-31'),
+				new Date('2025-03-01T12:00:00'),
+				new Date('2025-03-31T12:00:00'),
 				academicYear,
 			);
 			// marzo 2025 tiene 21 días hábiles menos 1 feriado = 20
@@ -104,8 +104,8 @@ describe('ScheduleService', () => {
 
 		it('should return empty when from equals to and is weekend', () => {
 			const result = service.getWorkingDaysOnPeriod(
-				new Date('2025-03-01'), // sábado
-				new Date('2025-03-01'),
+				new Date('2025-03-01T12:00:00'), // sábado
+				new Date('2025-03-01T12:00:00'),
 				academicYear,
 			);
 			expect(result).toHaveLength(0);

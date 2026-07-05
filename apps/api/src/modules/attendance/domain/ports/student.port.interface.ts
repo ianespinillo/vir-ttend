@@ -1,5 +1,6 @@
-import { StudentDataModel } from '../../application/models/student-data.model';
+import { Student } from '../entities/student';
 
 export interface IStudentPort {
-	getByCourseId(courseId: string): Promise<StudentDataModel[]>;
+	getByCourseId(courseId: string): Promise<Student[]>;
+	findById(studentId: string): Promise<Student | null>;
 }

@@ -8,6 +8,16 @@ export class SubjectRepository
 	extends EntityRepository<SubjectOrmEntity>
 	implements ISubjectRepository
 {
+	async findByTeacherAndCourses(
+		teacherId: string,
+		courses: string[],
+	): Promise<Subject[]> {
+		const orms = await this.find({
+			teacherId,
+			courseId: { $in: courses },
+		});
+		return orms.map((o) => SubjectMapper.toDomain(o));
+	}
 	async findById(id: string): Promise<Subject | null> {
 		const orm = await this.findOne({ id });
 		if (!orm) {

@@ -40,7 +40,7 @@ Vir-ttend es un SaaS multi-tenant de gestión de asistencia escolar para institu
 ### 2.1 Diagrama de Arquitectura General
 
 ```mermaid
-graph TB
+    graph TD
     subgraph "Client Layer"
         WEB[Next.js App]
         MOBILE[Mobile Web PWA]

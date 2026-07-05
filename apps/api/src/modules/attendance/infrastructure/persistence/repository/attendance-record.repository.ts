@@ -8,6 +8,48 @@ export class AttendanceRecordRepository
 	extends EntityRepository<AttendanceRecordOrmEntity>
 	implements IAttendanceRecordRepository
 {
+	async findBySubjectAndDateRange(
+		subjectId: string,
+		from: Date,
+		to: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			subjectId,
+			date: {
+				$gt: from,
+				$lt: to,
+			},
+		});
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+	async findBySubjectAndDate(
+		subjectId: string,
+		date: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			subjectId,
+			date,
+		});
+		if (orms.length === 0) return [];
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+	async findBySubject(subjectId: string): Promise<AttendanceRecord[]> {
+		const orms = await this.find({ subjectId });
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async findRecordsOfLastSubjectClass(
+		subjectId: string,
+		beforeDate: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			subjectId,
+			date: {
+				$gt: beforeDate,
+			},
+		});
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
 	async bulkSave(records: AttendanceRecord[]): Promise<void> {
 		for (const record of records) {
 			this.em.persist(AttendanceRecordMapper.toOrm(record));

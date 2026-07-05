@@ -5,6 +5,7 @@ import { MockProxy, mock } from 'jest-mock-extended';
 import { BulkRegisterAttendanceCommand } from '../../../src/modules/attendance/application/commands/bulk-register-attendance/bulk-register-attendance.command';
 import { BulkRegisterAttendanceHandler } from '../../../src/modules/attendance/application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { Student } from '../../../src/modules/attendance/domain/entities/student';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 
@@ -15,9 +16,9 @@ describe('BulkRegisterAttendanceHandler', () => {
 	let eventEmitter: MockProxy<EventEmitter2>;
 
 	const mockStudents = [
-		{ id: 'student-1' },
-		{ id: 'student-2' },
-		{ id: 'student-3' },
+		Student.reconstitute('student-1', 'Student 1'),
+		Student.reconstitute('student-2', 'Student 2'),
+		Student.reconstitute('student-3', 'Student 3'),
 	];
 
 	beforeEach(() => {
@@ -52,7 +53,7 @@ describe('BulkRegisterAttendanceHandler', () => {
 	});
 
 	it('should update existing records', async () => {
-		studentPort.getByCourseId.mockResolvedValue([{ id: 'student-1' }]);
+		studentPort.getByCourseId.mockResolvedValue([mockStudents[0]]);
 		const existing = AttendanceRecord.reconstitute({
 			id: 'record-id',
 			tenantId: 'tenant-id',

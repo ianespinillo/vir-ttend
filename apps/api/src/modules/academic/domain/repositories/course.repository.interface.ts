@@ -13,6 +13,7 @@ export interface ICourseRepository {
 		division: string,
 		shift: ShiftType,
 	): Promise<Course | null>;
+	findBySubjectId(subjectId: string): Promise<Course | null>;
 	findByPreceptor(preceptorId: string): Promise<Course[]>;
 	save(course: Course): Promise<void>;
 }

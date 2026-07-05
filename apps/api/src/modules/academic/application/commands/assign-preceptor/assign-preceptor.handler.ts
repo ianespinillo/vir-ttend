@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
-import { IMembershipPort } from '../../ports/identity/membership.port.interface';
 import { AssignPreceptorCommand } from './assign-preceptor.command';
 
 @Injectable()
