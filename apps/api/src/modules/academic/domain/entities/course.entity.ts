@@ -1,4 +1,4 @@
-// course.entity.ts
+// course.entity.ts.ts
 import { randomUUID } from 'node:crypto';
 import { LEVEL as Level, SHIFT as Shift } from '@repo/common';
 import { CourseId } from '../value-objects/course-id.vo';

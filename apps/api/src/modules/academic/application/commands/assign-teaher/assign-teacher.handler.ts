@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
-import { IMembershipPort } from '../../ports/identity/membership.port.interface';
 import { AssignTeacherCommand } from './assign-teacher.command';
 
 @Injectable()

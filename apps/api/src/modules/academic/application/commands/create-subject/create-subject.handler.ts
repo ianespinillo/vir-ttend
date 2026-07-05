@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Subject } from '../../../domain/entities/subject.entity';
+import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { SubjectCreatedEvent } from '../../../events/subject-created.event';
-import { IMembershipPort } from '../../ports/identity/membership.port.interface';
 import { CreateSubjectCommand } from './create-subject.command';
 
 @Injectable()

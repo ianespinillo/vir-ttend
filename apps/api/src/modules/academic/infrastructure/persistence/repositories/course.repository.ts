@@ -9,6 +9,15 @@ export class CourseRepository
 	extends EntityRepository<CourseOrmEntity>
 	implements ICourseRepository
 {
+	async findBySubjectId(subjectId: string): Promise<Course | null> {
+		const orm = await this.findOne({
+			subjects: {
+				id: subjectId,
+			},
+		});
+		if (!orm) return null;
+		return CourseMapper.toDomain(orm);
+	}
 	async findById(id: string): Promise<Course | null> {
 		const orm = await this.findOne({ id });
 		if (!orm) {

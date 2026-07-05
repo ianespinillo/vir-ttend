@@ -38,7 +38,7 @@ export class BulkRegisterAttendanceHandler {
 		await this.attendanceRepo.bulkSave(records);
 		records.forEach((r) => {
 			this.em.emit(
-				'attendanceRegistered',
+				'attendance.registered',
 				new AttendanceRegisteredEvent(new Date(), r),
 			);
 		});

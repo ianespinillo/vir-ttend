@@ -39,7 +39,7 @@ export class RegisterDailyAttendanceHandler {
 		await this.attendanceRepo.bulkSave(cleanRecords);
 		cleanRecords.map((cleanRecord) =>
 			this.em.emit(
-				'register-daily-attendance',
+				'attendance.registered',
 				new AttendanceRegisteredEvent(new Date(Date.now()), cleanRecord),
 			),
 		);

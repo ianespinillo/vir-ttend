@@ -12,6 +12,10 @@ import { GetAttendanceMetricsQueryHandler } from '../../application/queries/get-
 import { GetAttendanceMetricsQuery } from '../../application/queries/get-attendance-metrics/get-attendance-metrics.query';
 import { GetDailyAttendanceQueryHandler } from '../../application/queries/get-daily-attendance/get-daily-attendance.handler';
 import { GetDailyAttendanceQuery } from '../../application/queries/get-daily-attendance/get-daily-attendance.query';
+import { GetSubjectAttendanceQueryHandler } from '../../application/queries/get-subject-attendance/get-subject-attendance.handler';
+import { GetSubjectAttendanceQuery } from '../../application/queries/get-subject-attendance/get-subject-attendance.query';
+import { GetSubjectHistoryQueryHandler } from '../../application/queries/get-subject-history/get-subject-history.handler';
+import { GetSubjectHistoryQuery } from '../../application/queries/get-subject-history/get-subject-history.query';
 
 @Controller('attendance')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -21,6 +25,8 @@ export class AttendanceQueryController {
 		private readonly getAttendanceMetricsHandler: GetAttendanceMetricsQueryHandler,
 		private readonly getAttendanceByStudentHandler: GetAttendanceByStudentQueryHandler,
 		private readonly getAttendanceHistoryHandler: GetAttendanceHistoryQueryHandler,
+		private readonly getSubjectHistoryHandler: GetSubjectHistoryQueryHandler,
+		private readonly getSubjectAttendanceHandler: GetSubjectAttendanceQueryHandler,
 	) {}
 
 	@Get('daily')
@@ -66,6 +72,29 @@ export class AttendanceQueryController {
 	) {
 		return this.getAttendanceHistoryHandler.execute(
 			new GetAttendanceHistoryQuery(courseId, new Date(from), new Date(to)),
+		);
+	}
+
+	@Get('subject')
+	@RolesDecorator(ROLES.TEACHER, ROLES.PRECEPTOR, ROLES.ADMIN)
+	async getSubjectAttendance(
+		@Query('subjectId') subjectId: string,
+		@Query('date') date: string,
+	) {
+		return this.getSubjectAttendanceHandler.execute(
+			new GetSubjectAttendanceQuery(subjectId, new Date(date)),
+		);
+	}
+
+	@Get('subject/:subjectId/history')
+	@RolesDecorator(ROLES.TEACHER, ROLES.PRECEPTOR, ROLES.ADMIN)
+	async getSubjectHistory(
+		@Param('subjectId') subjectId: string,
+		@Query('from') from: string,
+		@Query('to') to: string,
+	) {
+		return this.getSubjectHistoryHandler.execute(
+			new GetSubjectHistoryQuery(subjectId, new Date(from), new Date(to)),
 		);
 	}
 }

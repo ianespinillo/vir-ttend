@@ -1,5 +1,5 @@
-import { IAcademicYearModel } from '../../application/models/academic-year.model';
+import { AcademicYear } from '../entities/academic-year.entity';
 
 export interface IAcademicYearPort {
-	findActiveByTenant(tenantId: string): Promise<IAcademicYearModel | null>;
+	findActiveByTenant(tenantId: string): Promise<AcademicYear | null>;
 }

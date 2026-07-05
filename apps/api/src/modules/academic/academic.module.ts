@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { StudentAdapter } from '../attendance/infrastructure/adapters/student.adapter';
 import { IdentityModule } from '../identity/identity.module';
 import { AssignPreceptorHandler } from './application/commands/assign-preceptor/assign-preceptor.handler';
 import { AssignTeacherHandler } from './application/commands/assign-teaher/assign-teacher.handler';
@@ -26,9 +27,11 @@ import { GetStudentHandler } from './application/queries/get-student/get-student
 import { GetStudentsByCourseHandler } from './application/queries/get-students-by-course/get-students-by-course.handler';
 import { GetStudentsByGradeHandler } from './application/queries/get-students-by-grade/get-students-by-grade.handler';
 import { GetSubjectsByCourseHandler } from './application/queries/get-subjects-by-course/get-subjects-by-course.handler';
+import { GetTeacherSubjectsQueryHandler } from './application/queries/get-teacher-subjects/get-teacher-subjects.handler';
 import { SearchStudentsHandler } from './application/queries/search-students/search-students.handler';
+import { CourseService } from './domain/services/course.service';
+import { ScheduleService } from './domain/services/schedule.service';
 import { MembershipAdapter } from './infrastructure/adapters/membership.adapter';
-import { StudentAdapter } from './infrastructure/adapters/student.adapter';
 import { AcademicPersistenceModule } from './infrastructure/persistence/academic.persistence.module';
 import { AcademicYearRepository } from './infrastructure/persistence/repositories/academic-year.repository';
 import { ScheduleSlotRepository } from './infrastructure/persistence/repositories/schedule-slot.repository';
@@ -43,6 +46,7 @@ import { AcademicPresentationModule } from './presentation/academic.presentation
 		{ provide: 'IAcademicYearRepository', useClass: AcademicYearRepository },
 		ScheduleSlotRepository,
 		{ provide: 'IScheduleRepository', useClass: ScheduleSlotRepository },
+		ScheduleService,
 	],
 	imports: [
 		IdentityModule,
@@ -50,6 +54,14 @@ import { AcademicPresentationModule } from './presentation/academic.presentation
 		AcademicPresentationModule,
 	],
 	providers: [
+		ScheduleSlotRepository,
+		AcademicYearRepository,
+		StudentRepository,
+		MembershipAdapter,
+		{
+			provide: 'IMembershipPort',
+			useClass: MembershipAdapter,
+		},
 		// Handler
 		AssignPreceptorHandler,
 		AssignTeacherHandler,
@@ -79,11 +91,16 @@ import { AcademicPresentationModule } from './presentation/academic.presentation
 		GetStudentHandler,
 		GetStudentsByCourseHandler,
 		GetStudentsByGradeHandler,
+		GetTeacherSubjectsQueryHandler,
 		SearchStudentsHandler,
 
 		// Adapters
 		MembershipAdapter,
 		StudentAdapter,
+
+		// Servicio de dominio
+		ScheduleService,
+		CourseService,
 	],
 })
 export class AcademicModule {}

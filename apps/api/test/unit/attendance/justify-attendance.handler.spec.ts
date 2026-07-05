@@ -4,6 +4,7 @@ import { MockProxy, mock } from 'jest-mock-extended';
 // justify-attendance.handler.spec.ts
 import { JustifyAttendanceCommand } from '../../../src/modules/attendance/application/commands/justify-attendance/justify-attendance.command';
 import { JustifyAttendanceHandler } from '../../../src/modules/attendance/application/commands/justify-attendance/justify-attendance.handler';
+import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { IAcademicYearPort } from '../../../src/modules/attendance/domain/ports/academic-year.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
@@ -43,14 +44,15 @@ describe('JustifyAttendanceHandler', () => {
 
 	it('should justify absent record', async () => {
 		attendanceRepo.findById.mockResolvedValue(mockRecord);
-		academicYearPort.findActiveByTenant.mockResolvedValue({
-			id: 'ay-1',
-			startDate: new Date('2026-03-01'),
-			endDate: new Date('2026-12-31'),
-			nonWorkingDays: [],
-			absenceThresholdPercent: 75,
-			lateCountAbscenseAfterMinutes: 15,
-		});
+		academicYearPort.findActiveByTenant.mockResolvedValue(
+			AcademicYear.reconstitute(
+				'ay-1',
+				75,
+				15,
+				new Date('2026-03-01'),
+				new Date('2026-12-31'),
+			),
+		);
 
 		await handler.execute(
 			new JustifyAttendanceCommand(

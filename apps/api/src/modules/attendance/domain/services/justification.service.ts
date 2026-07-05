@@ -1,12 +1,11 @@
 import { ATTENDANCE_STATUS } from '@repo/common';
-import { AcademicYear } from '../../../academic/domain/entities/academic-year.entity';
-import { IAcademicYearModel } from '../../application/models/academic-year.model';
+import { AcademicYear } from '../entities/academic-year.entity';
 import { AttendanceRecord } from '../entities/attendance-record.entity';
 
 export class JustificationService {
 	static canJustify(
 		record: AttendanceRecord,
-		academicYear: AcademicYear | IAcademicYearModel,
+		academicYear: AcademicYear,
 	): boolean {
 		const inRange: boolean =
 			record.createdAt > academicYear.startDate &&
