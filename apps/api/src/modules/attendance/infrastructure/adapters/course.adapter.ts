@@ -18,6 +18,30 @@ export class CourseAdapter implements ICoursePort {
 				`${c.yearNumber}° ${c.division}°`,
 				academicYearId,
 				c.isActive,
+				c.level,
+			),
+		);
+	}
+	async findById(courseId: string): Promise<Course | null> {
+		const course = await this.courseRepository.findById(courseId);
+		if (!course) return null;
+		return Course.reconstitute(
+			course.id.getRaw(),
+			`${course.yearNumber}° ${course.division}°`,
+			course.academicYearId,
+			course.isActive,
+			course.level,
+		);
+	}
+	async findByPreceptorId(preceptorId: string): Promise<Course[]> {
+		const courses = await this.courseRepository.findByPreceptor(preceptorId);
+		return courses.map((c) =>
+			Course.reconstitute(
+				c.id.getRaw(),
+				`${c.yearNumber}° ${c.division}°`,
+				c.academicYearId,
+				c.isActive,
+				c.level,
 			),
 		);
 	}
