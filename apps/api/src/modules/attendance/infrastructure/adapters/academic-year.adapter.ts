@@ -21,4 +21,15 @@ export class AcademicYearAdapter implements IAcademicYearPort {
 			year.endDate,
 		);
 	}
+	async findById(id: string): Promise<AcademicYear | null> {
+		const year = await this.academicYearRepo.findById(id);
+		if (!year) return null;
+		return AcademicYear.reconstitute(
+			year.tenantId,
+			year.absenceThresholdPercent,
+			year.lateCountAbscenseAfterMinutes,
+			year.startDate,
+			year.endDate,
+		);
+	}
 }

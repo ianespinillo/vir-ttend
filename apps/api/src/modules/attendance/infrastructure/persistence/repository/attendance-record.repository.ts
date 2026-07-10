@@ -1,6 +1,9 @@
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
-import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
+import {
+	IAttendanceRecordRepository,
+	RawCourseMetrics,
+} from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceRecordOrmEntity } from '../entities/attendance-record.orm-entity';
 import { AttendanceRecordMapper } from '../mappers/attendance-record.mapper';
 
@@ -135,5 +138,52 @@ export class AttendanceRecordRepository
 	async save(record: AttendanceRecord): Promise<void> {
 		this.em.persist(AttendanceRecordMapper.toOrm(record));
 		await this.em.flush();
+	}
+	async getCourseSummaryForDate(
+		courseId: string,
+		targetDate: Date,
+	): Promise<RawCourseMetrics> {
+		const result = await this.em
+			.createQueryBuilder(AttendanceRecordOrmEntity, 'ar')
+			.select([
+				'ar.course_id as courseId',
+				'COUNT(ar.id) as totalStudents',
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'PRESENT') as presents`,
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'ABSENT') as absents`,
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'LATE') as late`,
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'JUSTIFIED') as justified`,
+			])
+			.where({
+				courseId: courseId,
+				date: targetDate,
+			})
+			.execute();
+
+		return result as unknown as RawCourseMetrics;
+	}
+	async getCourseSummaryForDateRange(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<RawCourseMetrics> {
+		const result = await this.em
+			.qb(AttendanceRecordOrmEntity, 'ar')
+			.select([
+				'ar.course_id as courseId',
+				'COUNT(ar.id) as totalStudents',
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'PRESENT') as presents`,
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'ABSENT') as absents`,
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'LATE') as late`,
+				`COUNT(ar.id) FILTER (WHERE ar.status = 'JUSTIFIED') as justified`,
+			])
+			.where({
+				courseId: courseId,
+				date: {
+					$gt: from,
+					$lt: to,
+				},
+			})
+			.execute();
+		return result as unknown as RawCourseMetrics;
 	}
 }

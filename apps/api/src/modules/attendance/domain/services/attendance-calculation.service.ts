@@ -13,18 +13,21 @@ export class AttendanceCalculationService {
 	) {}
 	async calculateAbscensePercent(
 		records: AttendanceRecord[],
-		subjectId: string,
 		academicYear: AcademicYear,
 		from: Date,
 		to: Date,
+		subjectId?: string,
 	): Promise<number> {
-		const expectedClasses = await this.getExpectedClassesForSubject(
-			subjectId,
-			from,
-			to,
-			academicYear.id,
-		);
-		if (expectedClasses === 0) return 0;
+		let expectedClasses = 0;
+		if (subjectId) {
+			expectedClasses = await this.getExpectedClassesForSubject(
+				subjectId,
+				from,
+				to,
+				academicYear.id,
+			);
+			if (expectedClasses === 0) return 0;
+		}
 		let total = 0;
 		for (const record of records) {
 			if (record.status === ATTENDANCE_STATUS.ABSENT) total++;

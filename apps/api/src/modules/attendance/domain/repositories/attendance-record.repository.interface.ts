@@ -1,5 +1,14 @@
 import { AttendanceRecord } from '../entities/attendance-record.entity';
 
+export interface RawCourseMetrics {
+	courseId: string;
+	totalStudents: number;
+	presents: number;
+	absents: number;
+	late: number;
+	justified: number;
+}
+
 export interface IAttendanceRecordRepository {
 	findById(id: string): Promise<AttendanceRecord | null>;
 
@@ -41,4 +50,13 @@ export interface IAttendanceRecordRepository {
 	bulkSave(records: AttendanceRecord[]): Promise<void>;
 
 	save(record: AttendanceRecord): Promise<void>;
+	getCourseSummaryForDate(
+		courseId: string,
+		date: Date,
+	): Promise<RawCourseMetrics>;
+	getCourseSummaryForDateRange(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<RawCourseMetrics>;
 }
