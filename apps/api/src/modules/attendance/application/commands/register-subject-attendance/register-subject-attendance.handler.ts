@@ -32,18 +32,19 @@ export class RegisterSubjectAttendanceHandler {
 			if (exist) {
 				exist.updateStatus(record.status, command.userId);
 				finalRecords.push(exist);
+			} else {
+				finalRecords.push(
+					AttendanceRecord.create({
+						tenantId: command.tenantId,
+						courseId: command.courseId,
+						studentId: record.studentId,
+						subjectId: command.subjectId,
+						date: command.date,
+						status: record.status,
+						editedBy: command.userId,
+					}),
+				);
 			}
-			finalRecords.push(
-				AttendanceRecord.create({
-					tenantId: command.tenantId,
-					courseId: command.courseId,
-					studentId: record.studentId,
-					subjectId: command.subjectId,
-					date: command.date,
-					status: record.status,
-					editedBy: command.userId,
-				}),
-			);
 		}
 		if (finalRecords.length > 0) {
 			await this.attendanceRecordRepo.bulkSave(finalRecords);
