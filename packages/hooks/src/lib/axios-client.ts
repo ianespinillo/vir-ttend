@@ -1,5 +1,7 @@
+import { AUTH_ROUTES } from '@repo/common';
 import axios from 'axios';
-import { AUTH_ROUTES } from '../../../common/src/routes/auth.routes';
+
+declare const process: { env: Record<string, string | undefined> };
 
 export const apiClient = axios.create({
 	baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',

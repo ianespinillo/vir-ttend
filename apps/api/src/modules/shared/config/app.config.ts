@@ -1,3 +1,10 @@
+import * as path from 'node:path';
+import * as dotenv from 'dotenv';
+
+// Load .env relative to this file, and fallback to CWD
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config();
+
 import * as env from 'env-var';
 import { getDatabaseConfig } from './database.config';
 import { getRedisConfig } from './redis.config,';
