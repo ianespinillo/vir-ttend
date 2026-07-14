@@ -1,0 +1,93 @@
+{
+	"data": {
+		"_id": 21000,
+		"properties": {
+			"id": {
+				"name": "id",
+				"kind": "scalar",
+				"primary": true,
+				"type": "uuid",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"attendanceRecordId": {
+				"name": "attendanceRecordId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"attendanceRecord": {
+				"name": "attendanceRecord",
+				"kind": "1:1",
+				"cascade": ["persist"],
+				"owner": true,
+				"unique": true,
+				"createForeignKeyConstraint": true,
+				"fieldNames": ["attendanceRecordId"],
+				"type": "AttendanceRecordOrmEntity",
+				"array": false,
+				"runtimeType": "AttendanceRecordOrmEntity"
+			},
+			"reason": {
+				"name": "reason",
+				"kind": "scalar",
+				"type": "text",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"notes": {
+				"name": "notes",
+				"kind": "scalar",
+				"type": "text",
+				"nullable": true,
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"optional": true,
+				"runtimeType": "string"
+			},
+			"createdBy": {
+				"name": "createdBy",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"createdAt": {
+				"name": "createdAt",
+				"kind": "scalar",
+				"type": "timestamp",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Date"
+			}
+		},
+		"primaryKeys": ["id"],
+		"filters": {},
+		"hooks": {},
+		"indexes": [],
+		"uniques": [],
+		"className": "JustificationOrmEntity",
+		"path": "./src/modules/attendance/infrastructure/persistence/entities/justification.orm-entity.ts",
+		"collection": "justification",
+		"name": "JustificationOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"useCache": true,
+		"compositePK": false,
+		"simplePK": true
+	},
+	"origin": "./src/modules/attendance/infrastructure/persistence/entities/justification.orm-entity.ts",
+	"hash": "78822c0b6f3311858812ff087fceeff6",
+	"version": "6.6.7"
+}

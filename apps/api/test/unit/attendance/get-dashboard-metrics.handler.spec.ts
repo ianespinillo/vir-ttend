@@ -7,13 +7,13 @@ import {
 import { MockProxy, mock } from 'jest-mock-extended';
 import { GetDashboardMetricsQueryHandler } from '../../../src/modules/attendance/application/queries/get-dashboard-metrics/get-dashboard-metrics.handler';
 import { GetDashboardMetricsQuery } from '../../../src/modules/attendance/application/queries/get-dashboard-metrics/get-dashboard-metrics.query';
+import { CourseSnapshotBuilderService } from '../../../src/modules/attendance/application/services/course-snapshot-builder.service';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { Course } from '../../../src/modules/attendance/domain/entities/course.entity';
 import { IAcademicYearPort } from '../../../src/modules/attendance/domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
-import { DashboardService } from '../../../src/modules/attendance/domain/services/dashboard.service';
 import { CourseSnapshot } from '../../../src/modules/attendance/domain/value-objects/course-snapshot.vo';
 
 const makeRecord = (
@@ -38,7 +38,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let coursePort: MockProxy<ICoursePort>;
 	let academicYearPort: MockProxy<IAcademicYearPort>;
-	let dashService: MockProxy<DashboardService>;
+	let snapshotBuilder: MockProxy<CourseSnapshotBuilderService>;
 
 	const academicYear = AcademicYear.reconstitute(
 		'ay-1',
@@ -67,12 +67,12 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		coursePort = mock<ICoursePort>();
 		academicYearPort = mock<IAcademicYearPort>();
-		dashService = mock<DashboardService>();
+		snapshotBuilder = mock<CourseSnapshotBuilderService>();
 		handler = new GetDashboardMetricsQueryHandler(
 			coursePort,
 			attendanceRepo,
 			academicYearPort,
-			dashService,
+			snapshotBuilder,
 		);
 	});
 
@@ -89,7 +89,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		expect(result.averageAttendance).toBe(0);
 		expect(result.coursesAtRisk).toEqual([]);
 		expect(result.weeklyTrend).toEqual([]);
-		expect(dashService.buildCourseSnapshot).not.toHaveBeenCalled();
+		expect(snapshotBuilder.buildCourseSnapshot).not.toHaveBeenCalled();
 	});
 
 	it('retorna respuesta vacía si el preceptor no tiene cursos asignados', async () => {
@@ -112,7 +112,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		const snapshot1 = new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1);
 		const snapshot2 = new CourseSnapshot('course-2', '3° B', 30, 21, 6, 2, 1);
 
-		dashService.buildCourseSnapshot
+		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(snapshot1)
 			.mockResolvedValueOnce(snapshot2);
 
@@ -129,7 +129,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 			.mockResolvedValueOnce(records1)
 			.mockResolvedValueOnce(records2);
 
-		dashService.buildWeeklyTrend.mockReturnValue([
+		snapshotBuilder.buildWeeklyTrend.mockReturnValue([
 			{ mondayWeek: new Date('2026-07-06'), percent: 75 },
 		]);
 
@@ -149,14 +149,14 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		academicYearPort.findById.mockResolvedValue(academicYear);
 		coursePort.findByPreceptorId.mockResolvedValue([course1]);
 
-		dashService.buildCourseSnapshot.mockResolvedValue(
+		snapshotBuilder.buildCourseSnapshot.mockResolvedValue(
 			new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
 		);
 		attendanceRepo.findByCourseAndRange.mockResolvedValue([]);
 
 		await handler.execute(new GetDashboardMetricsQuery('preceptor-1', 'ay-1'));
 
-		expect(dashService.buildCourseSnapshot).toHaveBeenCalledWith(
+		expect(snapshotBuilder.buildCourseSnapshot).toHaveBeenCalledWith(
 			'course-1',
 			academicYear.startDate,
 			academicYear.endDate,
@@ -191,7 +191,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 			1,
 		);
 
-		dashService.buildCourseSnapshot
+		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(healthySnapshot)
 			.mockResolvedValueOnce(criticalSnapshot);
 
@@ -199,7 +199,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 			.mockResolvedValueOnce([])
 			.mockResolvedValueOnce([]);
 
-		dashService.buildWeeklyTrend.mockReturnValue([]);
+		snapshotBuilder.buildWeeklyTrend.mockReturnValue([]);
 
 		const result = await handler.execute(
 			new GetDashboardMetricsQuery('preceptor-1', 'ay-1'),
@@ -214,7 +214,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		academicYearPort.findById.mockResolvedValue(academicYear);
 		coursePort.findByPreceptorId.mockResolvedValue([course1, course2]);
 
-		dashService.buildCourseSnapshot
+		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(
 				new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
 			)
@@ -235,12 +235,12 @@ describe('GetDashboardMetricsQueryHandler', () => {
 			.mockResolvedValueOnce(records1)
 			.mockResolvedValueOnce(records2);
 
-		dashService.buildWeeklyTrend.mockReturnValue([]);
+		snapshotBuilder.buildWeeklyTrend.mockReturnValue([]);
 
 		await handler.execute(new GetDashboardMetricsQuery('preceptor-1', 'ay-1'));
 
-		expect(dashService.buildWeeklyTrend).toHaveBeenCalledTimes(1);
-		const passedRecords = dashService.buildWeeklyTrend.mock.calls[0][0];
+		expect(snapshotBuilder.buildWeeklyTrend).toHaveBeenCalledTimes(1);
+		const passedRecords = snapshotBuilder.buildWeeklyTrend.mock.calls[0][0];
 		expect(passedRecords).toHaveLength(4);
 	});
 
@@ -248,7 +248,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		academicYearPort.findById.mockResolvedValue(academicYear);
 		coursePort.findByPreceptorId.mockResolvedValue([course1, course2]);
 
-		dashService.buildCourseSnapshot
+		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(
 				new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
 			)
@@ -260,7 +260,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 			.mockResolvedValueOnce([])
 			.mockResolvedValueOnce([]);
 
-		dashService.buildWeeklyTrend.mockReturnValue([]);
+		snapshotBuilder.buildWeeklyTrend.mockReturnValue([]);
 
 		const result = await handler.execute(
 			new GetDashboardMetricsQuery('preceptor-1', 'ay-1'),

@@ -8,17 +8,17 @@ import { AttendanceCopyService } from '../../../src/modules/attendance/domain/se
 
 describe('CopyAttendanceHandler', () => {
 	let handler: CopyAttendanceHandler;
-	let copyService: MockProxy<AttendanceCopyService>;
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
+	let copyAttendanceService: MockProxy<AttendanceCopyService>;
 
 	beforeEach(() => {
-		copyService = mock<AttendanceCopyService>();
 		attendanceRepo = mock<IAttendanceRecordRepository>();
-		handler = new CopyAttendanceHandler(attendanceRepo, copyService);
+		copyAttendanceService = mock<AttendanceCopyService>();
+		handler = new CopyAttendanceHandler(attendanceRepo, copyAttendanceService);
 	});
 
 	it('debe lanzar error si no hay registros en la fecha origen', async () => {
-		copyService.getLastClassRecords.mockResolvedValue([]);
+		copyAttendanceService.getLastClassRecords.mockResolvedValue([]);
 
 		const command = new CopyAttendanceCommand(
 			'user-1',
@@ -31,6 +31,28 @@ describe('CopyAttendanceHandler', () => {
 			'No records found for the source date',
 		);
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+	});
+
+	it('debe llamar a getLastClassRecords en el copyAttendanceService', async () => {
+		copyAttendanceService.getLastClassRecords.mockResolvedValue([
+			mock<AttendanceRecord>({ studentId: 'student-1' }),
+		]);
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+
+		const targetDate = new Date('2026-07-10');
+		const command = new CopyAttendanceCommand(
+			'user-1',
+			'sub-1',
+			targetDate,
+			undefined,
+		);
+
+		await handler.execute(command);
+
+		expect(copyAttendanceService.getLastClassRecords).toHaveBeenCalledWith(
+			'sub-1',
+			targetDate,
+		);
 	});
 
 	it('debe copiar registros ignorando a los alumnos que ya tienen asistencia en la fecha destino', async () => {
@@ -55,7 +77,7 @@ describe('CopyAttendanceHandler', () => {
 			tenantId: 'tenant-1',
 			courseId: 'course-1',
 		});
-		copyService.getLastClassRecords.mockResolvedValue([
+		copyAttendanceService.getLastClassRecords.mockResolvedValue([
 			sourceRecord1,
 			sourceRecord2,
 		]);
@@ -74,5 +96,28 @@ describe('CopyAttendanceHandler', () => {
 		expect(savedRecords.length).toBe(1);
 		expect(savedRecords[0].studentId).toBe('student-2');
 		expect(savedRecords[0].status).toBe(ATTENDANCE_STATUS.ABSENT); // Copió el estado
+	});
+
+	it('usa sourceDate cuando se provee en vez de targetDate', async () => {
+		copyAttendanceService.getLastClassRecords.mockResolvedValue([
+			mock<AttendanceRecord>({ studentId: 'student-1' }),
+		]);
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+
+		const sourceDate = new Date('2026-07-08');
+		const targetDate = new Date('2026-07-10');
+		const command = new CopyAttendanceCommand(
+			'user-1',
+			'sub-1',
+			targetDate,
+			sourceDate,
+		);
+
+		await handler.execute(command);
+
+		expect(copyAttendanceService.getLastClassRecords).toHaveBeenCalledWith(
+			'sub-1',
+			sourceDate,
+		);
 	});
 });

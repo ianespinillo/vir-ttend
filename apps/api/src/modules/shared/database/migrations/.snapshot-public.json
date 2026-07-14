@@ -137,6 +137,264 @@
 					"autoincrement": false,
 					"primary": false,
 					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"student_id": {
+					"name": "student_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"course_id": {
+					"name": "course_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"academic_year_id": {
+					"name": "academic_year_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"tenant_id": {
+					"name": "tenant_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"alert_type": {
+					"name": "alert_type",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"absence_percent": {
+					"name": "absence_percent",
+					"type": "real",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "float"
+				},
+				"seen_by": {
+					"name": "seen_by",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"seen_at": {
+					"name": "seen_at",
+					"type": "date",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 0,
+					"mappedType": "date"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "1784003746919",
+					"mappedType": "datetime"
+				}
+			},
+			"name": "attendance_alerts",
+			"schema": "public",
+			"indexes": [
+				{
+					"keyName": "attendance_alerts_seen_at_index",
+					"columnNames": ["seen_at"],
+					"composite": false,
+					"constraint": false,
+					"primary": false,
+					"unique": false
+				},
+				{
+					"keyName": "attendance_alerts_student_id_academic_year_id_alert_type_index",
+					"columnNames": ["student_id", "academic_year_id", "alert_type"],
+					"composite": true,
+					"constraint": false,
+					"primary": false,
+					"unique": false
+				},
+				{
+					"keyName": "attendance_alerts_pkey",
+					"columnNames": ["id"],
+					"composite": false,
+					"constraint": true,
+					"primary": true,
+					"unique": true
+				}
+			],
+			"checks": [],
+			"foreignKeys": {},
+			"nativeEnums": {}
+		},
+		{
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"tenant_id": {
+					"name": "tenant_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"student_id": {
+					"name": "student_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"course_id": {
+					"name": "course_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"subject_id": {
+					"name": "subject_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"mappedType": "uuid"
+				},
+				"date": {
+					"name": "date",
+					"type": "date",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 0,
+					"mappedType": "date"
+				},
+				"status": {
+					"name": "status",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"edited_by": {
+					"name": "edited_by",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"edited_at": {
+					"name": "edited_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"mappedType": "datetime"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"mappedType": "datetime"
+				}
+			},
+			"name": "attendanceRecord",
+			"schema": "public",
+			"indexes": [
+				{
+					"keyName": "attendanceRecord_course_id_date_index",
+					"columnNames": ["course_id", "date"],
+					"composite": true,
+					"constraint": false,
+					"primary": false,
+					"unique": false
+				},
+				{
+					"keyName": "attendanceRecord_course_id_student_id_subject_id_date_unique",
+					"columnNames": ["course_id", "student_id", "subject_id", "date"],
+					"composite": true,
+					"constraint": true,
+					"primary": false,
+					"unique": true
+				},
+				{
+					"keyName": "attendanceRecord_pkey",
+					"columnNames": ["id"],
+					"composite": false,
+					"constraint": true,
+					"primary": true,
+					"unique": true
+				}
+			],
+			"checks": [],
+			"foreignKeys": {},
+			"nativeEnums": {}
+		},
+		{
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
 					"default": "gen_random_uuid()",
 					"mappedType": "uuid"
 				},
@@ -266,6 +524,106 @@
 					"localTableName": "public.courses",
 					"referencedColumnNames": ["id"],
 					"referencedTableName": "public.academic_years",
+					"updateRule": "cascade"
+				}
+			},
+			"nativeEnums": {}
+		},
+		{
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"attendance_record_id": {
+					"name": "attendance_record_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"attendanceRecordId": {
+					"name": "attendanceRecordId",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"reason": {
+					"name": "reason",
+					"type": "text",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "text"
+				},
+				"notes": {
+					"name": "notes",
+					"type": "text",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"mappedType": "text"
+				},
+				"created_by": {
+					"name": "created_by",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"mappedType": "datetime"
+				}
+			},
+			"name": "justification",
+			"schema": "public",
+			"indexes": [
+				{
+					"columnNames": ["attendanceRecordId"],
+					"composite": false,
+					"keyName": "justification_attendanceRecordId_unique",
+					"constraint": true,
+					"primary": false,
+					"unique": true
+				},
+				{
+					"keyName": "justification_pkey",
+					"columnNames": ["id"],
+					"composite": false,
+					"constraint": true,
+					"primary": true,
+					"unique": true
+				}
+			],
+			"checks": [],
+			"foreignKeys": {
+				"justification_attendanceRecordId_foreign": {
+					"constraintName": "justification_attendanceRecordId_foreign",
+					"columnNames": ["attendanceRecordId"],
+					"localTableName": "public.justification",
+					"referencedColumnNames": ["id"],
+					"referencedTableName": "public.attendanceRecord",
 					"updateRule": "cascade"
 				}
 			},

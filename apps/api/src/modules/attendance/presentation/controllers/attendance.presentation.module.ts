@@ -10,4 +10,4 @@ import { DashboardController } from './dashboard.controller';
 		DashboardController,
 	],
 })
-export class CourseController {}
+export class AttendancePresentationModule {}

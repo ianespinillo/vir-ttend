@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ATTENDANCE_THRESHOLDS } from '@repo/common';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
-import { DashboardService } from '../../../domain/services/dashboard.service';
 import { CourseSnapshotDto } from '../../dtos/course-snapshot.dto';
 import { PreceptorDashboardResponseDto } from '../../dtos/preceptor-dashboard.response.dto';
+import { CourseSnapshotBuilderService } from '../../services/course-snapshot-builder.service';
 import { GetPreceptorDashboardQuery } from './get-preceptor-dashboard.query';
 
 @Injectable()
 export class GetPreceptorDashboardQueryHandler {
 	constructor(
 		private readonly coursePort: ICoursePort,
-		private readonly dashService: DashboardService,
+		private readonly dashService: CourseSnapshotBuilderService,
 	) {}
 	async execute(
 		query: GetPreceptorDashboardQuery,

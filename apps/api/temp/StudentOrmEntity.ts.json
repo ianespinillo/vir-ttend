@@ -123,6 +123,6 @@
 		"useCache": true
 	},
 	"origin": "./src/modules/academic/infrastructure/persistence/entities/student.orm-entity.ts",
-	"hash": "0ebd57e3269f4211c71d74513ba4d4da",
+	"hash": "2d58c53d81cd4dd9c9255a3c644fb4dc",
 	"version": "6.6.7"
 }

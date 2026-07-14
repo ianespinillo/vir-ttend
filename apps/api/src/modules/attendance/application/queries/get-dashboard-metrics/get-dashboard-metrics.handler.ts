@@ -4,10 +4,10 @@ import { AttendanceRecord } from '../../../domain/entities/attendance-record.ent
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { DashboardService } from '../../../domain/services/dashboard.service';
 import { CourseSnapshot } from '../../../domain/value-objects/course-snapshot.vo';
 import { CourseSnapshotDto } from '../../dtos/course-snapshot.dto';
 import { DashboardMetricsResponseDto } from '../../dtos/dashboard-metrics.response.dto';
+import { CourseSnapshotBuilderService } from '../../services/course-snapshot-builder.service';
 import { GetDashboardMetricsQuery } from './get-dashboard-metrics.query';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class GetDashboardMetricsQueryHandler {
 		private readonly coursePort: ICoursePort,
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		private readonly academicYearPort: IAcademicYearPort,
-		private readonly dashService: DashboardService,
+		private readonly dashService: CourseSnapshotBuilderService,
 	) {}
 	async execute(
 		query: GetDashboardMetricsQuery,
