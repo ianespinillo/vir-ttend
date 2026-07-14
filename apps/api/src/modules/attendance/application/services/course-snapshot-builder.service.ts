@@ -1,18 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
-import { AcademicYear } from '../entities/academic-year.entity';
-import { AttendanceRecord } from '../entities/attendance-record.entity';
-import { ICoursePort } from '../ports/courses.port.interface';
-import { IStudentPort } from '../ports/student.port.interface';
-import {
-	IAttendanceRecordRepository,
-	RawCourseMetrics,
-} from '../repositories/attendance-record.repository.interface';
-import { CourseSnapshot } from '../value-objects/course-snapshot.vo';
-import { AttendanceCalculationService } from './attendance-calculation.service';
+import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
+import { ICoursePort } from '../../domain/ports/courses.port.interface';
+import { IAttendanceRecordRepository } from '../../domain/repositories/attendance-record.repository.interface';
+import { CourseSnapshot } from '../../domain/value-objects/course-snapshot.vo';
 
 @Injectable()
-export class DashboardService {
+export class CourseSnapshotBuilderService {
 	constructor(
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		private readonly coursePort: ICoursePort,

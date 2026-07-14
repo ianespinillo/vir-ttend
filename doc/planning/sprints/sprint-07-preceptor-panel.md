@@ -29,7 +29,7 @@ El panel de preceptoría es 100% de lectura. No genera ni modifica registros de 
 ```
 apps/api/src/modules/attendance/domain/
 └── services/
-    └── dashboard.service.ts                # buildCourseSnapshot(courseId, date, academicYear): CourseSnapshot
+    └── course-snapshot-builder.service.ts                # buildCourseSnapshot(courseId, date, academicYear): CourseSnapshot
                                             # CourseSnapshot: { courseId, courseName, totalStudents,
                                             #   present, absent, late, justified, notRecorded,
                                             #   absencePercent, statusColor: 'green'|'yellow'|'red' }
@@ -47,7 +47,7 @@ apps/api/src/modules/attendance/application/
 │   ├── get-preceptor-dashboard/
 │   │   ├── get-preceptor-dashboard.query.ts        # { preceptorId, date }
 │   │   └── get-preceptor-dashboard.handler.ts      # 1. obtiene cursos del preceptor
-│   │                                               # 2. por cada curso: llama DashboardService.buildCourseSnapshot
+│   │                                               # 2. por cada curso: llama CourseSnapshotBuilderService.buildCourseSnapshot
 │   │                                               # 3. retorna PreceptorDashboardResponseDto
 │   ├── get-course-daily-overview/
 │   │   ├── get-course-daily-overview.query.ts      # { courseId, date }
@@ -178,7 +178,7 @@ apps/api/test/unit/attendance/
 ## 7. Tareas por día
 
 ### Día 1: Domain + Application Layer
-- [ ] Implementar `DashboardService.buildCourseSnapshot`
+- [ ] Implementar `CourseSnapshotBuilderService.buildCourseSnapshot`
 - [ ] Crear `GetPreceptorDashboardQuery` + handler
 - [ ] Crear `GetDashboardMetricsQuery` + handler
 - [ ] DTOs

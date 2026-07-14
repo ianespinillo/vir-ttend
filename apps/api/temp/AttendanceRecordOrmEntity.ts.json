@@ -1,0 +1,131 @@
+{
+	"data": {
+		"_id": 22000,
+		"properties": {
+			"id": {
+				"name": "id",
+				"kind": "scalar",
+				"primary": true,
+				"type": "uuid",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"tenantId": {
+				"name": "tenantId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"studentId": {
+				"name": "studentId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"courseId": {
+				"name": "courseId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"subjectId": {
+				"name": "subjectId",
+				"kind": "scalar",
+				"type": "uuid",
+				"nullable": true,
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"optional": true,
+				"runtimeType": "string"
+			},
+			"date": {
+				"name": "date",
+				"kind": "scalar",
+				"type": "date",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Date"
+			},
+			"status": {
+				"name": "status",
+				"kind": "scalar",
+				"type": "string",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "AttendanceStatus"
+			},
+			"editedBy": {
+				"name": "editedBy",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"editedAt": {
+				"name": "editedAt",
+				"kind": "scalar",
+				"type": "timestamp",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Date"
+			},
+			"createdAt": {
+				"name": "createdAt",
+				"kind": "scalar",
+				"type": "timestamp",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Date"
+			},
+			"justification": {
+				"name": "justification",
+				"kind": "1:1",
+				"cascade": ["persist"],
+				"nullable": true,
+				"owner": false,
+				"unique": false,
+				"type": "JustificationOrmEntity",
+				"array": false,
+				"optional": true,
+				"runtimeType": "JustificationOrmEntity"
+			}
+		},
+		"primaryKeys": ["id"],
+		"filters": {},
+		"hooks": {},
+		"indexes": [{ "properties": ["courseId", "date"] }],
+		"uniques": [
+			{ "properties": ["courseId", "studentId", "subjectId", "date"] }
+		],
+		"className": "AttendanceRecordOrmEntity",
+		"path": "./src/modules/attendance/infrastructure/persistence/entities/attendance-record.orm-entity.ts",
+		"collection": "attendanceRecord",
+		"name": "AttendanceRecordOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"useCache": true,
+		"compositePK": false,
+		"simplePK": true
+	},
+	"origin": "./src/modules/attendance/infrastructure/persistence/entities/attendance-record.orm-entity.ts",
+	"hash": "a1a17e93ae0fdf8a01f35d5ce10735ca",
+	"version": "6.6.7"
+}
