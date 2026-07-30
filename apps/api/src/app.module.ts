@@ -3,6 +3,7 @@ import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { IdentityModule } from './modules/identity/identity.module';
+import { ReportingModule } from './modules/reporting/reporting.module';
 import { CacheModule } from './modules/shared/cache/cache.module';
 import { getEnvs } from './modules/shared/config/app.config';
 import { TenantMiddleware } from './modules/shared/tenants/tenant.middleware';
@@ -30,6 +31,7 @@ import { TenantModule } from './modules/shared/tenants/tenant.module';
 		CacheModule,
 		TenantModule,
 		IdentityModule,
+		ReportingModule,
 	],
 })
 export class AppModule {
