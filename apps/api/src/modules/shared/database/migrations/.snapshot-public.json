@@ -200,7 +200,7 @@
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
-					"nullable": false,
+					"nullable": true,
 					"mappedType": "uuid"
 				},
 				"seen_at": {
@@ -209,7 +209,7 @@
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
-					"nullable": false,
+					"nullable": true,
 					"length": 0,
 					"mappedType": "date"
 				},
@@ -221,7 +221,7 @@
 					"primary": false,
 					"nullable": false,
 					"length": 6,
-					"default": "1784003746919",
+					"default": "1785381798054",
 					"mappedType": "datetime"
 				}
 			},
@@ -627,6 +627,137 @@
 					"updateRule": "cascade"
 				}
 			},
+			"nativeEnums": {}
+		},
+		{
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"default": "gen_random_uuid()",
+					"mappedType": "uuid"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"tenant_id": {
+					"name": "tenant_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"course_id": {
+					"name": "course_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"academic_year_id": {
+					"name": "academic_year_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"month": {
+					"name": "month",
+					"type": "smallint",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "smallint"
+				},
+				"year": {
+					"name": "year",
+					"type": "smallint",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "smallint"
+				},
+				"data": {
+					"name": "data",
+					"type": "jsonb",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "json"
+				},
+				"generated_at": {
+					"name": "generated_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"mappedType": "datetime"
+				}
+			},
+			"name": "monthly_reports",
+			"schema": "public",
+			"indexes": [
+				{
+					"keyName": "monthly_reports_course_id_index",
+					"columnNames": ["course_id"],
+					"composite": false,
+					"constraint": false,
+					"primary": false,
+					"unique": false
+				},
+				{
+					"keyName": "monthly_reports_course_id_month_year_unique",
+					"columnNames": ["course_id", "month", "year"],
+					"composite": true,
+					"constraint": true,
+					"primary": false,
+					"unique": true
+				},
+				{
+					"keyName": "monthly_reports_pkey",
+					"columnNames": ["id"],
+					"composite": false,
+					"constraint": true,
+					"primary": true,
+					"unique": true
+				}
+			],
+			"checks": [],
+			"foreignKeys": {},
 			"nativeEnums": {}
 		},
 		{

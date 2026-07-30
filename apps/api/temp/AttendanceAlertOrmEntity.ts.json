@@ -1,6 +1,6 @@
 {
 	"data": {
-		"_id": 19000,
+		"_id": 11000,
 		"properties": {
 			"id": {
 				"name": "id",
@@ -68,25 +68,29 @@
 				"name": "seenBy",
 				"kind": "scalar",
 				"type": "uuid",
+				"nullable": true,
 				"getter": false,
 				"setter": false,
 				"array": false,
+				"optional": true,
 				"runtimeType": "string"
 			},
 			"seenAt": {
 				"name": "seenAt",
 				"kind": "scalar",
 				"type": "date",
+				"nullable": true,
 				"getter": false,
 				"setter": false,
 				"array": false,
+				"optional": true,
 				"runtimeType": "Date"
 			},
 			"createdAt": {
 				"name": "createdAt",
 				"kind": "scalar",
 				"type": "datetime",
-				"default": 1784003746919,
+				"default": 1785381798054,
 				"getter": false,
 				"setter": false,
 				"array": false,
@@ -114,6 +118,6 @@
 		"simplePK": true
 	},
 	"origin": "./src/modules/attendance/infrastructure/persistence/entities/attendance-alert.orm-entity.ts",
-	"hash": "ff6ad26c54c3f57d3300e8b69d1a60f6",
+	"hash": "2af5ad27a95340da53984bc186655fd7",
 	"version": "6.6.7"
 }
