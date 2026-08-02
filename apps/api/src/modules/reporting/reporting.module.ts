@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { AcademicModule } from '../academic/academic.module';
 import { AcademicPersistenceModule } from '../academic/infrastructure/persistence/academic.persistence.module';
 import { AttendancePersistenceModule } from '../attendance/infrastructure/persistence/attendance.persistence.module';
+import { IdentityPersistenceModule } from '../identity/infrastructure/persistence/identity.persistene.module';
+import { ExportExcelHandler } from './application/commands/export-excel/export-excel.handler';
+import { ExportPdfHandler } from './application/commands/export-pdf/export-pdf.handler';
 import { GenerateMonthlyReportHandler } from './application/commands/generate-monthly-report/generate-monthly-report.handler';
 import { GenerateStudentReportHandler } from './application/commands/generate-student-report/generate-student-report.handler';
 import { GetCourseSummaryQueryHandler } from './application/queries/get-course-summary/get-course-summary.handler';
@@ -14,8 +17,11 @@ import { AttendanceAlertAdapter } from './infrastructure/adapters/attendance-ale
 import { AttendanceRecordAdapter } from './infrastructure/adapters/attendance-record.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';
 import { StudentAdapter } from './infrastructure/adapters/student.adapter';
+import { TenantAdapter } from './infrastructure/adapters/tenant.adapter';
 import { ReportingPersistenceModule } from './infrastructure/persistence/reporting.persistence.module';
 import { ReportRepository } from './infrastructure/persistence/repositories/report.repository';
+import { ExcelGeneratorService } from './infrastructure/services/excel-generator.service';
+import { PdfGeneratorService } from './infrastructure/services/pdf-generator.service';
 import { ReportingPresentationModule } from './presentation/reporting.presentation.module';
 
 const adapters = [
@@ -24,6 +30,7 @@ const adapters = [
 	AcademicYearAdapter,
 	AttendanceRecordAdapter,
 	AttendanceAlertAdapter,
+	TenantAdapter,
 ];
 
 const portTokens = [
@@ -32,6 +39,7 @@ const portTokens = [
 	{ provide: 'IAcademicYearPort', useClass: AcademicYearAdapter },
 	{ provide: 'IAttendanceRecordPort', useClass: AttendanceRecordAdapter },
 	{ provide: 'IAttendanceAlertPort', useClass: AttendanceAlertAdapter },
+	{ provide: 'ITenantPort', useClass: TenantAdapter },
 ];
 
 const handlers = [
@@ -41,6 +49,8 @@ const handlers = [
 	GetStudentReportQueryHandler,
 	GetReportsByCourseQueryHandler,
 	GetCourseSummaryQueryHandler,
+	ExportExcelHandler,
+	ExportPdfHandler,
 ];
 
 const services = [ReportGenerationService];
@@ -50,6 +60,7 @@ const services = [ReportGenerationService];
 		AcademicModule,
 		AcademicPersistenceModule,
 		AttendancePersistenceModule,
+		IdentityPersistenceModule,
 		ReportingPersistenceModule,
 		ReportingPresentationModule,
 	],
@@ -57,6 +68,8 @@ const services = [ReportGenerationService];
 		...adapters,
 		...portTokens,
 		{ provide: 'IReportRepository', useClass: ReportRepository },
+		{ provide: 'IExcelGeneratorService', useClass: ExcelGeneratorService },
+		{ provide: 'IPdfGeneratorService', useClass: PdfGeneratorService },
 		...handlers,
 		...services,
 	],
