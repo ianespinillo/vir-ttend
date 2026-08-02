@@ -1,73 +1,217 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Vir-ttend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend REST de **Vir-ttend**, un sistema multi-tenant de gestión de asistencia escolar para primaria y secundaria.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack
 
-## Description
+- [NestJS](https://nestjs.com/) 10 + TypeScript
+- [MikroORM](https://mikro-orm.io/) 6 con PostgreSQL (migraciones SQL versionadas)
+- [Redis](https://redis.io/) vía `ioredis` para caché de reportes y dashboards
+- Autenticación JWT (access + refresh) con cookies httpOnly
+- `class-validator` / `class-transformer` con `ValidationPipe` global (whitelist estricta)
+- Exportación de reportes a Excel (`exceljs`) y PDF (`pdfkit`)
+- Tests unitarios con Jest + `jest-mock-extended`
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Vive en un monorepo pnpm (workspaces). Depende en runtime de `@repo/common` (paquete compilado con tsup a CJS/ESM).
 
-## Installation
+## Requisitos
+
+- Node.js 20+
+- pnpm 9.8.0 (o `corepack enable`)
+- PostgreSQL 15+ y Redis 7+ (locales o vía Docker)
+
+## Setup local
 
 ```bash
-$ pnpm install
+# 1. Instalar dependencias (desde la raíz del monorepo)
+pnpm install
+
+# 2. Compilar el paquete compartido (la API lo importa en runtime)
+pnpm --filter @repo/common build
+
+# 3. Configurar variables de entorno
+cd apps/api
+cp .env.example .env
+# editar .env con credenciales de PostgreSQL/Redis y secrets de JWT
+
+# 4. Levantar la API en watch mode
+cd ../..
+pnpm --filter api dev
 ```
 
-## Running the app
+La API arranca en `http://localhost:3000` (configurable con `PORT`).
+
+### Base de datos y migraciones
 
 ```bash
-# development
-$ pnpm run start
+# Crear una migración nueva (desde apps/api)
+pnpm mikro-orm migration:create -- --name=<nombre>
 
-# watch mode
-$ pnpm run start:dev
+# Aplicar migraciones pendientes
+pnpm mikro-orm migration:up
 
-# production mode
-$ pnpm run start:prod
+# Revertir la última migración
+pnpm mikro-orm migration:down
 ```
 
-## Test
+## Variables de entorno
+
+| Variable | Requerida | Default | Descripción |
+|---|---|---|---|
+| `PORT` | no | `3000` | Puerto HTTP del servidor |
+| `NODE_ENV` | no | `development` | `development` \| `production` \| `test` |
+| `DATABASE_URL` | sí | — | URL de conexión PostgreSQL, ej. `postgresql://postgres:postgres@localhost:5432/virttend` |
+| `REDIS_URL` | sí | `redis://localhost:6379` | URL de conexión Redis |
+| `JWT_SECRET` | sí | — | Secreto para firmar access tokens |
+| `JWT_REFRESH_SECRET` | sí | — | Secreto para firmar refresh tokens |
+
+## Scripts
+
+| Comando | Descripción |
+|---|---|
+| `pnpm --filter api dev` | Desarrollo con hot-reload (`nest start --watch`) |
+| `pnpm --filter api build` | Compilar a `dist/` (`nest build`) |
+| `pnpm --filter api start:prod` | Ejecutar el build (`node dist/main`) |
+| `pnpm --filter api test` | Tests unitarios (Jest) |
+| `pnpm --filter api test:cov` | Tests con cobertura |
+| `pnpm --filter api test:e2e` | Tests e2e |
+| `pnpm --filter api lint` | ESLint con autofix |
+
+## Docker
 
 ```bash
-# unit tests
-$ pnpm run test
+# Build de la imagen (context = raíz del monorepo)
+docker build -f dockerfile -t virttend-api .
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+# Ejecutar con las variables de entorno
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/virttend \
+  -e REDIS_URL=redis://localhost:6379 \
+  -e JWT_SECRET=change_me \
+  -e JWT_REFRESH_SECRET=change_me_refresh \
+  virttend-api
 ```
 
-## Support
+El `Dockerfile.api` es multi-stage: compila `@repo/common` y la API en un stage `builder` y copia solo `node_modules`, `packages/common` y `apps/api/dist` al stage `runner` (imagen `node:20-alpine`, usuario `node`, expone el puerto `3000`). Ejecuta las migraciones antes de arrancar (`pnpm mikro-orm migration:up`).
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Arquitectura
 
-## Stay in touch
+Cada módulo de negocio sigue Clean Architecture (domain → application → infrastructure → presentation):
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```
+src/
+├── main.ts                          # bootstrap: pipes, filters, interceptors
+├── app.module.ts                    # módulo raíz (Config, MikroORM, Redis, eventos)
+├── common/                          # guards, decorators, pipes, interceptors, filtros
+└── modules/
+    ├── identity/                    # auth JWT, usuarios, tenants, comunicados
+    ├── academic/                    # años académicos, cursos, materias, horarios, estudiantes
+    ├── attendance/                  # asistencia diaria/por materia, alertas, dashboard
+    ├── reporting/                   # reportes mensuales, resúmenes, exportación Excel/PDF
+    ├── health/                      # health checks de la API, DB y Redis
+    ├── events/                      # eventos de dominio
+    └── shared/                      # database (mikro-orm + migraciones), cache (Redis), config
+```
 
-## License
+## Endpoints principales
 
-Nest is [MIT licensed](LICENSE).
+Auth y rol (`SUPERADMIN` | `ADMIN` | `PRECEPTOR` | `TEACHER`) se manejan con guards JWT y de roles; la autenticación usa cookies httpOnly.
+
+### Health
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/health` | Estado general (`ok`, `timestamp`, `version`) |
+| `GET` | `/health/db` | Verifica la conexión a PostgreSQL |
+| `GET` | `/health/redis` | Verifica la conexión a Redis (`PING`/`PONG`) |
+
+### Auth e Identity
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/auth/login` | Login → lista de tenants del usuario |
+| `POST` | `/auth/select-tenant` | Selecciona tenant y emite cookies JWT |
+| `POST` | `/auth/refresh` | Renueva el access token |
+| `POST` | `/auth/logout` | Invalida la sesión |
+| `GET` | `/users/me` | Usuario autenticado |
+| `GET` | `/users` | Usuarios del tenant |
+| `PUT` | `/users/:id/role` | Cambiar rol |
+| `POST` | `/tenants` | Crear tenant |
+| `GET` | `/tenants` | Listar tenants |
+| `PUT` | `/tenants/:id` | Actualizar tenant |
+| `PATCH` | `/tenants/:id/status` | Activar/suspender tenant |
+
+### Comunicados
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/announcements?schoolId=&status=` | Listar comunicados (paginado) |
+| `GET` | `/announcements/for-me` | Comunicados dirigidos al usuario autenticado |
+| `POST` | `/announcements` | Crear comunicado (draft o publicado) |
+| `GET` | `/announcements/:id` | Obtener comunicado |
+| `PUT` | `/announcements/:id` | Actualizar borrador (solo autor/admin) |
+| `PATCH` | `/announcements/:id/publish` | Publicar borrador (solo autor/admin) |
+| `DELETE` | `/announcements/:id` | Eliminar (solo admin) |
+
+### Académico
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/academic-years` | Años académicos |
+| `GET` | `/courses` | Cursos |
+| `GET` | `/courses/:id` | Detalle de curso |
+| `POST` | `/students` | Crear estudiante |
+| `GET` | `/students` | Listar estudiantes (paginado) |
+| `GET` | `/students/search` | Búsqueda de estudiantes |
+| `POST` | `/students/:id/enroll` | Matricular estudiante |
+| `POST` | `/students/:id/transfer` | Transferir de curso |
+| `GET` | `/subjects` | Materias |
+| `GET` | `/schedule` | Horarios |
+
+### Asistencia y alertas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/attendance/daily` | Registrar asistencia diaria (primaria) |
+| `POST` | `/attendance/subject` | Registrar asistencia por materia (secundaria) |
+| `POST` | `/attendance/subject/all` | Carga masiva de asistencia por materia |
+| `GET` | `/attendance/daily` | Asistencia diaria por curso/fecha |
+| `GET` | `/attendance/student/:studentId` | Historial de un estudiante |
+| `GET` | `/attendance/history` | Historial de asistencia |
+| `GET` | `/attendance/subject/:subjectId/history` | Historial por materia |
+| `POST` | `/attendance/:id/justify` | Justificar inasistencia |
+| `GET` | `/alerts` | Alertas de ausencias |
+| `GET` | `/alerts/unseen` | Alertas no vistas |
+| `GET` | `/alerts/count` | Contador de alertas no vistas |
+| `GET` | `/alerts/student/:studentId` | Alertas de un estudiante |
+| `PATCH` | `/alerts/:id/seen` | Marcar alerta como vista |
+| `GET` | `/dashboard` | Resumen del panel |
+| `GET` | `/dashboard/course/:courseId` | Dashboard de un curso |
+
+### Reportes y exportación
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/reports/monthly?courseId=&month=&year=` | Reporte mensual de un curso |
+| `POST` | `/reports/generate` | Generar reporte mensual |
+| `GET` | `/reports/course/:courseId/summary` | Resumen del curso |
+| `GET` | `/reports/course/:courseId/available` | Reportes disponibles del curso |
+| `GET` | `/reports/student/:studentId` | Reporte detallado de un estudiante |
+| `POST` | `/reports/export/excel` | Exportar a Excel |
+| `POST` | `/reports/export/pdf` | Exportar a PDF |
+
+## Testing
+
+```bash
+pnpm --filter api test
+```
+
+La suite son 40 archivos de spec con 202 tests unitarios (handlers de commands/queries, servicios de dominio, controllers, health checks).
+
+## Health checks
+
+```
+GET /health     → { status: "ok", timestamp, version }
+GET /health/db  → 200 si PostgreSQL responde, 503 si falla
+GET /health/redis → 200 si Redis responde PONG, 503 si falla
+```

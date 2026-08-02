@@ -1,0 +1,46 @@
+# Dockerfile para la API de Vir-ttend (apps/api)
+# Build context: raíz del monorepo (ver .dockerignore)
+
+# Stage 1: builder
+FROM node:20-alpine AS builder
+
+ENV HUSKY=0
+
+RUN npm install -g pnpm@9.8.0
+
+WORKDIR /app
+
+# Solo manifests primero para aprovechar la caché de capas de Docker
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/common/package.json ./packages/common/
+
+RUN pnpm install --frozen-lockfile
+
+# Código fuente del monorepo
+COPY . .
+
+# Se construye @repo/common primero (es dependencia runtime de la API)
+RUN pnpm --filter @repo/common build
+RUN pnpm --filter api build
+
+# Stage 2: runner
+FROM node:20-alpine AS runner
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# node_modules, el workspace @repo/common (compilado) y el dist de la API
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/common ./packages/common
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+
+RUN chown -R node:node /app
+
+USER node
+
+EXPOSE 3000
+
+CMD ["node", "apps/api/dist/main.js"]

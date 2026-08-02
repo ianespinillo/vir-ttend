@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Dependencias
+node_modules
+**/node_modules
+
+# Builds
+dist
+**/dist
+.next
+**/.next
+.turbo
+**/.turbo
+coverage
+**/coverage
+
+# Entorno y secrets
+.env
+**/.env
+.env.local
+**/.env.local
+
+# Logs y temporales
+*.log
+**/*.log
+.DS_Store
+Thumbs.db
