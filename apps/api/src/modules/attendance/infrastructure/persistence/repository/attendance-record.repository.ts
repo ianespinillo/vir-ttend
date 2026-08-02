@@ -1,4 +1,7 @@
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
+import { Inject } from '@nestjs/common';
+import Redis from 'ioredis';
+import { REDIS_CLIENT } from '../../../../shared/cache/cache.module';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import {
 	IAttendanceRecordRepository,
@@ -11,6 +14,12 @@ export class AttendanceRecordRepository
 	extends EntityRepository<AttendanceRecordOrmEntity>
 	implements IAttendanceRecordRepository
 {
+	constructor(
+		em: EntityManager,
+		@Inject(REDIS_CLIENT) private readonly redis: Redis,
+	) {
+		super(em, AttendanceRecordOrmEntity);
+	}
 	async findBySubjectAndDateRange(
 		subjectId: string,
 		from: Date,
@@ -143,6 +152,18 @@ export class AttendanceRecordRepository
 		courseId: string,
 		targetDate: Date,
 	): Promise<RawCourseMetrics> {
+		const cacheKey = `attendance:summary:${courseId}:${targetDate
+			.toISOString()
+			.slice(0, 10)}`;
+		try {
+			const cached = await this.redis.get(cacheKey);
+			if (cached) {
+				return JSON.parse(cached) as unknown as RawCourseMetrics;
+			}
+		} catch {
+			// redis no disponible: cae a base de datos
+		}
+
 		const result = await this.em
 			.createQueryBuilder(AttendanceRecordOrmEntity, 'ar')
 			.select([
@@ -159,7 +180,13 @@ export class AttendanceRecordRepository
 			})
 			.execute();
 
-		return result as unknown as RawCourseMetrics;
+		const raw = result as unknown as RawCourseMetrics;
+		try {
+			await this.redis.set(cacheKey, JSON.stringify(raw), 'EX', 300);
+		} catch {
+			// cache best-effort
+		}
+		return raw;
 	}
 	async getCourseSummaryForDateRange(
 		courseId: string,

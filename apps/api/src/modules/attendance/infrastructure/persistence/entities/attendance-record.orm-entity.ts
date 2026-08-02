@@ -7,13 +7,9 @@ import {
 	Unique,
 } from '@mikro-orm/core';
 import { AttendanceStatus } from '@repo/common';
-import { AttendanceRecordRepository } from '../repository/attendance-record.repository';
 import { JustificationOrmEntity } from './justification.orm-entity';
 
-@Entity({
-	tableName: 'attendanceRecord',
-	repository: () => AttendanceRecordRepository,
-})
+@Entity({ tableName: 'attendanceRecord' })
 @Unique({ properties: ['courseId', 'studentId', 'subjectId', 'date'] })
 @Index({ properties: ['courseId', 'date'] })
 export class AttendanceRecordOrmEntity {

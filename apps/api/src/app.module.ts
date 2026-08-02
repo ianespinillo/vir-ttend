@@ -2,6 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
 import { CacheModule } from './modules/shared/cache/cache.module';
@@ -32,6 +33,7 @@ import { TenantModule } from './modules/shared/tenants/tenant.module';
 		TenantModule,
 		IdentityModule,
 		ReportingModule,
+		HealthModule,
 	],
 })
 export class AppModule {
