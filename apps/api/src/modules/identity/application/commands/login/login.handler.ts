@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Roles } from '@repo/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -14,7 +14,9 @@ export interface LoginResult {
 @Injectable()
 export class LoginHandler {
 	constructor(
+		@Inject('IUserRepository')
 		private readonly userRepository: IUserRepository,
+		@Inject('IUserTenantMembershipRepository')
 		private readonly membersRepo: IUserTenantMembershipRepository,
 		private readonly passwordService: PasswordService,
 	) {}

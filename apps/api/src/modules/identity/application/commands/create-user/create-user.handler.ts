@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES, Roles } from '@repo/common';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
@@ -21,7 +21,9 @@ const canCreate: Record<Roles, Roles[]> = {
 @Injectable()
 export class CreateUserHandler {
 	constructor(
+		@Inject('IUserRepository')
 		private readonly userRepository: IUserRepository,
+		@Inject('IUserTenantMembershipRepository')
 		private readonly memberRepo: IUserTenantMembershipRepository,
 		private readonly passwordService: PasswordService,
 		private readonly eventEmitter: EventEmitter2,

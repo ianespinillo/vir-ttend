@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { CourseResponseDto } from '../../dtos/course.response.dto';
 import { GetCoursesByPreceptorQuery } from './get-courses-by-preceptor.query';
 
 @Injectable()
 export class GetCoursesByPreceptorHandler {
-	constructor(private readonly courseRepo: ICourseRepository) {}
+	constructor(
+		@Inject('ICourseRepository')
+		private readonly courseRepo: ICourseRepository,
+	) {}
 	async execute(
 		query: GetCoursesByPreceptorQuery,
 	): Promise<CourseResponseDto[]> {

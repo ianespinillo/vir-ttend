@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { UpdateSubjectCommand } from './update-subject.command';
 
 @Injectable()
 export class UpdateSubjectHandler {
-	constructor(private readonly subjectRepo: ISubjectRepository) {}
+	constructor(
+		@Inject('ISubjectRepository')
+		private readonly subjectRepo: ISubjectRepository,
+	) {}
 	async execute(command: UpdateSubjectCommand) {
 		const subject = await this.subjectRepo.findById(command.subjectId);
 		if (!subject) throw new Error('Subject not found');

@@ -22,7 +22,9 @@ import { ReportingPersistenceModule } from './infrastructure/persistence/reporti
 import { ReportRepository } from './infrastructure/persistence/repositories/report.repository';
 import { ExcelGeneratorService } from './infrastructure/services/excel-generator.service';
 import { PdfGeneratorService } from './infrastructure/services/pdf-generator.service';
-import { ReportingPresentationModule } from './presentation/reporting.presentation.module';
+import { ExportController } from './presentation/controllers/export.controller';
+import { ReportsController } from './presentation/controllers/reports.controller';
+import { StudentReportsController } from './presentation/controllers/student-reports.controller';
 
 const adapters = [
 	StudentAdapter,
@@ -62,7 +64,6 @@ const services = [ReportGenerationService];
 		AttendancePersistenceModule,
 		IdentityPersistenceModule,
 		ReportingPersistenceModule,
-		ReportingPresentationModule,
 	],
 	providers: [
 		...adapters,
@@ -73,5 +74,6 @@ const services = [ReportGenerationService];
 		...handlers,
 		...services,
 	],
+	controllers: [ReportsController, StudentReportsController, ExportController],
 })
 export class ReportingModule {}

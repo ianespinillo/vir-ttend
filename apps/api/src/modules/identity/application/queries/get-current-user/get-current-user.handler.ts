@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { UserResponseDto } from '../../dto/user.response.dto';
@@ -7,7 +7,9 @@ import { GetCurrentUserQuery } from './get-current-user.query';
 @Injectable()
 export class GetCurrentUserHandler {
 	constructor(
+		@Inject('IUserTenantMembershipRepository')
 		private readonly membersRepo: IUserTenantMembershipRepository,
+		@Inject('IUserRepository')
 		private readonly userRepo: IUserRepository,
 	) {}
 	async execute({

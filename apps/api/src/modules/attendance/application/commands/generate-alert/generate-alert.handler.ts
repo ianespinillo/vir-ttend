@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AttendanceAlert } from '../../../domain/entities/attendance-alert.entity';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
@@ -12,10 +12,14 @@ import { GenerateAlertCommand } from './generate-alert.command';
 @Injectable()
 export class GenerateAlertHandler {
 	constructor(
+		@Inject('IAcademicYearPort')
 		private readonly academicPort: IAcademicYearPort,
+		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
 		private readonly attendanceService: AttendanceCalculationService,
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('IAttendanceAlertRepository')
 		private readonly alertRepo: IAttendanceAlertRepository,
 		private readonly em: EventEmitter2,
 	) {}

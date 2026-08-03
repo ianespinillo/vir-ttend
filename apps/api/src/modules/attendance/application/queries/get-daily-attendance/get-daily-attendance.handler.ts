@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+	Inject,
+	Injectable,
+	InternalServerErrorException,
+} from '@nestjs/common';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { GetDailyAttendanceQuery } from './get-daily-attendance.query';
 
@@ -10,8 +14,11 @@ import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.respon
 @Injectable()
 export class GetDailyAttendanceQueryHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('IStudentPort')
 		private readonly studentPort: IStudentPort,
+		@Inject('IJustificationRepository')
 		private readonly justificationRepo: IJustificationRepository,
 	) {}
 

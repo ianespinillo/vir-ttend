@@ -10,6 +10,7 @@ import { BulkUpdateSubjectStatusCommand } from './bulk-update-subject-status.com
 @Injectable()
 export class BulkUpdateSubjectStatusHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		@Inject('ISubjectPort') private readonly subjectRepository: ISubjectPort,
 		@Inject('IStudentPort') private readonly studentPort: IStudentPort,

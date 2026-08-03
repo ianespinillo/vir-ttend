@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_THRESHOLDS } from '@repo/common';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { CourseSnapshotDto } from '../../dtos/course-snapshot.dto';
@@ -9,6 +9,7 @@ import { GetPreceptorDashboardQuery } from './get-preceptor-dashboard.query';
 @Injectable()
 export class GetPreceptorDashboardQueryHandler {
 	constructor(
+		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
 		private readonly dashService: CourseSnapshotBuilderService,
 	) {}

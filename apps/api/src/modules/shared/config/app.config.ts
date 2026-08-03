@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import * as env from 'env-var';
 import { getDatabaseConfig } from './database.config';
 import { getRedisConfig } from './redis.config,';

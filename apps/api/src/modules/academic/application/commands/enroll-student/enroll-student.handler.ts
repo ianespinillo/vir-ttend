@@ -1,5 +1,6 @@
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
@@ -10,7 +11,9 @@ import { EnrollStudentCommand } from './enroll-student.command';
 @Injectable()
 export class EnrollStudentHandler {
 	constructor(
+		@Inject('IStudentRepository')
 		private readonly studentRepo: IStudentRepository,
+		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
 	) {}
 	async execute(command: EnrollStudentCommand) {

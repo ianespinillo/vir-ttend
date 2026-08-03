@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Tenant } from '../../../domain/entities/tenant.entity';
 import { TenantCreatedEvent } from '../../../domain/events/tenant-created.event';
@@ -9,6 +9,7 @@ import { CreateTenantCommand } from './create-tenant.command';
 @Injectable()
 export class CreateTenantHandler {
 	constructor(
+		@Inject('ITenantRepository')
 		private readonly tenantRepo: ITenantRepository,
 		private readonly em: EventEmitter2,
 	) {}

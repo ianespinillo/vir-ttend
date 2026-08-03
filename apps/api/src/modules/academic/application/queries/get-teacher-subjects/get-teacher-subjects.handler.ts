@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { SubjectResponseDto } from '../../dtos/subject.response.dto';
@@ -7,7 +7,9 @@ import { GetTeacherSubjectsQuery } from './get-teacher-subjects.query';
 @Injectable()
 export class GetTeacherSubjectsQueryHandler {
 	constructor(
+		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
+		@Inject('ISubjectRepository')
 		private readonly subjectRepo: ISubjectRepository,
 	) {}
 	async execute(query: GetTeacherSubjectsQuery): Promise<SubjectResponseDto[]> {

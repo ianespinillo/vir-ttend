@@ -1,7 +1,9 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
@@ -19,7 +21,7 @@ import { TenantModule } from './modules/shared/tenants/tenant.module';
 		}),
 		MikroOrmModule.forRootAsync({
 			useFactory: (configService: ConfigService) => ({
-				type: 'postgresql',
+				driver: PostgreSqlDriver,
 				clientUrl: configService.get<string>('DATABASE_URL'),
 				autoLoadEntities: true,
 				migrations: {
@@ -32,6 +34,7 @@ import { TenantModule } from './modules/shared/tenants/tenant.module';
 		CacheModule,
 		TenantModule,
 		IdentityModule,
+		AttendanceModule,
 		ReportingModule,
 		HealthModule,
 	],

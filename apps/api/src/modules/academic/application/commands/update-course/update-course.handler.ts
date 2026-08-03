@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { UpdateCourseCommand } from './update-course.command';
 
 @Injectable()
 export class UpdateCourseHandler {
-	constructor(private readonly courseRepo: ICourseRepository) {}
+	constructor(
+		@Inject('ICourseRepository')
+		private readonly courseRepo: ICourseRepository,
+	) {}
 	async execute(command: UpdateCourseCommand) {
 		const course = await this.courseRepo.findById(command.courseId);
 		if (!course) throw new Error('Course not found');

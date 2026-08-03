@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { UpdateTenantCommand } from './update-tenant.command';
 
 @Injectable()
 export class UpdateTenantHandler {
-	constructor(private readonly tenantRepo: ITenantRepository) {}
+	constructor(
+		@Inject('ITenantRepository')
+		private readonly tenantRepo: ITenantRepository,
+	) {}
 	async execute(command: UpdateTenantCommand) {
 		const tenant = await this.tenantRepo.findById(command.tenantId);
 		if (!tenant) throw new Error('Tenant not found');

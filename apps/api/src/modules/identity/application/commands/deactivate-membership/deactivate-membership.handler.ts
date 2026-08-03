@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { AuthorizationService } from '../../../domain/services/authorization.service';
 import { DeactivateMembershipCommand } from './deactivate-membership.command';
 @Injectable()
 export class DeactivateMembershipHandler {
-	constructor(private readonly memberRepo: IUserTenantMembershipRepository) {}
+	constructor(
+		@Inject('IUserTenantMembershipRepository')
+		private readonly memberRepo: IUserTenantMembershipRepository,
+	) {}
 	async execute(command: DeactivateMembershipCommand) {
 		const membership = await this.memberRepo.findByUserAndTenant(
 			command.userId,

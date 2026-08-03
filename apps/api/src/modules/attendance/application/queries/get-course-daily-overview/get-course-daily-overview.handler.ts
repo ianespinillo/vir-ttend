@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_THRESHOLDS } from '@repo/common';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
@@ -10,7 +10,9 @@ import { GetCourseDailyOverviewQuery } from './get-course-daily-overview.query';
 @Injectable()
 export class GetCourseDailyOverviewQueryHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
 		private readonly snapshotService: CourseSnapshotBuilderService,
 	) {}

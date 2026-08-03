@@ -7,6 +7,12 @@ import {
 	UnauthorizedException,
 	UseGuards,
 } from '@nestjs/common';
+import {
+	ApiCookieAuth,
+	ApiOperation,
+	ApiResponse,
+	ApiTags,
+} from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { LoginCommand } from '../../application/commands/login/login.command';
@@ -19,10 +25,12 @@ import { SelectTenantCommand } from '../../application/commands/select-tenant/se
 import { SelectTenantHandler } from '../../application/commands/select-tenant/select-tenant.handler';
 import { AuthResponseDto } from '../../application/dto/auth.response.dto';
 import { LoginRequestDto } from '../../application/dto/login.request.dto';
+import { LoginResponseDto } from '../../application/dto/login.response.dto';
 import { SelectTenantRequestDto } from '../../application/dto/select-tenant.request.dto';
 
 // auth.controller.ts
 @Controller('auth')
+@ApiTags('Auth')
 export class AuthController {
 	constructor(
 		private readonly loginHandler: LoginHandler,
@@ -32,6 +40,22 @@ export class AuthController {
 	) {}
 
 	@Post('login')
+	@ApiOperation({
+		summary: 'Iniciar sesión',
+		description:
+			'Paso 1 del flujo de autenticación. Valida las credenciales (email y password) y devuelve los tenants a los que pertenece el usuario. Es público y no requiere cookie. Además setea la cookie httpOnly pending_user_id (10 minutos) que se consume en POST /auth/select-tenant. Body de ejemplo: { "email": "m.gonzalez@escuela.edu.ar", "password": "contraseñaSegura123" }. La respuesta exitosa se envuelve en { success, data: LoginResponseDto, timeStamp }. Los errores se envuelven en { statusCode, timestamp, path, method, message, error }. Roles permitidos: ninguno (público).',
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Credenciales válidas. Devuelve isSuperAdmin y la lista de tenants. Cookie pending_user_id seteada.',
+		type: LoginResponseDto,
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({
+		status: 401,
+		description: 'Credenciales inválidas o usuario inactivo',
+	})
 	async login(
 		@Body() dto: LoginRequestDto,
 		@Req() req: Request,
@@ -53,6 +77,23 @@ export class AuthController {
 	}
 
 	@Post('select-tenant')
+	@ApiOperation({
+		summary: 'Seleccionar tenant y obtener sesión',
+		description:
+			'Paso 2 del flujo de autenticación. Requiere la cookie httpOnly pending_user_id seteada por POST /auth/login; el usuario se obtiene de esa cookie (el campo userId del body no se usa). Selecciona el tenant y setea las cookies httpOnly access_token (15 minutos, path /) y refresh_token (7 días, path /auth/refresh). Body de ejemplo: { "tenantId": "2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a" }. A partir de acá, los endpoints autenticados usan la cookie access_token (documentados con @ApiCookieAuth). La respuesta exitosa se envuelve en { success, data: AuthResponseDto, timeStamp }. Los errores se envuelven en { statusCode, timestamp, path, method, message, error }. Roles permitidos: ninguno (público, requiere cookie pending_user_id).',
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Sesión iniciada. Cookies access_token y refresh_token seteada. Devuelve el usuario dentro del tenant.',
+		type: AuthResponseDto,
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({
+		status: 401,
+		description:
+			'Cookie pending_user_id ausente o expirada, o selección de tenant inválida',
+	})
 	async selectTenant(
 		@Body() dto: SelectTenantRequestDto, // solo tenantId
 		@Req() req: Request,
@@ -94,6 +135,21 @@ export class AuthController {
 
 	@Post('logout')
 	@UseGuards(JwtAuthGuard)
+	@ApiCookieAuth('access_token')
+	@ApiOperation({
+		summary: 'Cerrar sesión',
+		description:
+			'Paso final del flujo. Requiere estar autenticado con la cookie access_token y tener la cookie httpOnly refresh_token. Revoca el refresh token en el backend y limpia las cookies access_token y refresh_token. La respuesta no devuelve datos (data es null). URL: POST /auth/logout. Roles permitidos: cualquier usuario autenticado.',
+	})
+	@ApiResponse({
+		status: 200,
+		description:
+			'Sesión cerrada. Cookies access_token y refresh_token limpiadas. La respuesta no devuelve datos (data es null).',
+	})
+	@ApiResponse({
+		status: 401,
+		description: 'No autenticado (cookie access_token o refresh_token ausente)',
+	})
 	async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 		const refreshToken = req.cookies?.refresh_token;
 		if (!refreshToken) throw new UnauthorizedException();
@@ -105,6 +161,20 @@ export class AuthController {
 	}
 
 	@Post('refresh')
+	@ApiOperation({
+		summary: 'Renovar access token',
+		description:
+			'Renueva el access token usando la cookie httpOnly refresh_token. Es público (sin guard) y setea un nuevo access_token en cookie (15 minutos, path /). La respuesta no devuelve datos (data es null). Roles permitidos: ninguno (público, requiere cookie refresh_token).',
+	})
+	@ApiResponse({
+		status: 200,
+		description:
+			'Nuevo access_token seteado en cookie. La respuesta no devuelve datos (data es null).',
+	})
+	@ApiResponse({
+		status: 401,
+		description: 'Cookie refresh_token ausente, inválida o expirada',
+	})
 	async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 		const refreshToken = req.cookies?.refresh_token;
 		if (!refreshToken) throw new UnauthorizedException();

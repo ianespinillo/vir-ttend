@@ -41,6 +41,17 @@ pnpm --filter api dev
 
 La API arranca en `http://localhost:3000` (configurable con `PORT`).
 
+### Swagger / OpenAPI
+
+La API expone documentación interactiva generada con `@nestjs/swagger` (controllers, DTOs, autenticación por cookie y ejemplos en español):
+
+| Ruta | Descripción |
+|---|---|
+| `GET /docs` | UI interactiva (Swagger UI) |
+| `GET /docs-json` | Especificación OpenAPI en JSON |
+
+Los endpoints protegidos usan la cookie httpOnly `access_token`; el botón *Authorize* de Swagger UI envía el valor en el request (en desarrollo, el header cookie se puede simular manualmente).
+
 ### Base de datos y migraciones
 
 ```bash

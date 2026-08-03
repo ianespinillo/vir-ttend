@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_THRESHOLDS, LEVEL } from '@repo/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
@@ -13,8 +13,11 @@ import { GetDashboardMetricsQuery } from './get-dashboard-metrics.query';
 @Injectable()
 export class GetDashboardMetricsQueryHandler {
 	constructor(
+		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('IAcademicYearPort')
 		private readonly academicYearPort: IAcademicYearPort,
 		private readonly dashService: CourseSnapshotBuilderService,
 	) {}

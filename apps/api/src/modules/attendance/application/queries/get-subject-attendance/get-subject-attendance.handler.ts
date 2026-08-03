@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.response.dto';
@@ -8,7 +8,9 @@ import { GetSubjectAttendanceQuery } from './get-subject-attendance.query';
 @Injectable()
 export class GetSubjectAttendanceQueryHandler {
 	constructor(
+		@Inject('ISubjectPort')
 		private readonly subjectPort: ISubjectPort,
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 	) {}
 	async execute(

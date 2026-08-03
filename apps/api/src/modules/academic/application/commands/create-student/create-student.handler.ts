@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Student } from '../../../domain/entities/student.entity';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
@@ -7,6 +7,7 @@ import { CreateStudentCommand } from './create-student.command';
 @Injectable()
 export class CreateStudentHandler {
 	constructor(
+		@Inject('IStudentRepository')
 		private readonly studentRepo: IStudentRepository,
 		private readonly em: EventEmitter2,
 	) {}
