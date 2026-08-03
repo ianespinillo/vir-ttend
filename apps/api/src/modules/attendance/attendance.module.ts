@@ -10,6 +10,7 @@ import { RegisterDailyAttendanceHandler } from './application/commands/register-
 import { RegisterSubjectAttendanceHandler } from './application/commands/register-subject-attendance/register-subject-attendance.handler';
 import { GetAlertsCountQueryHandler } from './application/queries/get-alerts-count/get-alerts-count.handler';
 import { GetAlertsQueryHandler } from './application/queries/get-alerts/get-alerts.handler';
+import { GetAttendanceByStudentQueryHandler } from './application/queries/get-attendance-by-student/get-attendance-by-student.handler';
 import { GetAttendanceHistoryQueryHandler } from './application/queries/get-attendance-history/get-attendance-history.handler';
 import { GetAttendanceMetricsQueryHandler } from './application/queries/get-attendance-metrics/get-attendance-metrics.handler';
 import { GetCourseDailyOverviewQueryHandler } from './application/queries/get-course-daily-overview/get-course-daily-overview.handler';
@@ -20,30 +21,58 @@ import { GetStudentAlertsQueryHandler } from './application/queries/get-student-
 import { GetSubjectAttendanceQueryHandler } from './application/queries/get-subject-attendance/get-subject-attendance.handler';
 import { GetSubjectHistoryQueryHandler } from './application/queries/get-subject-history/get-subject-history.handler';
 import { GetUnseenAlertsQueryHandler } from './application/queries/get-unseen-alerts/get-unseen-alerts.handler';
+import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
+import { AttendanceCalculationService } from './domain/services/attendance-calculation.service';
+import { AttendanceCopyService } from './domain/services/attendance-copy.service';
+import { LatePolicyService } from './domain/services/late-policy.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';
+import { ScheduleAdapter } from './infrastructure/adapters/schedule.adapter';
 import { StudentAdapter } from './infrastructure/adapters/student.adapter';
+import { SubjectAdapter } from './infrastructure/adapters/subject.adapter';
 import { AttendancePersistenceModule } from './infrastructure/persistence/attendance.persistence.module';
-import { AttendancePresentationModule } from './presentation/controllers/attendance.presentation.module';
+import { AttendanceAlertRepository } from './infrastructure/persistence/repository/attendance-alert.repository';
+import { AttendanceRecordRepository } from './infrastructure/persistence/repository/attendance-record.repository';
+import { JustificationRepository } from './infrastructure/persistence/repository/justification.repository';
+import { AlertsController } from './presentation/controllers/alerts.controller';
+import { AttendanceCommandController } from './presentation/controllers/attendance.command.controller';
+import { AttendanceQueryController } from './presentation/controllers/attendance.query.controller';
+import { DashboardController } from './presentation/controllers/dashboard.controller';
 
 @Module({
-	imports: [
-		AcademicModule,
-		AttendancePersistenceModule,
-		AttendancePresentationModule,
-	],
+	imports: [AcademicModule, AttendancePersistenceModule],
 	providers: [
 		{
 			provide: 'IStudentPort',
 			useClass: StudentAdapter,
 		},
 		{
-			provide: 'IAcadmicYearPort',
+			provide: 'IAcademicYearPort',
 			useClass: AcademicYearAdapter,
 		},
 		{
 			provide: 'ICoursePort',
 			useClass: CourseAdapter,
+		},
+		{
+			provide: 'ISchedulePort',
+			useClass: ScheduleAdapter,
+		},
+		{
+			provide: 'ISubjectPort',
+			useClass: SubjectAdapter,
+		},
+		{
+			provide: 'IAttendanceRecordRepository',
+			useClass: AttendanceRecordRepository,
+		},
+		{
+			provide: 'IAttendanceAlertRepository',
+			useClass: AttendanceAlertRepository,
+		},
+		{
+			provide: 'IJustificationRepository',
+			useClass: JustificationRepository,
 		},
 		//commands
 		RegisterDailyAttendanceHandler,
@@ -57,6 +86,7 @@ import { AttendancePresentationModule } from './presentation/controllers/attenda
 		//queries
 		GetDailyAttendanceQueryHandler,
 		GetDailyAttendanceQueryHandler,
+		GetAttendanceByStudentQueryHandler,
 		GetAttendanceHistoryQueryHandler,
 		GetAttendanceMetricsQueryHandler,
 		GetSubjectAttendanceQueryHandler,
@@ -68,6 +98,17 @@ import { AttendancePresentationModule } from './presentation/controllers/attenda
 		GetUnseenAlertsQueryHandler,
 		GetAlertsCountQueryHandler,
 		GetStudentAlertsQueryHandler,
+		//domain services
+		AttendanceCalculationService,
+		AttendanceCopyService,
+		LatePolicyService,
+		CourseSnapshotBuilderService,
+	],
+	controllers: [
+		AlertsController,
+		AttendanceCommandController,
+		AttendanceQueryController,
+		DashboardController,
 	],
 })
 export class AttendanceModule {}

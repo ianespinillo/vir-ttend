@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Subject } from '../../../domain/entities/subject.entity';
 import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
@@ -10,8 +10,11 @@ import { CreateSubjectCommand } from './create-subject.command';
 @Injectable()
 export class CreateSubjectHandler {
 	constructor(
+		@Inject('ISubjectRepository')
 		private readonly subjectRepo: ISubjectRepository,
+		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
+		@Inject('IMembershipPort')
 		private readonly membershipPort: IMembershipPort,
 		private readonly em: EventEmitter2,
 	) {}

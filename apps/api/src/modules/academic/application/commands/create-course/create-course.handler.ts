@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Course } from '../../../domain/entities/course.entity';
 import { IAcademicYearRepository } from '../../../domain/repositories/academic-year.repository.interface';
@@ -9,7 +9,9 @@ import { CreateCourseCommand } from './create-course.command';
 @Injectable()
 export class CreateCourseHandler {
 	constructor(
+		@Inject('IAcademicYearRepository')
 		private readonly aYRepo: IAcademicYearRepository,
+		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
 		private readonly em: EventEmitter2,
 	) {}

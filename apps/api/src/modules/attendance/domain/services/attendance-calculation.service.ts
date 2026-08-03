@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
 import { AcademicYear } from '../entities/academic-year.entity';
 import { AttendanceRecord } from '../entities/attendance-record.entity';
@@ -8,6 +8,7 @@ import { LatePolicyService } from './late-policy.service';
 @Injectable()
 export class AttendanceCalculationService {
 	constructor(
+		@Inject('ISchedulePort')
 		private readonly schedulePort: ISchedulePort,
 		private readonly latePolicyService: LatePolicyService,
 	) {}

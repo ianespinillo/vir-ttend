@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DAYOFWEEK } from '@repo/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
@@ -10,7 +10,9 @@ import { RegisterSubjectAttendanceCommand } from './register-subject-attendance.
 @Injectable()
 export class RegisterSubjectAttendanceHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRecordRepo: IAttendanceRecordRepository,
+		@Inject('ISchedulePort')
 		private readonly schedulePort: ISchedulePort,
 		private readonly em: EventEmitter2,
 	) {}

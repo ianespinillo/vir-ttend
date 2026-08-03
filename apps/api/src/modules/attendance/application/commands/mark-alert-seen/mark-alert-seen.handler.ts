@@ -1,9 +1,10 @@
-import { NotFoundException } from '@nestjs/common';
+import { Inject, NotFoundException } from '@nestjs/common';
 import { IAttendanceAlertRepository } from '../../../domain/repositories/attendance-alert.repository.interface';
 import { MarkAlertSeenCommand } from './mark-alert-seen.command';
 
 export class MarkAlertSeenHandler {
 	constructor(
+		@Inject('IAttendanceAlertRepository')
 		private readonly alertAttendanceRepo: IAttendanceAlertRepository,
 	) {}
 	async execute(command: MarkAlertSeenCommand): Promise<void> {

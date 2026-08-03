@@ -1,3 +1,4 @@
+import { Inject } from '@nestjs/common';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IAttendanceAlertRepository } from '../../../domain/repositories/attendance-alert.repository.interface';
 import { AlertsCountResponseDto } from '../../dtos/alert-count.response.dto';
@@ -5,7 +6,9 @@ import { GetAlertsCountQuery } from './get-alerts-count.query';
 
 export class GetAlertsCountQueryHandler {
 	constructor(
+		@Inject('IAttendanceAlertRepository')
 		private readonly alertRepo: IAttendanceAlertRepository,
+		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
 	) {}
 	async execute(query: GetAlertsCountQuery): Promise<AlertsCountResponseDto> {

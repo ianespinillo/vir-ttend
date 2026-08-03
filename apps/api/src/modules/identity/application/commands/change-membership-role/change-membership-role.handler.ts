@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { AuthorizationService } from '../../../domain/services/authorization.service';
 import { ChangeMembershipRoleCommand } from './change-membership-role.command';
 
 @Injectable()
 export class ChangeMembershipRoleHandler {
-	constructor(private readonly memberRepo: IUserTenantMembershipRepository) {}
+	constructor(
+		@Inject('IUserTenantMembershipRepository')
+		private readonly memberRepo: IUserTenantMembershipRepository,
+	) {}
 	async execute(command: ChangeMembershipRoleCommand) {
 		if (!AuthorizationService.canManageRole(command.actorRole, command.newRole))
 			throw new Error('Unhautorized role managment');

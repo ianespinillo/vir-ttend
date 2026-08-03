@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { DeleteCourseCommand } from './delete-course.command';
 
 @Injectable()
 export class DeleteCourseHandler {
-	constructor(private readonly courseRepo: ICourseRepository) {}
+	constructor(
+		@Inject('ICourseRepository')
+		private readonly courseRepo: ICourseRepository,
+	) {}
 	async execute(command: DeleteCourseCommand) {
 		const course = await this.courseRepo.findById(command.courseId);
 		if (!course) throw new Error('Course not found');

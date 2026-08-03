@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+	Inject,
+	Injectable,
+	InternalServerErrorException,
+} from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { IJustificationRepository } from '../../../domain/repositories/justification.repository.interface';
@@ -8,7 +12,9 @@ import { GetAttendanceByStudentQuery } from './get-attendance-by-student.query';
 @Injectable()
 export class GetAttendanceByStudentQueryHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('IJustificationRepository')
 		private readonly justificationRepository: IJustificationRepository,
 	) {}
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Student } from '../../../domain/entities/student.entity';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
@@ -8,7 +8,9 @@ import { GetStudentsByGradeQuery } from './get-students-by-grade.query';
 @Injectable()
 export class GetStudentsByGradeHandler {
 	constructor(
+		@Inject('IStudentRepository')
 		private readonly studentsRepo: IStudentRepository,
+		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
 	) {}
 	async execute({

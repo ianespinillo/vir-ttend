@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceCopyService } from '../../../domain/services/attendance-copy.service';
@@ -7,6 +7,7 @@ import { CopyAttendanceCommand } from './copy-attendance.command';
 @Injectable()
 export class CopyAttendanceHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		private readonly copyAttendanceService: AttendanceCopyService,
 	) {}

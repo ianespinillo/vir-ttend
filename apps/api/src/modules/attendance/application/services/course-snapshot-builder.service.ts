@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { ICoursePort } from '../../domain/ports/courses.port.interface';
@@ -8,7 +8,9 @@ import { CourseSnapshot } from '../../domain/value-objects/course-snapshot.vo';
 @Injectable()
 export class CourseSnapshotBuilderService {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
 	) {}
 	public async buildCourseSnapshot(

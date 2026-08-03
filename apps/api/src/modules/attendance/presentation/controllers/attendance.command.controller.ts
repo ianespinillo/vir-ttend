@@ -1,4 +1,11 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import {
+	ApiCookieAuth,
+	ApiOperation,
+	ApiParam,
+	ApiResponse,
+	ApiTags,
+} from '@nestjs/swagger';
 // attendance-command.controller.ts
 import { JwtPayload, ROLES } from '@repo/common';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
@@ -25,6 +32,8 @@ import { RegisterDailyAttendanceRequestDto } from '../../application/dtos/regist
 import { RegisterSubjectAttendanceRequestDto } from '../../application/dtos/register-subject-attendance.request.dto';
 
 @Controller('attendance')
+@ApiTags('Attendance')
+@ApiCookieAuth('access_token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendanceCommandController {
 	constructor(
@@ -36,6 +45,26 @@ export class AttendanceCommandController {
 		private readonly copyAttendanceHandler: CopyAttendanceHandler,
 	) {}
 
+	@ApiOperation({
+		summary: 'Registrar asistencia diaria de un curso',
+		description: `Registra la asistencia de los estudiantes de un curso para la fecha indicada, creando o actualizando los registros existentes. Roles permitidos: preceptor, admin. Body de ejemplo:
+{
+  "courseId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "date": "2026-03-10",
+  "records": [
+    { "studentId": "1c2d3e4f-5a6b-7c8d-9e0f-1a2b3c4d5e6f", "status": "present" },
+    { "studentId": "8f7e6d5c-4b3a-2c1d-0e9f-8a7b6c5d4e3f", "status": "absent" }
+  ]
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Asistencia registrada correctamente. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }. No devuelve cuerpo.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	@Post('daily')
 	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 	async registerDaily(
@@ -53,6 +82,23 @@ export class AttendanceCommandController {
 		);
 	}
 
+	@ApiOperation({
+		summary: 'Registrar asistencia masiva por defecto para un curso',
+		description: `Registra en masa un mismo estado de asistencia para todos los estudiantes del curso en la fecha indicada, creando o actualizando los registros existentes. Roles permitidos: preceptor, admin. Body de ejemplo:
+{
+  "courseId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "date": "2026-03-10",
+  "defaultStatus": "absent"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Asistencia masiva registrada. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }. No devuelve cuerpo.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	@Post('daily/all')
 	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 	async bulkRegister(
@@ -70,6 +116,31 @@ export class AttendanceCommandController {
 		);
 	}
 
+	@ApiOperation({
+		summary: 'Justificar una inasistencia',
+		description: `Justifica un registro de asistencia identificado por su id, cambiando su estado a justified y guardando el motivo. Roles permitidos: preceptor, admin. Body de ejemplo:
+{
+  "reason": "Certificado médico",
+  "notes": "Presenta certificado emitido por el hospital"
+}`,
+	})
+	@ApiParam({
+		name: 'id',
+		description: 'Identificador del registro de asistencia a justificar',
+		example: '5c4d3e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f',
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Justificación registrada. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }. No devuelve cuerpo.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({
+		status: 404,
+		description: 'Registro de asistencia no encontrado',
+	})
 	@Post(':id/justify')
 	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 	async justify(
@@ -81,6 +152,30 @@ export class AttendanceCommandController {
 			new JustifyAttendanceCommand(id, dto.reason, user.sub, dto.notes),
 		);
 	}
+	@ApiOperation({
+		summary: 'Registrar asistencia de una materia',
+		description: `Registra la asistencia de los estudiantes para una materia y fecha concretas, validando que el día corresponda al horario de la materia. Roles permitidos: teacher, admin. Body de ejemplo:
+{
+  "subjectId": "7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f",
+  "courseId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "date": "2026-03-10",
+  "records": [
+    { "studentId": "1c2d3e4f-5a6b-7c8d-9e0f-1a2b3c4d5e6f", "status": "late" }
+  ]
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Asistencia de la materia registrada. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }. No devuelve cuerpo.',
+	})
+	@ApiResponse({
+		status: 400,
+		description:
+			'Validación falló o el día no corresponde al horario de la materia',
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	@Post('subject')
 	@RolesDecorator(ROLES.TEACHER, ROLES.ADMIN)
 	async registerSubjectAttendance(
@@ -99,6 +194,26 @@ export class AttendanceCommandController {
 		);
 	}
 
+	@ApiOperation({
+		summary: 'Actualizar en masa el estado de asistencia de una materia',
+		description: `Aplica el mismo estado de asistencia a todos los estudiantes del curso de la materia para la fecha indicada. Roles permitidos: teacher, admin. Body de ejemplo:
+{
+  "subjectId": "7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f",
+  "status": "absent",
+  "date": "2026-03-10T13:00:00.000Z"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Estados actualizados en masa. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }. No devuelve cuerpo.',
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Validación falló o materia no encontrada',
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	@Post('subject/all')
 	@RolesDecorator(ROLES.TEACHER, ROLES.ADMIN)
 	async bulkUpdateSubjectStatus(
@@ -116,6 +231,26 @@ export class AttendanceCommandController {
 		);
 	}
 
+	@ApiOperation({
+		summary: 'Copiar la asistencia de una materia a otra fecha',
+		description: `Copia los estados de asistencia de la última clase (o de sourceDate si se indica) de una materia hacia targetDate, sin sobrescribir los registros existentes. Roles permitidos: teacher, admin. Body de ejemplo:
+{
+  "subjectId": "7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f",
+  "targetDate": "2026-03-17",
+  "sourceDate": "2026-03-10"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Asistencia copiada. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }. No devuelve cuerpo.',
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Validación falló o no hay registros en la fecha origen',
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	@Post('subject/copy')
 	@RolesDecorator(ROLES.TEACHER, ROLES.ADMIN)
 	async copyAttendance(

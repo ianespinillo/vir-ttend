@@ -1,5 +1,6 @@
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
@@ -9,7 +10,10 @@ import { DeleteStudentCommand } from './delete-student.command';
 
 @Injectable()
 export class DeleteStudentHandler {
-	constructor(private readonly studentRepo: IStudentRepository) {}
+	constructor(
+		@Inject('IStudentRepository')
+		private readonly studentRepo: IStudentRepository,
+	) {}
 	async execute(command: DeleteStudentCommand) {
 		const student = await this.studentRepo.findById(command.studentId);
 		if (!student) throw new NotFoundException('Student not found');

@@ -1,5 +1,6 @@
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
@@ -16,9 +17,12 @@ import { JustifyAttendanceCommand } from './justify-attendance.command';
 @Injectable()
 export class JustifyAttendanceHandler {
 	constructor(
+		@Inject('IJustificationRepository')
 		private readonly justificationRepo: IJustificationRepository,
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendaceRepo: IAttendanceRecordRepository,
 		private readonly em: EventEmitter2,
+		@Inject('IAcademicYearPort')
 		private readonly accademicYearPort: IAcademicYearPort,
 	) {}
 

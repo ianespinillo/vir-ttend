@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ScheduleSlot } from '../../../domain/entities/schedule-slot.entity';
 import { IScheduleRepository } from '../../../domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
@@ -9,7 +9,9 @@ import { SetScheduleCommand } from './set-schedule.command';
 @Injectable()
 export class SetScheduleHandler {
 	constructor(
+		@Inject('IScheduleRepository')
 		private readonly scheduleRepo: IScheduleRepository,
+		@Inject('ISubjectRepository')
 		private readonly subjetRepo: ISubjectRepository,
 	) {}
 	async execute(command: SetScheduleCommand) {

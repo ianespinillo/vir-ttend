@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { UserWithMembershipResponseDto } from '../../dto/user-with-membership.response.dto';
@@ -7,7 +7,9 @@ import { ListUsersByTenantQuery } from './list-users-by-tenant.query';
 @Injectable()
 export class ListUsersByTenantHandler {
 	constructor(
+		@Inject('IUserTenantMembershipRepository')
 		private readonly memberRepo: IUserTenantMembershipRepository,
+		@Inject('IUserRepository')
 		private readonly userRepo: IUserRepository,
 	) {}
 	async execute(

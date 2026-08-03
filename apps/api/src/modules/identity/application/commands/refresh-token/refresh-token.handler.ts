@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -7,8 +7,11 @@ import { RefreshTokenCommand } from './refresh-token.command';
 @Injectable()
 export class RefreshTokenHandler {
 	constructor(
+		@Inject('IRefreshTokenRepository')
 		private readonly refreshTokenRepository: IRefreshTokenRepository,
+		@Inject('IUserTenantMembershipRepository')
 		private readonly membersRepo: IUserTenantMembershipRepository,
+		@Inject('IUserRepository')
 		private readonly userRepo: IUserRepository,
 		private readonly tokenService: TokenService,
 	) {}

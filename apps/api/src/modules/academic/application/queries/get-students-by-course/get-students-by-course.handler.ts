@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PaginatedResponse, STUDENTSTATUS } from '@repo/common';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { StudentDetailResponseDto } from '../../dtos/student-detail.response.dto';
@@ -6,7 +6,10 @@ import { GetStudentsByCourseQuery } from './get-students-by-course.query';
 
 @Injectable()
 export class GetStudentsByCourseHandler {
-	constructor(private readonly studentRepo: IStudentRepository) {}
+	constructor(
+		@Inject('IStudentRepository')
+		private readonly studentRepo: IStudentRepository,
+	) {}
 	async execute(
 		query: GetStudentsByCourseQuery,
 	): Promise<PaginatedResponse<StudentDetailResponseDto>> {

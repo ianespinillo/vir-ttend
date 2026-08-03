@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Inject } from '@nestjs/common';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
 import { IAttendanceAlertRepository } from '../../../domain/repositories/attendance-alert.repository.interface';
 import { AlertsListResponseDto } from '../../dtos/alert-list.response.dto';
@@ -6,7 +6,9 @@ import { GetStudentAlertsQuery } from './get-student-alerts.query';
 
 export class GetStudentAlertsQueryHandler {
 	constructor(
+		@Inject('IAttendanceAlertRepository')
 		private readonly alertRepo: IAttendanceAlertRepository,
+		@Inject('IAcademicYearPort')
 		private readonly academicPort: IAcademicYearPort,
 	) {}
 	async execute(query: GetStudentAlertsQuery): Promise<AlertsListResponseDto> {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
@@ -8,8 +8,10 @@ import { BulkRegisterAttendanceCommand } from './bulk-register-attendance.comman
 @Injectable()
 export class BulkRegisterAttendanceHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		private readonly em: EventEmitter2,
+		@Inject('IStudentPort')
 		private readonly studentFinder: IStudentPort,
 	) {}
 	async execute(command: BulkRegisterAttendanceCommand): Promise<void> {

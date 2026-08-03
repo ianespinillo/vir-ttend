@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
@@ -7,7 +7,9 @@ import { GetAttendanceMetricsQuery } from './get-attendance-metrics.query';
 @Injectable()
 export class GetAttendanceMetricsQueryHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('IStudentPort')
 		private readonly studentFinder: IStudentPort,
 	) {}
 	async execute(

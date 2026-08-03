@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IAcademicYearRepository } from '../../../domain/repositories/academic-year.repository.interface';
 import { AcademicYearResponseDto } from '../../dtos/academic-year.response.dto';
 import { GetActiveAcademicYearQuery } from './get-active-academic-year.query';
 
 @Injectable()
 export class GetActiveAcademicYearHandler {
-	constructor(private readonly aYRepo: IAcademicYearRepository) {}
+	constructor(
+		@Inject('IAcademicYearRepository')
+		private readonly aYRepo: IAcademicYearRepository,
+	) {}
 	async execute(
 		query: GetActiveAcademicYearQuery,
 	): Promise<AcademicYearResponseDto> {

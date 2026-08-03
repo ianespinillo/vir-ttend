@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
@@ -7,7 +7,9 @@ import { AssignPreceptorCommand } from './assign-preceptor.command';
 @Injectable()
 export class AssignPreceptorHandler {
 	constructor(
+		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
+		@Inject('IMembershipPort')
 		private readonly memberPort: IMembershipPort,
 	) {}
 	async execute(command: AssignPreceptorCommand) {

@@ -1,4 +1,5 @@
 import {
+	Inject,
 	Injectable,
 	InternalServerErrorException,
 	NotFoundException,
@@ -18,8 +19,11 @@ import { GetSubjectHistoryQuery } from './get-subject-history.query';
 @Injectable()
 export class GetSubjectHistoryQueryHandler {
 	constructor(
+		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('ISubjectPort')
 		private readonly subjectPort: ISubjectPort,
+		@Inject('IStudentPort')
 		private readonly studentPort: IStudentPort,
 	) {}
 	async execute(
