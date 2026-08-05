@@ -6,7 +6,8 @@
 		"dev": "next dev --turbo",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint"
+		"lint": "next lint",
+		"ts:check": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@repo/common": "workspace:*",

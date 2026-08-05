@@ -1,5 +1,5 @@
-import React from 'react';
+import { LoadingSpinner } from '@repo/ui';
 
-export default function loading() {
-	return <div>loading</div>;
+export default function Loading() {
+	return <LoadingSpinner className="min-h-screen" label="Cargando…" />;
 }

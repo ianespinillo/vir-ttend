@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
 	Empty,
 	EmptyContent,
@@ -5,8 +6,7 @@ import {
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
-} from '@/ui/empty';
-import type { ReactNode } from 'react';
+} from '../../ui/empty';
 
 interface EmptyStateProps {
 	icon: ReactNode;

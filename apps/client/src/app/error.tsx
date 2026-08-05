@@ -1,5 +1,19 @@
-import React from 'react';
+'use client';
 
-export default function ErrorComponent() {
-	return <div>ErrorComponent</div>;
+import { ErrorState } from '@repo/ui';
+
+export default function ErrorPage({
+	reset,
+}: {
+	error: Error & { digest?: string };
+	reset: () => void;
+}) {
+	return (
+		<div className="flex min-h-screen items-center justify-center p-6">
+			<ErrorState
+				message="Ocurrió un error inesperado. Intentalo de nuevo."
+				onRetry={reset}
+			/>
+		</div>
+	);
 }

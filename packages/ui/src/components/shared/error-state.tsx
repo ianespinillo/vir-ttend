@@ -1,4 +1,5 @@
-import { Button } from '@/ui/button';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '../../ui/button';
 import {
 	Empty,
 	EmptyContent,
@@ -6,8 +7,7 @@ import {
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
-} from '@/ui/empty';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+} from '../../ui/empty';
 
 interface ErrorStateProps {
 	message: string;
