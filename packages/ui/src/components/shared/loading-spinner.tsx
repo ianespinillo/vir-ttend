@@ -1,35 +1,22 @@
-import { Button } from '@/ui/button';
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyTitle,
-} from '@/ui/empty';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
-interface ErrorStateProps {
-	message: string;
-	onRetry: () => void;
+interface LoadingSpinnerProps {
+	className?: string;
+	label?: string;
 }
 
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+export function LoadingSpinner({ className, label }: LoadingSpinnerProps) {
 	return (
-		<Empty className="my-8 border border-dashed border-destructive/30">
-			<EmptyHeader>
-				<EmptyMedia variant="icon">
-					<AlertCircle className="text-destructive" />
-				</EmptyMedia>
-				<EmptyTitle>Algo salio mal</EmptyTitle>
-				<EmptyDescription>{message}</EmptyDescription>
-			</EmptyHeader>
-			<EmptyContent>
-				<Button variant="outline" onClick={onRetry}>
-					<RefreshCw />
-					Reintentar
-				</Button>
-			</EmptyContent>
-		</Empty>
+		<output
+			className={cn(
+				'flex flex-col items-center justify-center gap-2 py-12',
+				className,
+			)}
+		>
+			<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+			{label && <span className="text-sm text-muted-foreground">{label}</span>}
+			<span className="sr-only">Cargando</span>
+		</output>
 	);
 }

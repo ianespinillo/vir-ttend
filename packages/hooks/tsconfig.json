@@ -4,7 +4,7 @@
 		"module": "esnext",
 		"moduleResolution": "bundler",
 		"jsx": "preserve",
-		"types": ["react"]
+		"types": ["react", "node"]
 	},
 	"include": ["src", "../ui/src/contexts"],
 	"exclude": ["node_modules"]

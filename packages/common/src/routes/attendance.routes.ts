@@ -11,7 +11,4 @@ export const ATTENDANCE_ROUTES = {
 	history: '/attendance/history',
 	byStudent: (studentId: string) => `/attendance/student/${studentId}`,
 	teacherSubjects: '/attendance/teacher/subjects',
-	dashboard: '/dashboard',
-	dashboardCourse: (courseId: string) => `/dashboard/course/${courseId}`,
-	dashboardMetrics: '/dashboard/metrics',
 } as const;
