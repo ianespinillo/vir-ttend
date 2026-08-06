@@ -22,6 +22,21 @@ export * from './features/students/use-update-student';
 export * from './features/students/use-delete-student';
 export * from './features/students/use-enroll-student';
 export * from './features/students/use-transfer-student';
+export * from './features/academic/use-active-academic-year';
+export * from './features/academic/use-academic-years';
+export * from './features/academic/use-create-academic-year';
+export * from './features/academic/use-update-academic-year';
+export * from './features/academic/use-course';
+export * from './features/academic/use-create-course';
+export * from './features/academic/use-update-course';
+export * from './features/academic/use-delete-course';
+export * from './features/academic/use-subjects';
+export * from './features/academic/use-create-subject';
+export * from './features/academic/use-update-subject';
+export * from './features/academic/use-delete-subject';
+export * from './features/academic/use-schedule';
+export * from './features/academic/use-set-schedule';
+export * from './features/academic/use-users-by-role';
 
 // types
 export type { InfiniteData } from '@tanstack/react-query';

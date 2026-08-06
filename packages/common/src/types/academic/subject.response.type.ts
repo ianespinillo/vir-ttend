@@ -1,7 +1,9 @@
 export interface ISubjectResponse {
 	id: string;
+	courseId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
-	teacherId: string;
+	teacherId?: string;
+	teacherName?: string;
 }
