@@ -8,3 +8,4 @@ export * from './reports.routes.js';
 export * from './student.routes.js';
 export * from './tenant.routes.js';
 export * from './user.routes.js';
+export * from './app.routes.js';
