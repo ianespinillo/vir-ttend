@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Button } from '../../ui/button';
 import {
 	Empty,
 	EmptyContent,
@@ -9,26 +10,32 @@ import {
 } from '../../ui/empty';
 
 interface EmptyStateProps {
-	icon: ReactNode;
+	icon?: ReactNode;
 	title: string;
 	description: string;
-	action?: ReactNode;
+	actionLabel?: string;
+	onAction?: () => void;
 }
 
 export function EmptyState({
 	icon,
 	title,
 	description,
-	action,
+	actionLabel,
+	onAction,
 }: EmptyStateProps) {
 	return (
 		<Empty className="my-8 border border-dashed border-border">
 			<EmptyHeader>
-				<EmptyMedia variant="icon">{icon}</EmptyMedia>
+				{icon && <EmptyMedia variant="icon">{icon}</EmptyMedia>}
 				<EmptyTitle>{title}</EmptyTitle>
 				<EmptyDescription>{description}</EmptyDescription>
 			</EmptyHeader>
-			{action && <EmptyContent>{action}</EmptyContent>}
+			{onAction && actionLabel && (
+				<EmptyContent>
+					<Button onClick={onAction}>{actionLabel}</Button>
+				</EmptyContent>
+			)}
 		</Empty>
 	);
 }

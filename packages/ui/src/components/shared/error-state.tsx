@@ -12,7 +12,7 @@ import {
 interface ErrorStateProps {
 	title?: string;
 	description?: string;
-	onRetry: () => void;
+	onRetry?: () => void;
 }
 
 export function ErrorState({
@@ -30,10 +30,12 @@ export function ErrorState({
 				<EmptyDescription>{description}</EmptyDescription>
 			</EmptyHeader>
 			<EmptyContent>
-				<Button variant="outline" onClick={onRetry}>
-					<RefreshCw />
-					Reintentar
-				</Button>
+				{onRetry && (
+					<Button variant="outline" onClick={onRetry}>
+						<RefreshCw />
+						Reintentar
+					</Button>
+				)}
 			</EmptyContent>
 		</Empty>
 	);

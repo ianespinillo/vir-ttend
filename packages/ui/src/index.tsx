@@ -14,6 +14,9 @@ export * from './components/layout';
 // Features
 export * from './components/features/auth';
 export * from './components/features/students';
+export * from './components/features/academic';
+export * from './components/features/subjects';
+export * from './components/features/schedule';
 
 // Lib
 export * from './lib/utils';
