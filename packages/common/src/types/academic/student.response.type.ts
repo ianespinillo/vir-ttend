@@ -6,8 +6,9 @@ export interface IStudentResponse {
 	firstName: string;
 	lastName: string;
 	documentNumber: string;
-	birthDate: Date;
+	birthDate: Date | string;
 	age: number;
 	courseId: string;
+	courseName?: string;
 	status: StudentStatus;
 }

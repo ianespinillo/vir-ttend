@@ -13,6 +13,7 @@ export * from './components/layout';
 
 // Features
 export * from './components/features/auth';
+export * from './components/features/students';
 
 // Lib
 export * from './lib/utils';
