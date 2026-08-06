@@ -1,11 +1,5 @@
 name: ci
 
-on:
-  push:
-    branches-ignore:
-      - main
-      - develop
-
 jobs:
   pre-deploy:
     runs-on: ubuntu-latest
