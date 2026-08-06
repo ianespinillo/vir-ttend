@@ -10,19 +10,24 @@ import {
 } from '../../ui/empty';
 
 interface ErrorStateProps {
-	message: string;
+	title?: string;
+	description?: string;
 	onRetry: () => void;
 }
 
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+export function ErrorState({
+	title = 'Algo salio mal',
+	description,
+	onRetry,
+}: ErrorStateProps) {
 	return (
 		<Empty className="my-8 border border-dashed border-destructive/30">
 			<EmptyHeader>
 				<EmptyMedia variant="icon">
 					<AlertCircle className="text-destructive" />
 				</EmptyMedia>
-				<EmptyTitle>Algo salio mal</EmptyTitle>
-				<EmptyDescription>{message}</EmptyDescription>
+				<EmptyTitle>{title}</EmptyTitle>
+				<EmptyDescription>{description}</EmptyDescription>
 			</EmptyHeader>
 			<EmptyContent>
 				<Button variant="outline" onClick={onRetry}>
