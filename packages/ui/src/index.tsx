@@ -6,6 +6,13 @@ export * from './components/shared/error-state';
 export * from './components/shared/loading-spinner';
 export * from './components/shared/page-header';
 export * from './components/shared/data-table';
+export * from './components/shared/forbidden-state';
+
+// Layout
+export * from './components/layout';
+
+// Features
+export * from './components/features/auth';
 
 // Lib
 export * from './lib/utils';

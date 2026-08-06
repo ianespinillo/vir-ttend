@@ -1,10 +1,12 @@
 'use client';
 
 import type { CurrentUser, TenantOption } from '@repo/common';
+import { useCurrentUser } from '@repo/hooks';
 import {
 	createContext,
 	useCallback,
 	useContext,
+	useEffect,
 	useMemo,
 	useState,
 } from 'react';
@@ -17,6 +19,7 @@ interface AuthContextValue {
 	isLoading: boolean;
 	setUser: (user: CurrentUser | null) => void;
 	clearUser: () => void;
+	refetchUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -24,14 +27,26 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<CurrentUser | null>(null);
 	const [tenant, setTenant] = useState<TenantOption | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
+	const {
+		data: fetchedUser,
+		isLoading: isQueryLoading,
+		isError,
+		refetch,
+	} = useCurrentUser();
+
+	useEffect(() => {
+		if (fetchedUser) {
+			setUser(fetchedUser);
+		} else if (isError) {
+			setUser(null);
+		}
+	}, [fetchedUser, isError]);
 
 	const handleSetUser = useCallback((next: CurrentUser | null) => {
 		setUser(next);
 		if (next === null) {
 			setTenant(null);
 		}
-		setIsLoading(false);
 	}, []);
 
 	const clearUser = useCallback(() => {
@@ -44,11 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			user,
 			tenant,
 			isAuthenticated: user !== null,
-			isLoading,
+			isLoading: isQueryLoading && user === null,
 			setUser: handleSetUser,
 			clearUser,
+			refetchUser: refetch,
 		}),
-		[user, tenant, isLoading, handleSetUser, clearUser],
+		[user, tenant, isQueryLoading, handleSetUser, clearUser, refetch],
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

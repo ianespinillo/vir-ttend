@@ -6,3 +6,5 @@ export interface Tenant {
 	isActive: boolean;
 	createdAt: Date;
 }
+
+export type TenantResponse = Tenant;
