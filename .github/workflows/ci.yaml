@@ -1,5 +1,14 @@
 name: ci
 
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches-ignore:
+      - main
+      - develop
+
 jobs:
   pre-deploy:
     runs-on: ubuntu-latest
