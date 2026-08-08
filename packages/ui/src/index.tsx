@@ -15,6 +15,7 @@ export * from './components/layout';
 export * from './components/features/auth';
 export * from './components/features/students';
 export * from './components/features/academic';
+export * from './components/features/attendance';
 export * from './components/features/subjects';
 export * from './components/features/schedule';
 

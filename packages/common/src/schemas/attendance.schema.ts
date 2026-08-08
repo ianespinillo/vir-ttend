@@ -21,5 +21,22 @@ export const registerDailySchema = z.object({
 	records: z.array(attendanceRecordSchema),
 });
 
+export const bulkRegisterSchema = z.object({
+	courseId: z.string().uuid(),
+	date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+		message: 'Formato esperado: YYYY-MM-DD',
+	}),
+	defaultStatus: attendanceStatusSchema,
+});
+
+export const justifyAttendanceSchema = z.object({
+	reason: z.string().min(1, 'El motivo es obligatorio'),
+	notes: z.string().optional(),
+});
+
 export type AttendanceStatusValue = z.infer<typeof attendanceStatusSchema>;
 export type RegisterDailyFormValues = z.infer<typeof registerDailySchema>;
+export type BulkRegisterFormValues = z.infer<typeof bulkRegisterSchema>;
+export type JustifyAttendanceFormValues = z.infer<
+	typeof justifyAttendanceSchema
+>;

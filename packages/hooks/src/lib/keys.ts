@@ -25,6 +25,24 @@ export const queryKeys = {
 			courseId,
 			date,
 		],
+		metrics: (courseId: string, date: string) => [
+			'attendance',
+			'metrics',
+			courseId,
+			date,
+		],
+		byStudent: (studentId: string, from?: string, to?: string) => [
+			'attendance',
+			'student',
+			studentId,
+			{ from, to },
+		],
+		history: (courseId: string, from?: string, to?: string) => [
+			'attendance',
+			'history',
+			courseId,
+			{ from, to },
+		],
 	},
 	alerts: { count: ['alerts', 'count'], unseen: ['alerts', 'unseen'] },
 	reports: {

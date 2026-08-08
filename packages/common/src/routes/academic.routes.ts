@@ -2,6 +2,7 @@ export const ACADEMIC_ROUTES = {
 	academicYears: '/academic-years',
 	academicYear: (id: string) => `/academic-years/${id}`,
 	courses: '/courses',
+	coursesByPreceptor: '/courses/by-preceptor',
 	course: (id: string) => `/courses/${id}`,
 	coursePreceptor: (id: string) => `/courses/${id}/preceptor`,
 	subjects: '/subjects',
