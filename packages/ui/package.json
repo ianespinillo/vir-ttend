@@ -66,7 +66,8 @@
 		"sonner": "^1.5.0",
 		"tailwind-merge": "^2.3.0",
 		"tailwindcss-animate": "^1.0.7",
-		"tsup": "^6.6.0"
+		"tsup": "^6.6.0",
+		"zod": "^3.25.0"
 	},
 	"exports": {
 		".": "./src/index.tsx",
