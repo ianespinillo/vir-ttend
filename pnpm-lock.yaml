@@ -480,6 +480,9 @@ importers:
       tsup:
         specifier: ^6.6.0
         version: 6.7.0(postcss@8.4.45)(ts-node@10.9.2(@types/node@20.12.14)(typescript@5.9.3))(typescript@5.9.3)
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
