@@ -9,3 +9,7 @@ export * from './attendance-summary/metric-card';
 export * from './attendance-summary/attendance-summary';
 export * from './justification-modal/justification-modal';
 export * from './daily-attendance-page';
+export * from './subject-selector';
+export * from './late-badge';
+export * from './copy-attendance-modal';
+export * from './subject-attendance-page';

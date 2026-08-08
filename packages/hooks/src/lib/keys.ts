@@ -43,6 +43,26 @@ export const queryKeys = {
 			courseId,
 			{ from, to },
 		],
+		subject: (subjectId: string, date: string) => [
+			'attendance',
+			'subject',
+			subjectId,
+			date,
+		],
+		subjectHistory: (subjectId: string, from?: string, to?: string) => [
+			'attendance',
+			'subject-history',
+			subjectId,
+			{ from, to },
+		],
+	},
+	subjects: {
+		teacher: (teacherId: string, academicYearId?: string) => [
+			'subjects',
+			'teacher',
+			teacherId,
+			academicYearId ?? 'active',
+		],
 	},
 	alerts: { count: ['alerts', 'count'], unseen: ['alerts', 'unseen'] },
 	reports: {

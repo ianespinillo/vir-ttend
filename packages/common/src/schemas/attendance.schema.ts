@@ -34,9 +34,35 @@ export const justifyAttendanceSchema = z.object({
 	notes: z.string().optional(),
 });
 
+export const registerSubjectAttendanceSchema = z.object({
+	subjectId: z.string().uuid(),
+	courseId: z.string().uuid(),
+	date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+		message: 'Formato esperado: YYYY-MM-DD',
+	}),
+	records: z.array(attendanceRecordSchema),
+});
+
+export const copyAttendanceSchema = z.object({
+	subjectId: z.string().uuid(),
+	targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+		message: 'Formato esperado: YYYY-MM-DD',
+	}),
+	sourceDate: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/, {
+			message: 'Formato esperado: YYYY-MM-DD',
+		})
+		.optional(),
+});
+
 export type AttendanceStatusValue = z.infer<typeof attendanceStatusSchema>;
 export type RegisterDailyFormValues = z.infer<typeof registerDailySchema>;
 export type BulkRegisterFormValues = z.infer<typeof bulkRegisterSchema>;
 export type JustifyAttendanceFormValues = z.infer<
 	typeof justifyAttendanceSchema
 >;
+export type RegisterSubjectAttendanceFormValues = z.infer<
+	typeof registerSubjectAttendanceSchema
+>;
+export type CopyAttendanceFormValues = z.infer<typeof copyAttendanceSchema>;
