@@ -14,6 +14,8 @@ export * from './auth/user.response.type.js';
 export * from './attendance/attendance-record.response.type.js';
 export * from './attendance/daily-attendance.response.type.js';
 export * from './attendance/attendance-metrics.response.type.js';
+export * from './attendance/subject-attendance.response.type.js';
+export * from './attendance/subject-history.response.type.js';
 export * from './alerts/alert.response.type.js';
 export * from './alerts/alerts-count.response.type.js';
 export * from './dashboard/course-snapshot.type.js';

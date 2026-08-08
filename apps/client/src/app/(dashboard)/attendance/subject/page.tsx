@@ -1,12 +1,28 @@
-import { PageHeader } from '@repo/ui';
+'use client';
+
+import { SubjectAttendancePage } from '@repo/ui';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export default function AttendanceSubjectPage() {
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+
+	const initialSubjectId = searchParams.get('subjectId') || undefined;
+	const initialDate = searchParams.get('date') || undefined;
+
+	const handleUrlChange = (subjectId: string, date: string) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set('subjectId', subjectId);
+		params.set('date', date);
+		router.replace(`${pathname}?${params.toString()}`);
+	};
+
 	return (
-		<div className="space-y-6">
-			<PageHeader
-				title="Asistencia por Materia"
-				description="Registro de asistencia por asignatura"
-			/>
-		</div>
+		<SubjectAttendancePage
+			initialSubjectId={initialSubjectId}
+			initialDate={initialDate}
+			onUrlChange={handleUrlChange}
+		/>
 	);
 }
