@@ -1,11 +1,13 @@
 import { NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_STATUS, LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { AttendanceRecordResponseDto } from '../../../src/modules/attendance/application/dtos/attendance-record.response.dto';
 import { GetCourseDailyOverviewQueryHandler } from '../../../src/modules/attendance/application/queries/get-course-daily-overview/get-course-daily-overview.handler';
 import { GetCourseDailyOverviewQuery } from '../../../src/modules/attendance/application/queries/get-course-daily-overview/get-course-daily-overview.query';
 import { CourseSnapshotBuilderService } from '../../../src/modules/attendance/application/services/course-snapshot-builder.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { Course } from '../../../src/modules/attendance/domain/entities/course.entity';
+import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
@@ -50,6 +52,9 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 
 	it('retorna records y snapshot del curso para la fecha dada', async () => {
 		coursePort.findById.mockResolvedValue(course);
+		studentPort.findById.mockResolvedValue(
+			Student.reconstitute('student-1', 'Juan Pérez'),
+		);
 
 		const records = [
 			AttendanceRecord.reconstitute({
@@ -74,7 +79,11 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 			new GetCourseDailyOverviewQuery('course-1', date),
 		);
 
-		expect(result.records).toEqual(records);
+		expect(result.records).toHaveLength(1);
+		expect(result.records[0].studentId).toBe('student-1');
+		expect(result.records[0].studentName).toBe('Juan Pérez');
+		expect(result.records[0].status).toBe(ATTENDANCE_STATUS.PRESENT);
+		expect(result.records[0].id).toBe('rec-1');
 		expect(result.courseId).toBe('course-1');
 		expect(result.courseName).toBe('3° B');
 		expect(result.level).toBe(LEVEL.SECONDARY);
