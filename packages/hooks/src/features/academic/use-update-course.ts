@@ -1,5 +1,6 @@
 import {
 	ACADEMIC_ROUTES,
+	type ApiResponse,
 	type ICourseResponse,
 	type UpdateCourseFormValues,
 } from '@repo/common';
@@ -17,16 +18,19 @@ export function useUpdateCourse() {
 
 	return useMutation({
 		mutationFn: async ({ id, data }: UpdateCourseParams) => {
-			const res = await apiClient.put<ICourseResponse>(
+			const res = await apiClient.put<ApiResponse<ICourseResponse>>(
 				ACADEMIC_ROUTES.course(id),
 				data,
 			);
 			if (data.preceptorId) {
-				await apiClient.put(ACADEMIC_ROUTES.coursePreceptor(id), {
-					preceptorId: data.preceptorId,
-				});
+				await apiClient.put<ApiResponse<void>>(
+					ACADEMIC_ROUTES.coursePreceptor(id),
+					{
+						preceptorId: data.preceptorId,
+					},
+				);
 			}
-			return res.data;
+			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({

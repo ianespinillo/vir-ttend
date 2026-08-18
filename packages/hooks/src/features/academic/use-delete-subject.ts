@@ -1,27 +1,27 @@
-import { ACADEMIC_ROUTES } from '@repo/common';
+import { ACADEMIC_ROUTES, type ApiResponse } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
+import { queryKeys } from '../../lib/keys';
 
-export interface DeleteSubjectParams {
+export interface DeleteSubjectVariables {
 	id: string;
-	courseId?: string;
+	courseId: string;
 }
 
 export function useDeleteSubject() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async ({ id }: DeleteSubjectParams) => {
-			const res = await apiClient.delete(ACADEMIC_ROUTES.subject(id));
-			return res.data;
+	return useMutation<void, Error, DeleteSubjectVariables>({
+		mutationFn: async ({ id }) => {
+			await apiClient.delete<ApiResponse<void>>(ACADEMIC_ROUTES.subject(id));
 		},
-		onSuccess: (_, variables) => {
-			queryClient.invalidateQueries({ queryKey: ['subjects'] });
-			if (variables.courseId) {
-				queryClient.invalidateQueries({
-					queryKey: ['courses', 'detail', variables.courseId],
-				});
-			}
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.subjects.list(variables.courseId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.courses.detail(variables.courseId),
+			});
 		},
 	});
 }

@@ -54,6 +54,7 @@ export function CourseForm({
 		resolver: zodResolver(createCourseSchema),
 		defaultValues: {
 			academicYearId: defaultValues?.academicYearId || activeAY?.id || '',
+			schoolId: defaultValues?.schoolId || '',
 			level: defaultValues?.level || LEVEL.SECONDARY,
 			yearNumber: defaultValues?.yearNumber || 1,
 			division: defaultValues?.division || 'A',

@@ -1,29 +1,31 @@
 import {
 	ACADEMIC_ROUTES,
+	type ApiResponse,
 	type CreateSubjectFormValues,
 	type ISubjectResponse,
 } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
+import { queryKeys } from '../../lib/keys';
 
 export function useCreateSubject() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (data: CreateSubjectFormValues) => {
-			const res = await apiClient.post<ISubjectResponse>(
+	return useMutation<ISubjectResponse, Error, CreateSubjectFormValues>({
+		mutationFn: async (data) => {
+			const res = await apiClient.post<ApiResponse<ISubjectResponse>>(
 				ACADEMIC_ROUTES.subjects,
 				data,
 			);
-			return res.data;
+			return res.data.data;
 		},
-		onSuccess: (_, variables) => {
-			queryClient.invalidateQueries({ queryKey: ['subjects'] });
-			if (variables.courseId) {
-				queryClient.invalidateQueries({
-					queryKey: ['courses', 'detail', variables.courseId],
-				});
-			}
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.subjects.list(variables.courseId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.courses.detail(variables.courseId),
+			});
 		},
 	});
 }

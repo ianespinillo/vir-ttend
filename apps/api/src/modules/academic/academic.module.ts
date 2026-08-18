@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { StudentAdapter } from '../attendance/infrastructure/adapters/student.adapter';
-import { IdentityModule } from '../identity/identity.module';
+import { IdentityPersistenceModule } from '../identity/infrastructure/persistence/identity.persistence.module';
 import { AssignPreceptorHandler } from './application/commands/assign-preceptor/assign-preceptor.handler';
 import { AssignTeacherHandler } from './application/commands/assign-teaher/assign-teacher.handler';
 import { CreateAcademicYearHandler } from './application/commands/create-academic-year/create-academic-year.handler';
@@ -33,11 +33,6 @@ import { CourseService } from './domain/services/course.service';
 import { ScheduleService } from './domain/services/schedule.service';
 import { MembershipAdapter } from './infrastructure/adapters/membership.adapter';
 import { AcademicPersistenceModule } from './infrastructure/persistence/academic.persistence.module';
-import { AcademicYearRepository } from './infrastructure/persistence/repositories/academic-year.repository';
-import { CourseRepository } from './infrastructure/persistence/repositories/course.repository';
-import { ScheduleSlotRepository } from './infrastructure/persistence/repositories/schedule-slot.repository';
-import { StudentRepository } from './infrastructure/persistence/repositories/student.repository';
-import { SubjectRepository } from './infrastructure/persistence/repositories/subject.repository';
 import { AcademicYearsController } from './presentation/controllers/academic-year.controller';
 import { CoursesController } from './presentation/controllers/course.controller';
 import { ScheduleController } from './presentation/controllers/schedule-slot.controller';
@@ -45,46 +40,9 @@ import { StudentsController } from './presentation/controllers/students.controll
 import { SubjectsController } from './presentation/controllers/subjects.controller';
 
 @Module({
-	exports: [
-		StudentRepository,
-		'IStudentRepository',
-		AcademicYearRepository,
-		'IAcademicYearRepository',
-		ScheduleSlotRepository,
-		'IScheduleRepository',
-		CourseRepository,
-		'ICourseRepository',
-		SubjectRepository,
-		'ISubjectRepository',
-		ScheduleService,
-	],
-	imports: [IdentityModule, AcademicPersistenceModule],
+	exports: [ScheduleService],
+	imports: [IdentityPersistenceModule, AcademicPersistenceModule],
 	providers: [
-		ScheduleSlotRepository,
-		AcademicYearRepository,
-		StudentRepository,
-		CourseRepository,
-		SubjectRepository,
-		{
-			provide: 'IStudentRepository',
-			useClass: StudentRepository,
-		},
-		{
-			provide: 'IAcademicYearRepository',
-			useClass: AcademicYearRepository,
-		},
-		{
-			provide: 'IScheduleRepository',
-			useClass: ScheduleSlotRepository,
-		},
-		{
-			provide: 'ICourseRepository',
-			useClass: CourseRepository,
-		},
-		{
-			provide: 'ISubjectRepository',
-			useClass: SubjectRepository,
-		},
 		MembershipAdapter,
 		{
 			provide: 'IMembershipPort',

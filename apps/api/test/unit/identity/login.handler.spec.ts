@@ -60,7 +60,7 @@ describe('LoginHandler', () => {
 		);
 
 		expect(result.isSuperAdmin).toBe(false);
-		expect(result.sub).toBe('user-id');
+		expect(result.userId).toBe('user-id');
 		expect(result.tenants).toHaveLength(1);
 		expect(result.tenants[0].tenantId).toBe('tenant-id');
 	});

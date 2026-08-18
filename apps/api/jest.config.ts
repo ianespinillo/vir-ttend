@@ -6,23 +6,22 @@ const config: Config.InitialOptions = {
 	verbose: true,
 	moduleFileExtensions: ['js', 'json', 'ts'],
 	rootDir: '.',
-	testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/test/**/*.spec.ts'],
-	setupFiles: ['<rootDir>/jest.setup.ts'],
+	testMatch: ['<rootDir>/test/**/*.spec.ts'],
 	transform: {
 		'^.+\\.(t|j)s$': 'ts-jest',
 	},
-	collectCoverageFrom: [
-		'**/*.(t|j)s',
-		'!**/*.dto.ts',
-		'!**/*.module.ts',
-		'!**/*.mock.ts',
-		'!**/main.ts',
-		'!**/common-imports/**',
-		'!**/db-testing.utils.ts',
-		'!**/roles/**',
-		'!**/decorators/**',
+	collectCoverageFrom: ['src/**/*.(t|j)s'],
+	coverageDirectory: './coverage',
+	coveragePathIgnorePatterns: [
+		'main.ts',
+		'.dto.ts',
+		'.module.ts',
+		'.mock.ts',
+		'common-imports',
+		'db-testing.utils.ts',
+		'roles',
+		'decorators',
 	],
-	coverageDirectory: '../coverage',
 	coverageThreshold: {
 		global: {
 			branches: 90,
@@ -33,11 +32,8 @@ const config: Config.InitialOptions = {
 	},
 	moduleNameMapper: {
 		'^@/(.*)$': '<rootDir>/src/$1',
-		'^@repo/common$': '<rootDir>/../../packages/common/src/index',
-		'^@repo/common/(.*)$': '<rootDir>/../../packages/common/src/$1',
-		'^(\\.{1,2}/.*)\\.js$': '$1',
 	},
-	testTimeout: 60000,
+	setupFiles: ['<rootDir>/jest.setup.ts'],
 };
 
 export default config;

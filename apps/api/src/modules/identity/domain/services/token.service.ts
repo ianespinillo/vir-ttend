@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { JwtPayload } from '@repo/common';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { jwtConfig } from '../../../shared/config/jwt.config';
 export class TokenService {
 	generateAccessToken(payload: JwtPayload): string {

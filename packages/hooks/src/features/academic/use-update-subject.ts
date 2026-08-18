@@ -1,5 +1,6 @@
 import {
 	ACADEMIC_ROUTES,
+	type ApiResponse,
 	type ISubjectResponse,
 	type UpdateSubjectFormValues,
 } from '@repo/common';
@@ -17,16 +18,16 @@ export function useUpdateSubject() {
 
 	return useMutation({
 		mutationFn: async ({ id, data }: UpdateSubjectParams) => {
-			const res = await apiClient.put<ISubjectResponse>(
+			const res = await apiClient.put<ApiResponse<ISubjectResponse>>(
 				ACADEMIC_ROUTES.subject(id),
 				data,
 			);
 			if (data.teacherId) {
-				await apiClient.put(ACADEMIC_ROUTES.subjectTeacher(id), {
+				await apiClient.put<ApiResponse<void>>(ACADEMIC_ROUTES.subjectTeacher(id), {
 					teacherId: data.teacherId,
 				});
 			}
-			return res.data;
+			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({ queryKey: ['subjects'] });

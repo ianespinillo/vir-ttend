@@ -1,4 +1,8 @@
-import { ATTENDANCE_ROUTES, type SubjectHistoryResponse } from '@repo/common';
+import {
+	ATTENDANCE_ROUTES,
+	type ApiResponse,
+	type SubjectHistoryResponse,
+} from '@repo/common';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
@@ -17,14 +21,11 @@ export function useSubjectHistory({
 	return useQuery<SubjectHistoryResponse>({
 		queryKey: queryKeys.attendance.subjectHistory(subjectId, from, to),
 		queryFn: async () => {
-			const res = await apiClient.get<SubjectHistoryResponse>(
+			const res = await apiClient.get<ApiResponse<SubjectHistoryResponse>>(
 				ATTENDANCE_ROUTES.subjectHistory(subjectId),
 				{ params: { from, to } },
 			);
-			const data =
-				(res.data as unknown as { data?: SubjectHistoryResponse })?.data ??
-				res.data;
-			return data;
+			return res.data.data;
 		},
 		enabled: Boolean(subjectId && from && to),
 	});

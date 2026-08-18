@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/lib/auth/provider';
 import type { IStudentResponse, StudentStatus } from '@repo/common';
 import {
 	useCourses,
@@ -11,7 +12,6 @@ import {
 import { type StudentFiltersState, StudentsPage } from '@repo/ui';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
-import { useAuth } from '../../../lib/auth/provider';
 
 export default function Page() {
 	const router = useRouter();

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/lib/auth/provider';
 import type {
 	CreateCourseFormValues,
 	CreateSubjectFormValues,
@@ -33,7 +34,6 @@ import {
 } from '@repo/ui';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { useAuth } from '../../../../lib/auth/provider';
 
 export default function CourseDetailPage() {
 	const params = useParams();
@@ -169,7 +169,7 @@ export default function CourseDetailPage() {
 					onSubmit={handleUpdateCourse}
 					isLoading={updateCourseMutation.isPending}
 					academicYears={academicYears || []}
-					preceptors={preceptors || []}
+					preceptors={preceptors?.items || []}
 					onCancel={() => setIsEditingCourse(false)}
 				/>
 			</div>
@@ -224,7 +224,7 @@ export default function CourseDetailPage() {
 									: undefined
 							}
 							onSubmit={handleSaveSubject}
-							teachers={teachers || []}
+							teachers={teachers?.items || []}
 							isLoading={
 								createSubjectMutation.isPending || updateSubjectMutation.isPending
 							}

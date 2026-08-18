@@ -31,7 +31,7 @@ export class Migration20260730032324_create_monthly_reports extends Migration {
 			`alter table "attendance_alerts" alter column "created_at" type timestamptz using ("created_at"::timestamptz);`,
 		);
 		this.addSql(
-			`alter table "attendance_alerts" alter column "created_at" set default 1785381798054;`,
+			`alter table "attendance_alerts" alter column "created_at" set default now();`,
 		);
 	}
 
@@ -57,7 +57,7 @@ export class Migration20260730032324_create_monthly_reports extends Migration {
 			`alter table "attendance_alerts" alter column "created_at" type timestamptz using ("created_at"::timestamptz);`,
 		);
 		this.addSql(
-			`alter table "attendance_alerts" alter column "created_at" set default 1784003746919;`,
+			`alter table "attendance_alerts" alter column "created_at" set default now();`,
 		);
 	}
 }

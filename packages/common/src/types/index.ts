@@ -26,3 +26,8 @@ export * from './reports/student-report.response.type.js';
 export * from './reports/course-summary.response.type.js';
 export * from './announcements/announcement.response.type.js';
 export * from './tenants/tenant.response.type.js';
+export * from './users/user-with-membership.response.type.js';
+export * from './alerts/alerts-list.response.type.js';
+export * from './announcements/announcements-list.response.type.js';
+export * from './dashboard/course-snapshot-detail.type.js';
+export * from './reports/available-reports.response.type.js';

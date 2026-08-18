@@ -9,7 +9,7 @@ export class UserMapper {
 			updatedAt: entity.updatedAt,
 			mustChangePassword: entity.mustChangePassword,
 			email: entity.email,
-			firstName: entity.email,
+			firstName: entity.firstName,
 			lastName: entity.lastName,
 			isActive: entity.isActive,
 			passwordHash: entity.passwordHash,

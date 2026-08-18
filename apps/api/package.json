@@ -18,7 +18,9 @@
 		"test:cov": "jest --coverage",
 		"test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
-		"ts:check": "tsc --noEmit"
+		"ts:check": "tsc --noEmit",
+		"db:seed": "ts-node -r tsconfig-paths/register scripts/seed.ts",
+		"scripts:check": "tsc --noEmit -p tsconfig.scripts.json"
 	},
 	"dependencies": {
 		"@mikro-orm/core": "^6.6.7",
@@ -39,6 +41,7 @@
 		"bcryptjs": "^3.0.3",
 		"class-transformer": "^0.5.1",
 		"class-validator": "^0.14.1",
+		"cookie-parser": "^1.4.7",
 		"crypto": "^1.0.1",
 		"dotenv": "^17.3.1",
 		"env-var": "^7.5.0",

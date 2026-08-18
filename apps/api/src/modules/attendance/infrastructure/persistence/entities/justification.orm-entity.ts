@@ -1,7 +1,11 @@
 import { Entity, OneToOne, PrimaryKey, Property } from '@mikro-orm/core';
+import { JustificationRepository } from '../repository/justification.repository';
 import { AttendanceRecordOrmEntity } from './attendance-record.orm-entity';
 
-@Entity({ tableName: 'justification' })
+@Entity({
+	tableName: 'justification',
+	repository: () => JustificationRepository,
+})
 export class JustificationOrmEntity {
 	@PrimaryKey({
 		type: 'uuid',

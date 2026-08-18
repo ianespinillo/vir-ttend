@@ -57,7 +57,6 @@ export function AttendanceToolbar({
 						selectedCourseId={selectedCourseId}
 						onCourseChange={onCourseChange}
 						isLoading={isLoadingCourses}
-						disabled={disabled}
 					/>
 				)}
 				{subjects && onSubjectChange && (
@@ -66,7 +65,6 @@ export function AttendanceToolbar({
 						selectedSubjectId={selectedSubjectId}
 						onSubjectChange={onSubjectChange}
 						isLoading={isLoadingSubjects}
-						disabled={disabled}
 						allowedSubjectIds={allowedSubjectIds}
 					/>
 				)}

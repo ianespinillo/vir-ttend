@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
-import { AcademicModule } from '../academic/academic.module';
 import { AcademicPersistenceModule } from '../academic/infrastructure/persistence/academic.persistence.module';
 import { AttendancePersistenceModule } from '../attendance/infrastructure/persistence/attendance.persistence.module';
-import { IdentityPersistenceModule } from '../identity/infrastructure/persistence/identity.persistene.module';
+import { IdentityPersistenceModule } from '../identity/infrastructure/persistence/identity.persistence.module';
 import { ExportExcelHandler } from './application/commands/export-excel/export-excel.handler';
 import { ExportPdfHandler } from './application/commands/export-pdf/export-pdf.handler';
 import { GenerateMonthlyReportHandler } from './application/commands/generate-monthly-report/generate-monthly-report.handler';
@@ -19,7 +18,6 @@ import { CourseAdapter } from './infrastructure/adapters/course.adapter';
 import { StudentAdapter } from './infrastructure/adapters/student.adapter';
 import { TenantAdapter } from './infrastructure/adapters/tenant.adapter';
 import { ReportingPersistenceModule } from './infrastructure/persistence/reporting.persistence.module';
-import { ReportRepository } from './infrastructure/persistence/repositories/report.repository';
 import { ExcelGeneratorService } from './infrastructure/services/excel-generator.service';
 import { PdfGeneratorService } from './infrastructure/services/pdf-generator.service';
 import { ExportController } from './presentation/controllers/export.controller';
@@ -59,7 +57,6 @@ const services = [ReportGenerationService];
 
 @Module({
 	imports: [
-		AcademicModule,
 		AcademicPersistenceModule,
 		AttendancePersistenceModule,
 		IdentityPersistenceModule,
@@ -68,7 +65,6 @@ const services = [ReportGenerationService];
 	providers: [
 		...adapters,
 		...portTokens,
-		{ provide: 'IReportRepository', useClass: ReportRepository },
 		{ provide: 'IExcelGeneratorService', useClass: ExcelGeneratorService },
 		{ provide: 'IPdfGeneratorService', useClass: PdfGeneratorService },
 		...handlers,

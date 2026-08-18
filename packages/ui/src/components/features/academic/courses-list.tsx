@@ -1,6 +1,11 @@
 'use client';
 
-import type { IAcademicYearResponse, ICourseResponse } from '@repo/common';
+import {
+	IAcademicYearResponse,
+	ICourseResponse,
+	LEVEL,
+	LevelType,
+} from '@repo/common';
 import { Filter, Plus, Search, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../../ui/button';
@@ -21,6 +26,7 @@ export interface CoursesListProps {
 	academicYears?: IAcademicYearResponse[];
 	selectedAcademicYearId?: string;
 	onAcademicYearChange?: (id: string) => void;
+	onLevelChange?: (level: LevelType) => void;
 	isLoading?: boolean;
 	onViewCourse?: (id: string) => void;
 	onEditCourse?: (id: string) => void;
@@ -33,14 +39,15 @@ export function CoursesList({
 	academicYears = [],
 	selectedAcademicYearId,
 	onAcademicYearChange,
+	onLevelChange,
 	isLoading = false,
 	onViewCourse,
 	onEditCourse,
 	onCreateCourse,
 	canManage = false,
-}: CoursesListProps) {
+}: Readonly<CoursesListProps>) {
 	const [search, setSearch] = useState('');
-	const [levelFilter, setLevelFilter] = useState<string>('ALL');
+	const [levelFilter, setLevelFilter] = useState<string>(LEVEL.DEFAULT);
 	const [shiftFilter, setShiftFilter] = useState<string>('ALL');
 
 	const filteredCourses = courses.filter((c) => {
@@ -51,9 +58,9 @@ export function CoursesList({
 			c.preceptorName?.toLowerCase().includes(search.toLowerCase());
 
 		const matchesLevel =
-			levelFilter === 'ALL' ||
+			levelFilter === 'DEFAULT' ||
 			c.level === levelFilter ||
-			(levelFilter === 'SECONDARY' && c.level === 'SEONDARY');
+			(levelFilter === 'SECONDARY' && c.level === 'SECONDARY');
 
 		const matchesShift = shiftFilter === 'ALL' || c.shift === shiftFilter;
 
@@ -61,14 +68,14 @@ export function CoursesList({
 	});
 
 	const hasActiveFilters =
-		search !== '' || levelFilter !== 'ALL' || shiftFilter !== 'ALL';
+		search !== '' || levelFilter !== 'DEFAULT' || shiftFilter !== 'DEFAULT';
 
 	const handleClearFilters = () => {
 		setSearch('');
-		setLevelFilter('ALL');
+		setLevelFilter('DEFAULT');
 		setShiftFilter('ALL');
 	};
-
+	console.log(filteredCourses);
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-4 rounded-lg border shadow-sm">
@@ -111,7 +118,7 @@ export function CoursesList({
 								<SelectValue placeholder="Nivel" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="ALL">Todos los niveles</SelectItem>
+								<SelectItem value="DEFAULT">Todos los niveles</SelectItem>
 								<SelectItem value="SECONDARY">Secundaria</SelectItem>
 								<SelectItem value="PRIMARY">Primaria</SelectItem>
 								<SelectItem value="DEFAULT">Inicial / Otro</SelectItem>
@@ -125,7 +132,7 @@ export function CoursesList({
 								<SelectValue placeholder="Turno" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="ALL">Todos los turnos</SelectItem>
+								<SelectItem value="DEFAULT">Todos los turnos</SelectItem>
 								<SelectItem value="MORNING">Mañana</SelectItem>
 								<SelectItem value="AFTERNOON">Tarde</SelectItem>
 								<SelectItem value="EVENING">Noche</SelectItem>

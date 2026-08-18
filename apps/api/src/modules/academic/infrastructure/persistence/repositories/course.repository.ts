@@ -1,5 +1,5 @@
-import { EntityRepository } from '@mikro-orm/core';
-import { LevelType, ShiftType } from '@repo/common';
+import { EntityRepository, FilterQuery } from '@mikro-orm/core';
+import { LEVEL, LevelType, ShiftType } from '@repo/common';
 import { Course } from '../../../domain/entities/course.entity';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { CourseOrmEntity } from '../entities/courses.orm-entity';
@@ -29,7 +29,20 @@ export class CourseRepository
 		academicYearId: string,
 		where?: { level?: LevelType; preceptorId?: string },
 	): Promise<Course[]> {
-		const orms = await this.find({ academicYearId, ...where });
+		const filters: FilterQuery<CourseOrmEntity> = {
+			academicYear: academicYearId,
+		};
+
+		if (where?.level && where.level !== LEVEL.DEFAULT) {
+			filters.level = where.level;
+		}
+
+		if (where?.preceptorId) {
+			filters.preceptorId = where.preceptorId;
+		}
+
+		const orms = await this.find(filters);
+
 		return orms.map((orm) => CourseMapper.toDomain(orm));
 	}
 	async findByAcademicYearAndDivision(
@@ -54,7 +67,7 @@ export class CourseRepository
 		return orms.map((orm) => CourseMapper.toDomain(orm));
 	}
 	save(course: Course): Promise<void> {
-		const orm = CourseMapper.toOrm(course);
+		const orm = CourseMapper.toOrm(course, this.em);
 		this.em.persist(orm);
 		return this.em.flush();
 	}

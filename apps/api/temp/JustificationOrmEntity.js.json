@@ -1,6 +1,6 @@
 {
 	"data": {
-		"_id": 21000,
+		"_id": 13000,
 		"properties": {
 			"id": {
 				"name": "id",
@@ -76,7 +76,7 @@
 		"indexes": [],
 		"uniques": [],
 		"className": "JustificationOrmEntity",
-		"path": "./src/modules/attendance/infrastructure/persistence/entities/justification.orm-entity.ts",
+		"path": "./dist/modules/attendance/infrastructure/persistence/entities/justification.orm-entity.js",
 		"collection": "justification",
 		"name": "JustificationOrmEntity",
 		"abstract": false,
@@ -87,7 +87,7 @@
 		"compositePK": false,
 		"simplePK": true
 	},
-	"origin": "./src/modules/attendance/infrastructure/persistence/entities/justification.orm-entity.ts",
-	"hash": "78822c0b6f3311858812ff087fceeff6",
+	"origin": "./dist/modules/attendance/infrastructure/persistence/entities/justification.orm-entity.js",
+	"hash": "9f5e65fef400271ef01bd464adc5ff0e",
 	"version": "6.6.7"
 }

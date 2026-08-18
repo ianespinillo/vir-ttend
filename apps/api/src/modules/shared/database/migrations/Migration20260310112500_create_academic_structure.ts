@@ -3,6 +3,10 @@ import { Migration } from '@mikro-orm/migrations';
 export class Migration20260310112500_create_academic_structure extends Migration {
 	override async up(): Promise<void> {
 		this.addSql(
+			`create type "DAYOFWEEK" as enum ('monday', 'tuesday', 'wednesday', 'thursday', 'friday');`,
+		);
+
+		this.addSql(
 			`create table "academic_years" ("id" uuid not null default gen_random_uuid(), "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now(), "school_id" varchar(255) not null, "year" int not null, "start_date" timestamptz not null, "end_date" timestamptz not null, "is_active" boolean not null, "non_working_days" jsonb not null, "absence_threshold_percent" int not null, "late_count_abscense_after_minutes" int not null, constraint "academic_years_pkey" primary key ("id"));`,
 		);
 
@@ -15,7 +19,7 @@ export class Migration20260310112500_create_academic_structure extends Migration
 		);
 
 		this.addSql(
-			`create table "schedule_slots" ("id" uuid not null default gen_random_uuid(), "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now(), "subject_id" varchar(255) not null, "course_id" varchar(255) not null, "day_of_week" DAYOFWEEK not null, "start_time" varchar(255) not null, "end_time" varchar(255) not null, "subjectId" uuid not null, constraint "schedule_slots_pkey" primary key ("id"));`,
+			`create table "schedule_slots" ("id" uuid not null default gen_random_uuid(), "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now(), "subject_id" varchar(255) not null, "course_id" varchar(255) not null, "day_of_week" "DAYOFWEEK" not null, "start_time" varchar(255) not null, "end_time" varchar(255) not null, "subjectId" uuid not null, constraint "schedule_slots_pkey" primary key ("id"));`,
 		);
 
 		this.addSql(
@@ -51,5 +55,7 @@ export class Migration20260310112500_create_academic_structure extends Migration
 		this.addSql(`drop table if exists "subjects" cascade;`);
 
 		this.addSql(`drop table if exists "schedule_slots" cascade;`);
+
+		this.addSql(`drop type if exists "DAYOFWEEK";`);
 	}
 }
