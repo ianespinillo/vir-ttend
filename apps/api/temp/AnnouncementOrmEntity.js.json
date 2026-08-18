@@ -1,0 +1,110 @@
+{
+	"data": {
+		"_id": 17000,
+		"properties": {
+			"schoolId": {
+				"name": "schoolId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"tenantId": {
+				"name": "tenantId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"authorId": {
+				"name": "authorId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"title": {
+				"name": "title",
+				"kind": "scalar",
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"body": {
+				"name": "body",
+				"kind": "scalar",
+				"type": "text",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"targetType": {
+				"name": "targetType",
+				"kind": "scalar",
+				"type": "string",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "AnnouncementTargetType"
+			},
+			"targetId": {
+				"name": "targetId",
+				"kind": "scalar",
+				"nullable": true,
+				"getter": false,
+				"setter": false,
+				"type": "string",
+				"array": false,
+				"optional": true,
+				"runtimeType": "string"
+			},
+			"status": {
+				"name": "status",
+				"kind": "scalar",
+				"type": "string",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "AnnouncementStatus"
+			},
+			"publishAt": {
+				"name": "publishAt",
+				"kind": "scalar",
+				"type": "timestamp",
+				"nullable": true,
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"optional": true,
+				"runtimeType": "Date"
+			}
+		},
+		"primaryKeys": [],
+		"filters": {},
+		"hooks": {},
+		"indexes": [{ "properties": ["schoolId", "status", "publishAt"] }],
+		"uniques": [],
+		"className": "AnnouncementOrmEntity",
+		"path": "./dist/modules/identity/infrastructure/persistence/entities/announcement.orm-entity.js",
+		"collection": "announcements",
+		"name": "AnnouncementOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"extends": "BaseEntity",
+		"useCache": true
+	},
+	"origin": "./dist/modules/identity/infrastructure/persistence/entities/announcement.orm-entity.js",
+	"hash": "2f3ba60f5b45bc73621bb7dce581cd07",
+	"version": "6.6.7"
+}

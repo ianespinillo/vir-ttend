@@ -1,4 +1,4 @@
-import { ATTENDANCE_ROUTES } from '@repo/common';
+import { ATTENDANCE_ROUTES, type ApiResponse } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
@@ -14,8 +14,11 @@ export function useCopyAttendance() {
 
 	return useMutation({
 		mutationFn: async (payload: CopyAttendancePayload) => {
-			const res = await apiClient.post(ATTENDANCE_ROUTES.subjectCopy, payload);
-			return res.data;
+			const res = await apiClient.post<ApiResponse<unknown>>(
+				ATTENDANCE_ROUTES.subjectCopy,
+				payload,
+			);
+			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({

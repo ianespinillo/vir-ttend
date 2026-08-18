@@ -1,5 +1,6 @@
 import {
 	ACADEMIC_ROUTES,
+	type ApiResponse,
 	type IScheduleSlotResponse,
 	type SetScheduleFormValues,
 } from '@repo/common';
@@ -10,17 +11,17 @@ import { queryKeys } from '../../lib/keys';
 export function useSetSchedule() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (data: SetScheduleFormValues) => {
-			const res = await apiClient.post<IScheduleSlotResponse[]>(
+	return useMutation<IScheduleSlotResponse[], Error, SetScheduleFormValues>({
+		mutationFn: async (data) => {
+			const res = await apiClient.post<ApiResponse<IScheduleSlotResponse[]>>(
 				ACADEMIC_ROUTES.schedule,
 				data,
 			);
-			return res.data;
+			return res.data.data;
 		},
-		onSuccess: (_, variables) => {
+		onSuccess: (_data, variables) => {
 			queryClient.invalidateQueries({
-				queryKey: ['schedule', variables.courseId],
+				queryKey: queryKeys.schedule.byCourse(variables.courseId),
 			});
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.courses.detail(variables.courseId),

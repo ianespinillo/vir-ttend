@@ -9,9 +9,10 @@ export class GetAcademicYearsHandler {
 		@Inject('IAcademicYearRepository')
 		private readonly academicYearsRepo: IAcademicYearRepository,
 	) {}
-	async execute(query: GetAcademicYearsQuery): Promise<AcademicYearResponseDto> {
-		const aY = await this.academicYearsRepo.findActive(query.schoolId);
-		if (!aY) throw new Error('Academic year not found');
-		return new AcademicYearResponseDto(aY);
+	async execute(
+		query: GetAcademicYearsQuery,
+	): Promise<AcademicYearResponseDto[]> {
+		const aYs = await this.academicYearsRepo.findBySchool(query.schoolId);
+		return aYs.map((aY) => new AcademicYearResponseDto(aY));
 	}
 }

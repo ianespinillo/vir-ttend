@@ -1,0 +1,123 @@
+{
+	"data": {
+		"_id": 11000,
+		"properties": {
+			"id": {
+				"name": "id",
+				"kind": "scalar",
+				"primary": true,
+				"type": "uuid",
+				"array": false,
+				"runtimeType": "string"
+			},
+			"studentId": {
+				"name": "studentId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"courseId": {
+				"name": "courseId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"academicYearId": {
+				"name": "academicYearId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"tenantId": {
+				"name": "tenantId",
+				"kind": "scalar",
+				"type": "uuid",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"alertType": {
+				"name": "alertType",
+				"kind": "scalar",
+				"type": "string",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "string"
+			},
+			"absencePercent": {
+				"name": "absencePercent",
+				"kind": "scalar",
+				"type": "float4",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "number"
+			},
+			"seenBy": {
+				"name": "seenBy",
+				"kind": "scalar",
+				"type": "uuid",
+				"nullable": true,
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"optional": true,
+				"runtimeType": "string"
+			},
+			"seenAt": {
+				"name": "seenAt",
+				"kind": "scalar",
+				"type": "date",
+				"nullable": true,
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"optional": true,
+				"runtimeType": "Date"
+			},
+			"createdAt": {
+				"name": "createdAt",
+				"kind": "scalar",
+				"type": "datetime",
+				"defaultRaw": "now()",
+				"getter": false,
+				"setter": false,
+				"array": false,
+				"runtimeType": "Date"
+			}
+		},
+		"primaryKeys": ["id"],
+		"filters": {},
+		"hooks": {},
+		"indexes": [
+			{ "properties": ["seenAt"] },
+			{ "properties": ["studentId", "academicYearId", "alertType"] }
+		],
+		"uniques": [],
+		"className": "AttendanceAlertOrmEntity",
+		"path": "./dist/modules/attendance/infrastructure/persistence/entities/attendance-alert.orm-entity.js",
+		"collection": "attendance_alerts",
+		"name": "AttendanceAlertOrmEntity",
+		"abstract": false,
+		"internal": true,
+		"constructorParams": [],
+		"toJsonParams": [],
+		"useCache": true,
+		"compositePK": false,
+		"simplePK": true
+	},
+	"origin": "./dist/modules/attendance/infrastructure/persistence/entities/attendance-alert.orm-entity.js",
+	"hash": "c4657d17c452fe9836bfe833952ee45f",
+	"version": "6.6.7"
+}

@@ -1,4 +1,4 @@
-import { ACADEMIC_ROUTES } from '@repo/common';
+import { ACADEMIC_ROUTES, type ApiResponse } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 
@@ -7,8 +7,10 @@ export function useDeleteCourse() {
 
 	return useMutation({
 		mutationFn: async (id: string) => {
-			const res = await apiClient.delete(ACADEMIC_ROUTES.course(id));
-			return res.data;
+			const res = await apiClient.delete<ApiResponse<void>>(
+				ACADEMIC_ROUTES.course(id),
+			);
+			return res.data.data;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['courses'] });

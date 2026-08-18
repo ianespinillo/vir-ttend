@@ -30,12 +30,7 @@ import { PasswordService } from './domain/services/password.service';
 import { TokenService } from './domain/services/token.service';
 import { JwtStrategy } from './infrastructure/auth/strategies/jwt.startegy';
 import { IdentityEventsModule } from './infrastructure/events/identity.events.module';
-import { IdentityPersistenceModule } from './infrastructure/persistence/identity.persistene.module';
-import { AnnouncementRepository } from './infrastructure/persistence/repositories/announcement.repository';
-import { RefreshTokenRepository } from './infrastructure/persistence/repositories/refresh-token.repository';
-import { TenantRepository } from './infrastructure/persistence/repositories/tenant.repository';
-import { UserTenantMembershipRepository } from './infrastructure/persistence/repositories/user-tenant-membership.repository';
-import { UserRepository } from './infrastructure/persistence/repositories/user.repository';
+import { IdentityPersistenceModule } from './infrastructure/persistence/identity.persistence.module';
 import { AnnouncementsController } from './presentation/controllers/announcements.controller';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { TenantsController } from './presentation/controllers/tenants.controller';
@@ -55,31 +50,7 @@ import { UsersController } from './presentation/controllers/users.controller';
 			inject: [ConfigService],
 		}),
 	],
-	exports: ['IUserTenantMembershipRepository'],
 	providers: [
-		UserTenantMembershipRepository,
-		AnnouncementRepository,
-		UserRepository,
-		{
-			provide: 'IUserTenantMembershipRepository',
-			useClass: UserTenantMembershipRepository,
-		},
-		{
-			provide: 'IAnnouncementRepository',
-			useClass: AnnouncementRepository,
-		},
-		{
-			provide: 'IUserRepository',
-			useClass: UserRepository,
-		},
-		{
-			provide: 'ITenantRepository',
-			useClass: TenantRepository,
-		},
-		{
-			provide: 'IRefreshTokenRepository',
-			useClass: RefreshTokenRepository,
-		},
 		// Servicios de dominio
 		PasswordService,
 		TokenService,

@@ -221,7 +221,7 @@
 					"primary": false,
 					"nullable": false,
 					"length": 6,
-					"default": "1785381798054",
+					"default": "now()",
 					"mappedType": "datetime"
 				}
 			},
@@ -1209,7 +1209,7 @@
 					"autoincrement": false,
 					"primary": false,
 					"nullable": false,
-					"mappedType": "unknown"
+					"mappedType": "enum"
 				},
 				"start_time": {
 					"name": "start_time",
@@ -1264,7 +1264,13 @@
 					"updateRule": "cascade"
 				}
 			},
-			"nativeEnums": {}
+			"nativeEnums": {
+				"DAYOFWEEK": {
+					"name": "DAYOFWEEK",
+					"schema": "public",
+					"items": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+				}
+			}
 		},
 		{
 			"columns": {
@@ -1564,5 +1570,11 @@
 			"nativeEnums": {}
 		}
 	],
-	"nativeEnums": {}
+	"nativeEnums": {
+		"DAYOFWEEK": {
+			"name": "DAYOFWEEK",
+			"schema": "public",
+			"items": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+		}
+	}
 }

@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.response.dto';
@@ -12,6 +13,8 @@ export class GetSubjectAttendanceQueryHandler {
 		private readonly subjectPort: ISubjectPort,
 		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('IStudentPort')
+		private readonly studentPort: IStudentPort,
 	) {}
 	async execute(
 		query: GetSubjectAttendanceQuery,
@@ -22,12 +25,17 @@ export class GetSubjectAttendanceQueryHandler {
 			query.subjectId,
 			query.date,
 		);
+		const dto: AttendanceRecordResponseDto[] = [];
+		for (const record of records) {
+			const student = await this.studentPort.findById(record.studentId);
+			dto.push(new AttendanceRecordResponseDto(student, record));
+		}
 		return new SubjectAttendanceResponseDto({
 			subjectId: subject.id,
 			subjectName: subject.name,
 			courseId: subject.courseId,
 			date: query.date.toLocaleDateString(),
-			records: records.map((r) => new AttendanceRecordResponseDto(r.studentId, r)),
+			records: dto,
 		});
 	}
 }

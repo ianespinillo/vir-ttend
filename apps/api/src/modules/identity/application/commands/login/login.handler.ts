@@ -8,7 +8,7 @@ import { LoginCommand } from './login.command';
 
 export interface LoginResult {
 	isSuperAdmin: boolean;
-	sub: string;
+	userId: string;
 	tenants: { tenantId: string; role: Roles }[];
 }
 @Injectable()
@@ -36,13 +36,13 @@ export class LoginHandler {
 		if (memberships.length === 0) {
 			return {
 				isSuperAdmin: true,
-				sub: user.id,
+				userId: user.id,
 				tenants: [],
 			};
 		}
 		return {
 			isSuperAdmin: false,
-			sub: user.id,
+			userId: user.id,
 			tenants: memberships.map((m) => ({ tenantId: m.tenantId, role: m.role })),
 		};
 	}

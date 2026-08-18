@@ -7,6 +7,7 @@ import { CourseSnapshotBuilderService } from '../../../src/modules/attendance/ap
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { Course } from '../../../src/modules/attendance/domain/entities/course.entity';
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
+import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 import { CourseSnapshot } from '../../../src/modules/attendance/domain/value-objects/course-snapshot.vo';
 
@@ -15,7 +16,7 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let coursePort: MockProxy<ICoursePort>;
 	let snapshotBuilder: MockProxy<CourseSnapshotBuilderService>;
-
+	let studentPort: MockProxy<IStudentPort>;
 	const course = Course.reconstitute(
 		'course-1',
 		'3° B',
@@ -28,10 +29,12 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		coursePort = mock<ICoursePort>();
 		snapshotBuilder = mock<CourseSnapshotBuilderService>();
+		studentPort = mock<IStudentPort>();
 		handler = new GetCourseDailyOverviewQueryHandler(
 			attendanceRepo,
 			coursePort,
 			snapshotBuilder,
+			studentPort,
 		);
 	});
 

@@ -1,21 +1,22 @@
 'use client';
 
+import { LEVEL, LevelType } from '@repo/common';
 import {
 	useAcademicYears,
 	useActiveAcademicYear,
 	useCourses,
+	useCurrentUser,
 } from '@repo/hooks';
 import { CoursesList, PageHeader } from '@repo/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { useAuth } from '../../../lib/auth/provider';
 
 export default function CoursesPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const { user } = useAuth();
+	const { data: user } = useCurrentUser();
 
-	const role = user?.role?.toLowerCase();
+	const role = user?.role.toLowerCase();
 	const isAdmin = role === 'admin' || role === 'superadmin';
 	const isPreceptor = role === 'preceptor';
 
@@ -25,10 +26,12 @@ export default function CoursesPage() {
 	const [selectedAYId, setSelectedAYId] = useState<string>(
 		searchParams.get('academicYearId') || activeAY?.id || 'ALL',
 	);
-
+	const [selectedLevel, setSelectedLevel] = useState<LevelType>(
+		(searchParams.get('level') as LevelType) || LEVEL.DEFAULT,
+	);
 	const filterParams =
 		selectedAYId && selectedAYId !== 'ALL'
-			? { academicYearId: selectedAYId }
+			? { academicYearId: selectedAYId, level: selectedLevel }
 			: undefined;
 
 	const { data: coursesData, isLoading } = useCourses(filterParams);
@@ -36,6 +39,9 @@ export default function CoursesPage() {
 
 	const handleAcademicYearChange = (ayId: string) => {
 		setSelectedAYId(ayId);
+	};
+	const handleLevelChange = (level: LevelType) => {
+		setSelectedLevel(level);
 	};
 
 	const handleViewCourse = (id: string) => {

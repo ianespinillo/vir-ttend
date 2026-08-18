@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AcademicModule } from '../academic/academic.module';
+import { AcademicPersistenceModule } from '../academic/infrastructure/persistence/academic.persistence.module';
 import { BulkRegisterAttendanceHandler } from './application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { BulkUpdateSubjectStatusHandler } from './application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
 import { CopyAttendanceHandler } from './application/commands/copy-attendance/copy-attendance.handler';
@@ -31,16 +32,17 @@ import { ScheduleAdapter } from './infrastructure/adapters/schedule.adapter';
 import { StudentAdapter } from './infrastructure/adapters/student.adapter';
 import { SubjectAdapter } from './infrastructure/adapters/subject.adapter';
 import { AttendancePersistenceModule } from './infrastructure/persistence/attendance.persistence.module';
-import { AttendanceAlertRepository } from './infrastructure/persistence/repository/attendance-alert.repository';
-import { AttendanceRecordRepository } from './infrastructure/persistence/repository/attendance-record.repository';
-import { JustificationRepository } from './infrastructure/persistence/repository/justification.repository';
 import { AlertsController } from './presentation/controllers/alerts.controller';
 import { AttendanceCommandController } from './presentation/controllers/attendance.command.controller';
 import { AttendanceQueryController } from './presentation/controllers/attendance.query.controller';
 import { DashboardController } from './presentation/controllers/dashboard.controller';
 
 @Module({
-	imports: [AcademicModule, AttendancePersistenceModule],
+	imports: [
+		AcademicModule,
+		AcademicPersistenceModule,
+		AttendancePersistenceModule,
+	],
 	providers: [
 		{
 			provide: 'IStudentPort',
@@ -61,18 +63,6 @@ import { DashboardController } from './presentation/controllers/dashboard.contro
 		{
 			provide: 'ISubjectPort',
 			useClass: SubjectAdapter,
-		},
-		{
-			provide: 'IAttendanceRecordRepository',
-			useClass: AttendanceRecordRepository,
-		},
-		{
-			provide: 'IAttendanceAlertRepository',
-			useClass: AttendanceAlertRepository,
-		},
-		{
-			provide: 'IJustificationRepository',
-			useClass: JustificationRepository,
 		},
 		//commands
 		RegisterDailyAttendanceHandler,

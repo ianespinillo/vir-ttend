@@ -4,8 +4,8 @@ services:
     container_name: vir-ttend_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: virttend
+      POSTGRES_PASSWORD: 2026virttend
       POSTGRES_DB: vir_ttend
     ports:
       - "5436:5432"
