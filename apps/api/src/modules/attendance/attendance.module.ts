@@ -4,6 +4,7 @@ import { AcademicPersistenceModule } from '../academic/infrastructure/persistenc
 import { BulkRegisterAttendanceHandler } from './application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { BulkUpdateSubjectStatusHandler } from './application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
 import { CopyAttendanceHandler } from './application/commands/copy-attendance/copy-attendance.handler';
+import { CopyDailyAttendanceHandler } from './application/commands/copy-daily-attendance/copy-daily-attendance.handler';
 import { GenerateAlertHandler } from './application/commands/generate-alert/generate-alert.handler';
 import { JustifyAttendanceHandler } from './application/commands/justify-attendance/justify-attendance.handler';
 import { MarkAlertSeenHandler } from './application/commands/mark-alert-seen/mark-alert-seen.handler';
@@ -71,6 +72,7 @@ import { DashboardController } from './presentation/controllers/dashboard.contro
 		BulkUpdateSubjectStatusHandler,
 		JustifyAttendanceHandler,
 		CopyAttendanceHandler,
+		CopyDailyAttendanceHandler,
 		GenerateAlertHandler,
 		MarkAlertSeenHandler,
 		//queries

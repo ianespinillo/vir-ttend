@@ -18,6 +18,8 @@ import { BulkUpdateSubjectStatusCommand } from '../../application/commands/bulk-
 import { BulkUpdateSubjectStatusHandler } from '../../application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
 import { CopyAttendanceCommand } from '../../application/commands/copy-attendance/copy-attendance.command';
 import { CopyAttendanceHandler } from '../../application/commands/copy-attendance/copy-attendance.handler';
+import { CopyDailyAttendanceCommand } from '../../application/commands/copy-daily-attendance/copy-daily-attendance.command';
+import { CopyDailyAttendanceHandler } from '../../application/commands/copy-daily-attendance/copy-daily-attendance.handler';
 import { JustifyAttendanceCommand } from '../../application/commands/justify-attendance/justify-attendance.command';
 import { JustifyAttendanceHandler } from '../../application/commands/justify-attendance/justify-attendance.handler';
 import { RegisterDailyAttendanceCommand } from '../../application/commands/register-daily-attendance/register-daily-attendance.command';
@@ -27,6 +29,7 @@ import { RegisterSubjectAttendanceHandler } from '../../application/commands/reg
 import { BulkRegisterAttendanceRequestDto } from '../../application/dtos/bulk-register-attendance.request.dto';
 import { BulkUpdateSubjectStatusRequestDto } from '../../application/dtos/bulk-update-subject-status.request.dto';
 import { CopyAttendanceRequestDto } from '../../application/dtos/copy-attendance.request.dto';
+import { CopyDailyAttendanceRequestDto } from '../../application/dtos/copy-daily-attendance.request.dto';
 import { JustifyAttendanceRequestDto } from '../../application/dtos/justify-attendance.request.dto';
 import { RegisterDailyAttendanceRequestDto } from '../../application/dtos/register-daily-attendance.request.dto';
 import { RegisterSubjectAttendanceRequestDto } from '../../application/dtos/register-subject-attendance.request.dto';
@@ -43,6 +46,7 @@ export class AttendanceCommandController {
 		private readonly bulkUpdateSubjectStatusHandler: BulkUpdateSubjectStatusHandler,
 		private readonly registerSubjectAttendanceHandler: RegisterSubjectAttendanceHandler,
 		private readonly copyAttendanceHandler: CopyAttendanceHandler,
+		private readonly copyDailyAttendanceHandler: CopyDailyAttendanceHandler,
 	) {}
 
 	@ApiOperation({
@@ -261,6 +265,42 @@ export class AttendanceCommandController {
 			new CopyAttendanceCommand(
 				user.sub,
 				dto.subjectId,
+				new Date(dto.targetDate),
+				dto.sourceDate ? new Date(dto.sourceDate) : undefined,
+			),
+		);
+	}
+
+	@ApiOperation({
+		summary: 'Copiar la asistencia diaria de un curso a otra fecha',
+		description: `Copia los estados de asistencia de la última fecha con registros (o de sourceDate si se indica) de un curso hacia targetDate, sin sobrescribir los registros existentes. Roles permitidos: preceptor, admin. Body de ejemplo:
+{
+  "courseId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "targetDate": "2026-03-17",
+  "sourceDate": "2026-03-10"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Asistencia copiada. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }. No devuelve cuerpo.',
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Validación falló o no hay registros en la fecha origen',
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@Post('daily/copy')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async copyDailyAttendance(
+		@Body() dto: CopyDailyAttendanceRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.copyDailyAttendanceHandler.execute(
+			new CopyDailyAttendanceCommand(
+				user.sub,
+				dto.courseId,
 				new Date(dto.targetDate),
 				dto.sourceDate ? new Date(dto.sourceDate) : undefined,
 			),

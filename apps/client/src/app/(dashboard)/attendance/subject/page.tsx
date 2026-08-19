@@ -19,8 +19,9 @@ import {
 	useSubjects,
 	useTeacherSubjects,
 } from '@repo/hooks';
-import { type StudentRowItem, SubjectAttendancePage } from '@repo/ui';
+import { Button, type StudentRowItem, SubjectAttendancePage } from '@repo/ui';
 import { parseISO } from 'date-fns';
+import { Copy } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -143,9 +144,19 @@ export default function AttendanceSubjectPage() {
 	}, [subjectAttendance]);
 
 	const [isCopyOpen, setIsCopyOpen] = useState(false);
+	const [copySourceDate, setCopySourceDate] = useState<string | undefined>();
 	const [isJustifyOpen, setIsJustifyOpen] = useState(false);
 	const [selectedRecordToJustify, setSelectedRecordToJustify] =
 		useState<AttendanceRecord | null>(null);
+
+	const [previewSubjectId, setPreviewSubjectId] = useState<string>('');
+	const [previewDate, setPreviewDate] = useState<string>('');
+
+	const { data: previewAttendance, isLoading: isLoadingPreview } =
+		useSubjectAttendance({
+			subjectId: previewSubjectId,
+			date: previewDate,
+		});
 
 	const handleSubjectChange = useCallback(
 		(subjectId: string) => {
@@ -179,33 +190,8 @@ export default function AttendanceSubjectPage() {
 				};
 				return { ...prev, [studentId]: updated };
 			});
-
-			registerSubjectMutation.mutate(
-				{
-					subjectId: selectedSubjectId,
-					courseId: selectedSubject.courseId,
-					date: selectedDate,
-					records: [{ studentId, status }],
-				},
-				{
-					onError: () => {
-						toast.error('Error al guardar asistencia de la materia');
-						if (subjectAttendance?.records) {
-							const map: Record<string, AttendanceRecord> = {};
-							for (const r of subjectAttendance.records) map[r.studentId] = r;
-							setLocalRecordsMap(map);
-						}
-					},
-				},
-			);
 		},
-		[
-			selectedSubjectId,
-			selectedDate,
-			selectedSubject,
-			registerSubjectMutation,
-			subjectAttendance,
-		],
+		[selectedSubjectId, selectedDate, selectedSubject],
 	);
 
 	const handleMarkAll = useCallback(
@@ -219,51 +205,113 @@ export default function AttendanceSubjectPage() {
 				}
 				return nextMap;
 			});
-
-			bulkSubjectMutation.mutate(
-				{
-					subjectId: selectedSubjectId,
-					date: selectedDate,
-					status,
-				},
-				{
-					onSuccess: () => {
-						toast.success(
-							`Se marcaron todos como ${
-								status === ATTENDANCE_STATUS.PRESENT ? 'Presentes' : 'Ausentes'
-							}`,
-						);
-					},
-					onError: () => {
-						toast.error('Error al marcar asistencia masiva');
-					},
-				},
-			);
 		},
-		[selectedSubjectId, selectedDate, bulkSubjectMutation],
+		[selectedSubjectId, selectedDate],
 	);
 
+	const handleConfirmChanges = useCallback(async () => {
+		if (!selectedSubjectId || !selectedDate || !selectedSubject?.courseId) return;
+
+		const changedRecords: { studentId: string; status: AttendanceStatus }[] = [];
+		for (const [studentId, local] of Object.entries(localRecordsMap)) {
+			const serverRecord = subjectAttendance?.records?.find(
+				(r) => r.studentId === studentId,
+			);
+			if (!serverRecord || local.status !== serverRecord.status) {
+				changedRecords.push({ studentId, status: local.status });
+			}
+		}
+		if (changedRecords.length === 0) return;
+
+		try {
+			await registerSubjectMutation.mutateAsync({
+				subjectId: selectedSubjectId,
+				courseId: selectedSubject.courseId,
+				date: selectedDate,
+				records: changedRecords,
+			});
+			toast.success('Asistencia guardada correctamente');
+		} catch {
+			toast.error('Error al guardar asistencia de la materia');
+			if (subjectAttendance?.records) {
+				const map: Record<string, AttendanceRecord> = {};
+				for (const r of subjectAttendance.records) map[r.studentId] = r;
+				setLocalRecordsMap(map);
+			}
+		}
+	}, [
+		selectedSubjectId,
+		selectedDate,
+		selectedSubject,
+		registerSubjectMutation,
+		subjectAttendance,
+		localRecordsMap,
+	]);
+
+	const handleResetChanges = useCallback(() => {
+		if (subjectAttendance?.records) {
+			const map: Record<string, AttendanceRecord> = {};
+			for (const r of subjectAttendance.records) {
+				map[r.studentId] = r;
+			}
+			setLocalRecordsMap(map);
+		}
+	}, [subjectAttendance]);
+
+	const hasPendingChanges = useMemo(() => {
+		const serverRecords = subjectAttendance?.records || [];
+		if (Object.keys(localRecordsMap).length !== serverRecords.length) {
+			return true;
+		}
+		for (const serverRecord of serverRecords) {
+			const local = localRecordsMap[serverRecord.studentId];
+			if (!local || local.status !== serverRecord.status) {
+				return true;
+			}
+		}
+		return false;
+	}, [localRecordsMap, subjectAttendance]);
+
 	const handleOpenCopy = useCallback(() => {
+		setCopySourceDate(undefined);
+		setPreviewSubjectId('');
+		setPreviewDate('');
 		setIsCopyOpen(true);
 	}, []);
 
 	const handleCloseCopy = useCallback(() => {
 		setIsCopyOpen(false);
+		setCopySourceDate(undefined);
+		setPreviewSubjectId('');
+		setPreviewDate('');
 	}, []);
 
-	const handleConfirmCopy = useCallback(async () => {
-		if (!selectedSubjectId || !selectedDate) return;
-		try {
-			await copyMutation.mutateAsync({
-				subjectId: selectedSubjectId,
-				targetDate: selectedDate,
-			});
-			toast.success('Asistencia copiada de la clase anterior');
-			handleCloseCopy();
-		} catch (_err) {
-			toast.error('Error al copiar la asistencia');
-		}
-	}, [selectedSubjectId, selectedDate, copyMutation, handleCloseCopy]);
+	const handleCopySourceDateChange = useCallback(
+		(date: string) => {
+			setCopySourceDate(date);
+			setPreviewSubjectId(selectedSubjectId);
+			setPreviewDate(date);
+		},
+		[selectedSubjectId],
+	);
+
+	const handleConfirmCopy = useCallback(
+		async (sourceDate?: string) => {
+			if (!selectedSubjectId || !selectedDate) return;
+			try {
+				await copyMutation.mutateAsync({
+					subjectId: selectedSubjectId,
+					targetDate: selectedDate,
+					sourceDate,
+				});
+				toast.success('Asistencia copiada de la clase anterior');
+				handleCloseCopy();
+			} catch {
+				toast.error('Error al copiar la asistencia');
+			}
+		},
+		[selectedSubjectId, selectedDate, copyMutation, handleCloseCopy],
+	);
 
 	const handleOpenJustify = useCallback((record: AttendanceRecord) => {
 		setSelectedRecordToJustify(record);
@@ -286,7 +334,7 @@ export default function AttendanceSubjectPage() {
 				});
 				toast.success('Justificación registrada correctamente');
 				handleCloseJustify();
-			} catch (_err) {
+			} catch {
 				toast.error('Error al guardar la justificación');
 			}
 		},
@@ -301,6 +349,7 @@ export default function AttendanceSubjectPage() {
 				id: r.studentId,
 				name: r.studentName,
 				attendanceRecord: local || r,
+				originalStatus: r.status,
 			};
 		});
 	}, [subjectAttendance, localRecordsMap]);
@@ -339,6 +388,10 @@ export default function AttendanceSubjectPage() {
 			isCopyOpen={isCopyOpen}
 			onOpenCopy={handleOpenCopy}
 			onCloseCopy={handleCloseCopy}
+			onSourceDateChange={handleCopySourceDateChange}
+			copySourceDate={copySourceDate}
+			previewRecords={previewAttendance?.records}
+			isLoadingPreview={isLoadingPreview}
 			onConfirmCopy={handleConfirmCopy}
 			isSubmittingCopy={copyMutation.isPending}
 			isJustifyOpen={isJustifyOpen}
@@ -349,14 +402,17 @@ export default function AttendanceSubjectPage() {
 			isSubmittingJustify={justifyMutation.isPending}
 			extraActions={
 				selectedSubjectId ? (
-					<button
+					<Button
 						type="button"
+						variant="outline"
+						size="sm"
 						onClick={handleOpenCopy}
 						disabled={copyMutation.isPending || !isClassDay}
-						className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-50"
+						className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
 					>
+						<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
 						Copiar de Clase Anterior
-					</button>
+					</Button>
 				) : undefined
 			}
 		/>

@@ -9,14 +9,16 @@ import {
 	useActiveAcademicYear,
 	useAttendanceMetrics,
 	useBulkAttendance,
+	useCopyDailyAttendance,
 	useCurrentUser,
 	useDailyAttendance,
 	useJustifyAttendance,
 	useMyCourses,
 	useRegisterDailyAttendance,
 } from '@repo/hooks';
-import { DailyAttendancePage, type StudentRowItem } from '@repo/ui';
-import { format } from 'date-fns';
+import { Button, DailyAttendancePage, type StudentRowItem } from '@repo/ui';
+import { format, subDays } from 'date-fns';
+import { Copy } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -97,6 +99,9 @@ export default function AttendanceDailyPage() {
 	const [localRecordsMap, setLocalRecordsMap] = useState<
 		Record<string, AttendanceRecord>
 	>({});
+	const [originalRecordsMap, setOriginalRecordsMap] = useState<
+		Record<string, AttendanceRecord>
+	>({});
 
 	useEffect(() => {
 		if (dailyRecords) {
@@ -105,21 +110,48 @@ export default function AttendanceDailyPage() {
 				map[r.studentId] = r;
 			}
 			setLocalRecordsMap(map);
+			setOriginalRecordsMap(map);
 		}
 	}, [dailyRecords]);
 
 	const registerDailyMutation = useRegisterDailyAttendance();
 	const bulkMutation = useBulkAttendance();
 	const justifyMutation = useJustifyAttendance();
+	const copyDailyMutation = useCopyDailyAttendance();
 
 	const [selectedRecordToJustify, setSelectedRecordToJustify] =
 		useState<AttendanceRecord | null>(null);
 	const [isJustifyOpen, setIsJustifyOpen] = useState(false);
 
+	const [isCopyOpen, setIsCopyOpen] = useState(false);
+	const [copySourceDate, setCopySourceDate] = useState<string | undefined>();
+	const [previewCourseId, setPreviewCourseId] = useState<string>('');
+	const [previewDate, setPreviewDate] = useState<string>('');
+
+	const { data: previewRecords, isLoading: isLoadingPreview } =
+		useDailyAttendance({
+			courseId: previewCourseId,
+			date: previewDate,
+		});
+
+	const hasPendingChanges = useMemo(() => {
+		if (
+			Object.keys(localRecordsMap).length !==
+			Object.keys(originalRecordsMap).length
+		) {
+			return true;
+		}
+		for (const [studentId, local] of Object.entries(localRecordsMap)) {
+			const original = originalRecordsMap[studentId];
+			if (!original || local.status !== original.status) {
+				return true;
+			}
+		}
+		return false;
+	}, [localRecordsMap, originalRecordsMap]);
+
 	const handleStatusChange = useCallback(
 		(studentId: string, status: AttendanceStatus) => {
-			if (!selectedCourseId || !selectedDate) return;
-
 			setLocalRecordsMap((prev) => {
 				const existing = prev[studentId];
 				const updated: AttendanceRecord = {
@@ -131,63 +163,100 @@ export default function AttendanceDailyPage() {
 				};
 				return { ...prev, [studentId]: updated };
 			});
-
-			registerDailyMutation.mutate(
-				{
-					courseId: selectedCourseId,
-					date: selectedDate,
-					records: [{ studentId, status }],
-				},
-				{
-					onError: () => {
-						toast.error('Error al guardar asistencia');
-						if (dailyRecords) {
-							const map: Record<string, AttendanceRecord> = {};
-							for (const r of dailyRecords as AttendanceRecord[]) {
-								map[r.studentId] = r;
-							}
-							setLocalRecordsMap(map);
-						}
-					},
-				},
-			);
 		},
-		[selectedCourseId, selectedDate, registerDailyMutation, dailyRecords],
+		[],
 	);
 
-	const handleMarkAll = useCallback(
-		(status: AttendanceStatus) => {
-			if (!selectedCourseId || !selectedDate) return;
+	const handleMarkAll = useCallback((status: AttendanceStatus) => {
+		setLocalRecordsMap((prev) => {
+			const nextMap: Record<string, AttendanceRecord> = {};
+			for (const [sId, r] of Object.entries(prev)) {
+				nextMap[sId] = { ...r, status };
+			}
+			return nextMap;
+		});
+	}, []);
 
-			setLocalRecordsMap((prev) => {
-				const nextMap: Record<string, AttendanceRecord> = {};
-				for (const [sId, r] of Object.entries(prev)) {
-					nextMap[sId] = { ...r, status };
-				}
-				return nextMap;
+	const handleConfirmChanges = useCallback(async () => {
+		if (!selectedCourseId || !selectedDate) return;
+		const changedRecords: { studentId: string; status: AttendanceStatus }[] = [];
+		for (const [studentId, local] of Object.entries(localRecordsMap)) {
+			const original = originalRecordsMap[studentId];
+			if (!original || local.status !== original.status) {
+				changedRecords.push({ studentId, status: local.status });
+			}
+		}
+		if (changedRecords.length === 0) return;
+
+		try {
+			await registerDailyMutation.mutateAsync({
+				courseId: selectedCourseId,
+				date: selectedDate,
+				records: changedRecords,
 			});
+			toast.success('Asistencia guardada correctamente');
+		} catch {
+			toast.error('Error al guardar asistencia');
+			if (dailyRecords) {
+				const map: Record<string, AttendanceRecord> = {};
+				for (const r of dailyRecords as AttendanceRecord[]) {
+					map[r.studentId] = r;
+				}
+				setLocalRecordsMap(map);
+			}
+		}
+	}, [
+		selectedCourseId,
+		selectedDate,
+		localRecordsMap,
+		originalRecordsMap,
+		registerDailyMutation,
+		dailyRecords,
+	]);
 
-			bulkMutation.mutate(
-				{
-					courseId: selectedCourseId,
-					date: selectedDate,
-					defaultStatus: status,
-				},
-				{
-					onSuccess: () => {
-						toast.success(
-							`Se marcaron todos como ${
-								status === ATTENDANCE_STATUS.PRESENT ? 'Presentes' : 'Ausentes'
-							}`,
-						);
-					},
-					onError: () => {
-						toast.error('Error al marcar asistencia masiva');
-					},
-				},
-			);
+	const handleResetChanges = useCallback(() => {
+		setLocalRecordsMap({ ...originalRecordsMap });
+	}, [originalRecordsMap]);
+
+	const handleOpenCopy = useCallback(() => {
+		setCopySourceDate(undefined);
+		setPreviewCourseId('');
+		setPreviewDate('');
+		setIsCopyOpen(true);
+	}, []);
+
+	const handleCloseCopy = useCallback(() => {
+		setIsCopyOpen(false);
+		setCopySourceDate(undefined);
+		setPreviewCourseId('');
+		setPreviewDate('');
+	}, []);
+
+	const handleCopySourceDateChange = useCallback(
+		(date: string) => {
+			setCopySourceDate(date);
+			setPreviewCourseId(selectedCourseId);
+			setPreviewDate(date);
 		},
-		[selectedCourseId, selectedDate, bulkMutation],
+		[selectedCourseId],
+	);
+
+	const handleConfirmCopy = useCallback(
+		async (sourceDate?: string) => {
+			if (!selectedCourseId || !selectedDate) return;
+			try {
+				await copyDailyMutation.mutateAsync({
+					courseId: selectedCourseId,
+					targetDate: selectedDate,
+					sourceDate,
+				});
+				toast.success('Asistencia copiada correctamente');
+				handleCloseCopy();
+			} catch {
+				toast.error('Error al copiar la asistencia');
+			}
+		},
+		[selectedCourseId, selectedDate, copyDailyMutation, handleCloseCopy],
 	);
 
 	const handleOpenJustify = useCallback((record: AttendanceRecord) => {
@@ -213,7 +282,7 @@ export default function AttendanceDailyPage() {
 				});
 				toast.success('Justificación registrada correctamente');
 				handleCloseJustify();
-			} catch (_err) {
+			} catch {
 				toast.error('Error al guardar la justificación');
 			}
 		},
@@ -229,13 +298,15 @@ export default function AttendanceDailyPage() {
 	const gridStudents: StudentRowItem[] = useMemo(() => {
 		return (dailyRecords ?? []).map((r: AttendanceRecord) => {
 			const local = localRecordsMap[r.studentId];
+			const original = originalRecordsMap[r.studentId];
 			return {
 				id: r.studentId,
 				name: r.studentName,
 				attendanceRecord: local || r,
+				originalStatus: original?.status || r.status,
 			};
 		});
-	}, [dailyRecords, localRecordsMap]);
+	}, [dailyRecords, localRecordsMap, originalRecordsMap]);
 
 	return (
 		<DailyAttendancePage
@@ -259,6 +330,33 @@ export default function AttendanceDailyPage() {
 			onCloseJustify={handleCloseJustify}
 			onConfirmJustify={handleConfirmJustify}
 			isSubmittingJustify={justifyMutation.isPending}
+			isCopyOpen={isCopyOpen}
+			onOpenCopy={handleOpenCopy}
+			onCloseCopy={handleCloseCopy}
+			onSourceDateChange={handleCopySourceDateChange}
+			copySourceDate={copySourceDate}
+			previewRecords={previewRecords as AttendanceRecord[] | undefined}
+			isLoadingPreview={isLoadingPreview}
+			onConfirmCopy={handleConfirmCopy}
+			isSubmittingCopy={copyDailyMutation.isPending}
+			onConfirmChanges={handleConfirmChanges}
+			onResetChanges={handleResetChanges}
+			hasPendingChanges={hasPendingChanges}
+			extraActions={
+				selectedCourseId ? (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={handleOpenCopy}
+						disabled={copyDailyMutation.isPending}
+						className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
+					>
+						<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+						Copiar de Otro Dia
+					</Button>
+				) : undefined
+			}
 		/>
 	);
 }

@@ -21,6 +21,7 @@ export interface StudentRowItem {
 	id: string;
 	name: string;
 	attendanceRecord?: AttendanceRecord;
+	originalStatus?: AttendanceStatus;
 }
 
 export interface AttendanceRowProps {
@@ -28,6 +29,7 @@ export interface AttendanceRowProps {
 	onStatusChange: (studentId: string, status: AttendanceStatus) => void;
 	onJustify?: (record: AttendanceRecord) => void;
 	isSaving?: boolean;
+	isPending?: boolean;
 }
 
 export function AttendanceRow({
@@ -35,9 +37,11 @@ export function AttendanceRow({
 	onStatusChange,
 	onJustify,
 	isSaving,
+	isPending,
 }: AttendanceRowProps) {
 	const currentStatus = student.attendanceRecord?.status;
 	const justification = student.attendanceRecord?.justification;
+	const hasChanged = isPending && currentStatus !== student.originalStatus;
 
 	const getInitials = (name: string) => {
 		return name
@@ -49,8 +53,7 @@ export function AttendanceRow({
 	};
 
 	const canJustify =
-		(currentStatus === ATTENDANCE_STATUS.ABSENT ||
-			currentStatus === ATTENDANCE_STATUS.LATE) &&
+		currentStatus === ATTENDANCE_STATUS.LATE &&
 		student.attendanceRecord?.id &&
 		onJustify;
 
@@ -71,12 +74,18 @@ export function AttendanceRow({
 				</div>
 			</td>
 			<td className="py-3 px-4 text-center">
-				<div className="flex items-center justify-center">
+				<div className="flex items-center justify-center gap-2">
 					<AttendanceStatusSelect
 						value={currentStatus}
 						onValueChange={(status) => onStatusChange(student.id, status)}
 						disabled={isSaving}
 					/>
+					{hasChanged && (
+						<span
+							className="h-2 w-2 rounded-full bg-amber-500 shrink-0"
+							title="Cambio pendiente"
+						/>
+					)}
 				</div>
 			</td>
 			<td className="py-3 px-4 text-right">

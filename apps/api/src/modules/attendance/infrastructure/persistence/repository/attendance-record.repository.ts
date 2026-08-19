@@ -73,10 +73,16 @@ export class AttendanceRecordRepository
 		courseId: string,
 		date: Date,
 	): Promise<AttendanceRecord[]> {
+		console.log(
+			'findByCourseAndDate',
+			courseId,
+			date.toISOString().split('T')[0],
+		);
 		const orms = await this.find({
 			courseId,
-			date,
+			date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
 		});
+		console.log('findByCourseAndDate', orms);
 		if (!orms) return [];
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
 	}

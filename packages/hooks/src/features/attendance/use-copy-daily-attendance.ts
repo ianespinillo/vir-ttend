@@ -1,7 +1,7 @@
 import {
 	ATTENDANCE_ROUTES,
 	type ApiResponse,
-	type CopyAttendanceResult,
+	type CopyDailyAttendanceResult,
 	type ErrorResponse,
 } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,31 +9,37 @@ import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
-export interface CopyAttendancePayload {
-	subjectId: string;
+export interface CopyDailyAttendancePayload {
+	courseId: string;
 	targetDate: string;
 	sourceDate?: string;
 }
 
-export function useCopyAttendance() {
+export function useCopyDailyAttendance() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
-		CopyAttendanceResult,
+		CopyDailyAttendanceResult,
 		AxiosError<ErrorResponse>,
-		CopyAttendancePayload
+		CopyDailyAttendancePayload
 	>({
 		mutationFn: async (payload) => {
-			const res = await apiClient.post<ApiResponse<CopyAttendanceResult>>(
-				ATTENDANCE_ROUTES.subjectCopy,
+			const res = await apiClient.post<ApiResponse<CopyDailyAttendanceResult>>(
+				ATTENDANCE_ROUTES.dailyCopy,
 				payload,
 			);
 			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({
-				queryKey: queryKeys.attendance.subject(
-					variables.subjectId,
+				queryKey: queryKeys.attendance.daily(
+					variables.courseId,
+					variables.targetDate,
+				),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.attendance.metrics(
+					variables.courseId,
 					variables.targetDate,
 				),
 			});
