@@ -6,11 +6,13 @@ import type {
 	AttendanceStatus,
 	ICourseResponse,
 } from '@repo/common';
+import { Button } from '../../../ui/button';
 import { PageHeader } from '../../shared/page-header';
 import { AttendanceGrid } from './attendance-grid/attendance-grid';
 import type { StudentRowItem } from './attendance-grid/attendance-row';
 import { AttendanceSummary } from './attendance-summary/attendance-summary';
 import { AttendanceToolbar } from './attendance-toolbar/attendance-toolbar';
+import { CopyAttendanceModal } from './copy-attendance-modal';
 import { JustificationModal } from './justification-modal/justification-modal';
 
 export interface DailyAttendancePageProps {
@@ -34,6 +36,18 @@ export interface DailyAttendancePageProps {
 	onCloseJustify: () => void;
 	onConfirmJustify: (reason: string, notes?: string) => Promise<void>;
 	isSubmittingJustify: boolean;
+	isCopyOpen: boolean;
+	onOpenCopy: () => void;
+	onCloseCopy: () => void;
+	onSourceDateChange?: (date: string) => void;
+	copySourceDate?: string;
+	previewRecords?: AttendanceRecord[];
+	isLoadingPreview?: boolean;
+	onConfirmCopy: (sourceDate?: string) => Promise<void>;
+	isSubmittingCopy: boolean;
+	onConfirmChanges?: () => void;
+	onResetChanges?: () => void;
+	extraActions?: React.ReactNode;
 }
 
 export function DailyAttendancePage({
@@ -57,6 +71,18 @@ export function DailyAttendancePage({
 	onCloseJustify,
 	onConfirmJustify,
 	isSubmittingJustify,
+	isCopyOpen,
+	onOpenCopy,
+	onCloseCopy,
+	onSourceDateChange,
+	copySourceDate,
+	previewRecords,
+	isLoadingPreview,
+	onConfirmCopy,
+	isSubmittingCopy,
+	onConfirmChanges,
+	onResetChanges,
+	extraActions,
 }: Readonly<DailyAttendancePageProps>) {
 	return (
 		<div className="space-y-6">
@@ -75,6 +101,7 @@ export function DailyAttendancePage({
 				isLoadingCourses={isLoadingCourses}
 				isBulkSaving={isBulkSaving}
 				disabled={!selectedCourseId}
+				extraActions={extraActions}
 			/>
 
 			{selectedCourseId && (
@@ -88,8 +115,41 @@ export function DailyAttendancePage({
 						isLoading={isLoadingDaily}
 						isSaving={isSaving}
 					/>
+
+					<div className="flex items-center justify-end gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={onResetChanges}
+							disabled={isSaving}
+						>
+							Cancelar
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							onClick={onConfirmChanges}
+							disabled={isSaving}
+						>
+							{isSaving ? 'Guardando...' : 'Confirmar'}
+						</Button>
+					</div>
 				</>
 			)}
+
+			<CopyAttendanceModal
+				isOpen={isCopyOpen}
+				onClose={onCloseCopy}
+				subjectName="el curso"
+				targetDate={selectedDate}
+				sourceDate={copySourceDate}
+				onSourceDateChange={onSourceDateChange}
+				previewRecords={previewRecords}
+				isLoadingPreview={isLoadingPreview}
+				onConfirm={onConfirmCopy}
+				isSubmitting={isSubmittingCopy}
+			/>
 
 			<JustificationModal
 				isOpen={isJustifyOpen}

@@ -1,10 +1,12 @@
 import {
 	ACADEMIC_ROUTES,
 	type ApiResponse,
+	type ErrorResponse,
 	type ISubjectResponse,
 	type UpdateSubjectFormValues,
 } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 
 export interface UpdateSubjectParams {
@@ -16,8 +18,12 @@ export interface UpdateSubjectParams {
 export function useUpdateSubject() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async ({ id, data }: UpdateSubjectParams) => {
+	return useMutation<
+		ISubjectResponse,
+		AxiosError<ErrorResponse>,
+		UpdateSubjectParams
+	>({
+		mutationFn: async ({ id, data }) => {
 			const res = await apiClient.put<ApiResponse<ISubjectResponse>>(
 				ACADEMIC_ROUTES.subject(id),
 				data,
