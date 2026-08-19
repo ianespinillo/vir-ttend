@@ -47,7 +47,6 @@ export interface DailyAttendancePageProps {
 	isSubmittingCopy: boolean;
 	onConfirmChanges?: () => void;
 	onResetChanges?: () => void;
-	hasPendingChanges?: boolean;
 	extraActions?: React.ReactNode;
 }
 
@@ -83,7 +82,6 @@ export function DailyAttendancePage({
 	isSubmittingCopy,
 	onConfirmChanges,
 	onResetChanges,
-	hasPendingChanges,
 	extraActions,
 }: Readonly<DailyAttendancePageProps>) {
 	return (
@@ -116,32 +114,27 @@ export function DailyAttendancePage({
 						onJustify={onJustify}
 						isLoading={isLoadingDaily}
 						isSaving={isSaving}
-						onConfirmChanges={onConfirmChanges}
-						onResetChanges={onResetChanges}
-						hasPendingChanges={hasPendingChanges}
 					/>
 
-					{hasPendingChanges && (
-						<div className="flex items-center justify-end gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={onResetChanges}
-								disabled={isSaving}
-							>
-								Deshacer cambios
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								onClick={onConfirmChanges}
-								disabled={isSaving}
-							>
-								{isSaving ? 'Guardando...' : 'Confirmar asistencia'}
-							</Button>
-						</div>
-					)}
+					<div className="flex items-center justify-end gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={onResetChanges}
+							disabled={isSaving}
+						>
+							Cancelar
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							onClick={onConfirmChanges}
+							disabled={isSaving}
+						>
+							{isSaving ? 'Guardando...' : 'Confirmar'}
+						</Button>
+					</div>
 				</>
 			)}
 

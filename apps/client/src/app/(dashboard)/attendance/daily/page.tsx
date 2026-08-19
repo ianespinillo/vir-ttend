@@ -114,6 +114,19 @@ export default function AttendanceDailyPage() {
 		}
 	}, [dailyRecords]);
 
+	const gridStudents: StudentRowItem[] = useMemo(() => {
+		return (dailyRecords ?? []).map((r: AttendanceRecord) => {
+			const local = localRecordsMap[r.studentId];
+			const original = originalRecordsMap[r.studentId];
+			return {
+				id: r.studentId,
+				name: r.studentName,
+				attendanceRecord: local || r,
+				originalStatus: original?.status || r.status,
+			};
+		});
+	}, [dailyRecords, localRecordsMap, originalRecordsMap]);
+
 	const registerDailyMutation = useRegisterDailyAttendance();
 	const bulkMutation = useBulkAttendance();
 	const justifyMutation = useJustifyAttendance();
@@ -133,22 +146,6 @@ export default function AttendanceDailyPage() {
 			courseId: previewCourseId,
 			date: previewDate,
 		});
-
-	const hasPendingChanges = useMemo(() => {
-		if (
-			Object.keys(localRecordsMap).length !==
-			Object.keys(originalRecordsMap).length
-		) {
-			return true;
-		}
-		for (const [studentId, local] of Object.entries(localRecordsMap)) {
-			const original = originalRecordsMap[studentId];
-			if (!original || local.status !== original.status) {
-				return true;
-			}
-		}
-		return false;
-	}, [localRecordsMap, originalRecordsMap]);
 
 	const handleStatusChange = useCallback(
 		(studentId: string, status: AttendanceStatus) => {
@@ -179,20 +176,21 @@ export default function AttendanceDailyPage() {
 
 	const handleConfirmChanges = useCallback(async () => {
 		if (!selectedCourseId || !selectedDate) return;
-		const changedRecords: { studentId: string; status: AttendanceStatus }[] = [];
-		for (const [studentId, local] of Object.entries(localRecordsMap)) {
-			const original = originalRecordsMap[studentId];
-			if (!original || local.status !== original.status) {
-				changedRecords.push({ studentId, status: local.status });
-			}
+		const records: { studentId: string; status: AttendanceStatus }[] = [];
+		for (const student of gridStudents) {
+			const local = localRecordsMap[student.id];
+			records.push({
+				studentId: student.id,
+				status: local?.status || ATTENDANCE_STATUS.ABSENT,
+			});
 		}
-		if (changedRecords.length === 0) return;
+		if (records.length === 0) return;
 
 		try {
 			await registerDailyMutation.mutateAsync({
 				courseId: selectedCourseId,
 				date: selectedDate,
-				records: changedRecords,
+				records,
 			});
 			toast.success('Asistencia guardada correctamente');
 		} catch {
@@ -208,8 +206,8 @@ export default function AttendanceDailyPage() {
 	}, [
 		selectedCourseId,
 		selectedDate,
+		gridStudents,
 		localRecordsMap,
-		originalRecordsMap,
 		registerDailyMutation,
 		dailyRecords,
 	]);
@@ -295,19 +293,6 @@ export default function AttendanceDailyPage() {
 		],
 	);
 
-	const gridStudents: StudentRowItem[] = useMemo(() => {
-		return (dailyRecords ?? []).map((r: AttendanceRecord) => {
-			const local = localRecordsMap[r.studentId];
-			const original = originalRecordsMap[r.studentId];
-			return {
-				id: r.studentId,
-				name: r.studentName,
-				attendanceRecord: local || r,
-				originalStatus: original?.status || r.status,
-			};
-		});
-	}, [dailyRecords, localRecordsMap, originalRecordsMap]);
-
 	return (
 		<DailyAttendancePage
 			courses={courses ?? []}
@@ -341,7 +326,6 @@ export default function AttendanceDailyPage() {
 			isSubmittingCopy={copyDailyMutation.isPending}
 			onConfirmChanges={handleConfirmChanges}
 			onResetChanges={handleResetChanges}
-			hasPendingChanges={hasPendingChanges}
 			extraActions={
 				selectedCourseId ? (
 					<Button
