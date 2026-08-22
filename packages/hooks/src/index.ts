@@ -84,6 +84,7 @@ export * from './features/announcements/use-delete-announcement';
 
 // dashboard
 export * from './features/dashboard/use-preceptor-dashboard';
+export * from './features/dashboard/use-course-overview';
 export * from './features/dashboard/use-dashboard-metrics';
 
 // reports

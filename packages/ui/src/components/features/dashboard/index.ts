@@ -1,0 +1,14 @@
+export { StatusIndicator } from './status-indicator';
+export type { StatusIndicatorProps } from './status-indicator';
+export { CourseStatusCard } from './course-status-card';
+export type { CourseStatusCardProps } from './course-status-card';
+export { CoursesOverview } from './courses-overview';
+export type { CoursesOverviewProps } from './courses-overview';
+export { DashboardHeader } from './dashboard-header';
+export type { DashboardHeaderProps } from './dashboard-header';
+export { DashboardMetricsSection } from './dashboard-metrics';
+export type { DashboardMetricsProps } from './dashboard-metrics';
+export { AttendanceTrendChart } from './attendance-trend-chart';
+export type { AttendanceTrendChartProps } from './attendance-trend-chart';
+export { PreceptorDashboard } from './preceptor-dashboard';
+export type { PreceptorDashboardProps } from './preceptor-dashboard';

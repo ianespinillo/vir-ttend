@@ -20,17 +20,23 @@ export class CourseSnapshotBuilderService {
 	): Promise<CourseSnapshot> {
 		const course = await this.coursePort.findById(courseId);
 		if (!course) throw new NotFoundException('Course not found');
-		if (to && to !== from) {
-			const { justified, late, totalStudents, presents, absents } =
-				await this.attendanceRepo.getCourseSummaryForDateRange(courseId, from, to);
+
+		if (to?.getTime() !== from.getTime()) {
+			const raw = await this.attendanceRepo.getCourseSummaryForDateRange(
+				courseId,
+				from,
+				to,
+			);
+			const { justified, late, totalStudents, presents, absents } = raw;
+			// TODO: tomorrow check how to handle the not recorded students in the range
 			return new CourseSnapshot(
 				courseId,
 				course.name,
-				totalStudents,
-				presents,
-				absents,
-				late,
-				justified,
+				Number.parseInt(totalStudents),
+				Number.parseInt(presents),
+				Number.parseInt(absents),
+				Number.parseInt(late),
+				Number.parseInt(justified),
 			);
 		}
 		const { justified, late, totalStudents, presents, absents } =
@@ -38,11 +44,11 @@ export class CourseSnapshotBuilderService {
 		return new CourseSnapshot(
 			courseId,
 			course.name,
-			totalStudents,
-			presents,
-			absents,
-			late,
-			justified,
+			Number.parseInt(totalStudents),
+			Number.parseInt(presents),
+			Number.parseInt(absents),
+			Number.parseInt(late),
+			Number.parseInt(justified),
 		);
 	}
 	public buildWeeklyTrend(
