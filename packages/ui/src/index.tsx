@@ -18,6 +18,8 @@ export * from './components/features/academic';
 export * from './components/features/attendance';
 export * from './components/features/subjects';
 export * from './components/features/schedule';
+export * from './components/features/dashboard';
+export * from './components/features/alerts';
 
 // Lib
 export * from './lib/utils';
@@ -70,9 +72,13 @@ export {
 	BookOpen,
 	CheckCircle,
 	Clock,
+	Eye,
 	Menu,
 	Play,
+	RefreshCw,
 	Shield,
 	Smartphone,
+	TrendingDown,
+	User,
 	Users,
 } from 'lucide-react';

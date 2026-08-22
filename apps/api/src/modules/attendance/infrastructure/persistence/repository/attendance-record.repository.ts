@@ -82,7 +82,6 @@ export class AttendanceRecordRepository
 			courseId,
 			date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
 		});
-		console.log('findByCourseAndDate', orms);
 		if (!orms) return [];
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
 	}
@@ -170,53 +169,63 @@ export class AttendanceRecordRepository
 			// redis no disponible: cae a base de datos
 		}
 
-		const result = await this.em
-			.createQueryBuilder(AttendanceRecordOrmEntity, 'ar')
-			.select([
-				'ar.course_id as courseId',
-				'COUNT(ar.id) as totalStudents',
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'PRESENT') as presents`,
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'ABSENT') as absents`,
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'LATE') as late`,
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'JUSTIFIED') as justified`,
-			])
-			.where({
-				courseId: courseId,
-				date: targetDate,
-			})
-			.execute();
-
-		const raw = result as unknown as RawCourseMetrics;
+		const rows = await this.em.getConnection().execute(
+			`SELECT
+            ar.course_id as "courseId",
+            COUNT(DISTINCT ar.student_id) as "totalStudents",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'present') as "presents",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as "absents",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'late') as "late",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'justified') as "justified"
+        FROM "attendanceRecord" ar
+        WHERE ar.course_id = ?
+          AND ar.date = ?
+        GROUP BY ar.course_id`,
+			[courseId, targetDate.toISOString().split('T')[0]],
+		);
+		const row = Array.isArray(rows) ? rows[0] : rows;
+		const rawRes = (row ?? {
+			courseId,
+			totalStudents: '0',
+			presents: '0',
+			absents: '0',
+			late: '0',
+			justified: '0',
+		}) as RawCourseMetrics;
 		try {
-			await this.redis.set(cacheKey, JSON.stringify(raw), 'EX', 300);
+			row && (await this.redis.set(cacheKey, JSON.stringify(rawRes), 'EX', 300));
 		} catch {
 			// cache best-effort
 		}
-		return raw;
+		return rawRes;
 	}
 	async getCourseSummaryForDateRange(
 		courseId: string,
 		from: Date,
 		to: Date,
 	): Promise<RawCourseMetrics> {
-		const result = await this.em
-			.qb(AttendanceRecordOrmEntity, 'ar')
-			.select([
-				'ar.course_id as courseId',
-				'COUNT(ar.id) as totalStudents',
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'PRESENT') as presents`,
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'ABSENT') as absents`,
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'LATE') as late`,
-				`COUNT(ar.id) FILTER (WHERE ar.status = 'JUSTIFIED') as justified`,
-			])
-			.where({
-				courseId: courseId,
-				date: {
-					$gt: from,
-					$lt: to,
-				},
-			})
-			.execute();
-		return result as unknown as RawCourseMetrics;
+		const rows = await this.em.getConnection().execute(
+			`SELECT
+            ar.course_id as "courseId",
+            COUNT(DISTINCT ar.student_id) as "totalStudents",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'present') as "presents",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as "absents",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'late') as "late",
+            COUNT(ar.id) FILTER (WHERE ar.status = 'justified') as "justified"
+        FROM "attendanceRecord" ar
+        WHERE ar.course_id = ?
+          AND ar.date BETWEEN ? AND ?
+        GROUP BY ar.course_id`,
+			[courseId, from.toISOString().split('T')[0], to.toISOString().split('T')[0]],
+		);
+		const row = Array.isArray(rows) ? rows[0] : rows;
+		return (row ?? {
+			courseId,
+			totalStudents: 0,
+			presents: 0,
+			absents: 0,
+			late: 0,
+			justified: 0,
+		}) as RawCourseMetrics;
 	}
 }

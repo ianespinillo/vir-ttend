@@ -2,9 +2,15 @@
 
 import { useAuth } from '@/lib/auth/provider';
 import { APP_ROUTES, ROLES, type Roles } from '@repo/common';
-import { PageHeader } from '@repo/ui';
+import {
+	useActiveAcademicYear,
+	useDashboardMetrics,
+	usePreceptorDashboard,
+} from '@repo/hooks';
+import { PreceptorDashboard } from '@repo/ui';
+import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 const HOME_BY_ROLE: Record<Roles, string> = {
 	[ROLES.SUPERADMIN]: APP_ROUTES.tenants,
@@ -26,6 +32,34 @@ export default function DashboardPage() {
 		}
 	}, [user, router]);
 
+	const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
+
+	const { data: activeYear } = useActiveAcademicYear();
+
+	const {
+		data: dashboard,
+		isLoading: isLoadingCourses,
+		isRefetching,
+		refetch,
+	} = usePreceptorDashboard(today);
+
+	const { data: metrics, isLoading: isLoadingMetrics } = useDashboardMetrics(
+		activeYear?.id,
+	);
+
+	const handleRefresh = useCallback(() => {
+		refetch();
+	}, [refetch]);
+
+	const handleCourseClick = useCallback(
+		(courseId: string) => {
+			router.push(
+				`${APP_ROUTES.attendanceDaily}?courseId=${courseId}&date=${today}`,
+			);
+		},
+		[router, today],
+	);
+
 	if (!user) return null;
 
 	if (user.role === ROLES.SUPERADMIN || user.role === ROLES.TEACHER) {
@@ -33,20 +67,15 @@ export default function DashboardPage() {
 	}
 
 	return (
-		<div className="space-y-6">
-			<PageHeader
-				title={`¡Bienvenido/a, ${user.firstName}!`}
-				description="Panel de control principal de gestión de asistencia y cursos."
-			/>
-			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-				<div className="rounded-xl border bg-card text-card-foreground p-6 shadow-sm">
-					<h3 className="text-lg font-semibold tracking-tight">Acceso Rápido</h3>
-					<p className="text-sm text-muted-foreground mt-2">
-						Selecciona un módulo del menú lateral para comenzar la gestión de cursos,
-						estudiantes o asistencias.
-					</p>
-				</div>
-			</div>
-		</div>
+		<PreceptorDashboard
+			preceptorName={user.firstName}
+			courses={dashboard?.courses ?? []}
+			metrics={metrics ?? null}
+			isLoadingCourses={isLoadingCourses}
+			isLoadingMetrics={isLoadingMetrics}
+			isRefreshing={isRefetching}
+			onRefresh={handleRefresh}
+			onCourseClick={handleCourseClick}
+		/>
 	);
 }

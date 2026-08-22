@@ -18,6 +18,6 @@ export function usePreceptorDashboard(date?: string) {
 			return res.data.data;
 		},
 		enabled: Boolean(date),
-		staleTime: 1000 * 60, // 1 minute - dashboard data changes frequently
+		refetchInterval: 1000 * 30, // auto-refresh every 30s
 	});
 }

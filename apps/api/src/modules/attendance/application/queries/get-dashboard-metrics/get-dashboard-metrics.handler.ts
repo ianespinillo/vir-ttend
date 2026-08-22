@@ -44,12 +44,12 @@ export class GetDashboardMetricsQueryHandler {
 		const records: AttendanceRecord[] = [];
 		for (const course of thisYearCourses) {
 			const [courseSnapshots, courseRecords] = await Promise.all([
-				await this.dashService.buildCourseSnapshot(
+				this.dashService.buildCourseSnapshot(
 					course.id,
 					year.startDate,
 					year.endDate,
 				),
-				await this.attendanceRepo.findByCourseAndRange(
+				this.attendanceRepo.findByCourseAndRange(
 					course.id,
 					year.startDate,
 					year.endDate,
@@ -58,7 +58,6 @@ export class GetDashboardMetricsQueryHandler {
 			snapshots.push(courseSnapshots);
 			records.push(...courseRecords);
 		}
-
 		return new DashboardMetricsResponseDto({
 			averageAttendance:
 				snapshots.reduce((acc, next) => acc + next.presentsPercent, 0) /

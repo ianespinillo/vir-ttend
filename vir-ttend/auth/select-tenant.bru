@@ -1,0 +1,24 @@
+meta {
+  name: select-tenant
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3001/auth/select-tenant
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "userId": "e6c1552e-8ed7-402c-9a19-f9b1d8fba986",
+    "tenantId": "97b77743-53bb-4dff-ae43-3f75cf757621"
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

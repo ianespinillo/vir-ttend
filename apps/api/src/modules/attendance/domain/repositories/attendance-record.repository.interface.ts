@@ -1,12 +1,13 @@
 import { AttendanceRecord } from '../entities/attendance-record.entity';
 
 export interface RawCourseMetrics {
+	totalRecords: string;
 	courseId: string;
-	totalStudents: number;
-	presents: number;
-	absents: number;
-	late: number;
-	justified: number;
+	totalStudents: string;
+	presents: string;
+	absents: string;
+	late: string;
+	justified: string;
 }
 
 export interface IAttendanceRecordRepository {

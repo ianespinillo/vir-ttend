@@ -63,7 +63,7 @@ export class DashboardController {
 		@Query('date') date: string,
 	) {
 		return this.getPreceptorDashboardQueryHandler.execute(
-			new GetPreceptorDashboardQuery(user.sub, new Date(date)),
+			new GetPreceptorDashboardQuery(user.tenantId, user.sub, new Date(date)),
 		);
 	}
 
