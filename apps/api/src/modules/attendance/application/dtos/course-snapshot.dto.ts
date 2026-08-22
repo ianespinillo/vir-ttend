@@ -72,6 +72,14 @@ export class CourseSnapshotDto {
 	readonly absencePercent!: number;
 
 	@ApiProperty({
+		description: 'Porcentaje de asistencia del curso (presentes + tardanzas)',
+		example: 90,
+		minimum: 0,
+		maximum: 100,
+	})
+	readonly attendancePercent!: number;
+
+	@ApiProperty({
 		description: 'Estado de riesgo del curso según el porcentaje de ausencias',
 		enum: COURSE_RISK_STATUS,
 		example: COURSE_RISK_STATUS.WARNING,
@@ -97,6 +105,7 @@ export class CourseSnapshotDto {
 		justified: number;
 		notRecorded: number;
 		absencePercent: number;
+		attendancePercent: number;
 		statusColor: COURSE_RISK_STATUS;
 		lastUpdated: Date;
 	}) {

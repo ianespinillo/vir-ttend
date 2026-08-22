@@ -9,9 +9,11 @@ export class CourseSnapshot {
 	private readonly _late: number;
 	private readonly _justified: number;
 	private readonly _notRecorded: number;
+	private readonly _expectedClasses: number;
 
 	constructor(
 		courseId: string,
+		expectedClasses: number,
 		courseName: string,
 		totalStudents: number,
 		presents: number,
@@ -26,16 +28,23 @@ export class CourseSnapshot {
 		this._absents = absents;
 		this._late = late;
 		this._justified = justified;
-		this._notRecorded = totalStudents - (presents + late + absents + justified);
+		this._expectedClasses = expectedClasses;
+		this._notRecorded =
+			expectedClasses * totalStudents - (presents + late + absents + justified);
 	}
 
+	private get totalSlots(): number {
+		return this._expectedClasses * this._totalStudents;
+	}
 	public get absencePercent(): number {
-		if (this._totalStudents === 0) return 0;
-		return ((this._absents + this._late) / this._totalStudents) * 100;
+		const slots = this.totalSlots;
+		if (slots === 0) return 0;
+		return ((this._absents + this._late) / slots) * 100;
 	}
 	public get presentsPercent(): number {
-		if (this._presents === 0) return 0;
-		return ((this._presents + this._late) / this._totalStudents) * 100;
+		const slots = this.totalSlots;
+		if (slots === 0) return 0;
+		return ((this._presents + this._late) / slots) * 100;
 	}
 	public getRiskStatus(
 		warningThreshold: number,
@@ -57,6 +66,7 @@ export class CourseSnapshot {
 			justified: this._justified,
 			notRecorded: this._notRecorded,
 			absencePercent: this.absencePercent,
+			attendancePercent: this.presentsPercent,
 		};
 	}
 

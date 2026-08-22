@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
-import { AcademicYear } from '../entities/academic-year.entity';
-import { AttendanceRecord } from '../entities/attendance-record.entity';
-import { ISchedulePort } from '../ports/schedule.port.interface';
-import { LatePolicyService } from './late-policy.service';
+import { AcademicYear } from '../../domain/entities/academic-year.entity';
+import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
+import { ISchedulePort } from '../../domain/ports/schedule.port.interface';
+import { LatePolicyService } from '../../domain/services/late-policy.service';
 
 @Injectable()
 export class AttendanceCalculationService {
@@ -59,6 +59,24 @@ export class AttendanceCalculationService {
 			academicYearId,
 		);
 		const slots = await this.schedulePort.findBySubject(subjectId);
+		const classDaysOfWeek = new Set(slots.map((s) => s.dayOfWeek));
+		const expectedClasses = workingDays.filter((d) =>
+			classDaysOfWeek.has(this.getDayOfWeek(d)),
+		);
+		return expectedClasses.length;
+	}
+	async getExpectedClassesForCourse(
+		from: Date,
+		to: Date,
+		courseId: string,
+		academicYearId: string,
+	): Promise<number> {
+		const workingDays = await this.schedulePort.getWorkingDaysOnPeriod(
+			from,
+			to,
+			academicYearId,
+		);
+		const slots = await this.schedulePort.findByCourse(courseId);
 		const classDaysOfWeek = new Set(slots.map((s) => s.dayOfWeek));
 		const expectedClasses = workingDays.filter((d) =>
 			classDaysOfWeek.has(this.getDayOfWeek(d)),

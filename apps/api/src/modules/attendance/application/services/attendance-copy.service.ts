@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AttendanceRecord } from '../entities/attendance-record.entity';
-import { IAttendanceRecordRepository } from '../repositories/attendance-record.repository.interface';
+import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
+import { IAttendanceRecordRepository } from '../../domain/repositories/attendance-record.repository.interface';
 
 @Injectable()
 export class AttendanceCopyService {
