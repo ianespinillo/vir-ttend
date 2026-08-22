@@ -23,9 +23,9 @@ import { GetStudentAlertsQueryHandler } from './application/queries/get-student-
 import { GetSubjectAttendanceQueryHandler } from './application/queries/get-subject-attendance/get-subject-attendance.handler';
 import { GetSubjectHistoryQueryHandler } from './application/queries/get-subject-history/get-subject-history.handler';
 import { GetUnseenAlertsQueryHandler } from './application/queries/get-unseen-alerts/get-unseen-alerts.handler';
+import { AttendanceCalculationService } from './application/services/attendance-calculation.service';
+import { AttendanceCopyService } from './application/services/attendance-copy.service';
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
-import { AttendanceCalculationService } from './domain/services/attendance-calculation.service';
-import { AttendanceCopyService } from './domain/services/attendance-copy.service';
 import { LatePolicyService } from './domain/services/late-policy.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';

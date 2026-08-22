@@ -68,8 +68,8 @@ describe('GetPreceptorDashboardQueryHandler', () => {
 	it('retorna snapshots de todos los cursos del preceptor', async () => {
 		coursePort.findByPreceptorId.mockResolvedValue([course1, course2]);
 
-		const snapshot1 = new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1);
-		const snapshot2 = new CourseSnapshot('course-2', '3° B', 30, 21, 6, 2, 1);
+		const snapshot1 = new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1);
+		const snapshot2 = new CourseSnapshot('course-2', 12, '3° B', 30, 21, 6, 2, 1);
 
 		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(snapshot1)
@@ -93,10 +93,10 @@ describe('GetPreceptorDashboardQueryHandler', () => {
 
 		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
+				new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1),
 			)
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-2', '3° B', 30, 21, 6, 2, 1),
+				new CourseSnapshot('course-2', 12, '3° B', 30, 21, 6, 2, 1),
 			);
 
 		const date = new Date('2026-07-01');
@@ -123,7 +123,7 @@ describe('GetPreceptorDashboardQueryHandler', () => {
 		coursePort.findByPreceptorId.mockResolvedValue([course1]);
 
 		snapshotBuilder.buildCourseSnapshot.mockResolvedValue(
-			new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
+			new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1),
 		);
 
 		const result = await handler.execute(

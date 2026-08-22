@@ -13,17 +13,22 @@ export class ScheduleService {
 		academicYear: AcademicYear,
 	): Date[] {
 		const dates = [];
+		const nonWorkingDayKeys = new Set(
+			academicYear.nonWorkingDays.map((d) => this.toDateKey(d)),
+		);
 		let current = new Date(from);
 		while (current <= to) {
-			const isNonWorkingDay = academicYear.nonWorkingDays.some(
-				(d) => d.toDateString() === current.toDateString(),
-			);
+			const isNonWorkingDay = nonWorkingDayKeys.has(this.toDateKey(current));
 			if (!isNonWorkingDay && current.getDay() !== 0 && current.getDay() !== 6) {
 				dates.push(current);
 			}
 			current = new Date(current.getTime() + 24 * 60 * 60 * 1000);
 		}
 		return dates;
+	}
+	private toDateKey(date: Date | string): string {
+		if (typeof date === 'string') return date.slice(0, 10);
+		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 	}
 	private getDayOfWeek(date: Date): DAYOFWEEK {
 		const days: Record<number, DAYOFWEEK> = {

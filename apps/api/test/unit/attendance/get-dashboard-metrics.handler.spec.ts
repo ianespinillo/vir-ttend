@@ -109,8 +109,8 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		academicYearPort.findById.mockResolvedValue(academicYear);
 		coursePort.findByPreceptorId.mockResolvedValue([course1, course2]);
 
-		const snapshot1 = new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1);
-		const snapshot2 = new CourseSnapshot('course-2', '3° B', 30, 21, 6, 2, 1);
+		const snapshot1 = new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1);
+		const snapshot2 = new CourseSnapshot('course-2', 12, '3° B', 30, 21, 6, 2, 1);
 
 		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(snapshot1)
@@ -150,7 +150,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		coursePort.findByPreceptorId.mockResolvedValue([course1]);
 
 		snapshotBuilder.buildCourseSnapshot.mockResolvedValue(
-			new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
+			new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1),
 		);
 		attendanceRepo.findByCourseAndRange.mockResolvedValue([]);
 
@@ -174,6 +174,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 
 		const healthySnapshot = new CourseSnapshot(
 			'course-1',
+			1,
 			'3° A',
 			25,
 			23,
@@ -183,6 +184,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		);
 		const criticalSnapshot = new CourseSnapshot(
 			'course-2',
+			1,
 			'3° B',
 			25,
 			2,
@@ -216,10 +218,10 @@ describe('GetDashboardMetricsQueryHandler', () => {
 
 		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
+				new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1),
 			)
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-2', '3° B', 30, 21, 6, 2, 1),
+				new CourseSnapshot('course-2', 12, '3° B', 30, 21, 6, 2, 1),
 			);
 
 		const records1 = [
@@ -250,10 +252,10 @@ describe('GetDashboardMetricsQueryHandler', () => {
 
 		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-1', '3° A', 25, 20, 3, 1, 1),
+				new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1),
 			)
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-2', '3° B', 30, 21, 6, 2, 1),
+				new CourseSnapshot('course-2', 12, '3° B', 30, 21, 6, 2, 1),
 			);
 
 		attendanceRepo.findByCourseAndRange

@@ -71,7 +71,7 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 		];
 		attendanceRepo.findByCourseAndDate.mockResolvedValue(records);
 
-		const snapshot = new CourseSnapshot('course-1', '3° B', 25, 20, 3, 1, 1);
+		const snapshot = new CourseSnapshot('course-1', 1, '3° B', 25, 20, 3, 1, 1);
 		snapshotBuilder.buildCourseSnapshot.mockResolvedValue(snapshot);
 
 		const date = new Date('2026-07-01');
@@ -95,7 +95,7 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 		coursePort.findById.mockResolvedValue(course);
 		attendanceRepo.findByCourseAndDate.mockResolvedValue([]);
 		snapshotBuilder.buildCourseSnapshot.mockResolvedValue(
-			new CourseSnapshot('course-1', '3° B', 0, 0, 0, 0, 0),
+			new CourseSnapshot('course-1', 1, '3° B', 0, 0, 0, 0, 0),
 		);
 
 		const date = new Date('2026-07-01');
@@ -111,7 +111,7 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 		coursePort.findById.mockResolvedValue(course);
 		attendanceRepo.findByCourseAndDate.mockResolvedValue([]);
 		snapshotBuilder.buildCourseSnapshot.mockResolvedValue(
-			new CourseSnapshot('course-1', '3° B', 25, 0, 0, 0, 0),
+			new CourseSnapshot('course-1', 1, '3° B', 25, 0, 0, 0, 0),
 		);
 
 		const result = await handler.execute(

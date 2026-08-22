@@ -5,8 +5,8 @@ import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.inte
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IAttendanceAlertRepository } from '../../../domain/repositories/attendance-alert.repository.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { AttendanceCalculationService } from '../../../domain/services/attendance-calculation.service';
 import { ThresholdCheckerService } from '../../../domain/services/threshold-checker.service';
+import { AttendanceCalculationService } from '../../services/attendance-calculation.service';
 import { GenerateAlertCommand } from './generate-alert.command';
 
 @Injectable()

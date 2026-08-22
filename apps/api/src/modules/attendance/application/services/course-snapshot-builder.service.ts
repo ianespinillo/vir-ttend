@@ -4,6 +4,7 @@ import { AttendanceRecord } from '../../domain/entities/attendance-record.entity
 import { ICoursePort } from '../../domain/ports/courses.port.interface';
 import { IAttendanceRecordRepository } from '../../domain/repositories/attendance-record.repository.interface';
 import { CourseSnapshot } from '../../domain/value-objects/course-snapshot.vo';
+import { AttendanceCalculationService } from './attendance-calculation.service';
 
 @Injectable()
 export class CourseSnapshotBuilderService {
@@ -12,6 +13,7 @@ export class CourseSnapshotBuilderService {
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
+		private readonly attendanceService: AttendanceCalculationService,
 	) {}
 	public async buildCourseSnapshot(
 		courseId: string,
@@ -28,9 +30,16 @@ export class CourseSnapshotBuilderService {
 				to,
 			);
 			const { justified, late, totalStudents, presents, absents } = raw;
-			// TODO: tomorrow check how to handle the not recorded students in the range
+			const expectedClasses =
+				await this.attendanceService.getExpectedClassesForCourse(
+					from,
+					to,
+					courseId,
+					course.academicYearId,
+				);
 			return new CourseSnapshot(
 				courseId,
+				expectedClasses,
 				course.name,
 				Number.parseInt(totalStudents),
 				Number.parseInt(presents),
@@ -41,8 +50,16 @@ export class CourseSnapshotBuilderService {
 		}
 		const { justified, late, totalStudents, presents, absents } =
 			await this.attendanceRepo.getCourseSummaryForDate(courseId, from);
+		const expectedClasses =
+			await this.attendanceService.getExpectedClassesForCourse(
+				from,
+				from,
+				courseId,
+				course.academicYearId,
+			);
 		return new CourseSnapshot(
 			courseId,
+			expectedClasses,
 			course.name,
 			Number.parseInt(totalStudents),
 			Number.parseInt(presents),

@@ -14,12 +14,7 @@ export function CourseStatusCard({
 	course,
 	onClick,
 }: Readonly<CourseStatusCardProps>) {
-	const attendancePercent =
-		course.totalStudents > 0
-			? ((course.present + course.late + course.justified) /
-					course.totalStudents) *
-				100
-			: 0;
+	const attendancePercent = course.attendancePercent ?? 0;
 
 	return (
 		<Card
