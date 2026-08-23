@@ -31,3 +31,4 @@ export * from './alerts/alerts-list.response.type.js';
 export * from './announcements/announcements-list.response.type.js';
 export * from './dashboard/course-snapshot-detail.type.js';
 export * from './reports/available-reports.response.type.js';
+export * from './reports/export-report.request.type.js';
