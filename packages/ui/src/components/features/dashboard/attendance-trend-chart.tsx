@@ -85,7 +85,8 @@ export function AttendanceTrendChart({
 							dataKey="percent"
 							stroke="var(--color-percent)"
 							strokeWidth={2}
-							dot={false}
+							dot={{ r: 3, fill: 'var(--color-percent)', strokeWidth: 0 }}
+							activeDot={{ r: 5 }}
 						/>
 					</LineChart>
 				</ChartContainer>

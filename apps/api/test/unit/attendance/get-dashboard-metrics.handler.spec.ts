@@ -105,12 +105,32 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		expect(result.weeklyTrend).toEqual([]);
 	});
 
-	it('calcula el promedio de asistencia y retorna cursos en riesgo', async () => {
+	it('calcula el promedio con todos los cursos pero solo lista los que estan en riesgo', async () => {
 		academicYearPort.findById.mockResolvedValue(academicYear);
 		coursePort.findByPreceptorId.mockResolvedValue([course1, course2]);
 
-		const snapshot1 = new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1);
-		const snapshot2 = new CourseSnapshot('course-2', 12, '3° B', 30, 21, 6, 2, 1);
+		// curso sano: 20 ausencias de 250 slots = 8%
+		const snapshot1 = new CourseSnapshot(
+			'course-1',
+			10,
+			'3° A',
+			25,
+			230,
+			10,
+			10,
+			0,
+		);
+		// curso en riesgo: 225 ausencias de 300 slots = 75% (warning)
+		const snapshot2 = new CourseSnapshot(
+			'course-2',
+			10,
+			'3° B',
+			30,
+			60,
+			210,
+			15,
+			0,
+		);
 
 		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(snapshot1)
@@ -140,7 +160,9 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		const expectedAvg =
 			(snapshot1.presentsPercent + snapshot2.presentsPercent) / 2;
 		expect(result.averageAttendance).toBeCloseTo(expectedAvg, 2);
-		expect(result.coursesAtRisk).toHaveLength(2);
+		expect(result.coursesAtRisk).toHaveLength(1);
+		expect(result.coursesAtRisk[0].courseId).toBe('course-2');
+		expect(result.coursesAtRisk[0].statusColor).toBe(COURSE_RISK_STATUS.WARNING);
 		expect(result.weeklyTrend).toHaveLength(1);
 		expect(result.weeklyTrend[0].percent).toBe(75);
 	});
@@ -168,7 +190,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		);
 	});
 
-	it('mapea correctamente los statusColor de los snapshots usando umbrales', async () => {
+	it('excluye cursos sin riesgo y mapea statusColor de los que estan en riesgo', async () => {
 		academicYearPort.findById.mockResolvedValue(academicYear);
 		coursePort.findByPreceptorId.mockResolvedValue([course1, course2]);
 
@@ -207,9 +229,9 @@ describe('GetDashboardMetricsQueryHandler', () => {
 			new GetDashboardMetricsQuery('preceptor-1', 'ay-1'),
 		);
 
-		expect(result.coursesAtRisk).toHaveLength(2);
-		expect(result.coursesAtRisk[0].statusColor).toBe(COURSE_RISK_STATUS.OK);
-		expect(result.coursesAtRisk[1].statusColor).toBe(COURSE_RISK_STATUS.CRITICAL);
+		expect(result.coursesAtRisk).toHaveLength(1);
+		expect(result.coursesAtRisk[0].courseId).toBe('course-2');
+		expect(result.coursesAtRisk[0].statusColor).toBe(COURSE_RISK_STATUS.CRITICAL);
 	});
 
 	it('acumula records de todos los cursos y los pasa a buildWeeklyTrend', async () => {
@@ -250,12 +272,15 @@ describe('GetDashboardMetricsQueryHandler', () => {
 		academicYearPort.findById.mockResolvedValue(academicYear);
 		coursePort.findByPreceptorId.mockResolvedValue([course1, course2]);
 
+		// ambos en riesgo para que el handler los incluya en coursesAtRisk
 		snapshotBuilder.buildCourseSnapshot
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-1', 10, '3° A', 25, 20, 3, 1, 1),
+				// 190 de 250 slots = 76% (warning)
+				new CourseSnapshot('course-1', 10, '3° A', 25, 55, 185, 5, 5),
 			)
 			.mockResolvedValueOnce(
-				new CourseSnapshot('course-2', 12, '3° B', 30, 21, 6, 2, 1),
+				// 310 de 360 slots = 86% (critical)
+				new CourseSnapshot('course-2', 12, '3° B', 30, 45, 300, 10, 5),
 			);
 
 		attendanceRepo.findByCourseAndRange
@@ -268,6 +293,7 @@ describe('GetDashboardMetricsQueryHandler', () => {
 			new GetDashboardMetricsQuery('preceptor-1', 'ay-1'),
 		);
 
+		expect(result.coursesAtRisk).toHaveLength(2);
 		expect(result.coursesAtRisk[0].level).toBe(LEVEL.PRIMARY);
 		expect(result.coursesAtRisk[1].level).toBe(LEVEL.SECONDARY);
 	});
