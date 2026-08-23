@@ -2,10 +2,12 @@
 
 import type { CreateStudentFormValues } from '@repo/common';
 import {
+	useActiveAcademicYear,
 	useCourses,
 	useDeleteStudent,
 	useEnrollStudent,
 	useStudent,
+	useStudentReport,
 	useTransferStudent,
 	useUpdateStudent,
 } from '@repo/hooks';
@@ -16,6 +18,7 @@ import {
 	PageHeader,
 	StudentDetail,
 	StudentForm,
+	StudentReport,
 } from '@repo/ui';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -38,6 +41,12 @@ export default function StudentDetailPage() {
 	const { data: student, isLoading, isError, error } = useStudent(studentId);
 	const { data: coursesData } = useCourses();
 	const courses = coursesData || [];
+
+	const { data: activeYear } = useActiveAcademicYear();
+	const { data: report, isLoading: isLoadingReport } = useStudentReport({
+		studentId,
+		academicYearId: activeYear?.id,
+	});
 
 	const updateMutation = useUpdateStudent();
 	const enrollMutation = useEnrollStudent();
@@ -176,6 +185,9 @@ export default function StudentDetailPage() {
 				isAdmin={isAdmin}
 				isPreceptor={isPreceptor}
 				attendancePath={`/attendance/student/${student.id}`}
+				reportTab={
+					<StudentReport report={report ?? null} isLoading={isLoadingReport} />
+				}
 			/>
 
 			<EnrollmentModal
