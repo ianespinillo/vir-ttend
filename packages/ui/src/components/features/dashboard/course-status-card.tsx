@@ -74,7 +74,9 @@ export function CourseStatusCard({
 						<AlertTriangle className="h-3.5 w-3.5 shrink-0" />
 						<span>
 							{course.notRecorded}{' '}
-							{course.notRecorded === 1 ? 'curso sin cargar' : 'cursos sin cargar'}
+							{course.notRecorded === 1
+								? 'asistencia sin cargar'
+								: 'asistencias sin cargar'}
 						</span>
 					</div>
 				)}
