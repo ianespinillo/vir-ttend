@@ -1,5 +1,6 @@
 import {
 	type ApiResponse,
+	type GenerateReportRequest,
 	type MonthlyReport,
 	REPORT_ROUTES,
 } from '@repo/common';
@@ -7,16 +8,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
-export interface GenerateReportPayload {
-	courseId: string;
-	month: number;
-	year: number;
-}
+export type GenerateReportPayload = GenerateReportRequest;
 
 export function useGenerateReport() {
 	const queryClient = useQueryClient();
 
-	return useMutation<MonthlyReport, Error, GenerateReportPayload>({
+	return useMutation<MonthlyReport, Error, GenerateReportRequest>({
 		mutationFn: async (data) => {
 			const res = await apiClient.post<ApiResponse<MonthlyReport>>(
 				REPORT_ROUTES.generate,
