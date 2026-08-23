@@ -23,6 +23,7 @@ export * from './components/features/reports';
 // Lib
 export * from './lib/utils';
 export * from './lib/format';
+export * from './lib/report-format';
 
 // Shadcn primitives
 export * from './ui/alert';
