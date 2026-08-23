@@ -68,7 +68,7 @@ export default function ReportsMonthlyPage() {
 
 	const { data: available, isLoading: isLoadingPeriods } =
 		useAvailableReports(courseId);
-	const periods = available?.periods ?? [];
+	const periods = available?.months ?? [];
 
 	const handleCourseChange = useCallback(
 		(newCourseId: string) => {

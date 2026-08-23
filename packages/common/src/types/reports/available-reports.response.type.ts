@@ -5,5 +5,5 @@ export interface AvailableReportPeriod {
 
 export interface AvailableReportsResponse {
 	courseId: string;
-	periods: AvailableReportPeriod[];
+	months: AvailableReportPeriod[];
 }
