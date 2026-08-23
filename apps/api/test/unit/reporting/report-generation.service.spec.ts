@@ -119,7 +119,7 @@ describe('ReportGenerationService', () => {
 			expect(result.workingDays).toBe(22);
 			expect(result.period).toEqual({ month: 7, year: 2026 });
 			expect(result.students).toHaveLength(2);
-			expect(result.summary.averageAttendance).toBeCloseTo(2 / 3, 2);
+			expect(result.summary.averageAttendance).toBeCloseTo((2 / 3) * 100, 2);
 		});
 
 		it('consulta registros con las fechas del período', async () => {
