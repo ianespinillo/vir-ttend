@@ -1,5 +1,7 @@
 export type { AnnouncementCardProps } from './announcement-card';
 export { AnnouncementCard } from './announcement-card';
+export type { AnnouncementDetailProps } from './announcement-detail';
+export { AnnouncementDetail } from './announcement-detail';
 export type { AnnouncementFormProps } from './announcement-form';
 export { AnnouncementForm } from './announcement-form';
 export type { AnnouncementTargetSelectProps } from './announcement-target-select';
