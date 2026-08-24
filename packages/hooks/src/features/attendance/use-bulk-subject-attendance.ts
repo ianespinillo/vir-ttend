@@ -2,8 +2,10 @@ import {
 	ATTENDANCE_ROUTES,
 	type ApiResponse,
 	type AttendanceStatus,
+	type ErrorResponse,
 } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
@@ -16,8 +18,12 @@ export interface BulkSubjectAttendancePayload {
 export function useBulkSubjectAttendance() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (payload: BulkSubjectAttendancePayload) => {
+	return useMutation<
+		unknown,
+		AxiosError<ErrorResponse>,
+		BulkSubjectAttendancePayload
+	>({
+		mutationFn: async (payload) => {
 			const res = await apiClient.post<ApiResponse<unknown>>(
 				ATTENDANCE_ROUTES.subjectAll,
 				payload,

@@ -1,5 +1,11 @@
-import { ATTENDANCE_ROUTES, type ApiResponse } from '@repo/common';
+import {
+	ATTENDANCE_ROUTES,
+	type ApiResponse,
+	type CopyAttendanceResult,
+	type ErrorResponse,
+} from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
@@ -12,9 +18,13 @@ export interface CopyAttendancePayload {
 export function useCopyAttendance() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (payload: CopyAttendancePayload) => {
-			const res = await apiClient.post<ApiResponse<unknown>>(
+	return useMutation<
+		CopyAttendanceResult,
+		AxiosError<ErrorResponse>,
+		CopyAttendancePayload
+	>({
+		mutationFn: async (payload) => {
+			const res = await apiClient.post<ApiResponse<CopyAttendanceResult>>(
 				ATTENDANCE_ROUTES.subjectCopy,
 				payload,
 			);

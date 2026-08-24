@@ -35,7 +35,11 @@ export interface SubjectAttendancePageProps {
 	isCopyOpen: boolean;
 	onOpenCopy: () => void;
 	onCloseCopy: () => void;
-	onConfirmCopy: () => Promise<void>;
+	onSourceDateChange?: (date: string) => void;
+	copySourceDate?: string;
+	previewRecords?: AttendanceRecord[];
+	isLoadingPreview?: boolean;
+	onConfirmCopy: (sourceDate?: string) => Promise<void>;
 	isSubmittingCopy: boolean;
 	isJustifyOpen: boolean;
 	selectedRecordToJustify: AttendanceRecord | null;
@@ -64,6 +68,10 @@ export function SubjectAttendancePage({
 	onMarkAll,
 	isCopyOpen,
 	onCloseCopy,
+	onSourceDateChange,
+	copySourceDate,
+	previewRecords,
+	isLoadingPreview,
 	onConfirmCopy,
 	isSubmittingCopy,
 	isJustifyOpen,
@@ -124,6 +132,10 @@ export function SubjectAttendancePage({
 				onClose={onCloseCopy}
 				subjectName={selectedSubjectName}
 				targetDate={selectedDate}
+				sourceDate={copySourceDate}
+				onSourceDateChange={onSourceDateChange}
+				previewRecords={previewRecords}
+				isLoadingPreview={isLoadingPreview}
 				onConfirm={onConfirmCopy}
 				isSubmitting={isSubmittingCopy}
 			/>

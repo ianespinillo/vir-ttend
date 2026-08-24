@@ -4,6 +4,7 @@ import { AcademicPersistenceModule } from '../academic/infrastructure/persistenc
 import { BulkRegisterAttendanceHandler } from './application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { BulkUpdateSubjectStatusHandler } from './application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
 import { CopyAttendanceHandler } from './application/commands/copy-attendance/copy-attendance.handler';
+import { CopyDailyAttendanceHandler } from './application/commands/copy-daily-attendance/copy-daily-attendance.handler';
 import { GenerateAlertHandler } from './application/commands/generate-alert/generate-alert.handler';
 import { JustifyAttendanceHandler } from './application/commands/justify-attendance/justify-attendance.handler';
 import { MarkAlertSeenHandler } from './application/commands/mark-alert-seen/mark-alert-seen.handler';
@@ -22,9 +23,9 @@ import { GetStudentAlertsQueryHandler } from './application/queries/get-student-
 import { GetSubjectAttendanceQueryHandler } from './application/queries/get-subject-attendance/get-subject-attendance.handler';
 import { GetSubjectHistoryQueryHandler } from './application/queries/get-subject-history/get-subject-history.handler';
 import { GetUnseenAlertsQueryHandler } from './application/queries/get-unseen-alerts/get-unseen-alerts.handler';
+import { AttendanceCalculationService } from './application/services/attendance-calculation.service';
+import { AttendanceCopyService } from './application/services/attendance-copy.service';
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
-import { AttendanceCalculationService } from './domain/services/attendance-calculation.service';
-import { AttendanceCopyService } from './domain/services/attendance-copy.service';
 import { LatePolicyService } from './domain/services/late-policy.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';
@@ -71,6 +72,7 @@ import { DashboardController } from './presentation/controllers/dashboard.contro
 		BulkUpdateSubjectStatusHandler,
 		JustifyAttendanceHandler,
 		CopyAttendanceHandler,
+		CopyDailyAttendanceHandler,
 		GenerateAlertHandler,
 		MarkAlertSeenHandler,
 		//queries

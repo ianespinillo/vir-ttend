@@ -64,6 +64,7 @@ export * from './features/attendance/use-subject-attendance';
 export * from './features/attendance/use-register-subject-attendance';
 export * from './features/attendance/use-bulk-subject-attendance';
 export * from './features/attendance/use-copy-attendance';
+export * from './features/attendance/use-copy-daily-attendance';
 export * from './features/attendance/use-subject-history';
 
 // alerts
@@ -83,6 +84,7 @@ export * from './features/announcements/use-delete-announcement';
 
 // dashboard
 export * from './features/dashboard/use-preceptor-dashboard';
+export * from './features/dashboard/use-course-overview';
 export * from './features/dashboard/use-dashboard-metrics';
 
 // reports
