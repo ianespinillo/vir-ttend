@@ -18,12 +18,14 @@ export * from './components/features/academic';
 export * from './components/features/attendance';
 export * from './components/features/subjects';
 export * from './components/features/schedule';
+export * from './components/features/reports';
 export * from './components/features/dashboard';
 export * from './components/features/alerts';
 
 // Lib
 export * from './lib/utils';
 export * from './lib/format';
+export * from './lib/report-format';
 
 // Shadcn primitives
 export * from './ui/alert';

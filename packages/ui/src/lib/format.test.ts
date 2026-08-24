@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatFullName, formatPercent } from './format';
+import {
+	formatDate,
+	formatFullName,
+	formatMonthLabel,
+	formatPercent,
+} from './format';
 
 describe('format', () => {
 	it('formatea fechas con el patrón por defecto dd/MM/yyyy', () => {
@@ -18,5 +23,13 @@ describe('format', () => {
 	it('arma el nombre completo con y sin apellido', () => {
 		expect(formatFullName('María', 'González')).toBe('María González');
 		expect(formatFullName('María')).toBe('María');
+	});
+
+	it('etiqueta meses en español capitalizado', () => {
+		expect(formatMonthLabel(3)).toBe('Marzo');
+	});
+
+	it('acepta el estilo corto', () => {
+		expect(formatMonthLabel(3, 'short')).toBe('Mar');
 	});
 });

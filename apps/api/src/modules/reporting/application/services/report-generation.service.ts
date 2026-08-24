@@ -263,7 +263,7 @@ export class ReportGenerationService {
 			studentsAtRisk: studentReports.filter((r) => r.status === 'at-risk').length,
 			studentsExceeded: studentReports.filter((r) => r.status === 'exceeded')
 				.length,
-			averageAttendance: records.length > 0 ? present / records.length : 0,
+			averageAttendance: records.length > 0 ? (present / records.length) * 100 : 0,
 		};
 	}
 }
