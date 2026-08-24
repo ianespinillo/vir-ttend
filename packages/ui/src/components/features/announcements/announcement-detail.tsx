@@ -29,6 +29,7 @@ export interface AnnouncementDetailProps {
 	canPublish?: boolean;
 	canEdit?: boolean;
 	canDelete?: boolean;
+	targetLabel?: string;
 	onBack?: () => void;
 	onPublish?: () => void;
 	onEdit?: () => void;
@@ -43,6 +44,7 @@ export function AnnouncementDetail({
 	canPublish,
 	canEdit,
 	canDelete,
+	targetLabel,
 	onBack,
 	onPublish,
 	onEdit,
@@ -98,7 +100,10 @@ export function AnnouncementDetail({
 							<Badge variant={isDraft ? 'secondary' : 'default'}>
 								{isDraft ? 'Borrador' : 'Publicado'}
 							</Badge>
-							<TargetBadge targetType={announcement.targetType} />
+							<TargetBadge
+								targetType={announcement.targetType}
+								targetLabel={targetLabel}
+							/>
 						</div>
 					</div>
 
