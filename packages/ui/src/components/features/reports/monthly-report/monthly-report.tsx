@@ -10,8 +10,8 @@ import type {
 import { FileBarChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../ui/card';
 import { EmptyState } from '../../../shared/empty-state';
-import { AttendanceTrendChart } from './attendance-trend-chart';
 import { ExportActions } from './export-actions';
+import { MonthlyAttendanceTrendChart } from './monthly-attendance-trend-chart';
 import { MonthlyReportTable } from './monthly-report-table';
 import { ReportFilters, type ReportFiltersState } from './report-filters';
 import { ReportSummaryCards } from './report-summary-cards';
@@ -129,7 +129,10 @@ export function MonthlyReport({
 						</CardContent>
 					</Card>
 
-					<AttendanceTrendChart months={trendMonths} isLoading={isLoadingTrend} />
+					<MonthlyAttendanceTrendChart
+						months={trendMonths}
+						isLoading={isLoadingTrend}
+					/>
 				</>
 			)}
 		</div>

@@ -20,15 +20,15 @@ const chartConfig = {
 	},
 } satisfies ChartConfig;
 
-export interface AttendanceTrendChartProps {
+export interface MonthlyAttendanceTrendChartProps {
 	months: CourseSummaryEntry[];
 	isLoading?: boolean;
 }
 
-export function AttendanceTrendChart({
+export function MonthlyAttendanceTrendChart({
 	months,
 	isLoading,
-}: AttendanceTrendChartProps) {
+}: MonthlyAttendanceTrendChartProps) {
 	const data = buildTrendChartData(months);
 
 	return (
