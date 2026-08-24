@@ -55,6 +55,7 @@ export * from './ui/skeleton';
 export * from './ui/switch';
 export * from './ui/tabs';
 export * from './ui/table';
+export * from './ui/textarea';
 export * from './ui/toast';
 export * from './ui/tooltip';
 
