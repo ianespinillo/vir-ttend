@@ -24,6 +24,7 @@ import { TenantModule } from './modules/shared/tenants/tenant.module';
 				driver: PostgreSqlDriver,
 				clientUrl: configService.get<string>('DATABASE_URL'),
 				autoLoadEntities: true,
+				debug: true,
 				migrations: {
 					path: './src/shared/database/migrations',
 				},

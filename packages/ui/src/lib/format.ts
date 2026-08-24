@@ -20,6 +20,7 @@ export function formatMonthLabel(
 	month: number,
 	style: 'short' | 'long' = 'long',
 ): string {
+	console.log('formatMonthLabel', month, style);
 	const label = format(
 		new Date(2026, month - 1, 1),
 		style === 'short' ? 'MMM' : 'MMMM',

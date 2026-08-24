@@ -104,7 +104,10 @@ export function buildTrendChartData(
 		.sort((a, b) => a.year - b.year || a.month - b.month)
 		.map((entry) => ({
 			label: `${formatMonthLabel(entry.month, 'short')} ${entry.year}`,
-			asistencia: entry.averageAttendance,
+			asistencia:
+				entry.averageAttendance < 1
+					? entry.averageAttendance * 100
+					: entry.averageAttendance,
 		}));
 }
 

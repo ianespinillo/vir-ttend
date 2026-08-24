@@ -38,7 +38,7 @@ export class CourseRepository
 		}
 
 		if (where?.preceptorId) {
-			filters.preceptorId = where.preceptorId;
+			filters.preceptor = where.preceptorId;
 		}
 
 		const orms = await this.find(filters);
@@ -52,7 +52,7 @@ export class CourseRepository
 		shift: ShiftType,
 	) {
 		const orm = await this.findOne({
-			academicYearId,
+			academicYear: academicYearId,
 			yearNumber: year,
 			division,
 			shift,
