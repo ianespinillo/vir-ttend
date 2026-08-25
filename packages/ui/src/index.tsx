@@ -22,6 +22,7 @@ export * from './components/features/reports';
 export * from './components/features/dashboard';
 export * from './components/features/alerts';
 export * from './components/features/announcements';
+export * from './components/features/tenants';
 
 // Lib
 export * from './lib/utils';
