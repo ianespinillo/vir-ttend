@@ -6,3 +6,5 @@ export * from './academic-year.schema.js';
 export * from './course.schema.js';
 export * from './subject.schema.js';
 export * from './schedule.schema.js';
+export * from './user.schema.js';
+export * from './membership.schema.js';
