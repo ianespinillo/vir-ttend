@@ -7,5 +7,6 @@ export interface IUserWithMembershipResponse {
 	lastName: string;
 	role: Roles;
 	isActive: boolean;
+	mustChangePassword: boolean;
 	createdAt: string;
 }
