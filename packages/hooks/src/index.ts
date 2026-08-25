@@ -15,6 +15,13 @@ export * from './features/auth/use-logout';
 
 // tenants
 export * from './features/tenants/use-tenants';
+export * from './features/tenants/use-tenant';
+export * from './features/tenants/use-create-tenant';
+export * from './features/tenants/use-update-tenant';
+export * from './features/tenants/use-toggle-tenant-status';
+export * from './features/tenants/use-tenant-users';
+export * from './features/tenants/use-add-membership';
+export * from './features/tenants/use-remove-membership';
 
 // users
 export * from './features/users/use-users';

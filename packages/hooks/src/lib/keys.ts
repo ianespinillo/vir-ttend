@@ -6,6 +6,7 @@ export const queryKeys = {
 		all: (filters?: Record<string, unknown>) =>
 			['tenants', 'list', filters ?? {}] as const,
 		detail: (id: string) => ['tenants', 'detail', id] as const,
+		users: (tenantId: string) => ['tenants', 'users', tenantId] as const,
 	},
 	academicYears: {
 		all: ['academic-years', 'list'] as const,
