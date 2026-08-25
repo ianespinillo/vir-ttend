@@ -17,51 +17,50 @@ import { SubjectOrmEntity } from './subject.orm-entity';
 
 @Entity({ tableName: 'courses', repository: () => CourseRepository })
 export class CourseOrmEntity extends BaseEntity {
-	@Property()
+	@Property({
+		type: 'uuid',
+	})
 	schoolId!: string;
 
-	@ManyToOne(() => AcademicYearOrmEntity, {
-		fieldName: 'academicYearId',
+	@Property({
+		type: 'uuid',
 	})
-	academicYear!: Rel<AcademicYearOrmEntity>;
+	academicYearId!: string;
 
-	@ManyToOne(() => UserOrmEntity, {
-		fieldName: 'preceptor_id',
-		nullable: true,
+	@Property({
+		type: 'uuid',
 	})
-	preceptor?: Rel<UserOrmEntity>;
+	preceptorId!: string;
 
-	@Property()
+	@Property({
+		type: 'string',
+	})
 	level!: LevelType;
 
 	@Property()
 	isActive!: boolean;
 
-	@Property()
+	@Property({
+		type: 'number',
+	})
 	yearNumber!: number;
 
-	@Property()
+	@Property({
+		type: 'number',
+	})
 	division!: string;
 
-	@Property()
+	@Property({
+		type: 'string',
+	})
 	shift!: ShiftType;
+
+	@ManyToOne(() => AcademicYearOrmEntity, { fieldName: 'academicYearId' })
+	academicYear!: AcademicYearOrmEntity;
 
 	@OneToMany(
 		() => SubjectOrmEntity,
 		(subject) => subject.course,
-		{
-			cascade: [Cascade.PERSIST],
-		},
 	)
 	subjects = new Collection<SubjectOrmEntity>(this);
-
-	// No son columnas. Son accesores derivados de las relaciones.
-
-	get academicYearId(): string {
-		return this.academicYear.id;
-	}
-
-	get preceptorId(): string | undefined {
-		return this.preceptor?.id;
-	}
 }

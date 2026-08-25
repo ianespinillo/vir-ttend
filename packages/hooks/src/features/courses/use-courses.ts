@@ -15,7 +15,7 @@ export interface UseCoursesParams {
 }
 
 export function useCourses(params: UseCoursesParams = {}) {
-	const { academicYearId, level, preceptorId } = params;
+	const { academicYearId, level = 'DEFAULT', preceptorId } = params;
 
 	return useQuery<ICourseResponse[]>({
 		queryKey: queryKeys.courses.list({ academicYearId, level, preceptorId }),
