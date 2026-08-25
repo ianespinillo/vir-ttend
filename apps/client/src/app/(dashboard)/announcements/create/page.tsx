@@ -22,6 +22,11 @@ export default function CreateAnnouncementPage() {
 
 	const role = user?.role?.toLowerCase();
 	const isManager = role === 'admin' || role === 'preceptor';
+	// Solo administradores pueden publicar a toda la escuela o a un nivel.
+	const canTargetSchoolLevel = role === 'admin' || role === 'superadmin';
+	const allowedTargetTypes = canTargetSchoolLevel
+		? (['school', 'course', 'level'] as const)
+		: (['course'] as const);
 
 	const { data: activeYear } = useActiveAcademicYear();
 	const { data: coursesData, isLoading: isLoadingCourses } = useCourses({
@@ -79,6 +84,7 @@ export default function CreateAnnouncementPage() {
 				mode="create"
 				courses={coursesData ?? []}
 				isLoadingCourses={isLoadingCourses}
+				allowedTargetTypes={[...allowedTargetTypes]}
 				isSubmitting={createMutation.isPending}
 				errorMessage={errorMessage}
 				onSubmit={handleSubmit}

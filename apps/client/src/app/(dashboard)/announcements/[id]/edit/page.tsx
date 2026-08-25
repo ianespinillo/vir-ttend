@@ -25,6 +25,11 @@ export default function EditAnnouncementPage() {
 
 	const role = user?.role?.toLowerCase();
 	const isManager = role === 'admin' || role === 'preceptor';
+	// Solo administradores pueden publicar a toda la escuela o a un nivel.
+	const canTargetSchoolLevel = role === 'admin' || role === 'superadmin';
+	const allowedTargetTypes = canTargetSchoolLevel
+		? (['school', 'course', 'level'] as const)
+		: (['course'] as const);
 
 	const { data: announcement, isLoading } = useAnnouncement(id, {
 		enabled: isManager && Boolean(id),
@@ -105,6 +110,7 @@ export default function EditAnnouncementPage() {
 				mode="edit"
 				courses={coursesData ?? []}
 				isLoadingCourses={isLoadingCourses}
+				allowedTargetTypes={[...allowedTargetTypes]}
 				defaultValues={{
 					title: announcement.title,
 					body: announcement.body,

@@ -56,4 +56,11 @@ describe('AnnouncementTargetSelect', () => {
 		fireEvent.click(screen.getByText('Un curso'));
 		expect(onTargetTypeChange).toHaveBeenCalledWith('course');
 	});
+
+	it('con allowedTargetTypes restringido solo muestra esas opciones', () => {
+		setup({ allowedTargetTypes: ['course'] });
+		expect(screen.queryByText('Toda la escuela')).not.toBeInTheDocument();
+		expect(screen.queryByText('Un nivel')).not.toBeInTheDocument();
+		expect(screen.getByText('Un curso')).toBeInTheDocument();
+	});
 });

@@ -9,6 +9,8 @@ export interface AnnouncementTargetSelectProps {
 	targetType: AnnouncementTargetType;
 	targetId?: string;
 	courses: ICourseResponse[];
+	/** Audiencias permitidas para el rol actual (default: todas). */
+	allowedTargetTypes?: AnnouncementTargetType[];
 	disabled?: boolean;
 	onTargetTypeChange: (value: AnnouncementTargetType) => void;
 	onTargetIdChange: (value: string) => void;
@@ -30,19 +32,26 @@ export function AnnouncementTargetSelect({
 	targetType,
 	targetId,
 	courses,
+	allowedTargetTypes = ['school', 'course', 'level'],
 	disabled,
 	onTargetTypeChange,
 	onTargetIdChange,
 }: Readonly<AnnouncementTargetSelectProps>) {
+	const options = TARGET_OPTIONS.filter((o) =>
+		allowedTargetTypes.includes(o.value),
+	);
+
 	return (
 		<div className="space-y-3">
 			<RadioGroup
 				value={targetType}
 				onValueChange={(v) => onTargetTypeChange(v as AnnouncementTargetType)}
 				disabled={disabled}
-				className="grid grid-cols-3 gap-2"
+				className={
+					options.length === 1 ? 'grid grid-cols-1 gap-2' : 'grid grid-cols-3 gap-2'
+				}
 			>
-				{TARGET_OPTIONS.map((option) => (
+				{options.map((option) => (
 					<Label
 						key={option.value}
 						className="flex cursor-pointer items-center gap-2 rounded-md border p-3 font-normal has-[button[data-state=checked]]:border-primary"

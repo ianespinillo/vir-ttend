@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+	type AnnouncementTargetType,
 	type CreateAnnouncementFormValues,
 	type ICourseResponse,
 	createAnnouncementSchema,
@@ -25,6 +26,8 @@ export interface AnnouncementFormProps {
 	mode: 'create' | 'edit';
 	courses: ICourseResponse[];
 	isLoadingCourses?: boolean;
+	/** Audiencias permitidas para el rol actual (default: todas). */
+	allowedTargetTypes?: AnnouncementTargetType[];
 	defaultValues?: Partial<CreateAnnouncementFormValues>;
 	isSubmitting?: boolean;
 	errorMessage?: string | null;
@@ -36,18 +39,25 @@ export function AnnouncementForm({
 	mode,
 	courses,
 	isLoadingCourses,
+	allowedTargetTypes = ['school', 'course', 'level'],
 	defaultValues,
 	isSubmitting,
 	errorMessage,
 	onSubmit,
 	onCancel,
 }: Readonly<AnnouncementFormProps>) {
+	const fallbackTargetType =
+		defaultValues?.targetType &&
+		allowedTargetTypes.includes(defaultValues.targetType)
+			? defaultValues.targetType
+			: (allowedTargetTypes[0] ?? 'course');
+
 	const form = useForm<CreateAnnouncementFormValues>({
 		resolver: zodResolver(createAnnouncementSchema),
 		defaultValues: {
 			title: '',
 			body: '',
-			targetType: 'school',
+			targetType: fallbackTargetType,
 			targetId: '',
 			publishAt: null,
 			...defaultValues,
@@ -98,6 +108,7 @@ export function AnnouncementForm({
 												targetType={targetType}
 												targetId={form.watch('targetId')}
 												courses={courses}
+												allowedTargetTypes={allowedTargetTypes}
 												disabled={isLoadingCourses}
 												onTargetTypeChange={(value) => {
 													form.setValue('targetType', value);
