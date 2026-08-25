@@ -1,12 +1,14 @@
-import { PageHeader } from '@repo/ui';
+'use client';
 
-export default function TenantsPage() {
+import { APP_ROUTES } from '@repo/common';
+import { TenantsPage } from '@repo/ui';
+import { useRouter } from 'next/navigation';
+
+export default function TenantsRoute() {
+	const router = useRouter();
 	return (
-		<div className="space-y-6">
-			<PageHeader
-				title="Tenants"
-				description="Gestión de instituciones (SuperAdmin)"
-			/>
-		</div>
+		<TenantsPage
+			onTenantClick={(tenant) => router.push(`${APP_ROUTES.tenants}/${tenant.id}`)}
+		/>
 	);
 }
