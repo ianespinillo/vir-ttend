@@ -21,6 +21,7 @@ export * from './components/features/schedule';
 export * from './components/features/reports';
 export * from './components/features/dashboard';
 export * from './components/features/alerts';
+export * from './components/features/announcements';
 
 // Lib
 export * from './lib/utils';
@@ -55,6 +56,7 @@ export * from './ui/skeleton';
 export * from './ui/switch';
 export * from './ui/tabs';
 export * from './ui/table';
+export * from './ui/textarea';
 export * from './ui/toast';
 export * from './ui/tooltip';
 

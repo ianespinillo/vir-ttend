@@ -51,3 +51,44 @@ describe('Nav Constants & Helpers', () => {
 		expect(requireRole(ROLES.TEACHER, allowed)).toBe(false);
 	});
 });
+
+describe('Announcements navigation split', () => {
+	it('teacher accede a para-mi y al detalle, pero no a gestion', () => {
+		expect(
+			requireRole(ROLES.TEACHER, allowedRolesForPathname('/me/announcements')),
+		).toBe(true);
+		expect(
+			requireRole(
+				ROLES.TEACHER,
+				allowedRolesForPathname(
+					`${APP_ROUTES.announcements}/9a999999-9999-4999-8999-999999999999`,
+				),
+			),
+		).toBe(true);
+
+		expect(
+			requireRole(ROLES.TEACHER, allowedRolesForPathname('/announcements')),
+		).toBe(false);
+		expect(
+			requireRole(ROLES.TEACHER, allowedRolesForPathname('/announcements/create')),
+		).toBe(false);
+		expect(
+			requireRole(ROLES.TEACHER, allowedRolesForPathname('/announcements/x/edit')),
+		).toBe(false);
+	});
+
+	it('preceptor y admin acceden a gestion', () => {
+		expect(
+			requireRole(ROLES.ADMIN, allowedRolesForPathname('/announcements')),
+		).toBe(true);
+		expect(
+			requireRole(ROLES.PRECEPTOR, allowedRolesForPathname('/announcements')),
+		).toBe(true);
+	});
+
+	it('getNavConfig(teacher) incluye Para mi pero NO Comunicados', () => {
+		const hrefs = getNavConfig(ROLES.TEACHER)[0].items.map((i) => i.href);
+		expect(hrefs).toContain(APP_ROUTES.meAnnouncements);
+		expect(hrefs).not.toContain(APP_ROUTES.announcements);
+	});
+});

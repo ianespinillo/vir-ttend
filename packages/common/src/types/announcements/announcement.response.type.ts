@@ -9,7 +9,7 @@ export interface Announcement {
 	targetType: AnnouncementTargetType;
 	targetId: string;
 	status: AnnouncementStatus;
-	publishAt: Date | null;
+	publishAt: string | null;
 	authorName: string;
-	createdAt: Date;
+	createdAt: string;
 }

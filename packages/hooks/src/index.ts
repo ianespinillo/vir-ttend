@@ -75,6 +75,12 @@ export * from './features/alerts/use-alerts-by-student';
 export * from './features/alerts/use-mark-alert-seen';
 
 // announcements
+export * from './features/announcements/read-state';
+export * from './features/announcements/relevant-announcements';
+export * from './features/announcements/use-read-announcements';
+export * from './features/announcements/use-relevant-announcements';
+export * from './features/announcements/use-announcement';
+export * from './features/announcements/use-cached-for-me-announcement';
 export * from './features/announcements/use-announcements';
 export * from './features/announcements/use-announcements-for-me';
 export * from './features/announcements/use-create-announcement';

@@ -38,7 +38,7 @@ export class CourseRepository
 		}
 
 		if (where?.preceptorId) {
-			filters.preceptor = where.preceptorId;
+			filters.preceptorId = where.preceptorId;
 		}
 
 		const orms = await this.find(filters);
