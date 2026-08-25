@@ -46,10 +46,10 @@ export function useRelevantAnnouncements({
 	const isPreceptor = role === ROLES.PRECEPTOR;
 	const isTeacher = role === ROLES.TEACHER;
 
-	const myCourses = useMyCourses({
-		academicYearId,
-		isPreceptor,
-	});
+	// Solo los preceptores consumen mis-cursos (endpoint coursesByPreceptor
+	// con level=DEFAULT). Para otros roles la query queda deshabilitada:
+	// llamarla con isPreceptor:false dispararía GET /academic/courses (403).
+	const myCourses = useMyCourses(isPreceptor ? { academicYearId } : {});
 	const teacherSubjects = useTeacherSubjects({
 		teacherId: userId,
 		academicYearId,
