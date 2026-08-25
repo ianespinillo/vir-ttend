@@ -42,7 +42,7 @@ export function AnnouncementTargetSelect({
 	);
 
 	return (
-		<div className="space-y-3">
+		<div className="space-y-2">
 			<RadioGroup
 				value={targetType}
 				onValueChange={(v) => onTargetTypeChange(v as AnnouncementTargetType)}
@@ -54,7 +54,7 @@ export function AnnouncementTargetSelect({
 				{options.map((option) => (
 					<Label
 						key={option.value}
-						className="flex cursor-pointer items-center gap-2 rounded-md border p-3 font-normal has-[button[data-state=checked]]:border-primary"
+						className="flex cursor-pointer items-center gap-2 rounded-md border py-1.5 px-3 font-normal has-[button[data-state=checked]]:border-primary"
 					>
 						<RadioGroupItem
 							value={option.value}

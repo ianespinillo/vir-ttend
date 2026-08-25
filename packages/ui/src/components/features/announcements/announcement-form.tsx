@@ -70,7 +70,7 @@ export function AnnouncementForm({
 		<Form {...form}>
 			<form
 				onSubmit={form.handleSubmit(onSubmit)}
-				className="mx-auto w-full space-y-6 lg:w-3/4"
+				className="mx-auto w-full space-y-4 lg:w-3/4"
 			>
 				<Card>
 					<CardHeader>
@@ -78,14 +78,14 @@ export function AnnouncementForm({
 							{mode === 'create' ? 'Nuevo comunicado' : 'Editar comunicado'}
 						</CardTitle>
 					</CardHeader>
-					<CardContent className="space-y-5">
+					<CardContent className="space-y-3">
 						{errorMessage && (
 							<div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm font-medium text-destructive">
 								{errorMessage}
 							</div>
 						)}
 
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+						<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 							<FormField
 								control={form.control}
 								name="title"
@@ -134,7 +134,7 @@ export function AnnouncementForm({
 									<FormLabel>Contenido *</FormLabel>
 									<FormControl>
 										<Textarea
-											className="min-h-32"
+											className="min-h-20"
 											placeholder="Escribí el comunicado..."
 											{...field}
 										/>
