@@ -24,6 +24,7 @@ export * from './components/features/alerts';
 export * from './components/features/announcements';
 export * from './components/features/tenants';
 export * from './components/features/users';
+export * from './components/features/profile';
 
 // Lib
 export * from './lib/utils';
