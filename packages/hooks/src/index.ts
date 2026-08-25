@@ -27,6 +27,10 @@ export * from './features/tenants/use-remove-membership';
 export * from './features/users/use-users';
 export * from './features/users/use-change-role';
 export * from './features/users/use-deactivate-membership';
+export * from './features/users/use-create-user';
+export * from './features/users/use-update-user';
+export * from './features/users/use-change-password';
+export * from './features/users/use-profile';
 
 // academic
 export * from './features/academic/use-academic-years';
