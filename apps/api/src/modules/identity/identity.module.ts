@@ -4,7 +4,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtAuthGuard } from '../../common/guard/jwt-auth.guard';
 import { ChangeMembershipRoleHandler } from './application/commands/change-membership-role/change-membership-role.handler';
+import { ChangePasswordHandler } from './application/commands/change-password/change-password.handler';
 import { CreateAnnouncementHandler } from './application/commands/create-announcement/create-announcement.handler';
+import { CreateMembershipHandler } from './application/commands/create-membership/create-membership.handler';
 import { CreateTenantHandler } from './application/commands/create-tenant/create-tenant.handler';
 import { CreateUserHandler } from './application/commands/create-user/create-user.handler';
 import { DeactivateMembershipHandler } from './application/commands/deactivate-membership/deactivate-membership.handler';
@@ -17,6 +19,7 @@ import { SelectTenantHandler } from './application/commands/select-tenant/select
 import { ToggleTenantStatusHandler } from './application/commands/toggle-tenant-status/toggle-tenant-status.handler';
 import { UpdateAnnouncementHandler } from './application/commands/update-announcement/update-announcement.handler';
 import { UpdateTenantHandler } from './application/commands/update-tenant/update-tenant.handler';
+import { UpdateUserHandler } from './application/commands/update-user/update-user.handler';
 import { GetAnnouncementHandler } from './application/queries/get-announcement/get-announcement.handler';
 import { GetAnnouncementsForUserHandler } from './application/queries/get-announcements-for-user/get-announcements-for-user.handler';
 import { GetAnnouncementsHandler } from './application/queries/get-announcements/get-announcements.handler';
@@ -71,6 +74,9 @@ import { UsersController } from './presentation/controllers/users.controller';
 		UpdateAnnouncementHandler,
 		PublishAnnouncementHandler,
 		DeleteAnnouncementHandler,
+		ChangePasswordHandler,
+		CreateMembershipHandler,
+		UpdateUserHandler,
 
 		// Handlers de queries
 		GetCurrentUserHandler,
