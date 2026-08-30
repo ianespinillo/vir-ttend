@@ -5,10 +5,11 @@ import { queryKeys } from '../../lib/keys';
 
 export function useRemoveMembership() {
 	const qc = useQueryClient();
-	return useMutation<void, Error, { membershipId: string; tenantId: string }>({
-		mutationFn: async ({ membershipId }) => {
+	return useMutation<void, Error, { email: string; tenantId: string }>({
+		mutationFn: async ({ email, tenantId }) => {
 			await apiClient.delete<ApiResponse<void>>(
-				TENANT_ROUTES.membership(membershipId),
+				TENANT_ROUTES.memberships(tenantId),
+				{ data: { email } },
 			);
 		},
 		onSuccess: (_, { tenantId }) => {

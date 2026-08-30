@@ -14,7 +14,7 @@ import { UserStatusBadge } from '../users/user-status-badge';
 
 export interface TenantUsersTableProps {
 	users: IUserWithMembershipResponse[];
-	onRemove?: (membershipId: string) => void;
+	onRemove?: (user: IUserWithMembershipResponse) => void;
 }
 
 export function TenantUsersTable({
@@ -46,11 +46,7 @@ export function TenantUsersTable({
 							</TableCell>
 							<TableCell className="text-right">
 								{onRemove && (
-									<Button
-										variant="destructive"
-										size="sm"
-										onClick={() => onRemove(user.id)}
-									>
+									<Button variant="destructive" size="sm" onClick={() => onRemove(user)}>
 										Eliminar
 									</Button>
 								)}

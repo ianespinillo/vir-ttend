@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth/provider';
 import {
+	useAddMembership,
 	useRemoveMembership,
 	useSelectTenant,
 	useTenant,
@@ -31,6 +32,7 @@ export default function TenantDetailRoute() {
 	const { data: users, isLoading: usersLoading } = useTenantUsers(id);
 	const selectTenant = useSelectTenant();
 	const removeMembership = useRemoveMembership();
+	const addMembership = useAddMembership();
 
 	if (tenantLoading || usersLoading) return <LoadingSpinner />;
 	if (tenantError) return <ErrorState description={tenantError.message} />;
@@ -61,18 +63,16 @@ export default function TenantDetailRoute() {
 					<h2 className="text-lg font-semibold">Usuarios</h2>
 					<AddMembershipModal
 						tenantId={id}
-						onSubmit={(data) => {
-							console.log('add membership', data);
-						}}
+						onSubmit={(data) => addMembership.mutate({ tenantId: id, data })}
 					/>
 				</div>
 
 				{users && users.length > 0 ? (
 					<TenantUsersTable
 						users={users}
-						onRemove={(membershipId) =>
+						onRemove={(user) =>
 							removeMembership.mutate({
-								membershipId,
+								email: user.email,
 								tenantId: id,
 							})
 						}

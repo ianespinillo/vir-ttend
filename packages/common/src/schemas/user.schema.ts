@@ -14,13 +14,13 @@ export const updateUserSchema = z.object({
 
 export const changePasswordSchema = z
 	.object({
-		currentPassword: z.string().min(1, 'La contraseña actual es obligatoria'),
+		oldPassword: z.string().min(1, 'La contraseña actual es obligatoria'),
 		newPassword: z.string().min(8, 'Mínimo 8 caracteres'),
-		confirmPassword: z.string().min(8, 'Mínimo 8 caracteres'),
+		confirmNewPassword: z.string().min(8, 'Mínimo 8 caracteres'),
 	})
-	.refine((d) => d.newPassword === d.confirmPassword, {
+	.refine((d) => d.newPassword === d.confirmNewPassword, {
 		message: 'Las contraseñas no coinciden',
-		path: ['confirmPassword'],
+		path: ['confirmNewPassword'],
 	});
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

@@ -27,9 +27,9 @@ export function PasswordForm({
 	const form = useForm<ChangePasswordInput>({
 		resolver: zodResolver(changePasswordSchema),
 		defaultValues: {
-			currentPassword: '',
+			oldPassword: '',
 			newPassword: '',
-			confirmPassword: '',
+			confirmNewPassword: '',
 		},
 	});
 
@@ -38,7 +38,7 @@ export function PasswordForm({
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 				<FormField
 					control={form.control}
-					name="currentPassword"
+					name="oldPassword"
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>Contraseña actual</FormLabel>
@@ -64,7 +64,7 @@ export function PasswordForm({
 				/>
 				<FormField
 					control={form.control}
-					name="confirmPassword"
+					name="confirmNewPassword"
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>Confirmar contraseña</FormLabel>

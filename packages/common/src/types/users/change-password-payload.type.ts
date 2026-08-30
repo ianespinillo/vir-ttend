@@ -1,5 +1,5 @@
 export type ChangePasswordPayload = {
-	currentPassword: string;
+	oldPassword: string;
 	newPassword: string;
-	confirmPassword: string;
+	confirmNewPassword: string;
 };
