@@ -67,9 +67,23 @@ describe('GetCurrentUserHandler', () => {
 	it('should throw when membership does not exist', async () => {
 		userRepo.findById.mockResolvedValue(mockUser);
 		membershipRepo.findByUserAndTenant.mockResolvedValue(null);
+		membershipRepo.findByUserId.mockResolvedValue([mockMembership]);
 
 		await expect(
 			handler.execute(new GetCurrentUserQuery('user-id', 'tenant-id')),
-		).rejects.toThrow();
+		).rejects.toThrow("User doesn't belongs to this tenant");
+	});
+
+	it('should return superadmin role when user has no memberships', async () => {
+		userRepo.findById.mockResolvedValue(mockUser);
+		membershipRepo.findByUserAndTenant.mockResolvedValue(null);
+		membershipRepo.findByUserId.mockResolvedValue([]);
+
+		const result = await handler.execute(
+			new GetCurrentUserQuery('user-id', 'tenant-id'),
+		);
+
+		expect(result.role).toBe(ROLES.SUPERADMIN);
+		expect(result.tenantId).toBe('tenant-id');
 	});
 });
