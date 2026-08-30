@@ -5,5 +5,6 @@ export class DeactivateMembershipCommand {
 		readonly userId: string,
 		readonly tenantId: string,
 		readonly actorRole: Roles,
+		readonly email?: string,
 	) {}
 }
