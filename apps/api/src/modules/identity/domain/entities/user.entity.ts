@@ -9,12 +9,17 @@ interface CreateUser {
 	lastName: string;
 }
 
+interface UpdateUserProps {
+	firstName?: string;
+	lastName?: string;
+	email?: Email;
+}
 export class User {
 	private readonly _id: string;
-	private readonly _email: Email;
-	private readonly _firstName: string;
-	private readonly _lastName: string;
 	private readonly _createdAt: Date;
+	private _email: Email;
+	private _firstName: string;
+	private _lastName: string;
 	private _password: PasswordHashed;
 	private _updatedAt: Date;
 	private _isActive: boolean;
@@ -122,6 +127,29 @@ export class User {
 	}
 	deactivate(): void {
 		this._isActive = false;
+		this._updatedAt = new Date();
+	}
+	private readonly fieldSetters: {
+		[K in keyof UpdateUserProps]-?: (
+			value: NonNullable<UpdateUserProps[K]>,
+		) => void;
+	} = {
+		firstName: (v) => {
+			this._firstName = v;
+		},
+		lastName: (v) => {
+			this._lastName = v;
+		},
+		email: (v) => {
+			this._email = v;
+		},
+	};
+
+	update(props: UpdateUserProps): void {
+		(Object.keys(props) as (keyof UpdateUserProps)[]).forEach((key) => {
+			const value = props[key];
+			if (value !== undefined) this.fieldSetters[key](value as any);
+		});
 		this._updatedAt = new Date();
 	}
 }
