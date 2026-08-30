@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/provider';
+import { APP_ROUTES } from '@repo/common';
 import {
 	useAddMembership,
 	useRemoveMembership,
@@ -46,10 +47,12 @@ export default function TenantDetailRoute() {
 				actions={
 					<Button
 						onClick={() =>
-							selectTenant.mutate({
-								userId: user?.id ?? '',
-								tenantId: tenant.id,
-							})
+							selectTenant.mutate(
+								{ userId: user?.id ?? '', tenantId: tenant.id },
+								{
+									onSuccess: () => router.replace(`${APP_ROUTES.tenants}/${tenant.id}`),
+								},
+							)
 						}
 						disabled={selectTenant.isPending}
 					>

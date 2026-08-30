@@ -23,9 +23,15 @@ import { TenantStatusBadge } from './tenant-status-badge';
 
 export interface TenantsPageProps {
 	onTenantClick?: (tenant: Tenant) => void;
+	onEnter?: (tenant: Tenant) => void;
+	enteringId?: string | null;
 }
 
-export function TenantsPage({ onTenantClick }: Readonly<TenantsPageProps>) {
+export function TenantsPage({
+	onTenantClick,
+	onEnter,
+	enteringId,
+}: Readonly<TenantsPageProps>) {
 	const { data: tenants, isLoading, error } = useTenants();
 	const createTenant = useCreateTenant();
 	const toggleStatus = useToggleTenantStatus();
@@ -67,6 +73,19 @@ export function TenantsPage({ onTenantClick }: Readonly<TenantsPageProps>) {
 							<p className="mt-1 text-sm text-muted-foreground">{tenant.subdomain}</p>
 							<p className="text-sm text-muted-foreground">{tenant.contactEmail}</p>
 							<div className="flex gap-2 pt-2">
+								{onEnter && (
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={enteringId === tenant.id}
+										onClick={(e) => {
+											e.stopPropagation();
+											onEnter(tenant);
+										}}
+									>
+										{enteringId === tenant.id ? 'Ingresando…' : 'Ingresar'}
+									</Button>
+								)}
 								<Button
 									variant="outline"
 									size="sm"
