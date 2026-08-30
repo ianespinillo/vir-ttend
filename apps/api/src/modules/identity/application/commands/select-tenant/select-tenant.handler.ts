@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ROLES, Roles } from '@repo/common';
 import { RefreshToken } from '../../../domain/entities/refresh-token.entity';
 import { User } from '../../../domain/entities/user.entity';
 import { UserLoggedInEvent } from '../../../domain/events/user-logged-in.event';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
+import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { TokenService } from '../../../domain/services/token.service';
@@ -25,6 +27,8 @@ export class SelectTenantHandler {
 		private readonly memberRepo: IUserTenantMembershipRepository,
 		@Inject('IRefreshTokenRepository')
 		private readonly refreshTokenRepo: IRefreshTokenRepository,
+		@Inject('ITenantRepository')
+		private readonly tenantRepo: ITenantRepository,
 		private readonly tokenService: TokenService,
 		private readonly em: EventEmitter2,
 	) {}
@@ -34,13 +38,22 @@ export class SelectTenantHandler {
 			userId,
 			tenantId,
 		);
-		if (!membership?.isActive) throw new Error('Invalid tenant selection');
+		let role: Roles;
+		if (membership?.isActive) {
+			role = membership.role;
+		} else {
+			const memberships = await this.memberRepo.findByUserId(userId);
+			if (memberships.length > 0) throw new Error('Invalid tenant selection');
+			const tenant = await this.tenantRepo.findById(tenantId);
+			if (!tenant) throw new Error('Invalid tenant selection');
+			role = ROLES.SUPERADMIN;
+		}
 		const user = await this.userRepo.findById(userId);
 		if (!user) throw new Error('User not found');
 		const accessToken = this.tokenService.generateAccessToken({
 			email: user.email,
-			role: membership.role,
-			tenantId: membership.tenantId,
+			role,
+			tenantId,
 			sub: userId,
 		});
 		const refToken = this.tokenService.generateRefreshToken();
@@ -63,7 +76,7 @@ export class SelectTenantHandler {
 		dto.id = userId;
 		dto.lastName = user.lastName;
 		dto.mustChangePassword = user.mustChangePassword;
-		dto.role = membership.role;
+		dto.role = role;
 		dto.tenantId = tenantId;
 		return {
 			accessToken,
