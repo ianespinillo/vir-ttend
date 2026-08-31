@@ -19,11 +19,11 @@ export function useSelectTenant() {
 		SelectTenantFormValues
 	>({
 		mutationFn: async (data) => {
-			const res = await apiClient.post<ApiResponse<CurrentUser>>(
+			const res = await apiClient.post<ApiResponse<{ user: CurrentUser }>>(
 				AUTH_ROUTES.selectTenant,
 				data,
 			);
-			return res.data.data;
+			return res.data.data.user;
 		},
 		onSuccess: (user) => {
 			queryClient.setQueryData(queryKeys.auth.me, user);

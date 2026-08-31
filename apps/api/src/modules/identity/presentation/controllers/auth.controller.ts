@@ -27,6 +27,7 @@ import { AuthResponseDto } from '../../application/dto/auth.response.dto';
 import { LoginRequestDto } from '../../application/dto/login.request.dto';
 import { LoginResponseDto } from '../../application/dto/login.response.dto';
 import { SelectTenantRequestDto } from '../../application/dto/select-tenant.request.dto';
+import { TokenService } from '../../domain/services/token.service';
 
 // auth.controller.ts
 @Controller('auth')
@@ -37,6 +38,7 @@ export class AuthController {
 		private readonly selectTenantHandler: SelectTenantHandler,
 		private readonly logoutHandler: LogoutHandler,
 		private readonly refreshTokenHandler: RefreshTokenHandler,
+		private readonly tokenService: TokenService,
 	) {}
 
 	@Post('login')
@@ -79,7 +81,7 @@ export class AuthController {
 	@ApiOperation({
 		summary: 'Seleccionar tenant y obtener sesión',
 		description:
-			'Paso 2 del flujo de autenticación. Requiere la cookie httpOnly pending_user_id seteada por POST /auth/login; el usuario se obtiene de esa cookie (el campo userId del body no se usa). Selecciona el tenant y setea las cookies httpOnly access_token (15 minutos, path /) y refresh_token (7 días, path /auth/refresh). Body de ejemplo: { "tenantId": "2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a" }. A partir de acá, los endpoints autenticados usan la cookie access_token (documentados con @ApiCookieAuth). La respuesta exitosa se envuelve en { success, data: AuthResponseDto, timeStamp }. Los errores se envuelven en { statusCode, timestamp, path, method, message, error }. Roles permitidos: ninguno (público, requiere cookie pending_user_id).',
+			'Paso 2 del flujo de autenticación (login) o cambio de tenant para una sesión ya iniciada. El usuario se resuelve: 1) de la cookie httpOnly pending_user_id seteada por POST /auth/login (flujo de login, el campo userId del body no se usa); 2) si no hay cookie pendiente pero sí una sesión válida (cookie access_token), del campo sub del JWT (flujo de cambio de tenant, ej. superadmin conmutando entre instituciones). Selecciona el tenant y setea las cookies httpOnly access_token (15 minutos, path /) y refresh_token (7 días, path /auth/refresh). Body de ejemplo: { "tenantId": "2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a" }. A partir de acá, los endpoints autenticados usan la cookie access_token (documentados con @ApiCookieAuth). La respuesta exitosa se envuelve en { success, data: AuthResponseDto, timeStamp }. Los errores se envuelven en { statusCode, timestamp, path, method, message, error }. Roles permitidos: ninguno (público; requiere cookie pending_user_id o sesión access_token válida).',
 	})
 	@ApiResponse({
 		status: 201,
@@ -91,15 +93,23 @@ export class AuthController {
 	@ApiResponse({
 		status: 401,
 		description:
-			'Cookie pending_user_id ausente o expirada, o selección de tenant inválida',
+			'Cookie pending_user_id ausente o expirada y sin sesión access_token válida, o selección de tenant inválida',
 	})
 	async selectTenant(
 		@Body() dto: SelectTenantRequestDto, // solo tenantId
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		const userId = req.cookies?.pending_user_id;
-		if (!userId) throw new UnauthorizedException();
+		let userId = req.cookies?.pending_user_id;
+		if (!userId) {
+			const accessToken = req.cookies?.access_token;
+			if (!accessToken) throw new UnauthorizedException();
+			try {
+				userId = this.tokenService.verifyAccessToken(accessToken).sub;
+			} catch {
+				throw new UnauthorizedException();
+			}
+		}
 
 		const result = await this.selectTenantHandler.execute(
 			new SelectTenantCommand(
