@@ -63,10 +63,43 @@ export class AttendanceRecordRepository
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
 	}
 	async bulkSave(records: AttendanceRecord[]): Promise<void> {
+		if (records.length === 0) return;
+
+		const ids = records.map((r) => r.id);
+		const existingEntities = await this.find({ id: { $in: ids } });
+		const existingMap = new Map(existingEntities.map((e) => [e.id, e]));
+
 		for (const record of records) {
-			this.em.persist(AttendanceRecordMapper.toOrm(record));
+			const existing = existingMap.get(record.id);
+			if (existing) {
+				existing.status = record.status;
+				if (record.editedBy) existing.editedBy = record.editedBy;
+				if (record.editedAt) existing.editedAt = record.editedAt;
+				existing.date = record.date;
+				existing.studentId = record.studentId;
+				existing.courseId = record.courseId;
+				existing.subjectId = record.subjectId ?? undefined;
+			} else {
+				this.em.persist(AttendanceRecordMapper.toOrm(record));
+			}
 		}
 		await this.em.flush();
+
+		try {
+			const cacheKeys = new Set(
+				records.map(
+					(r) =>
+						`attendance:summary:${r.courseId}:${new Date(r.date)
+							.toISOString()
+							.slice(0, 10)}`,
+				),
+			);
+			for (const key of cacheKeys) {
+				await this.redis.del(key);
+			}
+		} catch {
+			// ignore cache error
+		}
 	}
 
 	async findByCourseAndDate(
@@ -94,8 +127,8 @@ export class AttendanceRecordRepository
 		const orms = await this.find({
 			courseId,
 			date: {
-				$gt: from,
-				$lt: to,
+				$gte: from,
+				$lte: to,
 			},
 		});
 		if (!orms) return [];
@@ -105,8 +138,8 @@ export class AttendanceRecordRepository
 	async findByDateRange(from: Date, to: Date): Promise<AttendanceRecord[]> {
 		const orms = await this.find({
 			date: {
-				$gt: from,
-				$lt: to,
+				$gte: from,
+				$lte: to,
 			},
 		});
 		if (!orms) return [];
@@ -150,8 +183,31 @@ export class AttendanceRecordRepository
 	}
 
 	async save(record: AttendanceRecord): Promise<void> {
-		this.em.persist(AttendanceRecordMapper.toOrm(record));
-		await this.em.flush();
+		const existing = await this.findOne({ id: record.id });
+		if (existing) {
+			existing.status = record.status;
+			existing.editedBy = record.editedBy ?? null;
+			existing.editedAt = record.editedAt ?? null;
+			existing.date = record.date;
+			existing.studentId = record.studentId;
+			existing.courseId = record.courseId;
+			existing.subjectId = record.subjectId ?? null;
+			await this.em.flush();
+		} else {
+			this.em.persist(AttendanceRecordMapper.toOrm(record));
+			await this.em.flush();
+		}
+
+		try {
+			const cacheKey = `attendance:summary:${record.courseId}:${new Date(
+				record.date,
+			)
+				.toISOString()
+				.slice(0, 10)}`;
+			await this.redis.del(cacheKey);
+		} catch {
+			// ignore cache error
+		}
 	}
 	async getCourseSummaryForDate(
 		courseId: string,

@@ -16,11 +16,11 @@ export class GetTeacherSubjectsQueryHandler {
 		const courses = await this.courseRepo.findByAcademicYear(
 			query.academicYearId,
 		);
-		if (courses.length === 0) throw new NotFoundException('Courses not founded');
-		const subjects = await this.subjectRepo.findByTeacherAndCourses(
-			query.teacherId,
-			courses.map((c) => c.id.getRaw()),
-		);
+		if (courses.length === 0) return [];
+		const courseIds = courses.map((c) => c.id.getRaw());
+		const subjects = query.teacherId
+			? await this.subjectRepo.findByTeacherAndCourses(query.teacherId, courseIds)
+			: await this.subjectRepo.findByCourses(courseIds);
 		return subjects.map((s) => new SubjectResponseDto(s));
 	}
 }

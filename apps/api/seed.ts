@@ -5,13 +5,15 @@ import { config } from 'dotenv';
 config();
 
 async function seed() {
-	const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5436/public';
-	
+	const dbUrl =
+		process.env.DATABASE_URL ||
+		'postgresql://postgres:postgres@localhost:5436/public';
+
 	const orm = await MikroORM.init({
 		clientUrl: dbUrl,
 		discovery: { warnWhenNoEntities: false },
 	});
-	
+
 	const em = orm.em.fork();
 
 	const hashedPassword = await hash('admin123!A', 10);

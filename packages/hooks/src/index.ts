@@ -66,6 +66,7 @@ export * from './features/attendance/use-bulk-subject-attendance';
 export * from './features/attendance/use-copy-attendance';
 export * from './features/attendance/use-copy-daily-attendance';
 export * from './features/attendance/use-subject-history';
+export * from './features/attendance/use-course-attendance-history';
 
 // alerts
 export * from './features/alerts/use-alerts';

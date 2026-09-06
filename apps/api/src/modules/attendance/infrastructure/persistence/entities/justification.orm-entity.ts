@@ -18,8 +18,9 @@ export class JustificationOrmEntity {
 
 	@OneToOne(() => AttendanceRecordOrmEntity, {
 		fieldName: 'attendanceRecordId',
+		nullable: true,
 	})
-	attendanceRecord!: AttendanceRecordOrmEntity;
+	attendanceRecord?: AttendanceRecordOrmEntity;
 	@Property({
 		type: 'text',
 	})

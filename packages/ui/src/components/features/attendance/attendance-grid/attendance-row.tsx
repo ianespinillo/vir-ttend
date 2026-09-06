@@ -53,7 +53,8 @@ export function AttendanceRow({
 	};
 
 	const canJustify =
-		currentStatus === ATTENDANCE_STATUS.LATE &&
+		(currentStatus === ATTENDANCE_STATUS.LATE ||
+			currentStatus === ATTENDANCE_STATUS.ABSENT) &&
 		student.attendanceRecord?.id &&
 		onJustify;
 

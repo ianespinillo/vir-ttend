@@ -46,4 +46,11 @@ export class UserResponseDto implements IUserResponse {
 		example: false,
 	})
 	mustChangePassword!: boolean;
+
+	@ApiProperty({
+		description: 'Fecha de creación del usuario.',
+		example: '2026-09-02T12:00:00.000Z',
+		required: false,
+	})
+	createdAt?: Date | string;
 }

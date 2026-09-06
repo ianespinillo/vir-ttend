@@ -32,6 +32,7 @@ export class GetCurrentUserHandler {
 		dto.mustChangePassword = user.mustChangePassword;
 		dto.role = membership.role;
 		dto.tenantId = tenantId;
+		dto.createdAt = user.createdAt;
 		return dto;
 	}
 }

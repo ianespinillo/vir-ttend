@@ -47,8 +47,8 @@ export function CoursesList({
 	canManage = false,
 }: Readonly<CoursesListProps>) {
 	const [search, setSearch] = useState('');
-	const [levelFilter, setLevelFilter] = useState<string>(LEVEL.DEFAULT);
-	const [shiftFilter, setShiftFilter] = useState<string>('ALL');
+	const [levelFilter, setLevelFilter] = useState<string>('');
+	const [shiftFilter, setShiftFilter] = useState<string>('');
 
 	const filteredCourses = courses.filter((c) => {
 		const matchesSearch =
@@ -58,37 +58,60 @@ export function CoursesList({
 			c.preceptorName?.toLowerCase().includes(search.toLowerCase());
 
 		const matchesLevel =
-			levelFilter === 'DEFAULT' ||
-			c.level === levelFilter ||
-			(levelFilter === 'SECONDARY' && c.level === 'SECONDARY');
+			!levelFilter || levelFilter === 'ALL' || c.level === levelFilter;
 
-		const matchesShift = shiftFilter === 'ALL' || c.shift === shiftFilter;
+		const matchesShift =
+			!shiftFilter || shiftFilter === 'ALL' || c.shift === shiftFilter;
 
 		return matchesSearch && matchesLevel && matchesShift;
 	});
 
 	const hasActiveFilters =
-		search !== '' || levelFilter !== 'DEFAULT' || shiftFilter !== 'DEFAULT';
+		search !== '' ||
+		(levelFilter !== '' && levelFilter !== 'ALL') ||
+		(shiftFilter !== '' && shiftFilter !== 'ALL');
 
 	const handleClearFilters = () => {
 		setSearch('');
-		setLevelFilter('DEFAULT');
-		setShiftFilter('ALL');
+		setLevelFilter('');
+		setShiftFilter('');
 	};
-	console.log(filteredCourses);
+
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-4 rounded-lg border shadow-sm">
 				<div className="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full">
-					<div className="relative w-full sm:w-64">
-						<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-						<Input
-							type="search"
-							placeholder="Buscar curso o preceptor..."
-							value={search}
-							onChange={(e) => setSearch(e.target.value)}
-							className="pl-9 w-full"
-						/>
+					<div className="w-full sm:w-44">
+						<Select
+							value={levelFilter || undefined}
+							onValueChange={(val) => setLevelFilter(val === 'ALL' ? '' : val)}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Nivel" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="ALL">Todos los niveles</SelectItem>
+								<SelectItem value="SECONDARY">Secundaria</SelectItem>
+								<SelectItem value="PRIMARY">Primaria</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div className="w-full sm:w-40">
+						<Select
+							value={shiftFilter || undefined}
+							onValueChange={(val) => setShiftFilter(val === 'ALL' ? '' : val)}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Turno" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="ALL">Todos los turnos</SelectItem>
+								<SelectItem value="MORNING">Mañana</SelectItem>
+								<SelectItem value="AFTERNOON">Tarde</SelectItem>
+								<SelectItem value="EVENING">Noche</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 
 					{academicYears.length > 0 && onAcademicYearChange && (
@@ -112,32 +135,15 @@ export function CoursesList({
 						</div>
 					)}
 
-					<div className="w-full sm:w-44">
-						<Select value={levelFilter} onValueChange={setLevelFilter}>
-							<SelectTrigger>
-								<SelectValue placeholder="Nivel" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="DEFAULT">Todos los niveles</SelectItem>
-								<SelectItem value="SECONDARY">Secundaria</SelectItem>
-								<SelectItem value="PRIMARY">Primaria</SelectItem>
-								<SelectItem value="DEFAULT">Inicial / Otro</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="w-full sm:w-40">
-						<Select value={shiftFilter} onValueChange={setShiftFilter}>
-							<SelectTrigger>
-								<SelectValue placeholder="Turno" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="DEFAULT">Todos los turnos</SelectItem>
-								<SelectItem value="MORNING">Mañana</SelectItem>
-								<SelectItem value="AFTERNOON">Tarde</SelectItem>
-								<SelectItem value="EVENING">Noche</SelectItem>
-							</SelectContent>
-						</Select>
+					<div className="relative w-full sm:w-64">
+						<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+						<Input
+							type="search"
+							placeholder="Buscar curso o preceptor..."
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							className="pl-9 w-full"
+						/>
 					</div>
 				</div>
 
