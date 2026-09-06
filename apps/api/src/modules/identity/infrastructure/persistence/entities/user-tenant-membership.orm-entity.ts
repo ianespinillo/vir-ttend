@@ -9,8 +9,8 @@ import { UserTenantMembershipRepository } from '../repositories/user-tenant-memb
 	repository: () => UserTenantMembershipRepository,
 })
 export class UserTenantMembershipOrmEntity extends BaseEntity {
-	@Property() userId!: string;
-	@Property() tenantId!: string;
+	@Property({ name: 'user_id', type: 'uuid' }) userId!: string;
+	@Property({ name: 'tenant_id', type: 'uuid' }) tenantId!: string;
 	@Property({ type: 'string' }) role!: Roles;
-	@Property() isActive!: boolean;
+	@Property({ name: 'is_active' }) isActive!: boolean;
 }

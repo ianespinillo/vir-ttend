@@ -15,7 +15,7 @@ export class Migration20260310112500_create_academic_structure extends Migration
 		);
 
 		this.addSql(
-			`create table "schedule_slots" ("id" uuid not null default gen_random_uuid(), "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now(), "subject_id" varchar(255) not null, "course_id" varchar(255) not null, "day_of_week" DAYOFWEEK not null, "start_time" varchar(255) not null, "end_time" varchar(255) not null, "subjectId" uuid not null, constraint "schedule_slots_pkey" primary key ("id"));`,
+			`create table "schedule_slots" ("id" uuid not null default gen_random_uuid(), "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now(), "subject_id" varchar(255) not null, "course_id" varchar(255) not null, "day_of_week" varchar(255) not null, "start_time" varchar(255) not null, "end_time" varchar(255) not null, "subjectId" uuid not null, constraint "schedule_slots_pkey" primary key ("id"));`,
 		);
 
 		this.addSql(

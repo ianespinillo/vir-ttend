@@ -29,6 +29,7 @@ import { UserRepository } from './repositories/user.repository';
 		AnnouncementRepository,
 	],
 	exports: [
+		MikroOrmModule,
 		UserRepository,
 		UserTenantMembershipRepository,
 		RefreshTokenRepository,

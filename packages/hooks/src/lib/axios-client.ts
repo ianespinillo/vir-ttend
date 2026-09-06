@@ -11,9 +11,14 @@ export const apiClient = axios.create({
 	},
 });
 
-// INTERCEPTOR DE RESPUESTA (antes estaba mal en request)
+// INTERCEPTOR DE RESPUESTA (unwraps TransformInterceptor wrapper)
 apiClient.interceptors.response.use(
-	(response) => response,
+	(response) => {
+		if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
+			response.data = response.data.data;
+		}
+		return response;
+	},
 	async (error: AxiosError) => {
 		const originalRequest = error.config as RetriableRequestConfig | undefined;
 		if (

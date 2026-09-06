@@ -1,4 +1,5 @@
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityManager } from '@mikro-orm/postgresql';
+import { Injectable } from '@nestjs/common';
 import { Tenant } from '../../../domain/entities/tenant.entity';
 import {
 	ITenantRepository,
@@ -7,17 +8,17 @@ import {
 import { TenantOrmEntity } from '../entities/tenant.orm-entity';
 import { TenantMapper } from '../mappers/tenant.mapper';
 
-export class TenantRepository
-	extends EntityRepository<TenantOrmEntity>
-	implements ITenantRepository
-{
+@Injectable()
+export class TenantRepository implements ITenantRepository {
+	constructor(private readonly em: EntityManager) {}
+
 	async findById(id: string): Promise<Tenant | null> {
-		const orm = await this.findOne({ id });
+		const orm = await this.em.findOne(TenantOrmEntity, { id });
 		if (!orm) return null;
 		return TenantMapper.toDomain(orm);
 	}
 	async findBySubdomain(subdomain: string): Promise<Tenant | null> {
-		const orm = await this.findOne({ subdomain });
+		const orm = await this.em.findOne(TenantOrmEntity, { subdomain });
 		if (!orm) return null;
 		return TenantMapper.toDomain(orm);
 	}
@@ -27,7 +28,8 @@ export class TenantRepository
 		await this.em.flush();
 	}
 	async list(props: Pagination): Promise<Tenant[]> {
-		const orm = await this.find(
+		const orm = await this.em.find(
+			TenantOrmEntity,
 			{},
 			{
 				limit: props.limit,

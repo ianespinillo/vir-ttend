@@ -6,9 +6,9 @@ import { UserRepository } from '../repositories/user.repository';
 @Entity({ tableName: 'users', repository: () => UserRepository })
 export class UserOrmEntity extends BaseEntity {
 	@Property() email!: string;
-	@Property() passwordHash!: string;
-	@Property() firstName!: string;
-	@Property() lastName!: string;
-	@Property() isActive!: boolean;
-	@Property() mustChangePassword!: boolean;
+	@Property({ name: 'password_hash' }) passwordHash!: string;
+	@Property({ name: 'first_name' }) firstName!: string;
+	@Property({ name: 'last_name' }) lastName!: string;
+	@Property({ name: 'is_active' }) isActive!: boolean;
+	@Property({ name: 'must_change_password' }) mustChangePassword!: boolean;
 }

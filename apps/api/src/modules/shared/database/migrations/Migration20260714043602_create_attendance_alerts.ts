@@ -3,7 +3,7 @@ import { Migration } from '@mikro-orm/migrations';
 export class Migration20260714043602_create_attendance_alerts extends Migration {
 	override async up(): Promise<void> {
 		this.addSql(
-			`create table "attendance_alerts" ("id" uuid not null, "student_id" uuid not null, "course_id" uuid not null, "academic_year_id" uuid not null, "tenant_id" uuid not null, "alert_type" varchar(255) not null, "absence_percent" real not null, "seen_by" uuid not null, "seen_at" date not null, "created_at" timestamptz not null default 1784003746919, constraint "attendance_alerts_pkey" primary key ("id"));`,
+			`create table "attendance_alerts" ("id" uuid not null, "student_id" uuid not null, "course_id" uuid not null, "academic_year_id" uuid not null, "tenant_id" uuid not null, "alert_type" varchar(255) not null, "absence_percent" real not null, "seen_by" uuid not null, "seen_at" date not null, "created_at" timestamptz not null default now(), constraint "attendance_alerts_pkey" primary key ("id"));`,
 		);
 		this.addSql(
 			`create index "attendance_alerts_seen_at_index" on "attendance_alerts" ("seen_at");`,

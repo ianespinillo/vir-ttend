@@ -62,23 +62,23 @@ import { UsersController } from './presentation/controllers/users.controller';
 		UserRepository,
 		{
 			provide: 'IUserTenantMembershipRepository',
-			useClass: UserTenantMembershipRepository,
+			useExisting: UserTenantMembershipRepository,
 		},
 		{
 			provide: 'IAnnouncementRepository',
-			useClass: AnnouncementRepository,
+			useExisting: AnnouncementRepository,
 		},
 		{
 			provide: 'IUserRepository',
-			useClass: UserRepository,
+			useExisting: UserRepository,
 		},
 		{
 			provide: 'ITenantRepository',
-			useClass: TenantRepository,
+			useExisting: TenantRepository,
 		},
 		{
 			provide: 'IRefreshTokenRepository',
-			useClass: RefreshTokenRepository,
+			useExisting: RefreshTokenRepository,
 		},
 		// Servicios de dominio
 		PasswordService,

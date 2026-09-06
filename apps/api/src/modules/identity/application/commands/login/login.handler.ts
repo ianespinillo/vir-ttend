@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Roles } from '@repo/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -23,14 +23,14 @@ export class LoginHandler {
 	async execute(command: LoginCommand): Promise<LoginResult> {
 		const { email, password } = command;
 		const user = await this.userRepository.findByEmail(email);
-		if (!user) throw new Error('Invalid credentials');
-		if (!user.isActive) throw new Error('User not active');
+		if (!user) throw new UnauthorizedException('Credenciales inválidas');
+		if (!user.isActive) throw new UnauthorizedException('Usuario inactivo');
 
 		const validPassword = await this.passwordService.compare(
 			new Password(password),
 			user.password,
 		);
-		if (!validPassword) throw new Error('Invalid credentials');
+		if (!validPassword) throw new UnauthorizedException('Credenciales inválidas');
 
 		const memberships = await this.membersRepo.findByUserId(user.id);
 		if (memberships.length === 0) {

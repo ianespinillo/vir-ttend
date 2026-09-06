@@ -6,6 +6,6 @@ import { TenantRepository } from '../repositories/tenant.repository';
 export class TenantOrmEntity extends BaseEntity {
 	@Property() name!: string;
 	@Property({ unique: true }) subdomain!: string;
-	@Property() contactEmail!: string;
-	@Property() isActive!: boolean;
+	@Property({ name: 'contact_email' }) contactEmail!: string;
+	@Property({ name: 'is_active' }) isActive!: boolean;
 }
