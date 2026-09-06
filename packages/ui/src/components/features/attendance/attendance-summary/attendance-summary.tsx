@@ -53,7 +53,7 @@ export function AttendanceSummary({
 				<MetricCard
 					title="Ausentes"
 					value={metrics.absent}
-					subtitle={`${metrics.absentPercent}%`}
+					subtitle={`${(metrics.absent / metrics.totalStudents) * 100}%`}
 					icon={XCircle}
 					variant="destructive"
 				/>

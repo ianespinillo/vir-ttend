@@ -1,4 +1,5 @@
 import {
+	type ApiResponse,
 	type IStudentResponse,
 	type PaginatedResponse,
 	STUDENT_ROUTES,
@@ -20,13 +21,12 @@ export function useStudents(filters?: UseStudentsFilters) {
 	return useQuery<PaginatedResponse<IStudentResponse>>({
 		queryKey: queryKeys.students.list(filters),
 		queryFn: async () => {
-			const res = await apiClient.get<PaginatedResponse<IStudentResponse>>(
-				STUDENT_ROUTES.students,
-				{
-					params: filters,
-				},
-			);
-			return res.data;
+			const res = await apiClient.get<
+				ApiResponse<PaginatedResponse<IStudentResponse>>
+			>(STUDENT_ROUTES.students, {
+				params: filters,
+			});
+			return res.data.data;
 		},
 	});
 }

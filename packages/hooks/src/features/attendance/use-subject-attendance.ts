@@ -1,5 +1,6 @@
 import {
 	ATTENDANCE_ROUTES,
+	type ApiResponse,
 	type SubjectAttendanceResponse,
 } from '@repo/common';
 import { useQuery } from '@tanstack/react-query';
@@ -18,16 +19,13 @@ export function useSubjectAttendance({
 	return useQuery<SubjectAttendanceResponse>({
 		queryKey: queryKeys.attendance.subject(subjectId, date),
 		queryFn: async () => {
-			const res = await apiClient.get<SubjectAttendanceResponse>(
+			const res = await apiClient.get<ApiResponse<SubjectAttendanceResponse>>(
 				ATTENDANCE_ROUTES.subject,
 				{
 					params: { subjectId, date },
 				},
 			);
-			const data =
-				(res.data as unknown as { data?: SubjectAttendanceResponse })?.data ??
-				res.data;
-			return data;
+			return res.data.data;
 		},
 		enabled: Boolean(subjectId && date),
 	});

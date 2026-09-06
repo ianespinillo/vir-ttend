@@ -1,4 +1,8 @@
-import { ATTENDANCE_ROUTES, type AttendanceRecord } from '@repo/common';
+import {
+	ATTENDANCE_ROUTES,
+	type ApiResponse,
+	type AttendanceRecord,
+} from '@repo/common';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
@@ -15,15 +19,13 @@ export function useDailyAttendance({
 	return useQuery<AttendanceRecord[]>({
 		queryKey: queryKeys.attendance.daily(courseId, date),
 		queryFn: async () => {
-			const res = await apiClient.get<AttendanceRecord[]>(
+			const res = await apiClient.get<ApiResponse<AttendanceRecord[]>>(
 				ATTENDANCE_ROUTES.daily,
 				{
 					params: { courseId, date },
 				},
 			);
-			const data =
-				(res.data as unknown as { data?: AttendanceRecord[] })?.data ?? res.data;
-			return Array.isArray(data) ? data : [];
+			return res.data.data ?? [];
 		},
 		enabled: Boolean(courseId && date),
 	});

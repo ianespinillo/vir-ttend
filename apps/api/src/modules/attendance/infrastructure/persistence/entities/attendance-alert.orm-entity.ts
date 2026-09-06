@@ -48,7 +48,7 @@ export class AttendanceAlertOrmEntity {
 	seenAt: Date | null = null;
 	@Property({
 		type: 'datetime',
-		default: Date.now(),
+		defaultRaw: 'now()',
 	})
 	createdAt!: Date;
 }

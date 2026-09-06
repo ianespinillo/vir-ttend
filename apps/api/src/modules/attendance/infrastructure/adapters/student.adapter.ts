@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IStudentRepository } from '../../../academic/domain/repositories/student.repository.interface';
-import { Student } from '../../domain/entities/student';
+import { Student } from '../../domain/entities/student.entity';
 import { IStudentPort } from '../../domain/ports/student.port.interface';
 
 @Injectable()

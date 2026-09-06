@@ -115,7 +115,11 @@ export class MonthlyReportResponseDto {
 			studentsAtRisk: { type: 'number', example: 3 },
 			studentsExceeded: { type: 'number', example: 1 },
 		},
-		example: { averageAttendance: 87.5, studentsAtRisk: 3, studentsExceeded: 1 },
+		example: {
+			averageAttendance: 87.5,
+			studentsAtRisk: 3,
+			studentsExceeded: 1,
+		},
 	})
 	readonly summary: {
 		averageAttendance: number;

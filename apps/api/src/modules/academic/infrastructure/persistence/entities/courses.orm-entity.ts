@@ -1,11 +1,15 @@
 import {
+	Cascade,
 	Collection,
 	Entity,
 	ManyToOne,
 	OneToMany,
 	Property,
+	Rel,
 } from '@mikro-orm/core';
+
 import { LevelType, ShiftType } from '@repo/common';
+import { UserOrmEntity } from '../../../../identity/infrastructure/persistence/entities/user.orm-entity';
 import { BaseEntity } from '../../../../shared/database/entities/base.entity';
 import { CourseRepository } from '../repositories/course.repository';
 import { AcademicYearOrmEntity } from './academic-year.orm-entity';

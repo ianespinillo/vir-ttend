@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { PaginatedResponse } from '@repo/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { UserWithMembershipResponseDto } from '../../dto/user-with-membership.response.dto';
@@ -14,7 +15,7 @@ export class ListUsersByTenantHandler {
 	) {}
 	async execute(
 		command: ListUsersByTenantQuery,
-	): Promise<{ total: number; items: UserWithMembershipResponseDto[] }> {
+	): Promise<PaginatedResponse<UserWithMembershipResponseDto>> {
 		const entities = await this.memberRepo.findByTenant(command.tenantId, {
 			page: command.page,
 			limit: command.limit,
@@ -39,6 +40,9 @@ export class ListUsersByTenantHandler {
 		return {
 			total: entities.total,
 			items: memberships,
+			limit: command.limit,
+			page: command.page,
+			totalPages: Math.round(entities.total / command.limit),
 		};
 	}
 }

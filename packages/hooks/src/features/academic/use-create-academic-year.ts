@@ -1,5 +1,6 @@
 import {
 	ACADEMIC_ROUTES,
+	type ApiResponse,
 	type CreateAcademicYearFormValues,
 	type IAcademicYearResponse,
 } from '@repo/common';
@@ -10,17 +11,19 @@ import { queryKeys } from '../../lib/keys';
 export function useCreateAcademicYear() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (data: CreateAcademicYearFormValues) => {
-			const res = await apiClient.post<IAcademicYearResponse>(
-				ACADEMIC_ROUTES.academicYears,
-				data,
-			);
-			return res.data;
+	return useMutation<IAcademicYearResponse, Error, CreateAcademicYearFormValues>(
+		{
+			mutationFn: async (data) => {
+				const res = await apiClient.post<ApiResponse<IAcademicYearResponse>>(
+					ACADEMIC_ROUTES.academicYears,
+					data,
+				);
+				return res.data.data;
+			},
+			onSuccess: () => {
+				queryClient.invalidateQueries({ queryKey: queryKeys.academicYears.all });
+				queryClient.invalidateQueries({ queryKey: queryKeys.academicYears.active });
+			},
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: queryKeys.academicYears.all });
-			queryClient.invalidateQueries({ queryKey: ['academic-years', 'active'] });
-		},
-	});
+	);
 }

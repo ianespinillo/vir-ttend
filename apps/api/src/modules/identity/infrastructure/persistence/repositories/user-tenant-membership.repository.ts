@@ -1,4 +1,4 @@
-import { EntityManager } from '@mikro-orm/postgresql';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
 import {
@@ -10,16 +10,14 @@ import { UserTenantMembershipMapper } from '../mappers/user-tenant-membership.ma
 
 @Injectable()
 export class UserTenantMembershipRepository
+	extends EntityRepository<UserTenantMembershipOrmEntity>
 	implements IUserTenantMembershipRepository
 {
-	constructor(private readonly em: EntityManager) {}
-
 	async findByTenant(
 		tenantId: string,
 		options: FindOptions,
 	): Promise<{ total: number; items: UserTenantMembership[] }> {
-		const [items, total] = await this.em.findAndCount(
-			UserTenantMembershipOrmEntity,
+		const [items, total] = await this.findAndCount(
 			{ role: options.role, tenantId },
 			{
 				limit: options.limit,
@@ -32,14 +30,14 @@ export class UserTenantMembershipRepository
 		};
 	}
 	async findByUserId(userId: string): Promise<UserTenantMembership[]> {
-		const orm = await this.em.find(UserTenantMembershipOrmEntity, { userId });
+		const orm = await this.find({ userId });
 		return orm.map((uT) => UserTenantMembershipMapper.toDomain(uT));
 	}
 	async findByUserAndTenant(
 		userId: string,
 		tenantId: string,
 	): Promise<UserTenantMembership | null> {
-		const orm = await this.em.findOne(UserTenantMembershipOrmEntity, { userId, tenantId });
+		const orm = await this.findOne({ userId, tenantId });
 		if (!orm) return null;
 		return UserTenantMembershipMapper.toDomain(orm);
 	}

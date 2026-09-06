@@ -1,0 +1,20 @@
+meta {
+  name: dashboard-data
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:3001/dashboard?date=8-21-2026
+  body: none
+  auth: inherit
+}
+
+params:query {
+  date: 8-21-2026
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

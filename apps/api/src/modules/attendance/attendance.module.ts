@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AcademicModule } from '../academic/academic.module';
+import { AcademicPersistenceModule } from '../academic/infrastructure/persistence/academic.persistence.module';
 import { BulkRegisterAttendanceHandler } from './application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { BulkUpdateSubjectStatusHandler } from './application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
 import { CopyAttendanceHandler } from './application/commands/copy-attendance/copy-attendance.handler';
+import { CopyDailyAttendanceHandler } from './application/commands/copy-daily-attendance/copy-daily-attendance.handler';
 import { GenerateAlertHandler } from './application/commands/generate-alert/generate-alert.handler';
 import { JustifyAttendanceHandler } from './application/commands/justify-attendance/justify-attendance.handler';
 import { MarkAlertSeenHandler } from './application/commands/mark-alert-seen/mark-alert-seen.handler';
@@ -21,9 +23,9 @@ import { GetStudentAlertsQueryHandler } from './application/queries/get-student-
 import { GetSubjectAttendanceQueryHandler } from './application/queries/get-subject-attendance/get-subject-attendance.handler';
 import { GetSubjectHistoryQueryHandler } from './application/queries/get-subject-history/get-subject-history.handler';
 import { GetUnseenAlertsQueryHandler } from './application/queries/get-unseen-alerts/get-unseen-alerts.handler';
+import { AttendanceCalculationService } from './application/services/attendance-calculation.service';
+import { AttendanceCopyService } from './application/services/attendance-copy.service';
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
-import { AttendanceCalculationService } from './domain/services/attendance-calculation.service';
-import { AttendanceCopyService } from './domain/services/attendance-copy.service';
 import { LatePolicyService } from './domain/services/late-policy.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';
@@ -31,16 +33,17 @@ import { ScheduleAdapter } from './infrastructure/adapters/schedule.adapter';
 import { StudentAdapter } from './infrastructure/adapters/student.adapter';
 import { SubjectAdapter } from './infrastructure/adapters/subject.adapter';
 import { AttendancePersistenceModule } from './infrastructure/persistence/attendance.persistence.module';
-import { AttendanceAlertRepository } from './infrastructure/persistence/repository/attendance-alert.repository';
-import { AttendanceRecordRepository } from './infrastructure/persistence/repository/attendance-record.repository';
-import { JustificationRepository } from './infrastructure/persistence/repository/justification.repository';
 import { AlertsController } from './presentation/controllers/alerts.controller';
 import { AttendanceCommandController } from './presentation/controllers/attendance.command.controller';
 import { AttendanceQueryController } from './presentation/controllers/attendance.query.controller';
 import { DashboardController } from './presentation/controllers/dashboard.controller';
 
 @Module({
-	imports: [AcademicModule, AttendancePersistenceModule],
+	imports: [
+		AcademicModule,
+		AcademicPersistenceModule,
+		AttendancePersistenceModule,
+	],
 	providers: [
 		{
 			provide: 'IStudentPort',
@@ -62,18 +65,6 @@ import { DashboardController } from './presentation/controllers/dashboard.contro
 			provide: 'ISubjectPort',
 			useClass: SubjectAdapter,
 		},
-		{
-			provide: 'IAttendanceRecordRepository',
-			useClass: AttendanceRecordRepository,
-		},
-		{
-			provide: 'IAttendanceAlertRepository',
-			useClass: AttendanceAlertRepository,
-		},
-		{
-			provide: 'IJustificationRepository',
-			useClass: JustificationRepository,
-		},
 		//commands
 		RegisterDailyAttendanceHandler,
 		RegisterSubjectAttendanceHandler,
@@ -81,6 +72,7 @@ import { DashboardController } from './presentation/controllers/dashboard.contro
 		BulkUpdateSubjectStatusHandler,
 		JustifyAttendanceHandler,
 		CopyAttendanceHandler,
+		CopyDailyAttendanceHandler,
 		GenerateAlertHandler,
 		MarkAlertSeenHandler,
 		//queries

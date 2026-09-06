@@ -3,6 +3,7 @@ import { LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { GenerateAlertCommand } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.command';
 import { GenerateAlertHandler } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.handler';
+import { AttendanceCalculationService } from '../../../src/modules/attendance/application/services/attendance-calculation.service';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceAlert } from '../../../src/modules/attendance/domain/entities/attendance-alert.entity';
 import { Course } from '../../../src/modules/attendance/domain/entities/course.entity';
@@ -10,7 +11,6 @@ import { IAcademicYearPort } from '../../../src/modules/attendance/domain/ports/
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IAttendanceAlertRepository } from '../../../src/modules/attendance/domain/repositories/attendance-alert.repository.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
-import { AttendanceCalculationService } from '../../../src/modules/attendance/domain/services/attendance-calculation.service';
 import { AlertType } from '../../../src/modules/attendance/domain/value-objects/alert-type.vo';
 
 describe('GenerateAlertHandler', () => {

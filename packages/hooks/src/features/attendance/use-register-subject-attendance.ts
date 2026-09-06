@@ -1,5 +1,11 @@
-import { ATTENDANCE_ROUTES, type AttendanceStatus } from '@repo/common';
+import {
+	ATTENDANCE_ROUTES,
+	type ApiResponse,
+	type AttendanceStatus,
+	type ErrorResponse,
+} from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
@@ -16,10 +22,17 @@ export interface RegisterSubjectAttendancePayload {
 export function useRegisterSubjectAttendance() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (payload: RegisterSubjectAttendancePayload) => {
-			const res = await apiClient.post(ATTENDANCE_ROUTES.subject, payload);
-			return res.data;
+	return useMutation<
+		unknown,
+		AxiosError<ErrorResponse>,
+		RegisterSubjectAttendancePayload
+	>({
+		mutationFn: async (payload) => {
+			const res = await apiClient.post<ApiResponse<unknown>>(
+				ATTENDANCE_ROUTES.subject,
+				payload,
+			);
+			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({

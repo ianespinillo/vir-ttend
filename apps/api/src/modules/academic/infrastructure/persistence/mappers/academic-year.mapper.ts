@@ -15,6 +15,7 @@ export class AcademicYearMapper {
 			...ormEntity,
 			id: ormEntity.id,
 			tenantId: ormEntity.schoolId,
+			nonWorkingDays: (ormEntity.nonWorkingDays ?? []).map((d) => new Date(d)),
 		});
 	}
 }

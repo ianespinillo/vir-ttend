@@ -38,7 +38,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
 			error,
 		};
 
-		console.error('SERVER EXCEPTION DETAILED:', exception);
 		this.logger.error(
 			`${request.method} ${request.url} ${statusCode}`,
 			exception instanceof Error ? exception.stack : String(exception),

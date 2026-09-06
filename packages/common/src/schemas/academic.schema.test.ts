@@ -28,6 +28,7 @@ describe('academic schemas', () => {
 			yearNumber: 1,
 			division: 'A',
 			shift: SHIFT.MORNING,
+			schoolId: validUUID,
 		});
 		expect(result.success).toBe(true);
 	});

@@ -8,9 +8,9 @@ import { RefreshTokenRepository } from '../repositories/refresh-token.repository
 	repository: () => RefreshTokenRepository,
 })
 export class RefreshTokenOrmEntity extends BaseEntity {
-	@Property({ name: 'user_id', type: 'uuid' }) userId!: string;
-	@Property({ name: 'tenant_id', type: 'uuid' }) tenantId!: string;
+	@Property() userId!: string;
+	@Property() tenantId!: string;
 	@Property() token!: string;
-	@Property({ name: 'expires_at' }) expiresAt!: Date;
-	@Property({ name: 'revoked_at', nullable: true }) revokedAt?: Date;
+	@Property() expiresAt!: Date;
+	@Property({ nullable: true }) revokedAt?: Date;
 }

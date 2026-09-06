@@ -77,7 +77,7 @@ export class ExportFormatterService {
 				String(s.absent),
 				String(s.late),
 				String(s.justified),
-				`${s.absencePercent}%`,
+				`${s.absencePercent.toFixed(2)}%`,
 				ExportFormatterService.statusLabel(s.status),
 			];
 		});

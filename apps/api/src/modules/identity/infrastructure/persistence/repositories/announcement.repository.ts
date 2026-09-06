@@ -1,5 +1,4 @@
-import { EntityManager } from '@mikro-orm/postgresql';
-import { Injectable } from '@nestjs/common';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import {
 	Announcement,
 	AnnouncementStatus,
@@ -12,12 +11,12 @@ import { AnnouncementTargetType } from '../../../domain/value-objects/announceme
 import { AnnouncementOrmEntity } from '../entities/announcement.orm-entity';
 import { AnnouncementMapper } from '../mappers/announcement.mapper';
 
-@Injectable()
-export class AnnouncementRepository implements IAnnouncementRepository {
-	constructor(private readonly em: EntityManager) {}
-
+export class AnnouncementRepository
+	extends EntityRepository<AnnouncementOrmEntity>
+	implements IAnnouncementRepository
+{
 	async findById(id: string): Promise<Announcement | null> {
-		const orm = await this.em.findOne(AnnouncementOrmEntity, { id });
+		const orm = await this.findOne({ id });
 		if (!orm) return null;
 		return AnnouncementMapper.toDomain(orm);
 	}
@@ -29,7 +28,7 @@ export class AnnouncementRepository implements IAnnouncementRepository {
 		const where: Record<string, unknown> = { schoolId };
 		if (filter.status) where.status = filter.status;
 		if (filter.targetType) where.targetType = filter.targetType;
-		const orms = await this.em.find(AnnouncementOrmEntity, where, {
+		const orms = await this.find(where, {
 			orderBy: { createdAt: 'DESC' },
 			limit: filter.limit,
 			offset:
@@ -45,12 +44,12 @@ export class AnnouncementRepository implements IAnnouncementRepository {
 		targetType: AnnouncementTargetType,
 		targetId: string,
 	): Promise<Announcement[]> {
-		const orms = await this.em.find(AnnouncementOrmEntity, { schoolId, targetType, targetId });
+		const orms = await this.find({ schoolId, targetType, targetId });
 		return orms.map((o) => AnnouncementMapper.toDomain(o));
 	}
 
 	async findByAuthor(authorId: string): Promise<Announcement[]> {
-		const orms = await this.em.find(AnnouncementOrmEntity, { authorId });
+		const orms = await this.find({ authorId });
 		return orms.map((o) => AnnouncementMapper.toDomain(o));
 	}
 
@@ -58,7 +57,7 @@ export class AnnouncementRepository implements IAnnouncementRepository {
 		schoolId: string,
 		status?: AnnouncementStatus,
 	): Promise<number> {
-		return this.em.count(AnnouncementOrmEntity, status ? { schoolId, status } : { schoolId });
+		return this.count(status ? { schoolId, status } : { schoolId });
 	}
 
 	async save(announcement: Announcement): Promise<void> {
@@ -67,7 +66,7 @@ export class AnnouncementRepository implements IAnnouncementRepository {
 	}
 
 	async delete(id: string): Promise<void> {
-		const orm = await this.em.findOne(AnnouncementOrmEntity, { id });
+		const orm = await this.findOne({ id });
 		if (orm) {
 			await this.em.removeAndFlush(orm);
 		}

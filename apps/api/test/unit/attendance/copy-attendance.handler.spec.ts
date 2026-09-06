@@ -2,9 +2,9 @@ import { ATTENDANCE_STATUS } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { CopyAttendanceCommand } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.command';
 import { CopyAttendanceHandler } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.handler';
+import { AttendanceCopyService } from '../../../src/modules/attendance/application/services/attendance-copy.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
-import { AttendanceCopyService } from '../../../src/modules/attendance/domain/services/attendance-copy.service';
 
 describe('CopyAttendanceHandler', () => {
 	let handler: CopyAttendanceHandler;

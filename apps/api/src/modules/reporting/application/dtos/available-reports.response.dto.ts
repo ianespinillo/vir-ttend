@@ -25,9 +25,9 @@ export class AvailableReportsResponseDto {
 			{ month: 5, year: 2026 },
 		],
 	})
-	readonly months: ReportPeriod[];
+	readonly months: { month: number; year: number }[];
 	constructor(courseId: string, months: ReportPeriod[]) {
 		this.courseId = courseId;
-		this.months = months;
+		this.months = months.map((m) => ({ month: m.month, year: m.year }));
 	}
 }

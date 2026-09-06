@@ -45,7 +45,7 @@ export function CourseSelector({
 						const levelLabel =
 							course.level === 'PRIMARY'
 								? 'Primaria'
-								: course.level === 'SEONDARY'
+								: course.level === 'SECONDARY'
 									? 'Secundaria'
 									: 'Inicial';
 						const label =

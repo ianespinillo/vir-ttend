@@ -1,6 +1,7 @@
 'use client';
 
-import type { CreateCourseFormValues } from '@repo/common';
+import { useAuth } from '@/lib/auth/provider';
+import { CreateCourseFormValues, ROLES } from '@repo/common';
 import { useAcademicYears, useCreateCourse, useUsersByRole } from '@repo/hooks';
 import { CourseForm, PageHeader } from '@repo/ui';
 import { useRouter } from 'next/navigation';
@@ -9,10 +10,10 @@ import { useState } from 'react';
 export default function CreateCoursePage() {
 	const router = useRouter();
 	const { data: academicYears } = useAcademicYears();
-	const { data: preceptors } = useUsersByRole('preceptor');
+	const { data: preceptors } = useUsersByRole(ROLES.PRECEPTOR);
 	const createCourseMutation = useCreateCourse();
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
+	const session = useAuth();
 	const handleCancel = () => {
 		router.push('/courses');
 	};
@@ -50,9 +51,12 @@ export default function CreateCoursePage() {
 
 			<CourseForm
 				onSubmit={handleSubmit}
+				defaultValues={{
+					schoolId: session?.user?.tenantId,
+				}}
 				isLoading={createCourseMutation.isPending}
 				academicYears={academicYears || []}
-				preceptors={preceptors || []}
+				preceptors={preceptors?.items || []}
 				onCancel={handleCancel}
 			/>
 		</div>

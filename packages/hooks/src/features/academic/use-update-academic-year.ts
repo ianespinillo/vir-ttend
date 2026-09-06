@@ -1,5 +1,6 @@
 import {
 	ACADEMIC_ROUTES,
+	type ApiResponse,
 	type IAcademicYearResponse,
 	type UpdateAcademicYearFormValues,
 } from '@repo/common';
@@ -7,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
-export interface UpdateAcademicYearParams {
+export interface UpdateAcademicYearVariables {
 	id: string;
 	data: UpdateAcademicYearFormValues;
 }
@@ -15,17 +16,20 @@ export interface UpdateAcademicYearParams {
 export function useUpdateAcademicYear() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async ({ id, data }: UpdateAcademicYearParams) => {
-			const res = await apiClient.put<IAcademicYearResponse>(
+	return useMutation<IAcademicYearResponse, Error, UpdateAcademicYearVariables>({
+		mutationFn: async ({ id, data }) => {
+			const res = await apiClient.put<ApiResponse<IAcademicYearResponse>>(
 				ACADEMIC_ROUTES.academicYear(id),
 				data,
 			);
-			return res.data;
+			return res.data.data;
 		},
-		onSuccess: () => {
+		onSuccess: (_data, variables) => {
 			queryClient.invalidateQueries({ queryKey: queryKeys.academicYears.all });
-			queryClient.invalidateQueries({ queryKey: ['academic-years', 'active'] });
+			queryClient.invalidateQueries({ queryKey: queryKeys.academicYears.active });
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.academicYears.detail(variables.id),
+			});
 		},
 	});
 }

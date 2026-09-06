@@ -14,11 +14,7 @@ export default function LoginPage() {
 	const { refetchUser } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const rawRedirect = searchParams.get('redirect');
-	const redirectUrl =
-		!rawRedirect || rawRedirect.startsWith('/login') || rawRedirect.startsWith('/auth')
-			? '/dashboard'
-			: rawRedirect;
+	const redirectUrl = searchParams.get('redirect') || '/dashboard';
 	const [error, setError] = useState<string | null>(null);
 
 	const handleSubmit = (values: LoginFormValues) => {
@@ -31,14 +27,14 @@ export default function LoginPage() {
 					return;
 				}
 
-				if (!data.tenants || data.tenants.length === 0) {
-					setError('Tu usuario no tiene ninguna institución asignada. Por favor, contacta al administrador.');
+				if (data.tenants.length === 0) {
+					setError('Tu usuario no tiene ninguna institución asignada.');
 					return;
 				}
 
 				if (data.tenants.length === 1) {
 					selectTenantMutation.mutate(
-						{ userId: data.sub || data.userId, tenantId: data.tenants[0].tenantId },
+						{ userId: data.userId, tenantId: data.tenants[0].tenantId },
 						{
 							onSuccess: async () => {
 								await refetchUser();
@@ -53,7 +49,7 @@ export default function LoginPage() {
 				}
 
 				authPendingStore.set({
-					userId: data.sub || data.userId,
+					userId: data.userId,
 					tenants: data.tenants,
 					isSuperAdmin: data.isSuperAdmin,
 				});

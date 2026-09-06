@@ -1,5 +1,10 @@
-import { ATTENDANCE_ROUTES } from '@repo/common';
+import {
+	ATTENDANCE_ROUTES,
+	type ApiResponse,
+	type ErrorResponse,
+} from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
@@ -14,13 +19,20 @@ export interface JustifyAttendancePayload {
 export function useJustifyAttendance() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async ({ id, reason, notes }: JustifyAttendancePayload) => {
-			const res = await apiClient.post(ATTENDANCE_ROUTES.justify(id), {
-				reason,
-				notes,
-			});
-			return res.data;
+	return useMutation<
+		unknown,
+		AxiosError<ErrorResponse>,
+		JustifyAttendancePayload
+	>({
+		mutationFn: async ({ id, reason, notes }) => {
+			const res = await apiClient.post<ApiResponse<unknown>>(
+				ATTENDANCE_ROUTES.justify(id),
+				{
+					reason,
+					notes,
+				},
+			);
+			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			if (variables.courseId && variables.date) {

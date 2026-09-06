@@ -1,4 +1,4 @@
-import { AUTH_ROUTES } from '@repo/common';
+import { AUTH_ROUTES, type ApiResponse } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 
@@ -7,7 +7,8 @@ export function useLogout() {
 
 	return useMutation({
 		mutationFn: async () => {
-			await apiClient.post(AUTH_ROUTES.logout);
+			const res = await apiClient.post<ApiResponse<void>>(AUTH_ROUTES.logout);
+			return res.data.data;
 		},
 		onSuccess: () => {
 			queryClient.clear();

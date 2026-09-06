@@ -74,6 +74,12 @@ export const ALL_NAV_ITEMS: NavItemConfig[] = [
 		label: 'Comunicados',
 		href: APP_ROUTES.announcements,
 		icon: 'Megaphone',
+		roles: [ROLES.ADMIN, ROLES.PRECEPTOR],
+	},
+	{
+		label: 'Para mí',
+		href: APP_ROUTES.meAnnouncements,
+		icon: 'Inbox',
 		roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER],
 	},
 	{
@@ -110,7 +116,15 @@ export function allowedRolesForPathname(pathname: string): Roles[] {
 		return [ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER];
 	if (pathname.startsWith('/alerts')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/reports')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
-	if (pathname.startsWith('/announcements'))
+	if (pathname.startsWith('/me/announcements'))
+		return [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER];
+	if (
+		pathname === APP_ROUTES.announcements ||
+		pathname === `${APP_ROUTES.announcements}/create` ||
+		pathname.endsWith('/edit')
+	)
+		return [ROLES.ADMIN, ROLES.PRECEPTOR];
+	if (pathname.startsWith(`${APP_ROUTES.announcements}/`))
 		return [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER];
 	if (pathname.startsWith('/users')) return [ROLES.SUPERADMIN, ROLES.ADMIN];
 	if (pathname.startsWith('/settings/profile'))

@@ -9,6 +9,7 @@ export const APP_ROUTES = {
 	alerts: '/alerts',
 	reports: '/reports',
 	announcements: '/announcements',
+	meAnnouncements: '/me/announcements',
 	tenants: '/tenants',
 	users: '/users',
 	settings: '/settings',

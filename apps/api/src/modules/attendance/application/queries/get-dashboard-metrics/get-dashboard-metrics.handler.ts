@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { ATTENDANCE_THRESHOLDS, LEVEL } from '@repo/common';
+import { ATTENDANCE_THRESHOLDS, COURSE_RISK_STATUS, LEVEL } from '@repo/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
@@ -44,12 +44,12 @@ export class GetDashboardMetricsQueryHandler {
 		const records: AttendanceRecord[] = [];
 		for (const course of thisYearCourses) {
 			const [courseSnapshots, courseRecords] = await Promise.all([
-				await this.dashService.buildCourseSnapshot(
+				this.dashService.buildCourseSnapshot(
 					course.id,
 					year.startDate,
 					year.endDate,
 				),
-				await this.attendanceRepo.findByCourseAndRange(
+				this.attendanceRepo.findByCourseAndRange(
 					course.id,
 					year.startDate,
 					year.endDate,
@@ -58,24 +58,31 @@ export class GetDashboardMetricsQueryHandler {
 			snapshots.push(courseSnapshots);
 			records.push(...courseRecords);
 		}
-
 		return new DashboardMetricsResponseDto({
 			averageAttendance:
 				snapshots.reduce((acc, next) => acc + next.presentsPercent, 0) /
 				snapshots.length,
 			weeklyTrend: this.dashService.buildWeeklyTrend(records),
-			coursesAtRisk: snapshots.map(
-				(s) =>
-					new CourseSnapshotDto({
-						...s.toJSON(),
-						statusColor: s.getRiskStatus(
+			coursesAtRisk: snapshots
+				.filter(
+					(s) =>
+						s.getRiskStatus(
 							ATTENDANCE_THRESHOLDS.WARNING,
 							ATTENDANCE_THRESHOLDS.CRITICAL,
-						),
-						lastUpdated: new Date(),
-						level: courses.get(s.courseId)?.level ?? LEVEL.DEFAULT,
-					}),
-			),
+						) !== COURSE_RISK_STATUS.OK,
+				)
+				.map(
+					(s) =>
+						new CourseSnapshotDto({
+							...s.toJSON(),
+							statusColor: s.getRiskStatus(
+								ATTENDANCE_THRESHOLDS.WARNING,
+								ATTENDANCE_THRESHOLDS.CRITICAL,
+							),
+							lastUpdated: new Date(),
+							level: courses.get(s.courseId)?.level ?? LEVEL.DEFAULT,
+						}),
+				),
 		});
 	}
 }

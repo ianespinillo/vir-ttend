@@ -1,4 +1,8 @@
-import { ACADEMIC_ROUTES, type ICourseResponse } from '@repo/common';
+import {
+	ACADEMIC_ROUTES,
+	type ApiResponse,
+	type ICourseResponse,
+} from '@repo/common';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 
@@ -19,13 +23,14 @@ export function useMyCourses({
 					? ACADEMIC_ROUTES.coursesByPreceptor
 					: ACADEMIC_ROUTES.courses;
 
-			const res = await apiClient.get<ICourseResponse[]>(endpoint, {
-				params: academicYearId ? { academicYearId } : undefined,
+			const res = await apiClient.get<ApiResponse<ICourseResponse[]>>(endpoint, {
+				params: {
+					academicYearId: academicYearId,
+					level: 'DEFAULT',
+				},
 			});
 
-			const data =
-				(res.data as unknown as { data?: ICourseResponse[] })?.data ?? res.data;
-			return Array.isArray(data) ? data : [];
+			return res.data.data ?? [];
 		},
 		enabled: Boolean(!isPreceptor || academicYearId),
 	});

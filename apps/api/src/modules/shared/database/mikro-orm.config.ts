@@ -11,7 +11,6 @@ config();
 export default defineConfig({
 	driver: PostgreSqlDriver,
 	clientUrl: getEnvs().DATABASE_URL,
-	dbName: 'public',
 	entities: ['dist/**/*.orm-entity.js'],
 	entitiesTs: ['./src/**/*.orm-entity.ts'],
 	extensions: [Migrator],

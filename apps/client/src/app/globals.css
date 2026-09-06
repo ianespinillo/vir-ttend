@@ -30,6 +30,13 @@
 		--input: 145 25% 90%;
 		--ring: 145 65% 72%;
 
+		/* Charts */
+		--chart-1: 145 60% 42%;
+		--chart-2: 145 45% 58%;
+		--chart-3: 145 35% 70%;
+		--chart-4: 170 45% 48%;
+		--chart-5: 100 40% 52%;
+
 		--radius: 0.5rem;
 
 		--sidebar-background: 140 60% 98%;
@@ -70,6 +77,13 @@
 		--border: 145 15% 25%;
 		--input: 145 15% 25%;
 		--ring: 145 60% 60%;
+
+		/* Charts oscuro */
+		--chart-1: 145 55% 62%;
+		--chart-2: 145 45% 72%;
+		--chart-3: 145 30% 80%;
+		--chart-4: 170 45% 60%;
+		--chart-5: 100 40% 65%;
 
 		--sidebar-background: 145 20% 15%;
 		--sidebar-foreground: 145 25% 90%;

@@ -1,7 +1,7 @@
 import type { CourseSnapshot } from './course-snapshot.type.js';
 
 export interface WeeklyTrendPoint {
-	date: Date;
+	mondayWeek: Date;
 	percent: number;
 }
 

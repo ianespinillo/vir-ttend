@@ -1,5 +1,6 @@
 import {
 	AUTH_ROUTES,
+	type ApiResponse,
 	type ErrorResponse,
 	type ILoginResponse,
 	type LoginFormValues,
@@ -12,8 +13,11 @@ export function useLogin() {
 	return useMutation<ILoginResponse, AxiosError<ErrorResponse>, LoginFormValues>(
 		{
 			mutationFn: async (data) => {
-				const res = await apiClient.post<ILoginResponse>(AUTH_ROUTES.login, data);
-				return res.data;
+				const res = await apiClient.post<ApiResponse<ILoginResponse>>(
+					AUTH_ROUTES.login,
+					data,
+				);
+				return res.data.data;
 			},
 		},
 	);

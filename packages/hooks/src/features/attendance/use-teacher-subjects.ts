@@ -1,4 +1,8 @@
-import { ACADEMIC_ROUTES, type ISubjectResponse } from '@repo/common';
+import {
+	ACADEMIC_ROUTES,
+	type ApiResponse,
+	type ISubjectResponse,
+} from '@repo/common';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
@@ -15,7 +19,7 @@ export function useTeacherSubjects({
 	return useQuery<ISubjectResponse[]>({
 		queryKey: queryKeys.subjects.teacher(teacherId || '', academicYearId),
 		queryFn: async () => {
-			const res = await apiClient.get<ISubjectResponse[]>(
+			const res = await apiClient.get<ApiResponse<ISubjectResponse[]>>(
 				ACADEMIC_ROUTES.subjects,
 				{
 					params: {
@@ -24,9 +28,7 @@ export function useTeacherSubjects({
 					},
 				},
 			);
-			const data =
-				(res.data as unknown as { data?: ISubjectResponse[] })?.data ?? res.data;
-			return Array.isArray(data) ? data : [];
+			return res.data.data ?? [];
 		},
 		enabled: Boolean(teacherId && academicYearId),
 	});

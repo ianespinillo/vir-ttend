@@ -102,6 +102,31 @@ describe('ScheduleService', () => {
 			expect(result).toHaveLength(20);
 		});
 
+		it('should exclude non working days when they come as ISO strings from the db', () => {
+			const yearWithRawDates = AcademicYear.reconstitute({
+				id: 'ay-1',
+				tenantId: 'tenant-1',
+				year: 2025,
+				startDate: new Date('2025-03-01T12:00:00'),
+				endDate: new Date('2025-03-31T12:00:00'),
+				nonWorkingDays: ['2025-03-24T00:00:00.000Z'] as unknown as Date[],
+				absenceThresholdPercent: 75,
+				lateCountAbscenseAfterMinutes: 15,
+				isActive: true,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			});
+			const result = service.getWorkingDaysOnPeriod(
+				new Date('2025-03-01T12:00:00'),
+				new Date('2025-03-31T12:00:00'),
+				yearWithRawDates,
+			);
+			expect(result).toHaveLength(20);
+			expect(result.some((d) => d.toISOString().startsWith('2025-03-24'))).toBe(
+				false,
+			);
+		});
+
 		it('should return empty when from equals to and is weekend', () => {
 			const result = service.getWorkingDaysOnPeriod(
 				new Date('2025-03-01T12:00:00'), // sábado

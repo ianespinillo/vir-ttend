@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ATTENDANCE_STATUS, AttendanceStatus } from '@repo/common';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { Justification } from '../../domain/entities/justification.entity';
+import { Student } from '../../domain/entities/student.entity';
 import { JustificationResponseDto } from './justification.response.dto';
 
 export class AttendanceRecordResponseDto {
@@ -16,6 +17,12 @@ export class AttendanceRecordResponseDto {
 		example: '1c2d3e4f-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
 	})
 	readonly studentId: string;
+
+	@ApiProperty({
+		description: 'Nombre completo del estudiante',
+		example: 'Martina González',
+	})
+	readonly studentName: string;
 
 	@ApiPropertyOptional({
 		description: 'Estado de asistencia del estudiante',
@@ -54,12 +61,13 @@ export class AttendanceRecordResponseDto {
 	readonly justification?: JustificationResponseDto;
 
 	constructor(
-		studentId: string,
+		student: Student,
 		record?: AttendanceRecord,
 		justification?: Justification,
 	) {
 		this.id = record?.id ?? undefined;
-		this.studentId = studentId;
+		this.studentId = student.id;
+		this.studentName = student.name;
 		this.status = record?.status ?? undefined;
 		this.date = record?.date ?? undefined;
 		this.editedBy = record?.editedBy ?? undefined;

@@ -1,5 +1,11 @@
-import { STUDENT_ROUTES, type TransferFormValues } from '@repo/common';
+import {
+	type ApiResponse,
+	type ErrorResponse,
+	STUDENT_ROUTES,
+	type TransferFormValues,
+} from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
@@ -11,10 +17,13 @@ export interface TransferStudentParams {
 export function useTransferStudent() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async ({ id, data }: TransferStudentParams) => {
-			const res = await apiClient.post(STUDENT_ROUTES.transfer(id), data);
-			return res.data;
+	return useMutation<unknown, AxiosError<ErrorResponse>, TransferStudentParams>({
+		mutationFn: async ({ id, data }) => {
+			const res = await apiClient.post<ApiResponse<unknown>>(
+				STUDENT_ROUTES.transfer(id),
+				data,
+			);
+			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({

@@ -21,6 +21,7 @@ export interface DashboardLayoutProps {
 	actions?: ReactNode;
 	LinkComponent?: LayoutLinkComponent;
 	onNavigate?: (href: string) => void;
+	alertCount?: number;
 }
 
 export function DashboardLayout({
@@ -33,10 +34,14 @@ export function DashboardLayout({
 	actions,
 	LinkComponent,
 	onNavigate,
+	alertCount,
 }: DashboardLayoutProps) {
 	const defaultActions = (
 		<>
-			<AlertBadgePlaceholder onClick={() => onNavigate?.('/alerts')} />
+			<AlertBadgePlaceholder
+				count={alertCount}
+				onClick={() => onNavigate?.('/alerts')}
+			/>
 			<UserMenu
 				user={user}
 				onLogout={onLogout}

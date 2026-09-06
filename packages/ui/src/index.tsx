@@ -18,10 +18,15 @@ export * from './components/features/academic';
 export * from './components/features/attendance';
 export * from './components/features/subjects';
 export * from './components/features/schedule';
+export * from './components/features/reports';
+export * from './components/features/dashboard';
+export * from './components/features/alerts';
+export * from './components/features/announcements';
 
 // Lib
 export * from './lib/utils';
 export * from './lib/format';
+export * from './lib/report-format';
 
 // Shadcn primitives
 export * from './ui/alert';
@@ -51,6 +56,7 @@ export * from './ui/skeleton';
 export * from './ui/switch';
 export * from './ui/tabs';
 export * from './ui/table';
+export * from './ui/textarea';
 export * from './ui/toast';
 export * from './ui/tooltip';
 
@@ -70,9 +76,13 @@ export {
 	BookOpen,
 	CheckCircle,
 	Clock,
+	Eye,
 	Menu,
 	Play,
+	RefreshCw,
 	Shield,
 	Smartphone,
+	TrendingDown,
+	User,
 	Users,
 } from 'lucide-react';

@@ -12,6 +12,9 @@ export interface AttendanceGridProps {
 	onJustify?: (record: AttendanceRecord) => void;
 	isLoading?: boolean;
 	isSaving?: boolean;
+	onConfirmChanges?: () => void;
+	onResetChanges?: () => void;
+	hasPendingChanges?: boolean;
 }
 
 export function AttendanceGrid({
@@ -20,6 +23,9 @@ export function AttendanceGrid({
 	onJustify,
 	isLoading,
 	isSaving,
+	onConfirmChanges,
+	onResetChanges,
+	hasPendingChanges,
 }: AttendanceGridProps) {
 	if (isLoading) {
 		return (
@@ -73,6 +79,7 @@ export function AttendanceGrid({
 									onStatusChange={onStatusChange}
 									onJustify={onJustify}
 									isSaving={isSaving}
+									isPending={hasPendingChanges}
 								/>
 							))}
 						</tbody>

@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_THRESHOLDS } from '@repo/common';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
+import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.response.dto';
 import { CourseSnapshotDto } from '../../dtos/course-snapshot.dto';
@@ -15,6 +16,8 @@ export class GetCourseDailyOverviewQueryHandler {
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
 		private readonly snapshotService: CourseSnapshotBuilderService,
+		@Inject('IStudentPort')
+		private readonly studentPort: IStudentPort,
 	) {}
 	async execute(
 		query: GetCourseDailyOverviewQuery,
@@ -30,8 +33,16 @@ export class GetCourseDailyOverviewQueryHandler {
 			query.courseId,
 			query.date,
 		);
+		const dtos: AttendanceRecordResponseDto[] = [];
+		for (const record of records) {
+			const student = await this.studentPort.findById(record.studentId);
+			if (!student) {
+				throw new NotFoundException(`Student doesn't exist: ${record.studentId}`);
+			}
+			dtos.push(new AttendanceRecordResponseDto(student, record));
+		}
 		return {
-			records,
+			records: dtos,
 			...snapshot.toJSON(),
 			statusColor: snapshot.getRiskStatus(
 				ATTENDANCE_THRESHOLDS.WARNING,

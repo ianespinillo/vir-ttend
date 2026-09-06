@@ -5,7 +5,13 @@ import { ReportRepository } from './repositories/report.repository';
 
 @Module({
 	imports: [MikroOrmModule.forFeature([MonthlyReportOrmEntity])],
-	providers: [ReportRepository],
-	exports: [ReportRepository],
+	providers: [
+		ReportRepository,
+		{
+			provide: 'IReportRepository',
+			useExisting: ReportRepository,
+		},
+	],
+	exports: [ReportRepository, 'IReportRepository'],
 })
 export class ReportingPersistenceModule {}

@@ -11,6 +11,8 @@ export interface CourseSnapshot {
 	late: number;
 	justified: number;
 	notRecorded: number;
+	absencePercent: number;
+	attendancePercent: number;
 	statusColor: COURSE_RISK_STATUS;
 	lastUpdated: Date;
 }

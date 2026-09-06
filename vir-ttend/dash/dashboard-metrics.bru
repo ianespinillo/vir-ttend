@@ -1,0 +1,15 @@
+meta {
+  name: dashboard-metrics
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:3001/
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

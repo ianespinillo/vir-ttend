@@ -38,8 +38,13 @@ export class CourseDetailResponseDto extends CourseResponseDto {
 	})
 	schedule: ScheduleSlotResponseDto[];
 
-	constructor(course: Course, subjects: Subject[], slots: ScheduleSlot[]) {
-		super(course);
+	constructor(
+		course: Course,
+		subjects: Subject[],
+		slots: ScheduleSlot[],
+		preceptorName: string,
+	) {
+		super(course, preceptorName);
 		this.subjects = subjects.map((s) => new SubjectResponseDto(s));
 		this.schedule = slots.map((s) => new ScheduleSlotResponseDto(s));
 	}

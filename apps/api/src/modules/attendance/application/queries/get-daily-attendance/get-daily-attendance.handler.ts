@@ -3,13 +3,12 @@ import {
 	Injectable,
 	InternalServerErrorException,
 } from '@nestjs/common';
-import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { GetDailyAttendanceQuery } from './get-daily-attendance.query';
-
-import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
+import { ATTENDANCE_STATUS } from '@repo/common';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
+import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { IJustificationRepository } from '../../../domain/repositories/justification.repository.interface';
 import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.response.dto';
+import { GetDailyAttendanceQuery } from './get-daily-attendance.query';
 
 @Injectable()
 export class GetDailyAttendanceQueryHandler {
@@ -36,7 +35,7 @@ export class GetDailyAttendanceQueryHandler {
 		for (const student of students) {
 			const attendanceRecord = records.find((r) => r.studentId === student.id);
 
-			if (attendanceRecord) {
+			if (attendanceRecord?.status === ATTENDANCE_STATUS.JUSTIFIED) {
 				const justification = await this.justificationRepo.findByRecord(
 					attendanceRecord.id,
 				);
@@ -45,14 +44,15 @@ export class GetDailyAttendanceQueryHandler {
 						`AttendanceRecord ${attendanceRecord.id} is marked as JUSTIFIED but has no justification.`,
 					);
 				result.push(
-					new AttendanceRecordResponseDto(
-						student.id,
-						attendanceRecord,
-						justification,
-					),
+					new AttendanceRecordResponseDto(student, attendanceRecord, justification),
 				);
 			} else {
-				result.push(new AttendanceRecordResponseDto(student.id));
+				result.push(
+					new AttendanceRecordResponseDto(
+						student,
+						records.find((r) => r.studentId === student.id),
+					),
+				);
 			}
 		}
 

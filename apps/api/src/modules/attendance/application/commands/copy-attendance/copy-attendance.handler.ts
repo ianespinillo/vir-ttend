@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { AttendanceCopyService } from '../../../domain/services/attendance-copy.service';
+import { AttendanceCopyService } from '../../services/attendance-copy.service';
 import { CopyAttendanceCommand } from './copy-attendance.command';
 
 @Injectable()

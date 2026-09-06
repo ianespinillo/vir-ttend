@@ -12,6 +12,8 @@ import {
 	UserMinus,
 	UserPlus,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { cn } from '../../../lib/utils';
 import { Avatar, AvatarFallback } from '../../../ui/avatar';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
@@ -30,6 +32,7 @@ export interface StudentDetailProps {
 	isAdmin?: boolean;
 	isPreceptor?: boolean;
 	attendancePath?: string;
+	reportTab?: ReactNode;
 }
 
 export function StudentDetail({
@@ -43,6 +46,7 @@ export function StudentDetail({
 	isAdmin = false,
 	isPreceptor = false,
 	attendancePath,
+	reportTab,
 }: StudentDetailProps) {
 	const initials =
 		`${student.firstName[0] || ''}${student.lastName[0] || ''}`.toUpperCase();
@@ -163,10 +167,16 @@ export function StudentDetail({
 			</Card>
 
 			<Tabs defaultValue="personal" className="w-full">
-				<TabsList className="grid w-full grid-cols-3 max-w-md">
+				<TabsList
+					className={cn(
+						'grid w-full max-w-md',
+						reportTab ? 'grid-cols-4' : 'grid-cols-3',
+					)}
+				>
 					<TabsTrigger value="personal">Datos Personales</TabsTrigger>
 					<TabsTrigger value="tutor">Tutor</TabsTrigger>
 					<TabsTrigger value="attendance">Asistencia</TabsTrigger>
+					{reportTab && <TabsTrigger value="reporte">Reporte</TabsTrigger>}
 				</TabsList>
 
 				<TabsContent value="personal" className="pt-4">
@@ -252,6 +262,12 @@ export function StudentDetail({
 						</CardContent>
 					</Card>
 				</TabsContent>
+
+				{reportTab && (
+					<TabsContent value="reporte" className="pt-4">
+						{reportTab}
+					</TabsContent>
+				)}
 			</Tabs>
 		</div>
 	);

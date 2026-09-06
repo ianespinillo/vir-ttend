@@ -57,13 +57,21 @@ export class CourseResponseDto implements ICourseResponse {
 
 	@ApiProperty({
 		type: String,
+		description: 'Nombre del preceptor asignado al curso.',
+		example: 'Juan Pérez',
+	})
+	preceptorName: string;
+
+	@ApiProperty({
+		type: String,
 		description: 'Nombre completo del curso.',
 		example: '1° A - Morning',
 	})
 	fullName: string;
 
-	constructor(course: Course) {
+	constructor(course: Course, preceptorName: string) {
 		this.id = course.id.getRaw();
+		this.preceptorName = preceptorName;
 		this.level = course.level;
 		this.yearNumber = course.yearNumber;
 		this.division = course.division;

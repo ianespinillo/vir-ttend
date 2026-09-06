@@ -61,24 +61,18 @@ export class AuthController {
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		try {
-			const result = await this.loginHandler.execute(
-				new LoginCommand(dto.email, dto.password),
-			);
+		const result = await this.loginHandler.execute(
+			new LoginCommand(dto.email, dto.password),
+		);
+		// cookie temporal con userId — httpOnly, dura solo 10 minutos
+		res.cookie('pending_user_id', result.userId, {
+			httpOnly: true,
+			// secure: true,
+			sameSite: 'strict',
+			maxAge: 10 * 60 * 1000,
+		});
 
-			// cookie temporal con userId — httpOnly, dura solo 10 minutos
-			res.cookie('pending_user_id', result.sub, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
-				maxAge: 10 * 60 * 1000,
-			});
-
-			return result; // LoginResponseDto: { isSuperAdmin, tenants }
-		} catch (err: any) {
-			console.error('LOGIN CONTROLLER ERROR:', err);
-			throw err;
-		}
+		return result; // LoginResponseDto: { isSuperAdmin, tenants }
 	}
 
 	@Post('select-tenant')
@@ -118,16 +112,16 @@ export class AuthController {
 
 		res.cookie('access_token', result.accessToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'lax',
+			// secure: true,
+			sameSite: 'strict',
 			maxAge: 15 * 60 * 1000,
 			path: '/',
 		});
 
 		res.cookie('refresh_token', result.refreshToken, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'lax',
+			// secure: true,
+			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000,
 			path: '/auth/refresh',
 		});

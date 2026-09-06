@@ -1,6 +1,6 @@
 {
 	"data": {
-		"_id": 11000,
+		"_id": 12000,
 		"properties": {
 			"id": {
 				"name": "id",
@@ -90,7 +90,7 @@
 				"name": "createdAt",
 				"kind": "scalar",
 				"type": "datetime",
-				"default": 1785381798054,
+				"defaultRaw": "now()",
 				"getter": false,
 				"setter": false,
 				"array": false,
@@ -118,6 +118,6 @@
 		"simplePK": true
 	},
 	"origin": "./src/modules/attendance/infrastructure/persistence/entities/attendance-alert.orm-entity.ts",
-	"hash": "2af5ad27a95340da53984bc186655fd7",
+	"hash": "ec871e71447879dced80b698b625911c",
 	"version": "6.6.7"
 }

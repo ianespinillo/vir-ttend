@@ -9,6 +9,7 @@ export class AttendanceRecordMapper {
 		entity.status = domain.status;
 		entity.courseId = domain.courseId;
 		entity.editedBy = domain.editedBy;
+		entity.editedAt = domain.editedAt;
 		entity.createdAt = domain.createdAt;
 		entity.studentId = domain.studentId;
 		entity.subjectId = domain.subjectId;

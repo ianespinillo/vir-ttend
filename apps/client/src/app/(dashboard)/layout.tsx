@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth/provider';
 import { isPathAllowedForRole } from '@repo/common';
-import { useLogout } from '@repo/hooks';
+import { useAlertsCount, useLogout } from '@repo/hooks';
 import { DashboardLayout, Forbidden, LoadingSpinner } from '@repo/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ export default function AppDashboardLayout({
 }: { children: ReactNode }) {
 	const { user, isAuthenticated, isLoading, clearUser } = useAuth();
 	const logoutMutation = useLogout();
+	const { data: alertsCount } = useAlertsCount();
 	const router = useRouter();
 	const pathname = usePathname();
 
@@ -45,6 +46,7 @@ export default function AppDashboardLayout({
 			onLogout={handleLogout}
 			LinkComponent={Link}
 			onNavigate={(href) => router.push(href)}
+			alertCount={alertsCount?.count}
 		>
 			{isAllowed ? (
 				children

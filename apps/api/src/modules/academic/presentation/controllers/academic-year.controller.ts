@@ -115,7 +115,10 @@ export class AcademicYearsController {
 	})
 	@ApiResponse({ status: 401, description: 'No autenticado' })
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
-	@ApiResponse({ status: 404, description: 'No existe un año académico activo' })
+	@ApiResponse({
+		status: 404,
+		description: 'No existe un año académico activo',
+	})
 	async getActive(@CurrentUser() user: JwtPayload) {
 		return this.getActiveAcademicYearHandler.execute(
 			new GetActiveAcademicYearQuery(user.tenantId),

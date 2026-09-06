@@ -1,9 +1,12 @@
 import {
+	type ApiResponse,
+	type ErrorResponse,
 	type IStudentDetailResponse,
 	STUDENT_ROUTES,
 	type UpdateStudentFormValues,
 } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
@@ -15,13 +18,17 @@ export interface UpdateStudentParams {
 export function useUpdateStudent() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
+	return useMutation<
+		IStudentDetailResponse,
+		AxiosError<ErrorResponse>,
+		UpdateStudentParams
+	>({
 		mutationFn: async ({ id, data }: UpdateStudentParams) => {
-			const res = await apiClient.put<IStudentDetailResponse>(
+			const res = await apiClient.put<ApiResponse<IStudentDetailResponse>>(
 				STUDENT_ROUTES.student(id),
 				data,
 			);
-			return res.data;
+			return res.data.data;
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({

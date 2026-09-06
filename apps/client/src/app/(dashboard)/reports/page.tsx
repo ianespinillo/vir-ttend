@@ -1,12 +1,5 @@
-import { PageHeader } from '@repo/ui';
+import { redirect } from 'next/navigation';
 
 export default function ReportsPage() {
-	return (
-		<div className="space-y-6">
-			<PageHeader
-				title="Reportes"
-				description="Generación de reportes y estadísticas"
-			/>
-		</div>
-	);
+	redirect('/reports/monthly');
 }

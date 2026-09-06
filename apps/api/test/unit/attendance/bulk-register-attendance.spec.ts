@@ -5,7 +5,7 @@ import { MockProxy, mock } from 'jest-mock-extended';
 import { BulkRegisterAttendanceCommand } from '../../../src/modules/attendance/application/commands/bulk-register-attendance/bulk-register-attendance.command';
 import { BulkRegisterAttendanceHandler } from '../../../src/modules/attendance/application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
-import { Student } from '../../../src/modules/attendance/domain/entities/student';
+import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 

@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Roles } from '@repo/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -8,7 +8,7 @@ import { LoginCommand } from './login.command';
 
 export interface LoginResult {
 	isSuperAdmin: boolean;
-	sub: string;
+	userId: string;
 	tenants: { tenantId: string; role: Roles }[];
 }
 @Injectable()
@@ -23,26 +23,26 @@ export class LoginHandler {
 	async execute(command: LoginCommand): Promise<LoginResult> {
 		const { email, password } = command;
 		const user = await this.userRepository.findByEmail(email);
-		if (!user) throw new UnauthorizedException('Credenciales inválidas');
-		if (!user.isActive) throw new UnauthorizedException('Usuario inactivo');
+		if (!user) throw new Error('Invalid credentials');
+		if (!user.isActive) throw new Error('User not active');
 
 		const validPassword = await this.passwordService.compare(
 			new Password(password),
 			user.password,
 		);
-		if (!validPassword) throw new UnauthorizedException('Credenciales inválidas');
+		if (!validPassword) throw new Error('Invalid credentials');
 
 		const memberships = await this.membersRepo.findByUserId(user.id);
 		if (memberships.length === 0) {
 			return {
 				isSuperAdmin: true,
-				sub: user.id,
+				userId: user.id,
 				tenants: [],
 			};
 		}
 		return {
 			isSuperAdmin: false,
-			sub: user.id,
+			userId: user.id,
 			tenants: memberships.map((m) => ({ tenantId: m.tenantId, role: m.role })),
 		};
 	}
