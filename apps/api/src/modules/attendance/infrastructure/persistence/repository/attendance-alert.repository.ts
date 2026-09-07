@@ -42,7 +42,7 @@ export class AttendanceAlertRepository
 		tenantId?: string,
 	): Promise<PaginatedResponse<AttendanceAlert>> {
 		const perPage = pageOptions.perPage ?? 10;
-		const qb = this.em.createQueryBuilder(AttendanceAlertOrmEntity);
+		const qb = this.createQueryBuilder();
 
 		if (tenantId && (!courseId || courseId.length === 0)) {
 			qb.andWhere({ tenantId });

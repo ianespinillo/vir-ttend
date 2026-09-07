@@ -63,25 +63,8 @@ export class AttendanceRecordRepository
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
 	}
 	async bulkSave(records: AttendanceRecord[]): Promise<void> {
-		if (records.length === 0) return;
-
-		const ids = records.map((r) => r.id);
-		const existingEntities = await this.find({ id: { $in: ids } });
-		const existingMap = new Map(existingEntities.map((e) => [e.id, e]));
-
 		for (const record of records) {
-			const existing = existingMap.get(record.id);
-			if (existing) {
-				existing.status = record.status;
-				if (record.editedBy) existing.editedBy = record.editedBy;
-				if (record.editedAt) existing.editedAt = record.editedAt;
-				existing.date = record.date;
-				existing.studentId = record.studentId;
-				existing.courseId = record.courseId;
-				existing.subjectId = record.subjectId ?? undefined;
-			} else {
-				this.em.persist(AttendanceRecordMapper.toOrm(record));
-			}
+			this.em.persist(AttendanceRecordMapper.toOrm(record));
 		}
 		await this.em.flush();
 
@@ -183,20 +166,8 @@ export class AttendanceRecordRepository
 	}
 
 	async save(record: AttendanceRecord): Promise<void> {
-		const existing = await this.findOne({ id: record.id });
-		if (existing) {
-			existing.status = record.status;
-			existing.editedBy = record.editedBy ?? null;
-			existing.editedAt = record.editedAt ?? null;
-			existing.date = record.date;
-			existing.studentId = record.studentId;
-			existing.courseId = record.courseId;
-			existing.subjectId = record.subjectId ?? null;
-			await this.em.flush();
-		} else {
-			this.em.persist(AttendanceRecordMapper.toOrm(record));
-			await this.em.flush();
-		}
+		this.em.persist(AttendanceRecordMapper.toOrm(record));
+		await this.em.flush();
 
 		try {
 			const cacheKey = `attendance:summary:${record.courseId}:${new Date(
