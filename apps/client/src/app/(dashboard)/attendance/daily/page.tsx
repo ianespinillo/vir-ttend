@@ -10,15 +10,21 @@ import {
 	useAttendanceMetrics,
 	useBulkAttendance,
 	useCopyDailyAttendance,
+	useCourseAttendanceHistory,
 	useCurrentUser,
 	useDailyAttendance,
 	useJustifyAttendance,
 	useMyCourses,
 	useRegisterDailyAttendance,
 } from '@repo/hooks';
-import { Button, DailyAttendancePage, type StudentRowItem } from '@repo/ui';
-import { format, subDays } from 'date-fns';
-import { Copy } from 'lucide-react';
+import {
+	Button,
+	DailyAttendancePage,
+	ReviewJustificationsModal,
+	type StudentRowItem,
+} from '@repo/ui';
+import { endOfMonth, format, parseISO, startOfMonth, subDays } from 'date-fns';
+import { Copy, FileCheck } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -135,6 +141,35 @@ export default function AttendanceDailyPage() {
 	const [selectedRecordToJustify, setSelectedRecordToJustify] =
 		useState<AttendanceRecord | null>(null);
 	const [isJustifyOpen, setIsJustifyOpen] = useState(false);
+
+	const [isReviewJustificationsOpen, setIsReviewJustificationsOpen] =
+		useState(false);
+
+	const { monthStart, monthEnd } = useMemo(() => {
+		if (!selectedDate) return { monthStart: '', monthEnd: '' };
+		const d = parseISO(selectedDate);
+		return {
+			monthStart: format(startOfMonth(d), 'yyyy-MM-dd'),
+			monthEnd: format(endOfMonth(d), 'yyyy-MM-dd'),
+		};
+	}, [selectedDate]);
+
+	const { data: monthHistory, isLoading: isLoadingHistory } =
+		useCourseAttendanceHistory({
+			courseId: selectedCourseId,
+			from: monthStart,
+			to: monthEnd,
+		});
+
+	const justifiedRecords = useMemo(() => {
+		return (monthHistory ?? []).filter(
+			(r) => r.status === ATTENDANCE_STATUS.JUSTIFIED || Boolean(r.justification),
+		);
+	}, [monthHistory]);
+
+	const selectedCourse = useMemo(() => {
+		return courses?.find((c) => c.id === selectedCourseId);
+	}, [courses, selectedCourseId]);
 
 	const [isCopyOpen, setIsCopyOpen] = useState(false);
 	const [copySourceDate, setCopySourceDate] = useState<string | undefined>();
@@ -294,53 +329,75 @@ export default function AttendanceDailyPage() {
 	);
 
 	return (
-		<DailyAttendancePage
-			courses={courses ?? []}
-			gridStudents={gridStudents}
-			metrics={metrics ?? null}
-			selectedCourseId={selectedCourseId}
-			selectedDate={selectedDate}
-			isLoadingCourses={isLoadingYear || isLoadingCourses}
-			isLoadingDaily={isLoadingDaily}
-			isLoadingMetrics={isLoadingMetrics}
-			isSaving={registerDailyMutation.isPending || isRefetching}
-			isBulkSaving={bulkMutation.isPending}
-			onCourseChange={handleCourseChange}
-			onDateChange={handleDateChange}
-			onStatusChange={handleStatusChange}
-			onMarkAll={handleMarkAll}
-			onJustify={handleOpenJustify}
-			isJustifyOpen={isJustifyOpen}
-			selectedRecordToJustify={selectedRecordToJustify}
-			onCloseJustify={handleCloseJustify}
-			onConfirmJustify={handleConfirmJustify}
-			isSubmittingJustify={justifyMutation.isPending}
-			isCopyOpen={isCopyOpen}
-			onOpenCopy={handleOpenCopy}
-			onCloseCopy={handleCloseCopy}
-			onSourceDateChange={handleCopySourceDateChange}
-			copySourceDate={copySourceDate}
-			previewRecords={previewRecords as AttendanceRecord[] | undefined}
-			isLoadingPreview={isLoadingPreview}
-			onConfirmCopy={handleConfirmCopy}
-			isSubmittingCopy={copyDailyMutation.isPending}
-			onConfirmChanges={handleConfirmChanges}
-			onResetChanges={handleResetChanges}
-			extraActions={
-				selectedCourseId ? (
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={handleOpenCopy}
-						disabled={copyDailyMutation.isPending}
-						className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
-					>
-						<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-						Copiar de Otro Dia
-					</Button>
-				) : undefined
-			}
-		/>
+		<>
+			<DailyAttendancePage
+				courses={courses ?? []}
+				gridStudents={gridStudents}
+				metrics={metrics ?? null}
+				selectedCourseId={selectedCourseId}
+				selectedDate={selectedDate}
+				isLoadingCourses={isLoadingYear || isLoadingCourses}
+				isLoadingDaily={isLoadingDaily}
+				isLoadingMetrics={isLoadingMetrics}
+				isSaving={registerDailyMutation.isPending || isRefetching}
+				isBulkSaving={bulkMutation.isPending}
+				onCourseChange={handleCourseChange}
+				onDateChange={handleDateChange}
+				onStatusChange={handleStatusChange}
+				onMarkAll={handleMarkAll}
+				onJustify={handleOpenJustify}
+				isJustifyOpen={isJustifyOpen}
+				selectedRecordToJustify={selectedRecordToJustify}
+				onCloseJustify={handleCloseJustify}
+				onConfirmJustify={handleConfirmJustify}
+				isSubmittingJustify={justifyMutation.isPending}
+				isCopyOpen={isCopyOpen}
+				onOpenCopy={handleOpenCopy}
+				onCloseCopy={handleCloseCopy}
+				onSourceDateChange={handleCopySourceDateChange}
+				copySourceDate={copySourceDate}
+				previewRecords={previewRecords as AttendanceRecord[] | undefined}
+				isLoadingPreview={isLoadingPreview}
+				onConfirmCopy={handleConfirmCopy}
+				isSubmittingCopy={copyDailyMutation.isPending}
+				onConfirmChanges={handleConfirmChanges}
+				onResetChanges={handleResetChanges}
+				extraActions={
+					selectedCourseId ? (
+						<div className="flex flex-wrap items-center gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setIsReviewJustificationsOpen(true)}
+								className="border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+							>
+								<FileCheck className="mr-1.5 h-4 w-4 shrink-0" />
+								Revisar justificaciones
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleOpenCopy}
+								disabled={copyDailyMutation.isPending}
+								className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
+							>
+								<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+								Copiar de Otro Dia
+							</Button>
+						</div>
+					) : undefined
+				}
+			/>
+			<ReviewJustificationsModal
+				open={isReviewJustificationsOpen}
+				onClose={() => setIsReviewJustificationsOpen(false)}
+				courseName={selectedCourse?.fullName}
+				selectedDate={selectedDate}
+				justifiedRecords={justifiedRecords}
+				isLoading={isLoadingHistory}
+			/>
+		</>
 	);
 }

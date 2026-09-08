@@ -67,6 +67,22 @@ export class AttendanceRecordRepository
 			this.em.persist(AttendanceRecordMapper.toOrm(record));
 		}
 		await this.em.flush();
+
+		try {
+			const cacheKeys = new Set(
+				records.map(
+					(r) =>
+						`attendance:summary:${r.courseId}:${new Date(r.date)
+							.toISOString()
+							.slice(0, 10)}`,
+				),
+			);
+			for (const key of cacheKeys) {
+				await this.redis.del(key);
+			}
+		} catch {
+			// ignore cache error
+		}
 	}
 
 	async findByCourseAndDate(
@@ -94,8 +110,8 @@ export class AttendanceRecordRepository
 		const orms = await this.find({
 			courseId,
 			date: {
-				$gt: from,
-				$lt: to,
+				$gte: from,
+				$lte: to,
 			},
 		});
 		if (!orms) return [];
@@ -105,8 +121,8 @@ export class AttendanceRecordRepository
 	async findByDateRange(from: Date, to: Date): Promise<AttendanceRecord[]> {
 		const orms = await this.find({
 			date: {
-				$gt: from,
-				$lt: to,
+				$gte: from,
+				$lte: to,
 			},
 		});
 		if (!orms) return [];
@@ -152,6 +168,17 @@ export class AttendanceRecordRepository
 	async save(record: AttendanceRecord): Promise<void> {
 		this.em.persist(AttendanceRecordMapper.toOrm(record));
 		await this.em.flush();
+
+		try {
+			const cacheKey = `attendance:summary:${record.courseId}:${new Date(
+				record.date,
+			)
+				.toISOString()
+				.slice(0, 10)}`;
+			await this.redis.del(cacheKey);
+		} catch {
+			// ignore cache error
+		}
 	}
 	async getCourseSummaryForDate(
 		courseId: string,

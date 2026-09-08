@@ -14,5 +14,6 @@ export interface AttendanceRecord {
 	studentName: string;
 	status: AttendanceStatus;
 	subjectId?: string;
+	date?: string | Date;
 	justification?: AttendanceRecordJustification;
 }

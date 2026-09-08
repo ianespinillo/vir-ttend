@@ -29,10 +29,13 @@ export class GetDashboardMetricsQueryHandler {
 		const preceptorCourses = await this.coursePort.findByPreceptorId(
 			query.preceptorId,
 		);
-		const thisYearCourses = preceptorCourses.filter(
+		let thisYearCourses = preceptorCourses.filter(
 			(course) => course.academicYearId === query.academicYearId,
 		);
-		const courses = new Map(thisYearCourses.map((c) => [c.id, c]));
+		if (thisYearCourses.length === 0) {
+			thisYearCourses =
+				(await this.coursePort.getByAcademicYear(query.academicYearId)) ?? [];
+		}
 		if (thisYearCourses.length === 0) {
 			return new DashboardMetricsResponseDto({
 				averageAttendance: 0,
@@ -40,6 +43,7 @@ export class GetDashboardMetricsQueryHandler {
 				weeklyTrend: [],
 			});
 		}
+		const courses = new Map(thisYearCourses.map((c) => [c.id, c]));
 		const snapshots: CourseSnapshot[] = [];
 		const records: AttendanceRecord[] = [];
 		for (const course of thisYearCourses) {

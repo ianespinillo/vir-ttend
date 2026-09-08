@@ -23,13 +23,13 @@ export function useTeacherSubjects({
 				ACADEMIC_ROUTES.subjects,
 				{
 					params: {
-						teacherId,
+						...(teacherId ? { teacherId } : {}),
 						academicYearId,
 					},
 				},
 			);
 			return res.data.data ?? [];
 		},
-		enabled: Boolean(teacherId && academicYearId),
+		enabled: Boolean(academicYearId),
 	});
 }

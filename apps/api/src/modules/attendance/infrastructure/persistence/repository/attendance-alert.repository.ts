@@ -1,4 +1,4 @@
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityRepository, FilterQuery } from '@mikro-orm/postgresql';
 import { PaginatedResponse } from '@repo/common';
 import { AttendanceAlert } from '../../../domain/entities/attendance-alert.entity';
 import { IAttendanceAlertRepository } from '../../../domain/repositories/attendance-alert.repository.interface';
@@ -9,11 +9,19 @@ export class AttendanceAlertRepository
 	extends EntityRepository<AttendanceAlertOrmEntity>
 	implements IAttendanceAlertRepository
 {
-	async countUnSeen(coursesId: string[]): Promise<number> {
-		const orms = await this.find({
-			courseId: { $in: coursesId },
-		});
-		return orms.length;
+	async countUnSeen(coursesId?: string[], tenantId?: string): Promise<number> {
+		const where: FilterQuery<AttendanceAlertOrmEntity> = {
+			seenAt: null,
+		};
+		if (coursesId && coursesId.length > 0) {
+			where.courseId = { $in: coursesId };
+			if (tenantId) where.tenantId = tenantId;
+		} else if (tenantId) {
+			where.tenantId = tenantId;
+		} else {
+			return 0;
+		}
+		return this.count(where);
 	}
 
 	async findById(alertId: string): Promise<AttendanceAlert | null> {
@@ -31,15 +39,32 @@ export class AttendanceAlertRepository
 			perPage?: number;
 		},
 		type?: string,
+		tenantId?: string,
 	): Promise<PaginatedResponse<AttendanceAlert>> {
-		const qb = await this.em.createQueryBuilder(AttendanceAlertOrmEntity);
-		if (type) qb.andWhere({ alertType: type });
-		qb.where({
-			courseId: {
-				$in: courseId,
-			},
-		});
 		const perPage = pageOptions.perPage ?? 10;
+		const qb = this.createQueryBuilder();
+
+		if (tenantId && (!courseId || courseId.length === 0)) {
+			qb.andWhere({ tenantId });
+		} else if (courseId && courseId.length > 0) {
+			qb.andWhere({ courseId: { $in: courseId } });
+			if (tenantId) {
+				qb.andWhere({ tenantId });
+			}
+		} else {
+			return {
+				items: [],
+				total: 0,
+				totalPages: 0,
+				page: pageOptions.page,
+				limit: perPage,
+			};
+		}
+
+		if (type) {
+			qb.andWhere({ alertType: type });
+		}
+
 		const [items, total] = await qb
 			.orderBy({ createdAt: 'DESC' })
 			.limit(perPage)
@@ -75,9 +100,23 @@ export class AttendanceAlertRepository
 		return orm.map(AttendanceAlertMapper.toDomain);
 	}
 
-	async findUnSeen(coursesId: string[]): Promise<AttendanceAlert[]> {
-		const orm = await this.find({
-			courseId: { $in: coursesId },
+	async findUnSeen(
+		coursesId?: string[],
+		tenantId?: string,
+	): Promise<AttendanceAlert[]> {
+		const where: FilterQuery<AttendanceAlertOrmEntity> = {
+			seenAt: null,
+		};
+		if (coursesId && coursesId.length > 0) {
+			where.courseId = { $in: coursesId };
+			if (tenantId) where.tenantId = tenantId;
+		} else if (tenantId) {
+			where.tenantId = tenantId;
+		} else {
+			return [];
+		}
+		const orm = await this.find(where, {
+			orderBy: { createdAt: 'DESC' },
 		});
 		return orm.map(AttendanceAlertMapper.toDomain);
 	}
