@@ -139,6 +139,44 @@ export class AuthController {
 		return new AuthResponseDto(result.user);
 	}
 
+	@Post('exit-tenant')
+	@UseGuards(JwtAuthGuard)
+	@ApiCookieAuth('access_token')
+	@ApiOperation({
+		summary: 'Salir de la impersonación de tenant y volver a Superadmin global',
+		description:
+			'Permite al Superadmin que está operando en un tenant volver a la sesión global con tenantId vacío y rol SUPERADMIN.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Sesión global de Superadmin restaurada.',
+		type: AuthResponseDto,
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	async exitTenant(
+		@Req() req: Request,
+		@Res({ passthrough: true }) res: Response,
+	) {
+		const accessToken = req.cookies?.access_token;
+		if (!accessToken) throw new UnauthorizedException();
+		let userId: string;
+		try {
+			userId = this.tokenService.verifyAccessToken(accessToken).sub;
+		} catch {
+			throw new UnauthorizedException();
+		}
+
+		const session = await this.selectTenantHandler.startGlobalSuperAdminSession(
+			userId,
+			req.cookies['user-agent'] ?? '',
+			req.ip ?? '',
+		);
+
+		this.setSessionCookies(res, session.accessToken, session.refreshToken);
+
+		return new AuthResponseDto(session.user);
+	}
+
 	private setSessionCookies(
 		res: Response,
 		accessToken: string,

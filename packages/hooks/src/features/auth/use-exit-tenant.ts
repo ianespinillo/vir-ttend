@@ -3,25 +3,19 @@ import {
 	type ApiResponse,
 	type CurrentUser,
 	type ErrorResponse,
-	type SelectTenantFormValues,
 } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
-export function useSelectTenant() {
+export function useExitTenant() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		CurrentUser,
-		AxiosError<ErrorResponse>,
-		SelectTenantFormValues
-	>({
-		mutationFn: async (data) => {
+	return useMutation<CurrentUser, AxiosError<ErrorResponse>, void>({
+		mutationFn: async () => {
 			const res = await apiClient.post<ApiResponse<{ user: CurrentUser }>>(
-				AUTH_ROUTES.selectTenant,
-				data,
+				AUTH_ROUTES.exitTenant,
 			);
 			return res.data.data.user;
 		},

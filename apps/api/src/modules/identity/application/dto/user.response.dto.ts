@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IUserResponse, ROLES, Roles } from '@repo/common';
 
 // user.response.dto.ts
@@ -46,4 +46,17 @@ export class UserResponseDto implements IUserResponse {
 		example: false,
 	})
 	mustChangePassword!: boolean;
+
+	@ApiPropertyOptional({
+		description:
+			'Indica si el usuario está operando en modo impersonación dentro del tenant.',
+		example: true,
+	})
+	isImpersonating?: boolean;
+
+	@ApiPropertyOptional({
+		description: 'Nombre del tenant activo.',
+		example: 'Escuela Técnica N°1',
+	})
+	tenantName?: string;
 }

@@ -9,6 +9,8 @@ export interface IUserResponse {
 	role: Roles;
 	tenantId: string;
 	mustChangePassword: boolean;
+	isImpersonating?: boolean;
+	tenantName?: string;
 }
 
 export interface ITenantOption {

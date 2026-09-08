@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { SidebarInset, SidebarProvider } from '../../ui/sidebar';
 import { AlertBadgePlaceholder } from './alert-badge-placeholder';
 import { AppSidebar } from './app-sidebar';
+import { ImpersonationBanner } from './impersonation-banner';
 import type { LayoutLinkComponent } from './link-component';
 import { Topbar } from './topbar';
 import { UserMenu } from './user-menu';
@@ -22,6 +23,10 @@ export interface DashboardLayoutProps {
 	LinkComponent?: LayoutLinkComponent;
 	onNavigate?: (href: string) => void;
 	alertCount?: number;
+	isImpersonating?: boolean;
+	tenantName?: string;
+	onExitImpersonation?: () => void;
+	isExitingImpersonation?: boolean;
 }
 
 export function DashboardLayout({
@@ -35,6 +40,10 @@ export function DashboardLayout({
 	LinkComponent,
 	onNavigate,
 	alertCount,
+	isImpersonating,
+	tenantName,
+	onExitImpersonation,
+	isExitingImpersonation,
 }: DashboardLayoutProps) {
 	const defaultActions = (
 		<>
@@ -58,8 +67,16 @@ export function DashboardLayout({
 				currentPath={currentPath}
 				onNavigate={onNavigate}
 				LinkComponent={LinkComponent}
+				brandName={tenantName || 'Vir-ttend'}
 			/>
 			<SidebarInset className="flex flex-col min-h-screen">
+				{isImpersonating && (
+					<ImpersonationBanner
+						tenantName={tenantName}
+						onExit={onExitImpersonation}
+						isExiting={isExitingImpersonation}
+					/>
+				)}
 				<Topbar title={title} actions={actions ?? defaultActions} />
 				<main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
 					{children}

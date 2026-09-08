@@ -8,4 +8,6 @@ export interface CurrentUser {
 	role: Roles;
 	tenantId: string;
 	mustChangePassword: boolean;
+	isImpersonating?: boolean;
+	tenantName?: string;
 }

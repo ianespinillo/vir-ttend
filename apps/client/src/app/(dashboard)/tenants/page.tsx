@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 
 export default function TenantsRoute() {
 	const router = useRouter();
-	const { user } = useAuth();
+	const { user, setUser } = useAuth();
 	const selectTenant = useSelectTenant();
 
 	return (
@@ -18,7 +18,10 @@ export default function TenantsRoute() {
 				selectTenant.mutate(
 					{ userId: user?.id ?? '', tenantId: tenant.id },
 					{
-						onSuccess: () => router.replace(`${APP_ROUTES.tenants}/${tenant.id}`),
+						onSuccess: (updatedUser) => {
+							setUser(updatedUser);
+							router.replace(APP_ROUTES.dashboard);
+						},
 					},
 				)
 			}

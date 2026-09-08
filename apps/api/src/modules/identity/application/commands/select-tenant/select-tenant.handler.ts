@@ -39,16 +39,31 @@ export class SelectTenantHandler {
 			tenantId,
 		);
 		let role: Roles;
+		let isImpersonating = false;
+		let tenantName: string | undefined;
+
 		if (membership?.isActive) {
 			role = membership.role;
+			const tenant = await this.tenantRepo.findById(tenantId);
+			tenantName = tenant?.name;
 		} else {
 			const memberships = await this.memberRepo.findByUserId(userId);
 			if (memberships.length > 0) throw new Error('Invalid tenant selection');
 			const tenant = await this.tenantRepo.findById(tenantId);
 			if (!tenant) throw new Error('Invalid tenant selection');
-			role = ROLES.SUPERADMIN;
+			role = ROLES.ADMIN;
+			isImpersonating = true;
+			tenantName = tenant.name;
 		}
-		return this.issueSession(userId, tenantId, role, userAgent, ipAddress);
+		return this.issueSession(
+			userId,
+			tenantId,
+			role,
+			userAgent,
+			ipAddress,
+			isImpersonating,
+			tenantName,
+		);
 	}
 
 	async startGlobalSuperAdminSession(
@@ -56,7 +71,15 @@ export class SelectTenantHandler {
 		userAgent: string,
 		ipAddress: string,
 	): Promise<ExpectedReturn> {
-		return this.issueSession(userId, '', ROLES.SUPERADMIN, userAgent, ipAddress);
+		return this.issueSession(
+			userId,
+			'',
+			ROLES.SUPERADMIN,
+			userAgent,
+			ipAddress,
+			false,
+			undefined,
+		);
 	}
 
 	private async issueSession(
@@ -65,6 +88,8 @@ export class SelectTenantHandler {
 		role: Roles,
 		userAgent: string,
 		ipAddress: string,
+		isImpersonating = false,
+		tenantName?: string,
 	): Promise<ExpectedReturn> {
 		const user = await this.userRepo.findById(userId);
 		if (!user) throw new Error('User not found');
@@ -73,6 +98,7 @@ export class SelectTenantHandler {
 			role,
 			tenantId,
 			sub: userId,
+			isImpersonating,
 		});
 		const refToken = this.tokenService.generateRefreshToken();
 		const refTokenHash = this.tokenService.hashToken(refToken);
@@ -96,6 +122,8 @@ export class SelectTenantHandler {
 		dto.mustChangePassword = user.mustChangePassword;
 		dto.role = role;
 		dto.tenantId = tenantId;
+		dto.isImpersonating = isImpersonating;
+		dto.tenantName = tenantName;
 		return {
 			accessToken,
 			refreshToken: refToken,

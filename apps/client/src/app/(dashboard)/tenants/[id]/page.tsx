@@ -23,7 +23,7 @@ export default function TenantDetailRoute() {
 	const params = useParams();
 	const id = params.id as string;
 	const router = useRouter();
-	const { user } = useAuth();
+	const { user, setUser } = useAuth();
 
 	const {
 		data: tenant,
@@ -50,13 +50,16 @@ export default function TenantDetailRoute() {
 							selectTenant.mutate(
 								{ userId: user?.id ?? '', tenantId: tenant.id },
 								{
-									onSuccess: () => router.replace(`${APP_ROUTES.tenants}/${tenant.id}`),
+									onSuccess: (updatedUser) => {
+										setUser(updatedUser);
+										router.replace(APP_ROUTES.dashboard);
+									},
 								},
 							)
 						}
 						disabled={selectTenant.isPending}
 					>
-						Cambiar a este tenant
+						Ingresar como Administrador
 					</Button>
 				}
 			/>

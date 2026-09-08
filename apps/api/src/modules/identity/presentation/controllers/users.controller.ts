@@ -221,6 +221,9 @@ export class UsersController {
 					? user.tenantId
 					: tenantId
 				: user.tenantId;
+		if (!effectiveTenant) {
+			return { total: 0, items: [] };
+		}
 		return this.listUsersByTenantHandler.execute(
 			new ListUsersByTenantQuery(effectiveTenant, +page, +limit, role),
 		);

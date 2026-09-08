@@ -161,10 +161,11 @@ describe('SelectTenantHandler', () => {
 			email: 'test@test.com',
 			tenantId: 'tenant-id',
 			role: ROLES.PRECEPTOR,
+			isImpersonating: false,
 		});
 	});
 
-	it('should generate a SUPERADMIN token when user has no memberships and tenant exists', async () => {
+	it('should generate an ADMIN token with isImpersonating when user has no memberships and selects a tenant', async () => {
 		membershipRepo.findByUserAndTenant.mockResolvedValue(null);
 		membershipRepo.findByUserId.mockResolvedValue([]);
 		tenantRepo.findById.mockResolvedValue(mockTenant);
@@ -186,7 +187,8 @@ describe('SelectTenantHandler', () => {
 			sub: 'user-id',
 			email: 'test@test.com',
 			tenantId: 'tenant-id',
-			role: ROLES.SUPERADMIN,
+			role: ROLES.ADMIN,
+			isImpersonating: true,
 		});
 	});
 
@@ -242,6 +244,7 @@ describe('SelectTenantHandler', () => {
 			email: 'test@test.com',
 			tenantId: '',
 			role: ROLES.SUPERADMIN,
+			isImpersonating: false,
 		});
 		expect(refreshTokenRepo.save).toHaveBeenCalledTimes(1);
 		expect(eventEmitter.emit).toHaveBeenCalledWith(

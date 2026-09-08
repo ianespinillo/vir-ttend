@@ -10,6 +10,7 @@ export * from './lib/keys';
 // auth
 export * from './features/auth/use-login';
 export * from './features/auth/use-select-tenant';
+export * from './features/auth/use-exit-tenant';
 export * from './features/auth/use-current-user';
 export * from './features/auth/use-logout';
 

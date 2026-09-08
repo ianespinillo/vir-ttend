@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ROLES, Roles } from '@repo/common';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -28,13 +29,30 @@ export class RefreshTokenHandler {
 			user.id,
 			entity.tenantId,
 		);
-		if (!member) throw new Error("User doen't belongs to tenant");
-		if (!member.isActive) throw new Error('User not active in tenant');
+		let role: Roles;
+		let isImpersonating = false;
+
+		if (member) {
+			if (!member.isActive) throw new Error('User not active in tenant');
+			role = member.role;
+		} else {
+			const memberships = await this.membersRepo.findByUserId(user.id);
+			if (memberships.length > 0) throw new Error("User doen't belongs to tenant");
+			if (entity.tenantId) {
+				role = ROLES.ADMIN;
+				isImpersonating = true;
+			} else {
+				role = ROLES.SUPERADMIN;
+				isImpersonating = false;
+			}
+		}
+
 		const newAccessToken = this.tokenService.generateAccessToken({
 			sub: user.id,
 			email: user.email,
-			role: member.role,
-			tenantId: member.tenantId,
+			role,
+			tenantId: entity.tenantId,
+			isImpersonating,
 		});
 		return {
 			refreshToken,
