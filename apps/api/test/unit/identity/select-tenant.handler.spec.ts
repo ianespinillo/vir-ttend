@@ -222,4 +222,31 @@ describe('SelectTenantHandler', () => {
 			),
 		).rejects.toThrow('Invalid tenant selection');
 	});
+
+	it('should start a global superadmin session with no tenant', async () => {
+		userRepo.findById.mockResolvedValue(mockUser);
+		tokenService.generateAccessToken.mockReturnValue('access-token');
+		tokenService.generateRefreshToken.mockReturnValue('refresh-token');
+		tokenService.hashToken.mockReturnValue('hashed-refresh-token');
+
+		const result = await handler.startGlobalSuperAdminSession(
+			'user-id',
+			'user-agent',
+			'192.168.22.5',
+		);
+
+		expect(result.accessToken).toBe('access-token');
+		expect(result.refreshToken).toBe('refresh-token');
+		expect(tokenService.generateAccessToken).toHaveBeenCalledWith({
+			sub: 'user-id',
+			email: 'test@test.com',
+			tenantId: '',
+			role: ROLES.SUPERADMIN,
+		});
+		expect(refreshTokenRepo.save).toHaveBeenCalledTimes(1);
+		expect(eventEmitter.emit).toHaveBeenCalledWith(
+			'user.logged-in',
+			expect.any(UserLoggedInEvent),
+		);
+	});
 });

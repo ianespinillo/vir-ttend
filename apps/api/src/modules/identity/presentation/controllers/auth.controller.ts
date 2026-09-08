@@ -66,6 +66,17 @@ export class AuthController {
 		const result = await this.loginHandler.execute(
 			new LoginCommand(dto.email, dto.password),
 		);
+
+		if (result.isSuperAdmin) {
+			const session = await this.selectTenantHandler.startGlobalSuperAdminSession(
+				result.userId,
+				req.cookies['user-agent'] ?? '',
+				req.ip ?? '',
+			);
+			this.setSessionCookies(res, session.accessToken, session.refreshToken);
+			return result; // LoginResponseDto: { isSuperAdmin, tenants }
+		}
+
 		// cookie temporal con userId — httpOnly, dura solo 10 minutos
 		res.cookie('pending_user_id', result.userId, {
 			httpOnly: true,
@@ -120,7 +131,20 @@ export class AuthController {
 			),
 		);
 
-		res.cookie('access_token', result.accessToken, {
+		this.setSessionCookies(res, result.accessToken, result.refreshToken);
+
+		// limpiar cookie temporal
+		res.clearCookie('pending_user_id');
+
+		return new AuthResponseDto(result.user);
+	}
+
+	private setSessionCookies(
+		res: Response,
+		accessToken: string,
+		refreshToken: string,
+	) {
+		res.cookie('access_token', accessToken, {
 			httpOnly: true,
 			// secure: true,
 			sameSite: 'strict',
@@ -128,18 +152,13 @@ export class AuthController {
 			path: '/',
 		});
 
-		res.cookie('refresh_token', result.refreshToken, {
+		res.cookie('refresh_token', refreshToken, {
 			httpOnly: true,
 			// secure: true,
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000,
 			path: '/auth/refresh',
 		});
-
-		// limpiar cookie temporal
-		res.clearCookie('pending_user_id');
-
-		return new AuthResponseDto(result.user);
 	}
 
 	@Post('logout')

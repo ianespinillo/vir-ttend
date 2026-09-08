@@ -22,12 +22,8 @@ export default function LoginPage() {
 		loginMutation.mutate(values, {
 			onSuccess: async (data) => {
 				if (data.isSuperAdmin) {
-					authPendingStore.set({
-						userId: data.userId,
-						tenants: data.tenants,
-						isSuperAdmin: data.isSuperAdmin,
-					});
-					router.push('/select-tenant');
+					await refetchUser();
+					router.replace('/tenants');
 					return;
 				}
 

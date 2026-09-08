@@ -48,6 +48,24 @@ export class SelectTenantHandler {
 			if (!tenant) throw new Error('Invalid tenant selection');
 			role = ROLES.SUPERADMIN;
 		}
+		return this.issueSession(userId, tenantId, role, userAgent, ipAddress);
+	}
+
+	async startGlobalSuperAdminSession(
+		userId: string,
+		userAgent: string,
+		ipAddress: string,
+	): Promise<ExpectedReturn> {
+		return this.issueSession(userId, '', ROLES.SUPERADMIN, userAgent, ipAddress);
+	}
+
+	private async issueSession(
+		userId: string,
+		tenantId: string,
+		role: Roles,
+		userAgent: string,
+		ipAddress: string,
+	): Promise<ExpectedReturn> {
 		const user = await this.userRepo.findById(userId);
 		if (!user) throw new Error('User not found');
 		const accessToken = this.tokenService.generateAccessToken({
