@@ -13,6 +13,8 @@ export const APP_ROUTES = {
 	tenants: '/tenants',
 	users: '/users',
 	settings: '/settings',
+	settingsUsers: '/settings/users',
+	settingsTenant: '/settings/tenant',
 	profile: '/settings/profile',
 } as const;
 

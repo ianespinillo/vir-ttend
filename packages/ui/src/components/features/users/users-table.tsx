@@ -1,6 +1,7 @@
 'use client';
 
 import type { IUserWithMembershipResponse } from '@repo/common';
+import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import {
 	Table,
@@ -12,11 +13,18 @@ import {
 } from '../../../ui/table';
 import { UserStatusBadge } from './user-status-badge';
 
+const ROLE_LABELS: Record<string, string> = {
+	admin: 'Admin',
+	preceptor: 'Preceptor',
+	teacher: 'Docente',
+	superadmin: 'Superadmin',
+};
+
 export interface UsersTableProps {
 	users: IUserWithMembershipResponse[];
 	onEdit?: (user: IUserWithMembershipResponse) => void;
-	onDeactivate?: (userId: string) => void;
-	onChangeRole?: (userId: string, newRole: string) => void;
+	onDeactivate?: (user: IUserWithMembershipResponse) => void;
+	onChangeRole?: (user: IUserWithMembershipResponse) => void;
 }
 
 export function UsersTable({
@@ -40,39 +48,38 @@ export function UsersTable({
 				<TableBody>
 					{users.map((user) => (
 						<TableRow key={user.id}>
-							<TableCell>
+							<TableCell className="font-medium">
 								{user.firstName} {user.lastName}
 							</TableCell>
-							<TableCell>{user.email}</TableCell>
+							<TableCell className="text-muted-foreground">{user.email}</TableCell>
 							<TableCell>
-								<select
-									className="h-8 rounded border border-input bg-background px-2 text-sm"
-									value={user.role}
-									onChange={(e) => onChangeRole?.(user.id, e.target.value)}
-								>
-									<option value="admin">Admin</option>
-									<option value="preceptor">Preceptor</option>
-									<option value="teacher">Teacher</option>
-								</select>
+								<Badge variant="secondary">{ROLE_LABELS[user.role] ?? user.role}</Badge>
 							</TableCell>
 							<TableCell>
 								<UserStatusBadge isActive={user.isActive} />
 							</TableCell>
-							<TableCell className="flex justify-end gap-2">
-								{onEdit && (
-									<Button variant="outline" size="sm" onClick={() => onEdit(user)}>
-										Editar
-									</Button>
-								)}
-								{onDeactivate && user.isActive && (
-									<Button
-										variant="destructive"
-										size="sm"
-										onClick={() => onDeactivate(user.id)}
-									>
-										Desactivar
-									</Button>
-								)}
+							<TableCell>
+								<div className="flex justify-end gap-2">
+									{onChangeRole && (
+										<Button variant="ghost" size="sm" onClick={() => onChangeRole(user)}>
+											Cambiar Rol
+										</Button>
+									)}
+									{onEdit && (
+										<Button variant="outline" size="sm" onClick={() => onEdit(user)}>
+											Editar
+										</Button>
+									)}
+									{onDeactivate && user.isActive && (
+										<Button
+											variant="destructive"
+											size="sm"
+											onClick={() => onDeactivate(user)}
+										>
+											Desactivar
+										</Button>
+									)}
+								</div>
 							</TableCell>
 						</TableRow>
 					))}

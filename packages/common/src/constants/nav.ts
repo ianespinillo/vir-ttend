@@ -78,9 +78,15 @@ export const ALL_NAV_ITEMS: NavItemConfig[] = [
 	},
 	{
 		label: 'Usuarios',
-		href: APP_ROUTES.users,
+		href: APP_ROUTES.settingsUsers,
 		icon: 'UserCog',
 		roles: [ROLES.SUPERADMIN, ROLES.ADMIN],
+	},
+	{
+		label: 'Mi Institución',
+		href: APP_ROUTES.settingsTenant,
+		icon: 'Building2',
+		roles: [ROLES.ADMIN],
 	},
 	{
 		label: 'Perfil',
@@ -122,6 +128,9 @@ export function allowedRolesForPathname(pathname: string): Roles[] {
 	if (pathname.startsWith('/users')) return [ROLES.SUPERADMIN, ROLES.ADMIN];
 	if (pathname.startsWith('/settings/profile'))
 		return [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER];
+	if (pathname.startsWith('/settings/users'))
+		return [ROLES.SUPERADMIN, ROLES.ADMIN];
+	if (pathname.startsWith('/settings/tenant')) return [ROLES.ADMIN];
 	if (pathname.startsWith('/settings')) return [ROLES.ADMIN];
 
 	return [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER];
