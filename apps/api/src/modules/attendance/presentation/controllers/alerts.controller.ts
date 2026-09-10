@@ -99,11 +99,13 @@ export class AlertsController {
 	) {
 		return this.getAlertsHandler.execute(
 			new GetAlertsQuery(
-				user.tenantId,
+				user.sub,
 				page ? Number(page) : 1,
 				limit ? Number(limit) : 20,
 				courseId,
 				alertType,
+				user.role,
+				user.tenantId,
 			),
 		);
 	}
@@ -125,7 +127,7 @@ export class AlertsController {
 	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 	async getUnseenAlerts(@CurrentUser() user: JwtPayload) {
 		return this.getUnseenAlertsHandler.execute(
-			new GetUnseenAlertsQuery(user.tenantId),
+			new GetUnseenAlertsQuery(user.sub, user.role, user.tenantId),
 		);
 	}
 
@@ -146,7 +148,7 @@ export class AlertsController {
 	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 	async getAlertsCount(@CurrentUser() user: JwtPayload) {
 		return this.getAlertsCountHandler.execute(
-			new GetAlertsCountQuery(user.tenantId),
+			new GetAlertsCountQuery(user.sub, user.role, user.tenantId),
 		);
 	}
 

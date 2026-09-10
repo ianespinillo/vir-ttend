@@ -64,6 +64,7 @@ export function DashboardLayout({
 		<SidebarProvider>
 			<AppSidebar
 				role={role}
+				user={user}
 				currentPath={currentPath}
 				onNavigate={onNavigate}
 				LinkComponent={LinkComponent}

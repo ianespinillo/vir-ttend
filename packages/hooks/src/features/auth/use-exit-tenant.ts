@@ -22,7 +22,6 @@ export function useExitTenant() {
 		onSuccess: (user) => {
 			queryClient.clear();
 			queryClient.setQueryData(queryKeys.auth.me, user);
-			queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
 		},
 	});
 }

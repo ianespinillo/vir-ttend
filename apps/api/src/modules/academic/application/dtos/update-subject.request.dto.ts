@@ -15,6 +15,15 @@ export class UpdateSubjectRequestDto {
 	@IsOptional()
 	@ApiPropertyOptional({
 		type: String,
+		description: 'ID del curso al que pertenece la materia.',
+		example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+	})
+	courseId?: string;
+
+	@IsString()
+	@IsOptional()
+	@ApiPropertyOptional({
+		type: String,
 		description: 'Nuevo nombre de la materia.',
 		example: 'Matemática',
 	})

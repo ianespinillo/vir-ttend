@@ -146,10 +146,10 @@ export class User {
 	};
 
 	update(props: UpdateUserProps): void {
-		(Object.keys(props) as (keyof UpdateUserProps)[]).forEach((key) => {
-			const value = props[key];
-			if (value !== undefined) this.fieldSetters[key](value as any);
-		});
+		if (props.firstName !== undefined)
+			this.fieldSetters.firstName(props.firstName);
+		if (props.lastName !== undefined) this.fieldSetters.lastName(props.lastName);
+		if (props.email !== undefined) this.fieldSetters.email(props.email);
 		this._updatedAt = new Date();
 	}
 }

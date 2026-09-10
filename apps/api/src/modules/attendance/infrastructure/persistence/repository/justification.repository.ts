@@ -9,7 +9,7 @@ export class JustificationRepository
 	implements IJustificationRepository
 {
 	async findByRecord(recordId: string): Promise<Justification | null> {
-		const orm = await this.findOne({ id: recordId });
+		const orm = await this.findOne({ attendanceRecordId: recordId });
 		if (!orm) return null;
 		return JustificationMapper.toDomain(orm);
 	}

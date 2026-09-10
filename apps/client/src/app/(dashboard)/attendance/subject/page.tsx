@@ -64,21 +64,14 @@ export default function AttendanceSubjectPage() {
 	const { data: activeYear, isLoading: isLoadingYear } = useActiveAcademicYear();
 
 	const isTeacher = currentUser?.role === 'teacher';
-	const { data: teacherSubjects, isLoading: isLoadingTeacherSubjects } =
+	const { data: subjectsData, isLoading: isLoadingTeacherSubjects } =
 		useTeacherSubjects({
-			teacherId: currentUser?.id,
+			teacherId: isTeacher ? currentUser?.id : undefined,
 			academicYearId: activeYear?.id,
 		});
 
-	const { data: allSubjects, isLoading: isLoadingAllSubjects } = useSubjects();
-
-	const subjects =
-		isTeacher && (teacherSubjects?.length ?? 0) > 0
-			? (teacherSubjects ?? [])
-			: (allSubjects ?? []);
-	const isLoadingSubjects =
-		isLoadingYear ||
-		(isTeacher ? isLoadingTeacherSubjects : isLoadingAllSubjects);
+	const subjects = subjectsData ?? [];
+	const isLoadingSubjects = isLoadingYear || isLoadingTeacherSubjects;
 
 	const selectedSubject = useMemo(() => {
 		return subjects.find((s) => s.id === selectedSubjectId);

@@ -81,31 +81,55 @@ export class SubjectsController {
 	@Get()
 	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER)
 	@ApiOperation({
-		summary: 'Listar materias de un curso',
+		summary: 'Listar materias',
 		description:
-			'Lista las materias del curso indicado. Roles permitidos: admin, preceptor, teacher. ' +
-			'URL de ejemplo: /subjects?courseId=f47ac10b-58cc-4372-a567-0e02b2c3d479. ' +
-			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
+			'Lista las materias del curso indicado (?courseId=...) o las asignadas a un docente en el año académico (?teacherId=...&academicYearId=...). Roles permitidos: admin, preceptor, teacher.',
 	})
 	@ApiQuery({
 		name: 'courseId',
-		required: true,
+		required: false,
 		type: String,
 		description: 'ID del curso.',
 		example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
 	})
+	@ApiQuery({
+		name: 'teacherId',
+		required: false,
+		type: String,
+		description: 'ID del docente.',
+		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+	})
+	@ApiQuery({
+		name: 'academicYearId',
+		required: false,
+		type: String,
+		description: 'ID del año académico.',
+		example: 'c9b1a7f2-8d3e-4f5a-9c6b-0d1e2f3a4b5c',
+	})
 	@ApiResponse({
 		status: 200,
-		description: 'Materias del curso.',
+		description: 'Materias encontradas.',
 		type: [SubjectResponseDto],
 	})
 	@ApiResponse({ status: 400, description: 'Validación falló' })
 	@ApiResponse({ status: 401, description: 'No autenticado' })
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
-	async list(@Query('courseId') courseId: string) {
-		return this.getSubjectsByCourseHandler.execute(
-			new GetSubjectsByCourseQuery(courseId),
-		);
+	async list(
+		@Query('courseId') courseId?: string,
+		@Query('teacherId') teacherId?: string,
+		@Query('academicYearId') academicYearId?: string,
+	) {
+		if (academicYearId) {
+			return this.getTeacherSubjectsQueryHandler.execute(
+				new GetTeacherSubjectsQuery(teacherId, academicYearId),
+			);
+		}
+		if (courseId) {
+			return this.getSubjectsByCourseHandler.execute(
+				new GetSubjectsByCourseQuery(courseId),
+			);
+		}
+		return [];
 	}
 
 	@Put(':id')
@@ -136,49 +160,6 @@ export class SubjectsController {
 				dto.area,
 				dto.weeklyHours,
 			),
-		);
-	}
-	@Get()
-	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER)
-	@ApiOperation({
-		summary: 'Listar materias de un docente',
-		description:
-			'Lista las materias asignadas a un docente en el año académico indicado. Roles permitidos: admin, preceptor, teacher. ' +
-			'URL de ejemplo: /subjects?teacherId=6ba7b810-9dad-11d1-80b4-00c04fd430c8&academicYearId=c9b1a7f2-8d3e-4f5a-9c6b-0d1e2f3a4b5c. ' +
-			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
-	})
-	@ApiQuery({
-		name: 'teacherId',
-		required: true,
-		type: String,
-		description: 'ID del docente.',
-		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
-	})
-	@ApiQuery({
-		name: 'academicYearId',
-		required: true,
-		type: String,
-		description: 'ID del año académico.',
-		example: 'c9b1a7f2-8d3e-4f5a-9c6b-0d1e2f3a4b5c',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Materias del docente.',
-		type: [SubjectResponseDto],
-	})
-	@ApiResponse({ status: 400, description: 'Validación falló' })
-	@ApiResponse({ status: 401, description: 'No autenticado' })
-	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
-	@ApiResponse({
-		status: 404,
-		description: 'No se encontraron cursos para el año académico',
-	})
-	async getSubjects(
-		@Query('teacherId') teacherId: string,
-		@Query('academicYearId') academicYearId: string,
-	) {
-		return this.getTeacherSubjectsQueryHandler.execute(
-			new GetTeacherSubjectsQuery(teacherId, academicYearId),
 		);
 	}
 

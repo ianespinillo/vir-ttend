@@ -9,8 +9,11 @@ export interface IAttendanceAlertRepository {
 		from: Date,
 		to: Date,
 	): Promise<AttendanceAlert[]>;
-	findUnSeen(coursesId: string[]): Promise<AttendanceAlert[]>;
-	countUnSeen(coursesId: string[]): Promise<number>;
+	findUnSeen(
+		coursesId?: string[],
+		tenantId?: string,
+	): Promise<AttendanceAlert[]>;
+	countUnSeen(coursesId?: string[], tenantId?: string): Promise<number>;
 	findByPreceptor(
 		courseId: string[],
 		pageOptions: {
@@ -18,6 +21,7 @@ export interface IAttendanceAlertRepository {
 			perPage?: number;
 		},
 		type?: string,
+		tenantId?: string,
 	): Promise<PaginatedResponse<AttendanceAlert>>;
 
 	save(alert: AttendanceAlert): Promise<void>;

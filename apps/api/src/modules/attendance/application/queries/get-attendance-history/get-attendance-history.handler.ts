@@ -43,8 +43,9 @@ export class GetAttendanceHistoryQueryHandler {
 						`AttendanceRecord ${record.id} is marked as JUSTIFIED but has no justification.`,
 					);
 				result.push(new AttendanceRecordResponseDto(student, record, j));
+			} else {
+				result.push(new AttendanceRecordResponseDto(student, record));
 			}
-			result.push(new AttendanceRecordResponseDto(student, record));
 		}
 		return result;
 	}

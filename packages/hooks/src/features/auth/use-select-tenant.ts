@@ -28,7 +28,6 @@ export function useSelectTenant() {
 		onSuccess: (user) => {
 			queryClient.clear();
 			queryClient.setQueryData(queryKeys.auth.me, user);
-			queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
 		},
 	});
 }

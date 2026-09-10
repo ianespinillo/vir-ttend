@@ -33,6 +33,10 @@ export class SubjectRepository
 		const orms = await this.find({ courseId });
 		return orms.map((orm) => SubjectMapper.toDomain(orm));
 	}
+	async findByCourses(courses: string[]): Promise<Subject[]> {
+		const orms = await this.find({ courseId: { $in: courses } });
+		return orms.map((orm) => SubjectMapper.toDomain(orm));
+	}
 	async save(subject: Subject): Promise<void> {
 		const orm = SubjectMapper.toOrm(subject);
 		this.em.persist(orm);

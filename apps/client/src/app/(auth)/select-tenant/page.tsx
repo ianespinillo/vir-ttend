@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 
 export default function SelectTenantPage() {
 	const selectTenantMutation = useSelectTenant();
-	const { refetchUser } = useAuth();
+	const { setUser, refetchUser } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -40,7 +40,10 @@ export default function SelectTenantPage() {
 			{
 				onSuccess: async () => {
 					authPendingStore.clear();
-					await refetchUser();
+					const result = await refetchUser();
+					if (result.data) {
+						setUser(result.data);
+					}
 					router.replace(redirectUrl);
 				},
 				onError: (err) => {

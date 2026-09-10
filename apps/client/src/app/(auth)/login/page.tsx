@@ -11,7 +11,7 @@ import { useState } from 'react';
 export default function LoginPage() {
 	const loginMutation = useLogin();
 	const selectTenantMutation = useSelectTenant();
-	const { refetchUser } = useAuth();
+	const { setUser, refetchUser } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const redirectUrl = searchParams.get('redirect') || '/dashboard';
@@ -22,7 +22,12 @@ export default function LoginPage() {
 		loginMutation.mutate(values, {
 			onSuccess: async (data) => {
 				if (data.isSuperAdmin) {
-					await refetchUser();
+					// For superadmin: fetch the user and set it in context before navigating
+					// to avoid race condition where dashboard layout sees user===null
+					const result = await refetchUser();
+					if (result.data) {
+						setUser(result.data);
+					}
 					router.replace('/tenants');
 					return;
 				}
@@ -37,7 +42,12 @@ export default function LoginPage() {
 						{ userId: data.userId, tenantId: data.tenants[0].tenantId },
 						{
 							onSuccess: async () => {
-								await refetchUser();
+								// useSelectTenant already sets user in query cache via setQueryData.
+								// We still call refetchUser so the AuthProvider effect can sync the user state.
+								const result = await refetchUser();
+								if (result.data) {
+									setUser(result.data);
+								}
 								router.replace(redirectUrl);
 							},
 							onError: (err) => {

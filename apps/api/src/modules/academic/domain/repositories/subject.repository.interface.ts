@@ -8,5 +8,6 @@ export interface ISubjectRepository {
 		courses: string[],
 	): Promise<Subject[]>;
 	findByCourse(courseId: string): Promise<Subject[]>;
+	findByCourses(courses: string[]): Promise<Subject[]>;
 	save(subject: Subject): Promise<void>;
 }

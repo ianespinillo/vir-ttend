@@ -7,6 +7,8 @@ const nextConfig = {
 	turbopack: {
 		root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'),
 	},
+	output: 'standalone',
+	devIndicators: false,
 };
 
 export default nextConfig;

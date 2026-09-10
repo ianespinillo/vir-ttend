@@ -36,9 +36,41 @@ export class AlertsListResponseDto {
 	})
 	readonly unseen!: number;
 
-	constructor(alerts: AttendanceAlert[], total: number, unseen: number) {
-		this.items = alerts.map((a) => new AlertResponseDto(a));
+	@ApiProperty({
+		description: 'Página actual',
+		example: 1,
+		minimum: 1,
+	})
+	readonly page!: number;
+
+	@ApiProperty({
+		description: 'Cantidad de alertas por página',
+		example: 20,
+		minimum: 1,
+	})
+	readonly limit!: number;
+
+	@ApiProperty({
+		description: 'Cantidad total de páginas',
+		example: 2,
+		minimum: 0,
+	})
+	readonly totalPages!: number;
+
+	constructor(
+		alerts: (AlertResponseDto | AttendanceAlert)[],
+		total: number,
+		unseen: number,
+		page = 1,
+		limit = 20,
+	) {
+		this.items = alerts.map((a) =>
+			a instanceof AlertResponseDto ? a : new AlertResponseDto(a),
+		);
 		this.total = total;
 		this.unseen = unseen;
+		this.page = page;
+		this.limit = limit;
+		this.totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 	}
 }

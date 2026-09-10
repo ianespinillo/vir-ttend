@@ -13,3 +13,4 @@ export * from './subject-selector';
 export * from './late-badge';
 export * from './copy-attendance-modal';
 export * from './subject-attendance-page';
+export * from './review-justifications-modal';

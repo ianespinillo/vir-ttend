@@ -17,10 +17,22 @@ export class AlertResponseDto {
 	readonly studentId!: string;
 
 	@ApiProperty({
+		description: 'Nombre completo del estudiante',
+		example: 'Joaquín Díaz',
+	})
+	readonly studentName!: string;
+
+	@ApiProperty({
 		description: 'Identificador del curso asociado a la alerta',
 		example: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
 	})
 	readonly courseId!: string;
+
+	@ApiProperty({
+		description: 'Nombre del curso asociado a la alerta',
+		example: '6° A',
+	})
+	readonly courseName!: string;
 
 	@ApiProperty({
 		description: 'Identificador del año académico en el que se generó la alerta',
@@ -32,7 +44,7 @@ export class AlertResponseDto {
 		description: 'Nivel de la alerta: warning, critical o exceeded',
 		example: 'warning',
 	})
-	readonly alertType!: AlertType;
+	readonly alertType!: string;
 
 	@ApiProperty({
 		description: 'Porcentaje de inasistencias que disparó la alerta',
@@ -60,12 +72,18 @@ export class AlertResponseDto {
 	})
 	readonly createdAt!: Date;
 
-	constructor(alert: AttendanceAlert) {
+	constructor(alert: AttendanceAlert, studentName = '', courseName = '') {
 		this.id = alert.id;
 		this.studentId = alert.studentId;
+		this.studentName = studentName;
 		this.courseId = alert.courseId;
+		this.courseName = courseName;
 		this.academicYearId = alert.academicYearId;
-		this.alertType = alert.alertType;
+		this.alertType =
+			typeof alert.alertType === 'string'
+				? alert.alertType
+				: ((alert.alertType as { status?: string })?.status ??
+					String(alert.alertType));
 		this.absencePercent = alert.absencePercent;
 		this.seenAt = alert.seenAt ?? null;
 		this.createdAt = alert.createdAt;
