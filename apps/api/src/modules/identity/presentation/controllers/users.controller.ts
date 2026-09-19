@@ -169,9 +169,9 @@ export class UsersController {
 	@Get()
 	@RolesDecorator(ROLES.ADMIN, ROLES.SUPERADMIN)
 	@ApiOperation({
-		summary: 'Listar usuarios del tenant',
+		summary: 'Listar usuarios (del tenant o globales)',
 		description:
-			'Lista los usuarios (con su membresía) del tenant activo, con paginación y filtro opcional por rol. URL: GET /users?role=teacher&page=1&limit=20. Devuelve { total, items: UserWithMembershipResponseDto[] } dentro del envoltorio { success, data, timeStamp }. Roles permitidos: ADMIN y SUPERADMIN.',
+			'Lista los usuarios con paginación y filtros opcionales (rol, búsqueda, tenantId). ADMIN solo puede listar su propio tenant. SUPERADMIN puede listar cualquier tenant o todos los usuarios si no especifica tenantId.',
 	})
 	@ApiQuery({
 		name: 'role',
@@ -179,6 +179,12 @@ export class UsersController {
 		description: 'Filtra por rol del miembro.',
 		enum: ROLES,
 		example: ROLES.TEACHER,
+	})
+	@ApiQuery({
+		name: 'search',
+		required: false,
+		description: 'Búsqueda por nombre, apellido o email.',
+		type: String,
 	})
 	@ApiQuery({
 		name: 'page',
@@ -198,13 +204,13 @@ export class UsersController {
 		name: 'tenantId',
 		required: false,
 		description:
-			'Tenant a listar (solo SUPERADMIN puede listar un tenant distinto al suyo).',
+			'Tenant a listar ("all" o omitido para cross-tenant global; solo SUPERADMIN).',
 		example: '2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a',
 	})
 	@ApiResponse({
 		status: 200,
 		description:
-			'Usuarios del tenant paginados: { total, items: UserWithMembershipResponseDto[] }.',
+			'Usuarios paginados: { total, items: UserWithMembershipResponseDto[] }.',
 	})
 	@ApiResponse({ status: 401, description: 'No autenticado' })
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
@@ -212,20 +218,21 @@ export class UsersController {
 		@CurrentUser() user: JwtPayload,
 		@Query('tenantId') tenantId?: string,
 		@Query('role') role?: Roles,
+		@Query('search') search?: string,
 		@Query('page') page = 1,
 		@Query('limit') limit = 20,
 	) {
 		const effectiveTenant =
 			user.role === ROLES.SUPERADMIN
-				? tenantId === undefined
-					? user.tenantId
+				? !tenantId || tenantId === 'all'
+					? user.tenantId && user.isImpersonating
+						? user.tenantId
+						: undefined
 					: tenantId
 				: user.tenantId;
-		if (!effectiveTenant) {
-			return { total: 0, items: [] };
-		}
+
 		return this.listUsersByTenantHandler.execute(
-			new ListUsersByTenantQuery(effectiveTenant, +page, +limit, role),
+			new ListUsersByTenantQuery(effectiveTenant, +page, +limit, role, search),
 		);
 	}
 

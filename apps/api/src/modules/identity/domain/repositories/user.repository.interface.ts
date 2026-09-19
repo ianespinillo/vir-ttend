@@ -5,4 +5,9 @@ export interface IUserRepository {
 	findById(id: string): Promise<User | null>;
 	save(user: User): Promise<void>;
 	exists(email: string): Promise<boolean>;
+	list(options: {
+		page: number;
+		limit: number;
+		search?: string;
+	}): Promise<{ total: number; items: User[] }>;
 }

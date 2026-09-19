@@ -1,18 +1,21 @@
 'use client';
 
-import type {
-	CreateUserPayload,
-	IUserWithMembershipResponse,
-	Roles,
-	UpdateUserPayload,
+import {
+	type CreateUserPayload,
+	type IUserWithMembershipResponse,
+	ROLES,
+	type Roles,
+	type UpdateUserPayload,
 } from '@repo/common';
 import {
 	useChangeRole,
 	useCreateUser,
 	useDeactivateMembership,
+	useTenants,
 	useUpdateUser,
 	useUsers,
 } from '@repo/hooks';
+import { Building2, Filter, Search } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../../../ui/button';
@@ -22,6 +25,14 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '../../../ui/dialog';
+import { Input } from '../../../ui/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '../../../ui/select';
 import { EmptyState } from '../../shared/empty-state';
 import { ErrorState } from '../../shared/error-state';
 import { LoadingSpinner } from '../../shared/loading-spinner';
@@ -31,8 +42,36 @@ import { DeactivateUserDialog } from './deactivate-user-dialog';
 import { UserForm } from './user-form';
 import { UsersTable } from './users-table';
 
-export function UsersPage() {
-	const { data, isLoading, error } = useUsers();
+export interface UsersPageProps {
+	isSuperAdmin?: boolean;
+	onCreateUser?: () => void;
+	onUserClick?: (user: IUserWithMembershipResponse) => void;
+}
+
+export function UsersPage({
+	isSuperAdmin,
+	onCreateUser,
+	onUserClick,
+}: Readonly<UsersPageProps>) {
+	const [search, setSearch] = useState('');
+	const [role, setRole] = useState<string>('all');
+	const [tenantId, setTenantId] = useState<string>('all');
+	const [page, setPage] = useState(1);
+
+	const { data: tenants } = useTenants();
+
+	const { data, isLoading, error } = useUsers({
+		search: search.trim() || undefined,
+		role: role === 'all' ? undefined : (role as Roles),
+		tenantId: isSuperAdmin
+			? tenantId === 'all'
+				? undefined
+				: tenantId
+			: undefined,
+		page,
+		limit: 15,
+	});
+
 	const createUser = useCreateUser();
 	const updateUser = useUpdateUser();
 	const changeRole = useChangeRole();
@@ -46,9 +85,6 @@ export function UsersPage() {
 		useState<IUserWithMembershipResponse | null>(null);
 	const [deactivateTarget, setDeactivateTarget] =
 		useState<IUserWithMembershipResponse | null>(null);
-
-	if (isLoading) return <LoadingSpinner />;
-	if (error) return <ErrorState description={error.message} />;
 
 	const users = data?.items ?? [];
 
@@ -95,24 +131,111 @@ export function UsersPage() {
 		<div className="space-y-6">
 			<PageHeader
 				title="Usuarios"
-				description="Gestión de usuarios del tenant"
-				actions={<Button onClick={() => setCreateOpen(true)}>Crear Usuario</Button>}
+				description={
+					isSuperAdmin
+						? 'Directorio global de usuarios y membresías de la plataforma'
+						: 'Gestión de usuarios y accesos de la institución'
+				}
+				actions={
+					<Button onClick={onCreateUser ?? (() => setCreateOpen(true))}>
+						Crear Usuario
+					</Button>
+				}
 			/>
 
-			{users.length === 0 ? (
-				<EmptyState
-					icon="Users"
-					title="Sin usuarios"
-					description="Creá el primer usuario para comenzar"
-				/>
-			) : (
-				<UsersTable
-					users={users}
-					onEdit={handleEdit}
-					onDeactivate={handleDeactivate}
-					onChangeRole={handleChangeRole}
-				/>
-			)}
+			{/* Barra de Filtros y Búsqueda */}
+			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+				<div className="relative flex-1">
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					<Input
+						placeholder="Buscar por nombre, apellido o email..."
+						value={search}
+						onChange={(e) => {
+							setSearch(e.target.value);
+							setPage(1);
+						}}
+						className="pl-9"
+					/>
+				</div>
+
+				<div className="flex items-center gap-2">
+					<Select
+						value={role}
+						onValueChange={(val) => {
+							setRole(val);
+							setPage(1);
+						}}
+					>
+						<SelectTrigger className="w-[160px]">
+							<SelectValue placeholder="Rol" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Todos los roles</SelectItem>
+							<SelectItem value={ROLES.ADMIN}>Administrador</SelectItem>
+							<SelectItem value={ROLES.PRECEPTOR}>Preceptor</SelectItem>
+							<SelectItem value={ROLES.TEACHER}>Docente</SelectItem>
+							{isSuperAdmin && (
+								<SelectItem value={ROLES.SUPERADMIN}>Superadmin</SelectItem>
+							)}
+						</SelectContent>
+					</Select>
+
+					{isSuperAdmin && tenants && tenants.length > 0 && (
+						<Select
+							value={tenantId}
+							onValueChange={(val) => {
+								setTenantId(val);
+								setPage(1);
+							}}
+						>
+							<SelectTrigger className="w-[200px]">
+								<SelectValue placeholder="Institución" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">Todas las instituciones</SelectItem>
+								{tenants.map((t) => (
+									<SelectItem key={t.id} value={t.id}>
+										{t.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
+				</div>
+			</div>
+
+			{isLoading && <LoadingSpinner />}
+			{error && <ErrorState description={error.message} />}
+
+			{!isLoading &&
+				!error &&
+				(users.length === 0 ? (
+					<EmptyState
+						icon="Users"
+						title="Sin usuarios"
+						description={
+							search || role !== 'all' || tenantId !== 'all'
+								? 'No se encontraron usuarios que coincidan con los filtros aplicados.'
+								: 'Creá el primer usuario para comenzar.'
+						}
+					/>
+				) : (
+					<UsersTable
+						users={users}
+						showTenant={isSuperAdmin && (!tenantId || tenantId === 'all')}
+						onUserClick={onUserClick}
+						onEdit={handleEdit}
+						onDeactivate={handleDeactivate}
+						onChangeRole={handleChangeRole}
+						pagination={{
+							page,
+							limit: 15,
+							total: data?.total ?? 0,
+							totalPages: data?.totalPages ?? 1,
+							onPageChange: setPage,
+						}}
+					/>
+				))}
 
 			{/* Crear usuario */}
 			<Dialog open={createOpen} onOpenChange={setCreateOpen}>

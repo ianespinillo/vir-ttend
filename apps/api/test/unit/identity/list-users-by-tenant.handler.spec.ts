@@ -8,10 +8,13 @@ import { User } from '../../../src/modules/identity/domain/entities/user.entity'
 import { IUserTenantMembershipRepository } from '../../../src/modules/identity/domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../src/modules/identity/domain/repositories/user.repository.interface';
 
+import { ITenantRepository } from '../../../src/modules/identity/domain/repositories/tenant.repository.interface';
+
 describe('ListUsersByTenantHandler', () => {
 	let handler: ListUsersByTenantHandler;
 	let userRepository: MockProxy<IUserRepository>;
 	let membershipRepository: MockProxy<IUserTenantMembershipRepository>;
+	let tenantRepository: MockProxy<ITenantRepository>;
 
 	const mockMemberships = [
 		UserTenantMembership.reconstitute({
@@ -62,8 +65,13 @@ describe('ListUsersByTenantHandler', () => {
 	beforeEach(() => {
 		userRepository = mock<IUserRepository>();
 		membershipRepository = mock<IUserTenantMembershipRepository>();
+		tenantRepository = mock<ITenantRepository>();
 
-		handler = new ListUsersByTenantHandler(membershipRepository, userRepository);
+		handler = new ListUsersByTenantHandler(
+			membershipRepository,
+			userRepository,
+			tenantRepository,
+		);
 	});
 
 	it('should return hydrated users with membership data', async () => {
@@ -118,5 +126,26 @@ describe('ListUsersByTenantHandler', () => {
 		expect(result.items).toHaveLength(0);
 		expect(result.total).toBe(0);
 		expect(userRepository.findById).not.toHaveBeenCalled();
+	});
+
+	it('should list cross-tenant users when tenantId is undefined', async () => {
+		userRepository.list.mockResolvedValue({
+			items: [mockUsers[0]],
+			total: 1,
+		});
+		membershipRepository.findByUserId.mockResolvedValue([mockMemberships[0]]);
+		tenantRepository.findById.mockResolvedValue(null);
+
+		const result = await handler.execute(
+			new ListUsersByTenantQuery(undefined, 1, 20, undefined, 'ana'),
+		);
+
+		expect(result.total).toBe(1);
+		expect(result.items[0].email).toBe('preceptor@test.com');
+		expect(userRepository.list).toHaveBeenCalledWith({
+			page: 1,
+			limit: 20,
+			search: 'ana',
+		});
 	});
 });

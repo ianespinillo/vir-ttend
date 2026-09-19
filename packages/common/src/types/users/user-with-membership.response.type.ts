@@ -8,5 +8,7 @@ export interface IUserWithMembershipResponse {
 	role: Roles;
 	isActive: boolean;
 	mustChangePassword: boolean;
-	createdAt: string;
+	createdAt?: string;
+	tenantId?: string;
+	tenantName?: string;
 }

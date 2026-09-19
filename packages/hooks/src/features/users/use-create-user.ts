@@ -20,7 +20,7 @@ export function useCreateUser() {
 		},
 		onSuccess: () => {
 			qc.invalidateQueries({
-				queryKey: queryKeys.users.list(),
+				queryKey: ['users', 'list'],
 			});
 		},
 	});
