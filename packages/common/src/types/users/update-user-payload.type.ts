@@ -1,4 +1,5 @@
 export type UpdateUserPayload = {
-	firstName: string;
-	lastName: string;
+	firstName?: string;
+	lastName?: string;
+	email?: string;
 };

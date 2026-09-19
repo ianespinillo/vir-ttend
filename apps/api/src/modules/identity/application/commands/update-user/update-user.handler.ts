@@ -20,11 +20,14 @@ export class UpdateUserHandler {
 			if (takenEmail && takenEmail.id !== command.userId)
 				throw new BadRequestException('Email already in use');
 		}
-		const membership = await this.memberRepo.findByUserAndTenant(
-			command.userId,
-			command.tenantId,
-		);
-		if (!membership) throw new NotFoundException('User not found in this tenant');
+		if (command.tenantId) {
+			const membership = await this.memberRepo.findByUserAndTenant(
+				command.userId,
+				command.tenantId,
+			);
+			if (!membership)
+				throw new NotFoundException('User not found in this tenant');
+		}
 		user.update(command.props);
 		await this.userRepository.save(user);
 	}

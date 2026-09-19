@@ -12,15 +12,29 @@ import {
 	DialogTitle,
 } from '../../../ui/dialog';
 import { Label } from '../../../ui/label';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '../../../ui/select';
 
-const ROLE_OPTIONS: { value: Roles; label: string }[] = [
-	{ value: ROLES.ADMIN, label: 'Admin' },
+const ALL_ROLES: { value: Roles; label: string }[] = [
+	{ value: ROLES.ADMIN, label: 'Administrador' },
+	{ value: ROLES.PRECEPTOR, label: 'Preceptor' },
+	{ value: ROLES.TEACHER, label: 'Docente' },
+	{ value: ROLES.SUPERADMIN, label: 'Superadmin' },
+];
+
+const ADMIN_ALLOWED_ROLES: { value: Roles; label: string }[] = [
 	{ value: ROLES.PRECEPTOR, label: 'Preceptor' },
 	{ value: ROLES.TEACHER, label: 'Docente' },
 ];
 
 export interface ChangeRoleDialogProps {
 	user: IUserWithMembershipResponse | null;
+	isSuperAdmin?: boolean;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onConfirm: (userId: string, newRole: Roles) => void;
@@ -29,6 +43,7 @@ export interface ChangeRoleDialogProps {
 
 export function ChangeRoleDialog({
 	user,
+	isSuperAdmin,
 	open,
 	onOpenChange,
 	onConfirm,
@@ -38,9 +53,9 @@ export function ChangeRoleDialog({
 		user?.role ?? ROLES.PRECEPTOR,
 	);
 
-	// Sync selectedRole when user changes
-	const effectiveRole = user?.role ?? ROLES.PRECEPTOR;
-	const currentSelected = open && user ? selectedRole : effectiveRole;
+	const roleOptions = isSuperAdmin ? ALL_ROLES : ADMIN_ALLOWED_ROLES;
+	const currentSelected =
+		open && user ? selectedRole : (user?.role ?? ROLES.PRECEPTOR);
 
 	function handleOpenChange(value: boolean) {
 		if (value && user) {
@@ -72,18 +87,21 @@ export function ChangeRoleDialog({
 
 						<div className="space-y-2">
 							<Label htmlFor="role-select">Nuevo rol</Label>
-							<select
-								id="role-select"
-								className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+							<Select
 								value={currentSelected}
-								onChange={(e) => setSelectedRole(e.target.value as Roles)}
+								onValueChange={(val) => setSelectedRole(val as Roles)}
 							>
-								{ROLE_OPTIONS.map((opt) => (
-									<option key={opt.value} value={opt.value}>
-										{opt.label}
-									</option>
-								))}
-							</select>
+								<SelectTrigger id="role-select">
+									<SelectValue placeholder="Seleccionar nuevo rol" />
+								</SelectTrigger>
+								<SelectContent>
+									{roleOptions.map((opt) => (
+										<SelectItem key={opt.value} value={opt.value}>
+											{opt.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
 					</div>
 				)}

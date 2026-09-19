@@ -33,6 +33,10 @@ export interface UsersTableProps {
 	showTenant?: boolean;
 	onEdit?: (user: IUserWithMembershipResponse) => void;
 	onDeactivate?: (user: IUserWithMembershipResponse) => void;
+	onToggleStatus?: (
+		user: IUserWithMembershipResponse,
+		targetStatus: boolean,
+	) => void;
 	onChangeRole?: (user: IUserWithMembershipResponse) => void;
 	onUserClick?: (user: IUserWithMembershipResponse) => void;
 	pagination?: UsersTablePagination;
@@ -43,6 +47,7 @@ export function UsersTable({
 	showTenant,
 	onEdit,
 	onDeactivate,
+	onToggleStatus,
 	onChangeRole,
 	onUserClick,
 	pagination,
@@ -120,7 +125,33 @@ export function UsersTable({
 												Editar
 											</Button>
 										)}
-										{onDeactivate && user.isActive && (
+										{onToggleStatus &&
+											(user.isActive ? (
+												<Button
+													variant="ghost"
+													size="sm"
+													className="text-destructive hover:text-destructive hover:bg-destructive/10"
+													onClick={(e) => {
+														e.stopPropagation();
+														onToggleStatus(user, false);
+													}}
+												>
+													Desactivar
+												</Button>
+											) : (
+												<Button
+													variant="outline"
+													size="sm"
+													className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+													onClick={(e) => {
+														e.stopPropagation();
+														onToggleStatus(user, true);
+													}}
+												>
+													Activar
+												</Button>
+											))}
+										{!onToggleStatus && onDeactivate && user.isActive && (
 											<Button
 												variant="destructive"
 												size="sm"

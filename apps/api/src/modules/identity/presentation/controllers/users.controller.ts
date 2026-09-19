@@ -31,6 +31,8 @@ import { CreateUserCommand } from '../../application/commands/create-user/create
 import { CreateUserHandler } from '../../application/commands/create-user/create-user.handler';
 import { DeactivateMembershipCommand } from '../../application/commands/deactivate-membership/deactivate-membership.command';
 import { DeactivateMembershipHandler } from '../../application/commands/deactivate-membership/deactivate-membership.handler';
+import { ToggleUserStatusCommand } from '../../application/commands/toggle-user-status/toggle-user-status.command';
+import { ToggleUserStatusHandler } from '../../application/commands/toggle-user-status/toggle-user-status.handler';
 import { UpdateUserCommand } from '../../application/commands/update-user/update-user.command';
 import { UpdateUserHandler } from '../../application/commands/update-user/update-user.handler';
 import { ChangePasswordRequestDto } from '../../application/dto/change-password.request.dto';
@@ -59,13 +61,22 @@ export class UsersController {
 		private readonly listUsersByTenantHandler: ListUsersByTenantHandler,
 		private readonly changePasswordHandler: ChangePasswordHandler,
 		private readonly updateUserHandler: UpdateUserHandler,
+		private readonly toggleUserStatusHandler: ToggleUserStatusHandler,
 	) {}
 
 	@Post()
+	@RolesDecorator(ROLES.ADMIN, ROLES.SUPERADMIN)
+	@ApiOperation({
+		summary: 'Crear un usuario',
+		description: 'Crea un usuario en el tenant o globalmente si es SUPERADMIN.',
+	})
 	async create(
 		@Body() dto: CreateUserRequestDto,
 		@CurrentUser() user: JwtPayload,
 	) {
+		const targetTenantId =
+			user.role === ROLES.SUPERADMIN ? dto.tenantId || undefined : user.tenantId;
+
 		return this.createUserHandler.execute(
 			new CreateUserCommand(
 				dto.email,
@@ -73,7 +84,7 @@ export class UsersController {
 				dto.lastName,
 				dto.role,
 				user.role,
-				user.tenantId,
+				targetTenantId,
 			),
 		);
 	}
@@ -163,6 +174,28 @@ export class UsersController {
 	) {
 		return this.deactivateMembershipHandler.execute(
 			new DeactivateMembershipCommand(userId, user.tenantId, user.role),
+		);
+	}
+
+	@Patch(':id/status')
+	@RolesDecorator(ROLES.ADMIN, ROLES.SUPERADMIN)
+	@ApiOperation({
+		summary: 'Activar o desactivar usuario / membresía',
+		description: 'Cambia el estado activo o inactivo del usuario.',
+	})
+	async toggleStatus(
+		@Param('id') userId: string,
+		@Body('isActive') isActive: boolean,
+		@CurrentUser() user: JwtPayload,
+		@Body('tenantId') bodyTenantId?: string,
+	) {
+		const targetTenantId =
+			user.role === ROLES.SUPERADMIN
+				? bodyTenantId || user.tenantId
+				: user.tenantId;
+
+		return this.toggleUserStatusHandler.execute(
+			new ToggleUserStatusCommand(userId, targetTenantId, user.role, isActive),
 		);
 	}
 

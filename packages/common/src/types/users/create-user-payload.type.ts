@@ -3,4 +3,5 @@ export type CreateUserPayload = {
 	firstName: string;
 	lastName: string;
 	role?: string;
+	tenantId?: string;
 };

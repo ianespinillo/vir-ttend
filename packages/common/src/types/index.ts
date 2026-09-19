@@ -34,6 +34,7 @@ export * from './tenants/membership-response.type.js';
 export * from './tenants/add-membership-payload.type.js';
 export * from './users/user-with-membership.response.type.js';
 export * from './users/create-user-payload.type.js';
+export * from './users/create-user-response.type.js';
 export * from './users/update-user-payload.type.js';
 export * from './users/change-password-payload.type.js';
 export * from './alerts/alerts-list.response.type.js';

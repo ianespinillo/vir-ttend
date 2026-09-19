@@ -5,11 +5,13 @@ export const createUserSchema = z.object({
 	firstName: z.string().min(1, 'El nombre es obligatorio'),
 	lastName: z.string().min(1, 'El apellido es obligatorio'),
 	role: z.string().optional(),
+	tenantId: z.string().optional(),
 });
 
 export const updateUserSchema = z.object({
 	firstName: z.string().min(1, 'El nombre es obligatorio'),
 	lastName: z.string().min(1, 'El apellido es obligatorio'),
+	email: z.string().email('Email inválido').optional(),
 });
 
 export const changePasswordSchema = z

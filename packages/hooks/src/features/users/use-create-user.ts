@@ -1,18 +1,17 @@
 import {
 	type ApiResponse,
 	type CreateUserPayload,
-	type IUserWithMembershipResponse,
+	type CreateUserResponse,
 	USER_ROUTES,
 } from '@repo/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
-import { queryKeys } from '../../lib/keys';
 
 export function useCreateUser() {
 	const qc = useQueryClient();
-	return useMutation<IUserWithMembershipResponse, Error, CreateUserPayload>({
+	return useMutation<CreateUserResponse, Error, CreateUserPayload>({
 		mutationFn: async (payload) => {
-			const res = await apiClient.post<ApiResponse<IUserWithMembershipResponse>>(
+			const res = await apiClient.post<ApiResponse<CreateUserResponse>>(
 				USER_ROUTES.users,
 				payload,
 			);

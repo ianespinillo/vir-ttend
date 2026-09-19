@@ -10,8 +10,8 @@ import {
 import {
 	useChangeRole,
 	useCreateUser,
-	useDeactivateMembership,
 	useTenants,
+	useToggleUserStatus,
 	useUpdateUser,
 	useUsers,
 } from '@repo/hooks';
@@ -38,7 +38,8 @@ import { ErrorState } from '../../shared/error-state';
 import { LoadingSpinner } from '../../shared/loading-spinner';
 import { PageHeader } from '../../shared/page-header';
 import { ChangeRoleDialog } from './change-role-dialog';
-import { DeactivateUserDialog } from './deactivate-user-dialog';
+import { ToggleUserStatusDialog } from './toggle-user-status-dialog';
+import { UserCredentialsDialog } from './user-credentials-dialog';
 import { UserForm } from './user-form';
 import { UsersTable } from './users-table';
 
@@ -75,7 +76,7 @@ export function UsersPage({
 	const createUser = useCreateUser();
 	const updateUser = useUpdateUser();
 	const changeRole = useChangeRole();
-	const deactivateMembership = useDeactivateMembership();
+	const toggleStatus = useToggleUserStatus();
 
 	// Dialog states
 	const [createOpen, setCreateOpen] = useState(false);
@@ -83,8 +84,18 @@ export function UsersPage({
 		useState<IUserWithMembershipResponse | null>(null);
 	const [changeRoleTarget, setChangeRoleTarget] =
 		useState<IUserWithMembershipResponse | null>(null);
-	const [deactivateTarget, setDeactivateTarget] =
-		useState<IUserWithMembershipResponse | null>(null);
+	const [statusTarget, setStatusTarget] = useState<{
+		user: IUserWithMembershipResponse;
+		targetStatus: boolean;
+	} | null>(null);
+	const [credentialsTarget, setCredentialsTarget] = useState<{
+		firstName: string;
+		lastName: string;
+		email: string;
+		role: string;
+		temporaryPassword?: string;
+		tenantName?: string;
+	} | null>(null);
 
 	const users = data?.items ?? [];
 
@@ -96,8 +107,11 @@ export function UsersPage({
 		setChangeRoleTarget(user);
 	}
 
-	function handleDeactivate(user: IUserWithMembershipResponse) {
-		setDeactivateTarget(user);
+	function handleToggleStatus(
+		user: IUserWithMembershipResponse,
+		targetStatus: boolean,
+	) {
+		setStatusTarget({ user, targetStatus });
 	}
 
 	function handleConfirmChangeRole(userId: string, newRole: Roles) {
@@ -115,16 +129,27 @@ export function UsersPage({
 		);
 	}
 
-	function handleConfirmDeactivate(userId: string) {
-		deactivateMembership.mutate(userId, {
-			onSuccess: () => {
-				setDeactivateTarget(null);
-				toast.success('Membresía desactivada');
+	function handleConfirmToggleStatus(userId: string, targetStatus: boolean) {
+		toggleStatus.mutate(
+			{
+				userId,
+				isActive: targetStatus,
+				tenantId: statusTarget?.user.tenantId,
 			},
-			onError: (err) => {
-				toast.error(err.message ?? 'Error al desactivar el usuario');
+			{
+				onSuccess: () => {
+					setStatusTarget(null);
+					toast.success(
+						targetStatus
+							? 'Usuario reactivado correctamente'
+							: 'Usuario desactivado correctamente',
+					);
+				},
+				onError: (err: Error) => {
+					toast.error(err.message ?? 'Error al actualizar el estado del usuario');
+				},
 			},
-		});
+		);
 	}
 
 	return (
@@ -225,7 +250,7 @@ export function UsersPage({
 						showTenant={isSuperAdmin && (!tenantId || tenantId === 'all')}
 						onUserClick={onUserClick}
 						onEdit={handleEdit}
-						onDeactivate={handleDeactivate}
+						onToggleStatus={handleToggleStatus}
 						onChangeRole={handleChangeRole}
 						pagination={{
 							page,
@@ -237,24 +262,38 @@ export function UsersPage({
 					/>
 				))}
 
-			{/* Crear usuario */}
+			{/* Modal Crear usuario */}
 			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
-				<DialogContent>
+				<DialogContent className="sm:max-w-xl">
 					<DialogHeader>
 						<DialogTitle>Crear Usuario</DialogTitle>
 					</DialogHeader>
 					<UserForm
 						mode="create"
+						isSuperAdmin={isSuperAdmin}
+						tenants={tenants ?? []}
+						selectedTenantId={tenantId !== 'all' ? tenantId : undefined}
+						onCancel={() => setCreateOpen(false)}
 						onSubmit={(formData) => {
 							createUser.mutate(formData as CreateUserPayload, {
-								onSuccess: () => {
+								onSuccess: (created) => {
 									setCreateOpen(false);
-									toast.success('Usuario creado correctamente');
+									setCredentialsTarget({
+										firstName: created.firstName,
+										lastName: created.lastName,
+										email: created.email,
+										role: created.role,
+										temporaryPassword: created.temporaryPassword,
+										tenantName: tenants?.find((t) => t.id === created.tenantId)?.name,
+									});
+									toast.success('Usuario registrado exitosamente');
 								},
 								onError: (err) => {
 									const message =
-										err.message?.includes('409') || err.message?.includes('duplicate')
-											? 'Ya existe un usuario con ese email'
+										err.message?.includes('409') ||
+										err.message?.includes('duplicate') ||
+										err.message?.includes('belongs to tenant')
+											? 'El usuario ya pertenece a esta institución'
 											: (err.message ?? 'Error al crear el usuario');
 									toast.error(message);
 								},
@@ -265,22 +304,28 @@ export function UsersPage({
 				</DialogContent>
 			</Dialog>
 
-			{/* Editar usuario */}
+			{/* Modal Editar usuario */}
 			<Dialog
 				open={Boolean(editTarget)}
 				onOpenChange={(open) => !open && setEditTarget(null)}
 			>
-				<DialogContent>
+				<DialogContent className="sm:max-w-xl">
 					<DialogHeader>
 						<DialogTitle>Editar Usuario</DialogTitle>
 					</DialogHeader>
 					{editTarget && (
 						<UserForm
 							mode="edit"
+							isSuperAdmin={isSuperAdmin}
 							initial={{
 								firstName: editTarget.firstName,
 								lastName: editTarget.lastName,
+								email: editTarget.email,
+								role: editTarget.role,
+								tenantId: editTarget.tenantId,
+								tenantName: editTarget.tenantName,
 							}}
+							onCancel={() => setEditTarget(null)}
 							onSubmit={(formData) => {
 								updateUser.mutate(
 									{
@@ -307,19 +352,28 @@ export function UsersPage({
 			{/* Cambiar rol */}
 			<ChangeRoleDialog
 				user={changeRoleTarget}
+				isSuperAdmin={isSuperAdmin}
 				open={Boolean(changeRoleTarget)}
 				onOpenChange={(open) => !open && setChangeRoleTarget(null)}
 				onConfirm={handleConfirmChangeRole}
 				isLoading={changeRole.isPending}
 			/>
 
-			{/* Desactivar usuario */}
-			<DeactivateUserDialog
-				user={deactivateTarget}
-				open={Boolean(deactivateTarget)}
-				onOpenChange={(open) => !open && setDeactivateTarget(null)}
-				onConfirm={handleConfirmDeactivate}
-				isLoading={deactivateMembership.isPending}
+			{/* Activar / Desactivar usuario */}
+			<ToggleUserStatusDialog
+				user={statusTarget?.user ?? null}
+				targetStatus={statusTarget?.targetStatus ?? false}
+				open={Boolean(statusTarget)}
+				onOpenChange={(open) => !open && setStatusTarget(null)}
+				onConfirm={handleConfirmToggleStatus}
+				isLoading={toggleStatus.isPending}
+			/>
+
+			{/* Modal de credenciales generadas */}
+			<UserCredentialsDialog
+				open={Boolean(credentialsTarget)}
+				onOpenChange={(open) => !open && setCredentialsTarget(null)}
+				credentials={credentialsTarget}
 			/>
 		</div>
 	);

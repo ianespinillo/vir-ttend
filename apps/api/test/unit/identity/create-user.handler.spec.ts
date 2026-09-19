@@ -40,7 +40,7 @@ describe('CreateUserHandler', () => {
 			PasswordHashed.fromHash('hashed123'),
 		);
 
-		await handler.execute(
+		const result = await handler.execute(
 			new CreateUserCommand(
 				'test@test.com',
 				'John',
@@ -57,6 +57,43 @@ describe('CreateUserHandler', () => {
 			'user.created',
 			expect.any(UserCreatedEvent),
 		);
+		expect(result.temporaryPassword).toBeDefined();
+		expect(result.email).toBe('test@test.com');
+	});
+
+	it('should allow SuperAdmin to create a global SuperAdmin without tenantId', async () => {
+		userRepo.findByEmail.mockResolvedValue(null);
+		passwordService.hashPassword.mockResolvedValue(
+			PasswordHashed.fromHash('hashed123'),
+		);
+
+		const result = await handler.execute(
+			new CreateUserCommand(
+				'sa2@test.com',
+				'Super',
+				'Admin2',
+				ROLES.SUPERADMIN,
+				ROLES.SUPERADMIN,
+			),
+		);
+
+		expect(userRepo.save).toHaveBeenCalledTimes(1);
+		expect(membershipRepo.save).not.toHaveBeenCalled();
+		expect(result.temporaryPassword).toBeDefined();
+	});
+
+	it('should throw BadRequestException when non-superadmin role is created without tenantId', async () => {
+		await expect(
+			handler.execute(
+				new CreateUserCommand(
+					'teacher@test.com',
+					'Teacher',
+					'One',
+					ROLES.TEACHER,
+					ROLES.SUPERADMIN,
+				),
+			),
+		).rejects.toThrow('El tenant es obligatorio para este rol');
 	});
 
 	it('should only create membership when user already exists', async () => {
@@ -75,7 +112,7 @@ describe('CreateUserHandler', () => {
 		);
 		membershipRepo.findByUserAndTenant.mockResolvedValue(null);
 
-		await handler.execute(
+		const result = await handler.execute(
 			new CreateUserCommand(
 				'existing@test.com',
 				'John',
@@ -92,6 +129,7 @@ describe('CreateUserHandler', () => {
 			'user.tenant.linked',
 			expect.any(UserTenantLinkedEvent),
 		);
+		expect(result.temporaryPassword).toBeUndefined();
 	});
 
 	it('should throw when user already belongs to tenant', async () => {
