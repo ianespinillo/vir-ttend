@@ -1,6 +1,11 @@
 'use client';
 
-import { type Roles, getNavConfig } from '@repo/common';
+import {
+	APP_ROUTES,
+	type Roles,
+	type Tenant,
+	getNavConfig,
+} from '@repo/common';
 import { School } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import {
@@ -12,6 +17,7 @@ import {
 } from '../../ui/sidebar';
 import type { LayoutLinkComponent } from './link-component';
 import { NavGroup } from './nav-group';
+import { TenantSwitcher } from './tenant-switcher';
 
 export interface AppSidebarProps {
 	role: Roles;
@@ -26,6 +32,12 @@ export interface AppSidebarProps {
 	onNavigate?: (href: string) => void;
 	LinkComponent?: LayoutLinkComponent;
 	brandName?: string;
+	tenants?: Tenant[];
+	currentTenantId?: string;
+	isSuperAdmin?: boolean;
+	isImpersonating?: boolean;
+	onSelectTenant?: (tenantId: string) => void;
+	onExitToGlobal?: () => void;
 }
 
 export function AppSidebar({
@@ -35,25 +47,30 @@ export function AppSidebar({
 	onNavigate,
 	LinkComponent,
 	brandName = 'Vir-ttend',
+	tenants,
+	currentTenantId,
+	isSuperAdmin,
+	isImpersonating,
+	onSelectTenant,
+	onExitToGlobal,
 }: AppSidebarProps) {
 	const groups = getNavConfig(role);
 
 	return (
 		<Sidebar collapsible="icon">
-			<SidebarHeader className="border-b border-sidebar-border px-4 py-3 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-				<div className="flex items-center gap-3 font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
-					<div className="flex size-8 shrink-0 aspect-square items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-						<School className="h-4 w-4" />
-					</div>
-					<div className="flex flex-col group-data-[collapsible=icon]:hidden">
-						<span className="text-base font-bold leading-tight tracking-tight">
-							{brandName}
-						</span>
-						<span className="text-xs text-muted-foreground font-normal">
-							Gestión Escolar
-						</span>
-					</div>
-				</div>
+			<SidebarHeader className="border-b border-sidebar-border px-3 py-2 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+				<TenantSwitcher
+					tenants={tenants}
+					currentTenantId={currentTenantId}
+					brandName={brandName}
+					isSuperAdmin={isSuperAdmin}
+					isImpersonating={isImpersonating}
+					onSelectTenant={onSelectTenant}
+					onExitToGlobal={onExitToGlobal}
+					onManageTenants={
+						isSuperAdmin ? () => onNavigate?.(APP_ROUTES.tenants) : undefined
+					}
+				/>
 			</SidebarHeader>
 			<SidebarContent className="py-2">
 				{groups.map((group, index) => (

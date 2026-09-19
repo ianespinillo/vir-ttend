@@ -15,6 +15,7 @@ export const APP_ROUTES = {
 	settings: '/settings',
 	settingsUsers: '/settings/users',
 	settingsTenant: '/settings/tenant',
+	settingsAcademic: '/settings/academic',
 	profile: '/settings/profile',
 } as const;
 

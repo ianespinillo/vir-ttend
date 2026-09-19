@@ -13,6 +13,7 @@ import {
 	ApiResponse,
 	ApiTags,
 } from '@nestjs/swagger';
+import { ROLES } from '@repo/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { LoginCommand } from '../../application/commands/login/login.command';
@@ -112,11 +113,16 @@ export class AuthController {
 		@Res({ passthrough: true }) res: Response,
 	) {
 		let userId = req.cookies?.pending_user_id;
+		let isCurrentImpersonating = false;
 		if (!userId) {
 			const accessToken = req.cookies?.access_token;
 			if (!accessToken) throw new UnauthorizedException();
 			try {
-				userId = this.tokenService.verifyAccessToken(accessToken).sub;
+				const payload = this.tokenService.verifyAccessToken(accessToken);
+				userId = payload.sub;
+				isCurrentImpersonating = Boolean(
+					payload.isImpersonating || payload.role === ROLES.SUPERADMIN,
+				);
 			} catch {
 				throw new UnauthorizedException();
 			}
@@ -128,6 +134,7 @@ export class AuthController {
 				dto.tenantId,
 				req.cookies['user-agent'] ?? '',
 				req.ip ?? '',
+				isCurrentImpersonating,
 			),
 		);
 

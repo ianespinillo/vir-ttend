@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 import { queryKeys } from '../../lib/keys';
 
-export function useTenants() {
+export function useTenants(options?: { enabled?: boolean }) {
 	return useQuery<Tenant[]>({
 		queryKey: queryKeys.tenants.all(),
 		queryFn: async () => {
@@ -12,5 +12,6 @@ export function useTenants() {
 			);
 			return res.data.data;
 		},
+		enabled: options?.enabled,
 	});
 }

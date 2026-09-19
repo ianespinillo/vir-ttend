@@ -1,6 +1,6 @@
 'use client';
 
-import type { CurrentUser, Roles } from '@repo/common';
+import { type CurrentUser, ROLES, type Roles, type Tenant } from '@repo/common';
 import type { ReactNode } from 'react';
 import { SidebarInset, SidebarProvider } from '../../ui/sidebar';
 import { AlertBadgePlaceholder } from './alert-badge-placeholder';
@@ -25,6 +25,9 @@ export interface DashboardLayoutProps {
 	alertCount?: number;
 	isImpersonating?: boolean;
 	tenantName?: string;
+	currentTenantId?: string;
+	tenants?: Tenant[];
+	onSelectTenant?: (tenantId: string) => void;
 	onExitImpersonation?: () => void;
 	isExitingImpersonation?: boolean;
 }
@@ -42,6 +45,9 @@ export function DashboardLayout({
 	alertCount,
 	isImpersonating,
 	tenantName,
+	currentTenantId,
+	tenants,
+	onSelectTenant,
 	onExitImpersonation,
 	isExitingImpersonation,
 }: DashboardLayoutProps) {
@@ -60,6 +66,10 @@ export function DashboardLayout({
 		</>
 	);
 
+	const activeTenantId =
+		currentTenantId ??
+		('tenantId' in user ? (user.tenantId ?? undefined) : undefined);
+
 	return (
 		<SidebarProvider>
 			<AppSidebar
@@ -69,6 +79,12 @@ export function DashboardLayout({
 				onNavigate={onNavigate}
 				LinkComponent={LinkComponent}
 				brandName={tenantName || 'Vir-ttend'}
+				tenants={tenants}
+				currentTenantId={activeTenantId}
+				isSuperAdmin={role === ROLES.SUPERADMIN || isImpersonating}
+				isImpersonating={isImpersonating}
+				onSelectTenant={onSelectTenant}
+				onExitToGlobal={onExitImpersonation}
 			/>
 			<SidebarInset className="flex flex-col min-h-screen">
 				{isImpersonating && (

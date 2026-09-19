@@ -89,6 +89,12 @@ export const ALL_NAV_ITEMS: NavItemConfig[] = [
 		roles: [ROLES.ADMIN],
 	},
 	{
+		label: 'Ciclo Lectivo',
+		href: APP_ROUTES.settingsAcademic,
+		icon: 'Calendar',
+		roles: [ROLES.ADMIN, ROLES.SUPERADMIN],
+	},
+	{
 		label: 'Perfil',
 		href: APP_ROUTES.profile,
 		icon: 'User',
@@ -132,6 +138,8 @@ export function allowedRolesForPathname(pathname: string): Roles[] {
 	if (pathname.startsWith('/settings/users'))
 		return [ROLES.SUPERADMIN, ROLES.ADMIN];
 	if (pathname.startsWith('/settings/tenant')) return [ROLES.ADMIN];
+	if (pathname.startsWith('/settings/academic'))
+		return [ROLES.ADMIN, ROLES.SUPERADMIN];
 	if (pathname.startsWith('/settings')) return [ROLES.ADMIN];
 
 	return [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER];

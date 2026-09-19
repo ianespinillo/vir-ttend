@@ -57,6 +57,8 @@ function PreceptorDashboardRoute() {
 	return (
 		<PreceptorDashboard
 			preceptorName={user.firstName}
+			role={user.role}
+			tenantName={user.tenantName}
 			courses={dashboard?.courses ?? []}
 			metrics={metrics ?? null}
 			isLoadingCourses={isLoadingCourses}

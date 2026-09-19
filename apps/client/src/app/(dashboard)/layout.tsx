@@ -1,8 +1,14 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/provider';
-import { isPathAllowedForRole } from '@repo/common';
-import { useAlertsCount, useExitTenant, useLogout } from '@repo/hooks';
+import { ROLES, isPathAllowedForRole } from '@repo/common';
+import {
+	useAlertsCount,
+	useExitTenant,
+	useLogout,
+	useSelectTenant,
+	useTenants,
+} from '@repo/hooks';
 import { DashboardLayout, Forbidden, LoadingSpinner } from '@repo/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -14,9 +20,18 @@ export default function AppDashboardLayout({
 	const { user, isAuthenticated, isLoading, clearUser, setUser } = useAuth();
 	const logoutMutation = useLogout();
 	const exitTenantMutation = useExitTenant();
+	const selectTenantMutation = useSelectTenant();
 	const { data: alertsCount } = useAlertsCount();
 	const router = useRouter();
 	const pathname = usePathname();
+
+	const isSuperAdminOrImpersonating = Boolean(
+		user?.role === ROLES.SUPERADMIN || user?.isImpersonating,
+	);
+
+	const { data: tenants } = useTenants({
+		enabled: isSuperAdminOrImpersonating,
+	});
 
 	useEffect(() => {
 		if (!isLoading && (!isAuthenticated || !user)) {
@@ -46,6 +61,18 @@ export default function AppDashboardLayout({
 		});
 	};
 
+	const handleSelectTenant = (tenantId: string) => {
+		selectTenantMutation.mutate(
+			{ userId: user.id, tenantId },
+			{
+				onSuccess: (updatedUser) => {
+					setUser(updatedUser);
+					router.replace('/dashboard');
+				},
+			},
+		);
+	};
+
 	const isAllowed = isPathAllowedForRole(pathname, user.role);
 
 	return (
@@ -59,6 +86,9 @@ export default function AppDashboardLayout({
 			alertCount={alertsCount?.count}
 			isImpersonating={user.isImpersonating}
 			tenantName={user.tenantName}
+			currentTenantId={user.tenantId ?? undefined}
+			tenants={tenants}
+			onSelectTenant={handleSelectTenant}
 			onExitImpersonation={handleExitImpersonation}
 			isExitingImpersonation={exitTenantMutation.isPending}
 		>

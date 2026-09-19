@@ -47,10 +47,16 @@ export class SelectTenantHandler {
 			const tenant = await this.tenantRepo.findById(tenantId);
 			tenantName = tenant?.name;
 		} else {
-			const memberships = await this.memberRepo.findByUserId(userId);
-			if (memberships.length > 0) throw new Error('Invalid tenant selection');
 			const tenant = await this.tenantRepo.findById(tenantId);
-			if (!tenant) throw new Error('Invalid tenant selection');
+			if (!tenant || !tenant.isActive) {
+				throw new Error('Invalid tenant selection');
+			}
+
+			if (!command.isSuperAdminOrImpersonating) {
+				const memberships = await this.memberRepo.findByUserId(userId);
+				if (memberships.length > 0) throw new Error('Invalid tenant selection');
+			}
+
 			role = ROLES.ADMIN;
 			isImpersonating = true;
 			tenantName = tenant.name;

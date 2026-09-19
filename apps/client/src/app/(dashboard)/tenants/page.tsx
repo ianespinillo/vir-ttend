@@ -13,6 +13,7 @@ export default function TenantsRoute() {
 
 	return (
 		<TenantsPage
+			currentTenantId={user?.tenantId}
 			onTenantClick={(tenant) => router.push(`${APP_ROUTES.tenants}/${tenant.id}`)}
 			onEnter={(tenant) =>
 				selectTenant.mutate(

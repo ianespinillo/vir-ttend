@@ -1,6 +1,6 @@
 'use client';
 
-import type { CourseSnapshot, DashboardMetrics } from '@repo/common';
+import type { CourseSnapshot, DashboardMetrics, Roles } from '@repo/common';
 import { Skeleton } from '../../../ui/skeleton';
 import { AttendanceTrendChart } from './attendance-trend-chart';
 import { CoursesOverview } from './courses-overview';
@@ -9,6 +9,8 @@ import { DashboardMetricsSection } from './dashboard-metrics';
 
 export interface PreceptorDashboardProps {
 	preceptorName: string;
+	role?: Roles;
+	tenantName?: string;
 	courses: CourseSnapshot[];
 	metrics: DashboardMetrics | null;
 	isLoadingCourses?: boolean;
@@ -20,6 +22,8 @@ export interface PreceptorDashboardProps {
 
 export function PreceptorDashboard({
 	preceptorName,
+	role,
+	tenantName,
 	courses,
 	metrics,
 	isLoadingCourses,
@@ -32,6 +36,8 @@ export function PreceptorDashboard({
 		<div className="space-y-6">
 			<DashboardHeader
 				preceptorName={preceptorName}
+				role={role}
+				tenantName={tenantName}
 				isRefreshing={isRefreshing}
 				onRefresh={onRefresh}
 			/>
