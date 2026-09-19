@@ -105,6 +105,7 @@ export * from './features/announcements/use-delete-announcement';
 export * from './features/dashboard/use-preceptor-dashboard';
 export * from './features/dashboard/use-course-overview';
 export * from './features/dashboard/use-dashboard-metrics';
+export * from './features/dashboard/use-super-admin-analytics';
 
 // reports
 export * from './features/reports/use-monthly-report';

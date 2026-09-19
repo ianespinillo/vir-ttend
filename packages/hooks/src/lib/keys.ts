@@ -82,5 +82,6 @@ export const queryKeys = {
 			['dashboard', 'course', courseId, date] as const,
 		metrics: (academicYearId: string) =>
 			['dashboard', 'metrics', academicYearId] as const,
+		superAdmin: ['dashboard', 'super-admin'] as const,
 	},
 } as const;

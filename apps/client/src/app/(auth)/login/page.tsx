@@ -28,7 +28,7 @@ export default function LoginPage() {
 					if (result.data) {
 						setUser(result.data);
 					}
-					router.replace('/tenants');
+					router.replace('/dashboard');
 					return;
 				}
 

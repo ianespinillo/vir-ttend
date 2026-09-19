@@ -41,7 +41,7 @@ export default function AppDashboardLayout({
 		exitTenantMutation.mutate(undefined, {
 			onSuccess: (updatedUser) => {
 				setUser(updatedUser);
-				router.replace('/tenants');
+				router.replace('/dashboard');
 			},
 		});
 	};

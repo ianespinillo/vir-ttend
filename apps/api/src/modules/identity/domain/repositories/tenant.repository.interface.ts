@@ -10,4 +10,5 @@ export interface ITenantRepository {
 	findBySubdomain(subdomain: string): Promise<Tenant | null>;
 	save(tenant: Tenant): Promise<void>;
 	list(props: Pagination): Promise<Tenant[]>;
+	listAll(): Promise<Tenant[]>;
 }

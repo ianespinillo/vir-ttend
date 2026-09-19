@@ -6,6 +6,11 @@ export interface FindOptions {
 	limit: number;
 	role?: Roles;
 }
+
+export interface TenantUsersCount {
+	tenantId: string;
+	count: number;
+}
 export interface IUserTenantMembershipRepository {
 	findByUserId(userId: string): Promise<UserTenantMembership[]>;
 	findByTenant(
@@ -16,5 +21,6 @@ export interface IUserTenantMembershipRepository {
 		userId: string,
 		tenantId: string,
 	): Promise<UserTenantMembership | null>;
+	countActiveByTenant(): Promise<TenantUsersCount[]>;
 	save(uTMember: UserTenantMembership): Promise<void>;
 }

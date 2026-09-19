@@ -26,7 +26,7 @@ export const ALL_NAV_ITEMS: NavItemConfig[] = [
 		label: 'Dashboard',
 		href: APP_ROUTES.dashboard,
 		icon: 'LayoutDashboard',
-		roles: [ROLES.ADMIN, ROLES.PRECEPTOR],
+		roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR],
 	},
 	{
 		label: 'Mis Materias',
@@ -107,7 +107,8 @@ export function getNavConfig(role: Roles): NavGroupConfig[] {
 
 export function allowedRolesForPathname(pathname: string): Roles[] {
 	if (pathname.startsWith('/tenants')) return [ROLES.SUPERADMIN];
-	if (pathname === '/dashboard') return [ROLES.ADMIN, ROLES.PRECEPTOR];
+	if (pathname === '/dashboard')
+		return [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/courses')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/students')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/attendance/daily'))

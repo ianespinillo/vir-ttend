@@ -20,6 +20,7 @@ import { ToggleTenantStatusHandler } from './application/commands/toggle-tenant-
 import { UpdateAnnouncementHandler } from './application/commands/update-announcement/update-announcement.handler';
 import { UpdateTenantHandler } from './application/commands/update-tenant/update-tenant.handler';
 import { UpdateUserHandler } from './application/commands/update-user/update-user.handler';
+import { GetAdminAnalyticsHandler } from './application/queries/get-admin-analytics/get-admin-analytics.handler';
 import { GetAnnouncementHandler } from './application/queries/get-announcement/get-announcement.handler';
 import { GetAnnouncementsForUserHandler } from './application/queries/get-announcements-for-user/get-announcements-for-user.handler';
 import { GetAnnouncementsHandler } from './application/queries/get-announcements/get-announcements.handler';
@@ -34,6 +35,7 @@ import { TokenService } from './domain/services/token.service';
 import { JwtStrategy } from './infrastructure/auth/strategies/jwt.startegy';
 import { IdentityEventsModule } from './infrastructure/events/identity.events.module';
 import { IdentityPersistenceModule } from './infrastructure/persistence/identity.persistence.module';
+import { AdminController } from './presentation/controllers/admin.controller';
 import { AnnouncementsController } from './presentation/controllers/announcements.controller';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { TenantsController } from './presentation/controllers/tenants.controller';
@@ -87,6 +89,7 @@ import { UsersController } from './presentation/controllers/users.controller';
 		GetAnnouncementsHandler,
 		GetAnnouncementHandler,
 		GetAnnouncementsForUserHandler,
+		GetAdminAnalyticsHandler,
 
 		// Guards
 		JwtAuthGuard,
@@ -99,6 +102,7 @@ import { UsersController } from './presentation/controllers/users.controller';
 		UsersController,
 		TenantsController,
 		AnnouncementsController,
+		AdminController,
 	],
 })
 export class IdentityModule {}

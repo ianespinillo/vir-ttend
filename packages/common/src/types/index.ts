@@ -22,6 +22,7 @@ export * from './alerts/alerts-count.response.type.js';
 export * from './dashboard/course-snapshot.type.js';
 export * from './dashboard/preceptor-dashboard.response.type.js';
 export * from './dashboard/dashboard-metrics.response.type.js';
+export * from './dashboard/super-admin-analytics.type.js';
 export * from './reports/monthly-report.response.type.js';
 export * from './reports/student-report.response.type.js';
 export * from './reports/course-summary.response.type.js';

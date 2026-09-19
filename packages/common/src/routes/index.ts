@@ -1,4 +1,5 @@
 export * from './academic.routes.js';
+export * from './admin.routes.js';
 export * from './alerts.routes.js';
 export * from './announcement.routes.js';
 export * from './attendance.routes.js';
