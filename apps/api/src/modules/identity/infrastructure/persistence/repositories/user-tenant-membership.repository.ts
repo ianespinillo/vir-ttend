@@ -1,4 +1,4 @@
-import { EntityRepository, raw } from '@mikro-orm/postgresql';
+import { EntityRepository, type FilterQuery, raw } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
 import {
@@ -30,13 +30,14 @@ export class UserTenantMembershipRepository
 		tenantId: string,
 		options: FindOptions,
 	): Promise<{ total: number; items: UserTenantMembership[] }> {
-		const [items, total] = await this.findAndCount(
-			{ role: options.role, tenantId },
-			{
-				limit: options.limit,
-				offset: (options.page - 1) * options.limit,
-			},
-		);
+		const where: FilterQuery<UserTenantMembershipOrmEntity> = { tenantId };
+		if (options.role) {
+			where.role = options.role;
+		}
+		const [items, total] = await this.findAndCount(where, {
+			limit: options.limit,
+			offset: (options.page - 1) * options.limit,
+		});
 		return {
 			total,
 			items: items.map((uT) => UserTenantMembershipMapper.toDomain(uT)),

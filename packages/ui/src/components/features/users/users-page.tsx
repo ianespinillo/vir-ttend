@@ -59,7 +59,7 @@ export function UsersPage({
 	const [tenantId, setTenantId] = useState<string>('all');
 	const [page, setPage] = useState(1);
 
-	const { data: tenants } = useTenants();
+	const { data: tenants } = useTenants({ enabled: isSuperAdmin });
 
 	const { data, isLoading, error } = useUsers({
 		search: search.trim() || undefined,
