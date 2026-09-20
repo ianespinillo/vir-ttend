@@ -91,4 +91,17 @@ describe('Announcements navigation split', () => {
 		expect(hrefs).toContain(APP_ROUTES.meAnnouncements);
 		expect(hrefs).not.toContain(APP_ROUTES.announcements);
 	});
+
+	it('Ciclo Lectivo es visible para ADMIN pero oculto en panel global para SUPERADMIN', () => {
+		const adminHrefs = getNavConfig(ROLES.ADMIN)[0].items.map((i) => i.href);
+		const superAdminHrefs = getNavConfig(ROLES.SUPERADMIN)[0].items.map(
+			(i) => i.href,
+		);
+
+		expect(adminHrefs).toContain(APP_ROUTES.settingsAcademic);
+		expect(superAdminHrefs).not.toContain(APP_ROUTES.settingsAcademic);
+		expect(allowedRolesForPathname(APP_ROUTES.settingsAcademic)).toEqual([
+			ROLES.ADMIN,
+		]);
+	});
 });
