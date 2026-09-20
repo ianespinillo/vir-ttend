@@ -121,6 +121,11 @@ export class User {
 		this._password = newPassword;
 		this._updatedAt = new Date();
 	}
+	resetTemporaryPassword(newPassword: PasswordHashed): void {
+		this._password = newPassword;
+		this._mustChangePassword = true;
+		this._updatedAt = new Date();
+	}
 	activate(): void {
 		this._isActive = true;
 		this._updatedAt = new Date();

@@ -15,6 +15,7 @@ import { LoginHandler } from './application/commands/login/login.handler';
 import { LogoutHandler } from './application/commands/logout/logout.handler';
 import { PublishAnnouncementHandler } from './application/commands/publish-announcement/publish-announcement.handler';
 import { RefreshTokenHandler } from './application/commands/refresh-token/refresh-token.handler';
+import { ResetUserPasswordHandler } from './application/commands/reset-user-password/reset-user-password.handler';
 import { SelectTenantHandler } from './application/commands/select-tenant/select-tenant.handler';
 import { ToggleTenantStatusHandler } from './application/commands/toggle-tenant-status/toggle-tenant-status.handler';
 import { ToggleUserStatusHandler } from './application/commands/toggle-user-status/toggle-user-status.handler';
@@ -74,6 +75,7 @@ import { UsersController } from './presentation/controllers/users.controller';
 		ToggleTenantStatusHandler,
 		ToggleUserStatusHandler,
 		UpdateTenantHandler,
+		ResetUserPasswordHandler,
 		CreateAnnouncementHandler,
 		UpdateAnnouncementHandler,
 		PublishAnnouncementHandler,

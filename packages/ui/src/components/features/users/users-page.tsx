@@ -10,6 +10,7 @@ import {
 import {
 	useChangeRole,
 	useCreateUser,
+	useResetUserPassword,
 	useTenants,
 	useToggleUserStatus,
 	useUpdateUser,
@@ -77,6 +78,7 @@ export function UsersPage({
 	const updateUser = useUpdateUser();
 	const changeRole = useChangeRole();
 	const toggleStatus = useToggleUserStatus();
+	const resetPassword = useResetUserPassword();
 
 	// Dialog states
 	const [createOpen, setCreateOpen] = useState(false);
@@ -147,6 +149,28 @@ export function UsersPage({
 				},
 				onError: (err: Error) => {
 					toast.error(err.message ?? 'Error al actualizar el estado del usuario');
+				},
+			},
+		);
+	}
+
+	function handleResetPassword(user: IUserWithMembershipResponse) {
+		resetPassword.mutate(
+			{ userId: user.id, tenantId: user.tenantId },
+			{
+				onSuccess: (res) => {
+					setCredentialsTarget({
+						firstName: res.firstName,
+						lastName: res.lastName,
+						email: res.email,
+						role: user.role,
+						temporaryPassword: res.temporaryPassword,
+						tenantName: user.tenantName,
+					});
+					toast.success('Contraseña restablecida correctamente');
+				},
+				onError: (err) => {
+					toast.error(err.message ?? 'Error al restablecer la contraseña');
 				},
 			},
 		);
@@ -252,6 +276,7 @@ export function UsersPage({
 						onEdit={handleEdit}
 						onToggleStatus={handleToggleStatus}
 						onChangeRole={handleChangeRole}
+						onResetPassword={handleResetPassword}
 						pagination={{
 							page,
 							limit: 15,

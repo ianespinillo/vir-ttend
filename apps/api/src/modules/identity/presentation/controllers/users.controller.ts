@@ -31,6 +31,8 @@ import { CreateUserCommand } from '../../application/commands/create-user/create
 import { CreateUserHandler } from '../../application/commands/create-user/create-user.handler';
 import { DeactivateMembershipCommand } from '../../application/commands/deactivate-membership/deactivate-membership.command';
 import { DeactivateMembershipHandler } from '../../application/commands/deactivate-membership/deactivate-membership.handler';
+import { ResetUserPasswordCommand } from '../../application/commands/reset-user-password/reset-user-password.command';
+import { ResetUserPasswordHandler } from '../../application/commands/reset-user-password/reset-user-password.handler';
 import { ToggleUserStatusCommand } from '../../application/commands/toggle-user-status/toggle-user-status.command';
 import { ToggleUserStatusHandler } from '../../application/commands/toggle-user-status/toggle-user-status.handler';
 import { UpdateUserCommand } from '../../application/commands/update-user/update-user.command';
@@ -62,6 +64,7 @@ export class UsersController {
 		private readonly changePasswordHandler: ChangePasswordHandler,
 		private readonly updateUserHandler: UpdateUserHandler,
 		private readonly toggleUserStatusHandler: ToggleUserStatusHandler,
+		private readonly resetUserPasswordHandler: ResetUserPasswordHandler,
 	) {}
 
 	@Post()
@@ -196,6 +199,28 @@ export class UsersController {
 
 		return this.toggleUserStatusHandler.execute(
 			new ToggleUserStatusCommand(userId, targetTenantId, user.role, isActive),
+		);
+	}
+
+	@Post(':id/reset-password')
+	@RolesDecorator(ROLES.ADMIN, ROLES.SUPERADMIN)
+	@ApiOperation({
+		summary: 'Restablecer contraseña de un usuario',
+		description:
+			'Genera una nueva contraseña temporal para el usuario y marca mustChangePassword en true.',
+	})
+	async resetPassword(
+		@Param('id') userId: string,
+		@CurrentUser() user: JwtPayload,
+		@Body('tenantId') bodyTenantId?: string,
+	) {
+		const targetTenantId =
+			user.role === ROLES.SUPERADMIN
+				? bodyTenantId || user.tenantId
+				: user.tenantId;
+
+		return this.resetUserPasswordHandler.execute(
+			new ResetUserPasswordCommand(userId, user.role, targetTenantId),
 		);
 	}
 

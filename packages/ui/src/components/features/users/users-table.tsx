@@ -38,6 +38,7 @@ export interface UsersTableProps {
 		targetStatus: boolean,
 	) => void;
 	onChangeRole?: (user: IUserWithMembershipResponse) => void;
+	onResetPassword?: (user: IUserWithMembershipResponse) => void;
 	onUserClick?: (user: IUserWithMembershipResponse) => void;
 	pagination?: UsersTablePagination;
 }
@@ -49,6 +50,7 @@ export function UsersTable({
 	onDeactivate,
 	onToggleStatus,
 	onChangeRole,
+	onResetPassword,
 	onUserClick,
 	pagination,
 }: Readonly<UsersTableProps>) {
@@ -123,6 +125,19 @@ export function UsersTable({
 												}}
 											>
 												Editar
+											</Button>
+										)}
+										{onResetPassword && (
+											<Button
+												variant="ghost"
+												size="sm"
+												className="text-muted-foreground hover:text-foreground"
+												onClick={(e) => {
+													e.stopPropagation();
+													onResetPassword(user);
+												}}
+											>
+												Restablecer Clave
 											</Button>
 										)}
 										{onToggleStatus &&

@@ -117,11 +117,12 @@ export class TenantsController {
 	}
 
 	@Get(':id')
+	@RolesDecorator(ROLES.SUPERADMIN, ROLES.ADMIN)
 	@UseGuards(TenantGuard)
 	@ApiOperation({
 		summary: 'Obtener un tenant',
 		description:
-			'Devuelve los datos de un tenant por id. Además del JWT se aplica TenantGuard. URL: GET /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. La respuesta exitosa se envuelve en { success, data: TenantResponseDto, timeStamp }. Roles permitidos: SUPERADMIN.',
+			'Devuelve los datos de un tenant por id. Además del JWT se aplica TenantGuard. URL: GET /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. La respuesta exitosa se envuelve en { success, data: TenantResponseDto, timeStamp }. Roles permitidos: SUPERADMIN, ADMIN.',
 	})
 	@ApiParam({
 		name: 'id',
@@ -141,11 +142,12 @@ export class TenantsController {
 	}
 
 	@Put(':id')
+	@RolesDecorator(ROLES.SUPERADMIN, ROLES.ADMIN)
 	@UseGuards(TenantGuard)
 	@ApiOperation({
 		summary: 'Actualizar un tenant',
 		description:
-			'Actualiza el nombre y/o el email de contacto de un tenant. Además del JWT se aplica TenantGuard. URL: PUT /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. Body de ejemplo: { "name": "Escuela Técnica N°1 - Turno Mañana", "contactEmail": "nuevo@tec1.edu.ar" }. La respuesta no devuelve datos (data es null). Roles permitidos: SUPERADMIN.',
+			'Actualiza el nombre y/o el email de contacto de un tenant. Además del JWT se aplica TenantGuard. URL: PUT /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. Body de ejemplo: { "name": "Escuela Técnica N°1 - Turno Mañana", "contactEmail": "nuevo@tec1.edu.ar" }. La respuesta no devuelve datos (data es null). Roles permitidos: SUPERADMIN, ADMIN.',
 	})
 	@ApiParam({
 		name: 'id',

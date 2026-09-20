@@ -32,6 +32,7 @@ export * from './features/users/use-toggle-user-status';
 export * from './features/users/use-create-user';
 export * from './features/users/use-update-user';
 export * from './features/users/use-change-password';
+export * from './features/users/use-reset-user-password';
 export * from './features/users/use-profile';
 
 // academic
