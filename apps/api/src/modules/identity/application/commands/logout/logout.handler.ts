@@ -19,4 +19,8 @@ export class LogoutHandler {
 		entity.revoke();
 		await this.refreshTokenRepository.save(entity);
 	}
+
+	async revokeAllForUser(userId: string): Promise<void> {
+		await this.refreshTokenRepository.revokeAllByUserId(userId);
+	}
 }

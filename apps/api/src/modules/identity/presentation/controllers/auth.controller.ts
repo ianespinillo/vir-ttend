@@ -202,8 +202,12 @@ export class AuthController {
 			// secure: true,
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000,
-			path: '/auth/refresh',
+			// Opción A: path '/' para que el navegador envíe la cookie a /auth/logout
+			path: '/',
 		});
+
+		// Limpieza legacy: cookies viejas creadas con path '/auth/refresh' (ya no aplica)
+		res.clearCookie('refresh_token', { path: '/auth/refresh' });
 	}
 
 	@Post('logout')

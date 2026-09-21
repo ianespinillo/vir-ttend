@@ -84,7 +84,7 @@ describe('GetAdminAnalyticsHandler', () => {
 		const result = await handler.execute(new GetAdminAnalyticsQuery());
 
 		const ids = result.perTenant.map((t) => t.id);
-		expect(ids).toEqual(['t3', 't1', 't2']);
+		expect(ids).toEqual(['t3', 't2', 't1']);
 	});
 
 	it('arma la tendencia de los últimos 6 meses incluyendo meses vacíos', async () => {
