@@ -29,12 +29,15 @@ jobs:
         
       - name: Pre-build
         run: pnpm build --filter=@repo/*
-        
-      - name: Check transpiler
-        run: pnpm ts:check
-        
-      - name: Check eslint
+
+      - name: Lint (Biome)
         run: pnpm lint:check
 
-      - name: Check tests
-        run: pnpm run test  
+      - name: Type check
+        run: pnpm ts:check
+
+      - name: Tests
+        run: pnpm run test
+
+      - name: Build
+        run: pnpm build

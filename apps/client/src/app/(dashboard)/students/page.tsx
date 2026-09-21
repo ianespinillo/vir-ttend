@@ -9,7 +9,7 @@ import {
 	useStudents,
 	useTransferStudent,
 } from '@repo/hooks';
-import { type StudentFiltersState, StudentsPage } from '@repo/ui';
+import { ErrorState, type StudentFiltersState, StudentsPage } from '@repo/ui';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
 
