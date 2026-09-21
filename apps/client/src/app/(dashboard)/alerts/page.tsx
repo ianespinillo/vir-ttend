@@ -2,7 +2,7 @@
 
 import type { Alert } from '@repo/common';
 import { useAlerts, useMarkAlertSeen } from '@repo/hooks';
-import { AlertsList, PageHeader } from '@repo/ui';
+import { AlertsList, ErrorState, PageHeader } from '@repo/ui';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
@@ -10,7 +10,7 @@ export default function AlertsPage() {
 	const router = useRouter();
 	const [page, setPage] = useState(1);
 
-	const { data: alertsData, isLoading } = useAlerts({ page });
+	const { data: alertsData, isLoading, isError, refetch } = useAlerts({ page });
 	const markSeenMutation = useMarkAlertSeen();
 
 	const handleMarkSeen = useCallback(
@@ -38,14 +38,22 @@ export default function AlertsPage() {
 				description="Alertas de inasistencia y riesgo académico"
 			/>
 
-			<AlertsList
-				alertsData={alertsData ?? null}
-				isLoading={isLoading}
-				isMarking={markSeenMutation.isPending}
-				onMarkSeen={handleMarkSeen}
-				onAlertClick={handleAlertClick}
-				onPageChange={handlePageChange}
-			/>
+			{isError ? (
+				<ErrorState
+					title="Error al cargar alertas"
+					description="No se pudieron obtener las alertas. Intentá nuevamente."
+					onRetry={() => refetch()}
+				/>
+			) : (
+				<AlertsList
+					alertsData={alertsData ?? null}
+					isLoading={isLoading}
+					isMarking={markSeenMutation.isPending}
+					onMarkSeen={handleMarkSeen}
+					onAlertClick={handleAlertClick}
+					onPageChange={handlePageChange}
+				/>
+			)}
 		</div>
 	);
 }
