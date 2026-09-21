@@ -13,6 +13,7 @@ import {
 	ApiResponse,
 	ApiTags,
 } from '@nestjs/swagger';
+import { ROLES } from '@repo/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { LoginCommand } from '../../application/commands/login/login.command';
@@ -27,6 +28,7 @@ import { AuthResponseDto } from '../../application/dto/auth.response.dto';
 import { LoginRequestDto } from '../../application/dto/login.request.dto';
 import { LoginResponseDto } from '../../application/dto/login.response.dto';
 import { SelectTenantRequestDto } from '../../application/dto/select-tenant.request.dto';
+import { TokenService } from '../../domain/services/token.service';
 
 // auth.controller.ts
 @Controller('auth')
@@ -37,6 +39,7 @@ export class AuthController {
 		private readonly selectTenantHandler: SelectTenantHandler,
 		private readonly logoutHandler: LogoutHandler,
 		private readonly refreshTokenHandler: RefreshTokenHandler,
+		private readonly tokenService: TokenService,
 	) {}
 
 	@Post('login')
@@ -64,6 +67,17 @@ export class AuthController {
 		const result = await this.loginHandler.execute(
 			new LoginCommand(dto.email, dto.password),
 		);
+
+		if (result.isSuperAdmin) {
+			const session = await this.selectTenantHandler.startGlobalSuperAdminSession(
+				result.userId,
+				req.cookies['user-agent'] ?? '',
+				req.ip ?? '',
+			);
+			this.setSessionCookies(res, session.accessToken, session.refreshToken);
+			return result; // LoginResponseDto: { isSuperAdmin, tenants }
+		}
+
 		// cookie temporal con userId — httpOnly, dura solo 10 minutos
 		res.cookie('pending_user_id', result.userId, {
 			httpOnly: true,
@@ -79,7 +93,7 @@ export class AuthController {
 	@ApiOperation({
 		summary: 'Seleccionar tenant y obtener sesión',
 		description:
-			'Paso 2 del flujo de autenticación. Requiere la cookie httpOnly pending_user_id seteada por POST /auth/login; el usuario se obtiene de esa cookie (el campo userId del body no se usa). Selecciona el tenant y setea las cookies httpOnly access_token (15 minutos, path /) y refresh_token (7 días, path /auth/refresh). Body de ejemplo: { "tenantId": "2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a" }. A partir de acá, los endpoints autenticados usan la cookie access_token (documentados con @ApiCookieAuth). La respuesta exitosa se envuelve en { success, data: AuthResponseDto, timeStamp }. Los errores se envuelven en { statusCode, timestamp, path, method, message, error }. Roles permitidos: ninguno (público, requiere cookie pending_user_id).',
+			'Paso 2 del flujo de autenticación (login) o cambio de tenant para una sesión ya iniciada. El usuario se resuelve: 1) de la cookie httpOnly pending_user_id seteada por POST /auth/login (flujo de login, el campo userId del body no se usa); 2) si no hay cookie pendiente pero sí una sesión válida (cookie access_token), del campo sub del JWT (flujo de cambio de tenant, ej. superadmin conmutando entre instituciones). Selecciona el tenant y setea las cookies httpOnly access_token (15 minutos, path /) y refresh_token (7 días, path /auth/refresh). Body de ejemplo: { "tenantId": "2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a" }. A partir de acá, los endpoints autenticados usan la cookie access_token (documentados con @ApiCookieAuth). La respuesta exitosa se envuelve en { success, data: AuthResponseDto, timeStamp }. Los errores se envuelven en { statusCode, timestamp, path, method, message, error }. Roles permitidos: ninguno (público; requiere cookie pending_user_id o sesión access_token válida).',
 	})
 	@ApiResponse({
 		status: 201,
@@ -91,15 +105,28 @@ export class AuthController {
 	@ApiResponse({
 		status: 401,
 		description:
-			'Cookie pending_user_id ausente o expirada, o selección de tenant inválida',
+			'Cookie pending_user_id ausente o expirada y sin sesión access_token válida, o selección de tenant inválida',
 	})
 	async selectTenant(
 		@Body() dto: SelectTenantRequestDto, // solo tenantId
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		const userId = req.cookies?.pending_user_id;
-		if (!userId) throw new UnauthorizedException();
+		let userId = req.cookies?.pending_user_id;
+		let isCurrentImpersonating = false;
+		if (!userId) {
+			const accessToken = req.cookies?.access_token;
+			if (!accessToken) throw new UnauthorizedException();
+			try {
+				const payload = this.tokenService.verifyAccessToken(accessToken);
+				userId = payload.sub;
+				isCurrentImpersonating = Boolean(
+					payload.isImpersonating || payload.role === ROLES.SUPERADMIN,
+				);
+			} catch {
+				throw new UnauthorizedException();
+			}
+		}
 
 		const result = await this.selectTenantHandler.execute(
 			new SelectTenantCommand(
@@ -107,10 +134,62 @@ export class AuthController {
 				dto.tenantId,
 				req.cookies['user-agent'] ?? '',
 				req.ip ?? '',
+				isCurrentImpersonating,
 			),
 		);
 
-		res.cookie('access_token', result.accessToken, {
+		this.setSessionCookies(res, result.accessToken, result.refreshToken);
+
+		// limpiar cookie temporal
+		res.clearCookie('pending_user_id');
+
+		return new AuthResponseDto(result.user);
+	}
+
+	@Post('exit-tenant')
+	@UseGuards(JwtAuthGuard)
+	@ApiCookieAuth('access_token')
+	@ApiOperation({
+		summary: 'Salir de la impersonación de tenant y volver a Superadmin global',
+		description:
+			'Permite al Superadmin que está operando en un tenant volver a la sesión global con tenantId vacío y rol SUPERADMIN.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Sesión global de Superadmin restaurada.',
+		type: AuthResponseDto,
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	async exitTenant(
+		@Req() req: Request,
+		@Res({ passthrough: true }) res: Response,
+	) {
+		const accessToken = req.cookies?.access_token;
+		if (!accessToken) throw new UnauthorizedException();
+		let userId: string;
+		try {
+			userId = this.tokenService.verifyAccessToken(accessToken).sub;
+		} catch {
+			throw new UnauthorizedException();
+		}
+
+		const session = await this.selectTenantHandler.startGlobalSuperAdminSession(
+			userId,
+			req.cookies['user-agent'] ?? '',
+			req.ip ?? '',
+		);
+
+		this.setSessionCookies(res, session.accessToken, session.refreshToken);
+
+		return new AuthResponseDto(session.user);
+	}
+
+	private setSessionCookies(
+		res: Response,
+		accessToken: string,
+		refreshToken: string,
+	) {
+		res.cookie('access_token', accessToken, {
 			httpOnly: true,
 			// secure: true,
 			sameSite: 'strict',
@@ -118,18 +197,17 @@ export class AuthController {
 			path: '/',
 		});
 
-		res.cookie('refresh_token', result.refreshToken, {
+		res.cookie('refresh_token', refreshToken, {
 			httpOnly: true,
 			// secure: true,
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000,
-			path: '/auth/refresh',
+			// Opción A: path '/' para que el navegador envíe la cookie a /auth/logout
+			path: '/',
 		});
 
-		// limpiar cookie temporal
-		res.clearCookie('pending_user_id');
-
-		return new AuthResponseDto(result.user);
+		// Limpieza legacy: cookies viejas creadas con path '/auth/refresh' (ya no aplica)
+		res.clearCookie('refresh_token', { path: '/auth/refresh' });
 	}
 
 	@Post('logout')

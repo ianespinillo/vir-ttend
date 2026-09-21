@@ -56,6 +56,10 @@ export class UserTenantMembership {
 	static reconstitute(props: ConstructorProps): UserTenantMembership {
 		return new UserTenantMembership(props);
 	}
+	activate(): void {
+		this._isActive = true;
+		this._updatedAt = new Date();
+	}
 	deactivate(): void {
 		this._isActive = false;
 		this._updatedAt = new Date();

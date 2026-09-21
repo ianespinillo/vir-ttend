@@ -12,6 +12,8 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 
+type RefetchFn = ReturnType<typeof useCurrentUser>['refetch'];
+
 interface AuthContextValue {
 	user: CurrentUser | null;
 	tenant: TenantOption | null;
@@ -19,7 +21,7 @@ interface AuthContextValue {
 	isLoading: boolean;
 	setUser: (user: CurrentUser | null) => void;
 	clearUser: () => void;
-	refetchUser: () => void;
+	refetchUser: RefetchFn;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);

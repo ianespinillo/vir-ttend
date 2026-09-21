@@ -1,10 +1,11 @@
 'use client';
 
-import type { CurrentUser, Roles } from '@repo/common';
+import { type CurrentUser, ROLES, type Roles, type Tenant } from '@repo/common';
 import type { ReactNode } from 'react';
 import { SidebarInset, SidebarProvider } from '../../ui/sidebar';
 import { AlertBadgePlaceholder } from './alert-badge-placeholder';
 import { AppSidebar } from './app-sidebar';
+import { ImpersonationBanner } from './impersonation-banner';
 import type { LayoutLinkComponent } from './link-component';
 import { Topbar } from './topbar';
 import { UserMenu } from './user-menu';
@@ -22,6 +23,13 @@ export interface DashboardLayoutProps {
 	LinkComponent?: LayoutLinkComponent;
 	onNavigate?: (href: string) => void;
 	alertCount?: number;
+	isImpersonating?: boolean;
+	tenantName?: string;
+	currentTenantId?: string;
+	tenants?: Tenant[];
+	onSelectTenant?: (tenantId: string) => void;
+	onExitImpersonation?: () => void;
+	isExitingImpersonation?: boolean;
 }
 
 export function DashboardLayout({
@@ -35,6 +43,13 @@ export function DashboardLayout({
 	LinkComponent,
 	onNavigate,
 	alertCount,
+	isImpersonating,
+	tenantName,
+	currentTenantId,
+	tenants,
+	onSelectTenant,
+	onExitImpersonation,
+	isExitingImpersonation,
 }: DashboardLayoutProps) {
 	const defaultActions = (
 		<>
@@ -51,6 +66,10 @@ export function DashboardLayout({
 		</>
 	);
 
+	const activeTenantId =
+		currentTenantId ??
+		('tenantId' in user ? (user.tenantId ?? undefined) : undefined);
+
 	return (
 		<SidebarProvider>
 			<AppSidebar
@@ -59,8 +78,22 @@ export function DashboardLayout({
 				currentPath={currentPath}
 				onNavigate={onNavigate}
 				LinkComponent={LinkComponent}
+				brandName={tenantName || 'Vir-ttend'}
+				tenants={tenants}
+				currentTenantId={activeTenantId}
+				isSuperAdmin={role === ROLES.SUPERADMIN || isImpersonating}
+				isImpersonating={isImpersonating}
+				onSelectTenant={onSelectTenant}
+				onExitToGlobal={onExitImpersonation}
 			/>
 			<SidebarInset className="flex flex-col min-h-screen">
+				{isImpersonating && (
+					<ImpersonationBanner
+						tenantName={tenantName}
+						onExit={onExitImpersonation}
+						isExiting={isExitingImpersonation}
+					/>
+				)}
 				<Topbar title={title} actions={actions ?? defaultActions} />
 				<main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
 					{children}

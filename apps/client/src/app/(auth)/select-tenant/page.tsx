@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth/provider';
 import { authPendingStore } from '@/stores/auth-store';
+import { APP_ROUTES } from '@repo/common';
 import { useSelectTenant } from '@repo/hooks';
 import { TenantSelector } from '@repo/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,12 +10,14 @@ import { useEffect, useState } from 'react';
 
 export default function SelectTenantPage() {
 	const selectTenantMutation = useSelectTenant();
-	const { refetchUser } = useAuth();
+	const { setUser, refetchUser } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const redirectUrl = searchParams.get('redirect') || '/dashboard';
 
 	const [pending, setPending] = useState(authPendingStore.get());
+	const redirectUrl =
+		searchParams.get('redirect') ||
+		(pending.isSuperAdmin ? APP_ROUTES.tenants : APP_ROUTES.dashboard);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -37,7 +40,10 @@ export default function SelectTenantPage() {
 			{
 				onSuccess: async () => {
 					authPendingStore.clear();
-					await refetchUser();
+					const result = await refetchUser();
+					if (result.data) {
+						setUser(result.data);
+					}
 					router.replace(redirectUrl);
 				},
 				onError: (err) => {

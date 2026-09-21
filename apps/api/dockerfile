@@ -31,8 +31,11 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-# node_modules, el workspace @repo/common (compilado) y el dist de la API
+# En pnpm workspaces, los node_modules de cada app tienen sus propios
+# paquetes (ej: @nestjs/common) enlazados desde el store raíz.
+# Es necesario copiar AMBOS: el raíz y el de la app.
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/packages/common ./packages/common
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
@@ -41,6 +44,6 @@ RUN chown -R node:node /app
 
 USER node
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["node", "apps/api/dist/main.js"]

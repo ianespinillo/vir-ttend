@@ -54,5 +54,28 @@ export class UserWithMembershipResponseDto {
 			}) as ParameterDecorator
 		)
 		readonly mustChangePassword: boolean,
+		@(
+			ApiProperty({
+				description: 'ID del tenant al que pertenece la membresía.',
+				required: false,
+				example: '2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a',
+			}) as ParameterDecorator
+		)
+		readonly tenantId?: string,
+		@(
+			ApiProperty({
+				description: 'Nombre del tenant.',
+				required: false,
+				example: 'Escuela Técnica N° 1',
+			}) as ParameterDecorator
+		)
+		readonly tenantName?: string,
+		@(
+			ApiProperty({
+				description: 'Fecha de creación del usuario.',
+				required: false,
+			}) as ParameterDecorator
+		)
+		readonly createdAt?: string,
 	) {}
 }

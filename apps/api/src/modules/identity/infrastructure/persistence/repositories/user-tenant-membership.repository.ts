@@ -1,9 +1,10 @@
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityRepository, type FilterQuery, raw } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
 import {
 	FindOptions,
 	IUserTenantMembershipRepository,
+	TenantUsersCount,
 } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { UserTenantMembershipOrmEntity } from '../entities/user-tenant-membership.orm-entity';
 import { UserTenantMembershipMapper } from '../mappers/user-tenant-membership.mapper';
@@ -13,17 +14,30 @@ export class UserTenantMembershipRepository
 	extends EntityRepository<UserTenantMembershipOrmEntity>
 	implements IUserTenantMembershipRepository
 {
+	async countActiveByTenant(): Promise<TenantUsersCount[]> {
+		const rows = await this.createQueryBuilder('m')
+			.select('m.tenantId')
+			.addSelect(raw('count(*) as count'))
+			.where({ isActive: true })
+			.groupBy('m.tenantId')
+			.execute<Array<{ tenant_id: string; count: string | number }>>('all', false);
+		return rows.map((row) => ({
+			tenantId: row.tenant_id,
+			count: Number(row.count),
+		}));
+	}
 	async findByTenant(
 		tenantId: string,
 		options: FindOptions,
 	): Promise<{ total: number; items: UserTenantMembership[] }> {
-		const [items, total] = await this.findAndCount(
-			{ role: options.role, tenantId },
-			{
-				limit: options.limit,
-				offset: (options.page - 1) * options.limit,
-			},
-		);
+		const where: FilterQuery<UserTenantMembershipOrmEntity> = { tenantId };
+		if (options.role) {
+			where.role = options.role;
+		}
+		const [items, total] = await this.findAndCount(where, {
+			limit: options.limit,
+			offset: (options.page - 1) * options.limit,
+		});
 		return {
 			total,
 			items: items.map((uT) => UserTenantMembershipMapper.toDomain(uT)),

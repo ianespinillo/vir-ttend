@@ -7,6 +7,6 @@ export class CreateUserCommand {
 		readonly lastName: string,
 		readonly role: Roles,
 		readonly createdByRole: Roles,
-		readonly tenantId: string,
+		readonly tenantId?: string,
 	) {}
 }

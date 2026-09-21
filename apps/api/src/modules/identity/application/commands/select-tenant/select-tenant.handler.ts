@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ROLES, Roles } from '@repo/common';
 import { RefreshToken } from '../../../domain/entities/refresh-token.entity';
 import { User } from '../../../domain/entities/user.entity';
 import { UserLoggedInEvent } from '../../../domain/events/user-logged-in.event';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
+import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { TokenService } from '../../../domain/services/token.service';
@@ -25,6 +27,8 @@ export class SelectTenantHandler {
 		private readonly memberRepo: IUserTenantMembershipRepository,
 		@Inject('IRefreshTokenRepository')
 		private readonly refreshTokenRepo: IRefreshTokenRepository,
+		@Inject('ITenantRepository')
+		private readonly tenantRepo: ITenantRepository,
 		private readonly tokenService: TokenService,
 		private readonly em: EventEmitter2,
 	) {}
@@ -34,14 +38,73 @@ export class SelectTenantHandler {
 			userId,
 			tenantId,
 		);
-		if (!membership?.isActive) throw new Error('Invalid tenant selection');
+		let role: Roles;
+		let isImpersonating = false;
+		let tenantName: string | undefined;
+
+		if (membership?.isActive) {
+			role = membership.role;
+			const tenant = await this.tenantRepo.findById(tenantId);
+			tenantName = tenant?.name;
+		} else {
+			const tenant = await this.tenantRepo.findById(tenantId);
+			if (!tenant || !tenant.isActive) {
+				throw new Error('Invalid tenant selection');
+			}
+
+			if (!command.isSuperAdminOrImpersonating) {
+				const memberships = await this.memberRepo.findByUserId(userId);
+				if (memberships.length > 0) throw new Error('Invalid tenant selection');
+			}
+
+			role = ROLES.ADMIN;
+			isImpersonating = true;
+			tenantName = tenant.name;
+		}
+		return this.issueSession(
+			userId,
+			tenantId,
+			role,
+			userAgent,
+			ipAddress,
+			isImpersonating,
+			tenantName,
+		);
+	}
+
+	async startGlobalSuperAdminSession(
+		userId: string,
+		userAgent: string,
+		ipAddress: string,
+	): Promise<ExpectedReturn> {
+		return this.issueSession(
+			userId,
+			'',
+			ROLES.SUPERADMIN,
+			userAgent,
+			ipAddress,
+			false,
+			undefined,
+		);
+	}
+
+	private async issueSession(
+		userId: string,
+		tenantId: string,
+		role: Roles,
+		userAgent: string,
+		ipAddress: string,
+		isImpersonating = false,
+		tenantName?: string,
+	): Promise<ExpectedReturn> {
 		const user = await this.userRepo.findById(userId);
 		if (!user) throw new Error('User not found');
 		const accessToken = this.tokenService.generateAccessToken({
 			email: user.email,
-			role: membership.role,
-			tenantId: membership.tenantId,
+			role,
+			tenantId,
 			sub: userId,
+			isImpersonating,
 		});
 		const refToken = this.tokenService.generateRefreshToken();
 		const refTokenHash = this.tokenService.hashToken(refToken);
@@ -63,8 +126,10 @@ export class SelectTenantHandler {
 		dto.id = userId;
 		dto.lastName = user.lastName;
 		dto.mustChangePassword = user.mustChangePassword;
-		dto.role = membership.role;
+		dto.role = role;
 		dto.tenantId = tenantId;
+		dto.isImpersonating = isImpersonating;
+		dto.tenantName = tenantName;
 		return {
 			accessToken,
 			refreshToken: refToken,

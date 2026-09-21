@@ -9,12 +9,17 @@ interface CreateUser {
 	lastName: string;
 }
 
+interface UpdateUserProps {
+	firstName?: string;
+	lastName?: string;
+	email?: Email;
+}
 export class User {
 	private readonly _id: string;
-	private readonly _email: Email;
-	private readonly _firstName: string;
-	private readonly _lastName: string;
 	private readonly _createdAt: Date;
+	private _email: Email;
+	private _firstName: string;
+	private _lastName: string;
 	private _password: PasswordHashed;
 	private _updatedAt: Date;
 	private _isActive: boolean;
@@ -116,12 +121,40 @@ export class User {
 		this._password = newPassword;
 		this._updatedAt = new Date();
 	}
+	resetTemporaryPassword(newPassword: PasswordHashed): void {
+		this._password = newPassword;
+		this._mustChangePassword = true;
+		this._updatedAt = new Date();
+	}
 	activate(): void {
 		this._isActive = true;
 		this._updatedAt = new Date();
 	}
 	deactivate(): void {
 		this._isActive = false;
+		this._updatedAt = new Date();
+	}
+	private readonly fieldSetters: {
+		[K in keyof UpdateUserProps]-?: (
+			value: NonNullable<UpdateUserProps[K]>,
+		) => void;
+	} = {
+		firstName: (v) => {
+			this._firstName = v;
+		},
+		lastName: (v) => {
+			this._lastName = v;
+		},
+		email: (v) => {
+			this._email = v;
+		},
+	};
+
+	update(props: UpdateUserProps): void {
+		if (props.firstName !== undefined)
+			this.fieldSetters.firstName(props.firstName);
+		if (props.lastName !== undefined) this.fieldSetters.lastName(props.lastName);
+		if (props.email !== undefined) this.fieldSetters.email(props.email);
 		this._updatedAt = new Date();
 	}
 }

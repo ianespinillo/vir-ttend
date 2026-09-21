@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
 	Patch,
@@ -17,19 +18,24 @@ import {
 	ApiResponse,
 	ApiTags,
 } from '@nestjs/swagger';
-import { ROLES } from '@repo/common';
-import { JwtPayload } from 'jsonwebtoken';
+import { JwtPayload, ROLES } from '@repo/common';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { RolesDecorator } from '../../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { RolesGuard } from '../../../../common/guard/roles.guard';
+import { CreateMembershipCommand } from '../../application/commands/create-membership/create-membership.command';
+import { CreateMembershipHandler } from '../../application/commands/create-membership/create-membership.handler';
 import { CreateTenantCommand } from '../../application/commands/create-tenant/create-tenant.command';
 import { CreateTenantHandler } from '../../application/commands/create-tenant/create-tenant.handler';
+import { DeactivateMembershipCommand } from '../../application/commands/deactivate-membership/deactivate-membership.command';
+import { DeactivateMembershipHandler } from '../../application/commands/deactivate-membership/deactivate-membership.handler';
 import { ToggleTenantStatusCommand } from '../../application/commands/toggle-tenant-status/toggle-tenant-status.command';
 import { ToggleTenantStatusHandler } from '../../application/commands/toggle-tenant-status/toggle-tenant-status.handler';
 import { UpdateTenantCommand } from '../../application/commands/update-tenant/update-tenant.command';
 import { UpdateTenantHandler } from '../../application/commands/update-tenant/update-tenant.handler';
+import { CreateMembershipRequestDto } from '../../application/dto/create-membership.request.dto';
 import { CreateTenantRequestDto } from '../../application/dto/create-tenant.request.dto';
+import { DeactivateMembershipRequestDto } from '../../application/dto/deactivate.membership.request.dto';
 import { TenantResponseDto } from '../../application/dto/tenant.response.dto';
 import { UpdateTenantRequestDto } from '../../application/dto/update-tenant.request.dto';
 import { GetTenantHandler } from '../../application/queries/get-tenant/get-tenant.handler';
@@ -48,9 +54,11 @@ export class TenantsController {
 	constructor(
 		private readonly createTenantHandler: CreateTenantHandler,
 		private readonly updateTenantHandler: UpdateTenantHandler,
+		private readonly createMembershipHandler: CreateMembershipHandler,
 		private readonly toggleTenantStatusHandler: ToggleTenantStatusHandler,
 		private readonly getTenantHandler: GetTenantHandler,
 		private readonly listTenantsHandler: ListTenantsHandler,
+		private readonly deactivateMembershipHandler: DeactivateMembershipHandler,
 	) {}
 
 	@Post()
@@ -109,11 +117,12 @@ export class TenantsController {
 	}
 
 	@Get(':id')
+	@RolesDecorator(ROLES.SUPERADMIN, ROLES.ADMIN)
 	@UseGuards(TenantGuard)
 	@ApiOperation({
 		summary: 'Obtener un tenant',
 		description:
-			'Devuelve los datos de un tenant por id. Además del JWT se aplica TenantGuard. URL: GET /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. La respuesta exitosa se envuelve en { success, data: TenantResponseDto, timeStamp }. Roles permitidos: SUPERADMIN.',
+			'Devuelve los datos de un tenant por id. Además del JWT se aplica TenantGuard. URL: GET /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. La respuesta exitosa se envuelve en { success, data: TenantResponseDto, timeStamp }. Roles permitidos: SUPERADMIN, ADMIN.',
 	})
 	@ApiParam({
 		name: 'id',
@@ -133,11 +142,12 @@ export class TenantsController {
 	}
 
 	@Put(':id')
+	@RolesDecorator(ROLES.SUPERADMIN, ROLES.ADMIN)
 	@UseGuards(TenantGuard)
 	@ApiOperation({
 		summary: 'Actualizar un tenant',
 		description:
-			'Actualiza el nombre y/o el email de contacto de un tenant. Además del JWT se aplica TenantGuard. URL: PUT /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. Body de ejemplo: { "name": "Escuela Técnica N°1 - Turno Mañana", "contactEmail": "nuevo@tec1.edu.ar" }. La respuesta no devuelve datos (data es null). Roles permitidos: SUPERADMIN.',
+			'Actualiza el nombre y/o el email de contacto de un tenant. Además del JWT se aplica TenantGuard. URL: PUT /tenants/2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a. Body de ejemplo: { "name": "Escuela Técnica N°1 - Turno Mañana", "contactEmail": "nuevo@tec1.edu.ar" }. La respuesta no devuelve datos (data es null). Roles permitidos: SUPERADMIN, ADMIN.',
 	})
 	@ApiParam({
 		name: 'id',
@@ -186,6 +196,30 @@ export class TenantsController {
 	) {
 		return this.toggleTenantStatusHandler.execute(
 			new ToggleTenantStatusCommand(id, isActive),
+		);
+	}
+
+	@RolesDecorator(ROLES.SUPERADMIN, ROLES.ADMIN)
+	@UseGuards(TenantGuard)
+	@Delete(':id/memberships')
+	async deleteMembership(
+		@Param('id') id: string,
+		@CurrentUser() user: JwtPayload,
+		@Body() dto: DeactivateMembershipRequestDto,
+	) {
+		return this.deactivateMembershipHandler.execute(
+			new DeactivateMembershipCommand('', user.tenantId, user.role, dto.email),
+		);
+	}
+	@RolesDecorator(ROLES.SUPERADMIN, ROLES.ADMIN)
+	@UseGuards(TenantGuard)
+	@Post(':id/memberships')
+	async createMembership(
+		@Param('id') id: string,
+		@Body() dto: CreateMembershipRequestDto,
+	) {
+		return this.createMembershipHandler.execute(
+			new CreateMembershipCommand(dto.email, id, dto.role),
 		);
 	}
 }

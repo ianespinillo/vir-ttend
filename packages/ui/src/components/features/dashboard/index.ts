@@ -12,3 +12,5 @@ export { AttendanceTrendChart } from './attendance-trend-chart';
 export type { AttendanceTrendChartProps } from './attendance-trend-chart';
 export { PreceptorDashboard } from './preceptor-dashboard';
 export type { PreceptorDashboardProps } from './preceptor-dashboard';
+export { SuperAdminDashboard } from './super-admin-dashboard';
+export type { SuperAdminDashboardProps } from './super-admin-dashboard';

@@ -36,4 +36,8 @@ export class TenantRepository
 		);
 		return orm.map((t) => TenantMapper.toDomain(t));
 	}
+	async listAll(): Promise<Tenant[]> {
+		const orm = await this.find({}, { orderBy: { createdAt: 'ASC' } });
+		return orm.map((t) => TenantMapper.toDomain(t));
+	}
 }

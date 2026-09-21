@@ -6,6 +6,7 @@ export const queryKeys = {
 		all: (filters?: Record<string, unknown>) =>
 			['tenants', 'list', filters ?? {}] as const,
 		detail: (id: string) => ['tenants', 'detail', id] as const,
+		users: (tenantId: string) => ['tenants', 'users', tenantId] as const,
 	},
 	academicYears: {
 		all: ['academic-years', 'list'] as const,
@@ -36,6 +37,7 @@ export const queryKeys = {
 	users: {
 		list: (filters?: Record<string, unknown>) =>
 			['users', 'list', filters ?? {}] as const,
+		profile: () => ['users', 'profile'] as const,
 	},
 	attendance: {
 		daily: (courseId: string, date: string) =>
@@ -80,5 +82,6 @@ export const queryKeys = {
 			['dashboard', 'course', courseId, date] as const,
 		metrics: (academicYearId: string) =>
 			['dashboard', 'metrics', academicYearId] as const,
+		superAdmin: ['dashboard', 'super-admin'] as const,
 	},
 } as const;

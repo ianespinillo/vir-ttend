@@ -6,3 +6,5 @@ export * from './topbar';
 export * from './user-menu';
 export * from './alert-badge-placeholder';
 export * from './dashboard-layout';
+export * from './impersonation-banner';
+export * from './tenant-switcher';

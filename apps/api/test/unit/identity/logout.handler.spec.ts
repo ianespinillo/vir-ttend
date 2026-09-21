@@ -47,4 +47,10 @@ describe('LogoutHandler', () => {
 			'Invalid refresh token',
 		);
 	});
+
+	it('should revoke all refresh tokens for a user', async () => {
+		await handler.revokeAllForUser('user-id');
+
+		expect(refreshTokenRepo.revokeAllByUserId).toHaveBeenCalledWith('user-id');
+	});
 });

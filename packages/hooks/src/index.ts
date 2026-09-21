@@ -10,16 +10,30 @@ export * from './lib/keys';
 // auth
 export * from './features/auth/use-login';
 export * from './features/auth/use-select-tenant';
+export * from './features/auth/use-exit-tenant';
 export * from './features/auth/use-current-user';
 export * from './features/auth/use-logout';
 
 // tenants
 export * from './features/tenants/use-tenants';
+export * from './features/tenants/use-tenant';
+export * from './features/tenants/use-create-tenant';
+export * from './features/tenants/use-update-tenant';
+export * from './features/tenants/use-toggle-tenant-status';
+export * from './features/tenants/use-tenant-users';
+export * from './features/tenants/use-add-membership';
+export * from './features/tenants/use-remove-membership';
 
 // users
 export * from './features/users/use-users';
 export * from './features/users/use-change-role';
 export * from './features/users/use-deactivate-membership';
+export * from './features/users/use-toggle-user-status';
+export * from './features/users/use-create-user';
+export * from './features/users/use-update-user';
+export * from './features/users/use-change-password';
+export * from './features/users/use-reset-user-password';
+export * from './features/users/use-profile';
 
 // academic
 export * from './features/academic/use-academic-years';
@@ -93,6 +107,7 @@ export * from './features/announcements/use-delete-announcement';
 export * from './features/dashboard/use-preceptor-dashboard';
 export * from './features/dashboard/use-course-overview';
 export * from './features/dashboard/use-dashboard-metrics';
+export * from './features/dashboard/use-super-admin-analytics';
 
 // reports
 export * from './features/reports/use-monthly-report';
