@@ -50,7 +50,7 @@ Modo: **estándar** (no hay declaración de strict TDD en el proyecto; tests obl
 
 | ID | Tarea | Estado | Evidencia |
 |----|-------|--------|-----------|
-| T1 | Scaffold `apps/demo` (configs + layout raíz + build verde) | pendiente | |
+| T1 | Scaffold `apps/demo` (configs + layout raíz + build verde) | ✅ done | `apps/demo` creado (configs + layout/page raíz); `pnpm --filter demo build` PASS (Next 16.1.6); `pnpm --filter demo ts:check` PASS (exit 0). Commit A: `3752eda` (docs/task breakdown). Pendiente commit B del scaffold |
 | T2 | Store + seed determinista + persistencia + reset + tests | pendiente | |
 | T3 | Sesión demo: landing "Entrar como..." + shell dashboard + role switcher + reset | pendiente | |
 | T4 | Dashboard por rol | pendiente | |
@@ -72,6 +72,11 @@ Modo: **estándar** (no hay declaración de strict TDD en el proyecto; tests obl
 | T2 | delegado (writer `general`) | contrato de componentes + seed + varios writes |
 | T3+ | delegado (writer `general`) por batch de página | lectura de contratos + 1-3 writes por página |
 
+## Notas del entorno (Windows / hooks)
+
+- `core.autocrlf=true` y sin `.gitattributes` → el working tree de archivos de `packages/*` se chequea con CRLF y `biome check .` (hook pre-commit) los marca como error en **cualquier** commit. Solución validada: `pnpm lint:fix` (normaliza working tree a LF) antes de commitear; `lint:check` vuelve a pasar. Git no registra diff (blobs ya son LF); el status ` M` residual es ruido de stat-cache que `git add` resuelve como no-op.
+- Ya se corrigió una vez; si el hook vuelve a fallar con `␍`, repetir `pnpm lint:fix`.
+
 ## Próximo paso
 
-T1 — Scaffold de `apps/demo`.
+T2 — Store + seed determinista + persistencia + reset + tests.
