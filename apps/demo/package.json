@@ -5,7 +5,7 @@
 	"license": "UNLICENSED",
 	"scripts": {
 		"dev": "next dev --turbo",
-		"build": "next build",
+		"build": "next build --webpack",
 		"start": "next start",
 		"ts:check": "tsc --noEmit",
 		"test": "vitest run"
