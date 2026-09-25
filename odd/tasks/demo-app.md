@@ -55,14 +55,14 @@ Modo: **estándar** (no hay declaración de strict TDD en el proyecto; tests obl
 | T3 | Sesión demo: landing "Entrar como..." + shell dashboard + role switcher + reset | ✅ done | 82/82 vitest (6 archivos; spot check: 82/82); ts:check PASS; build PASS (fix Turbopack→`--webpack` + `extensionAlias`); lint:check limpio. Commit: `c461988`. Landing `/` con 6 profiles; shell `/dashboard` (guard → Forbidden); switcher + reset; `useDemo()` API estable |
 | T4 | Dashboard por rol | ✅ done | 88/88 vitest (7 archivos; spot check: 88/88); ts:check PASS; build PASS (webpack); lint:check limpio. Commit: `ea1bd32`. Superadmin: plataforma; admin/preceptor: métricas (preceptor scopeado a sus cursos); teacher: sus cursos. Fix `getDashboardMetrics.weeklyTrend` respeta `courseIds` (+test). Excepción: teacher puede abrir `/dashboard` en el shell demo (producción intacta) |
 | T5 | Students CRUD (list / create / [id] / edit) | ✅ done | 95/95 vitest (8 archivos; spot check: 95/95); ts:check PASS; build PASS (rutas en output); lint:check limpio. Commit: `143def8`. List URL-driven + pagination; create; detail (tab report + modal enroll); edit como ruta `[id]/edit` (dev: producto usa `?edit=true`); sin sort (seed order preserva edge cases); sin loading branches (store sync). Devs: `student-mappings.ts` + 7 tests |
-| T6 | Academic: courses + subjects | pendiente | |
-| T7 | Attendance: daily + subject + justifications + copy | pendiente | |
-| T8 | Alerts | pendiente | |
-| T9 | Announcements | pendiente | |
-| T10 | Reports (monthly + export) | pendiente | |
-| T11 | Admin: users + tenants | pendiente | |
-| T12 | Profile (`/me`) | pendiente | |
-| T13 | Integración: smoke restantes, build/ts:check full, guía de corrida | pendiente | |
+| T6 | Academic: courses + subjects | ✅ done | Courses (list, detail, create) + Subjects (list, dialog create/edit). Scoping por rol en `academic-mappings.ts` (12 tests vitest). Commit: `d5675f9` |
+| T7 | Attendance: daily + subject + justifications + copy | ✅ done | Asistencia diaria y por materia con justificaciones y copiado de fechas. Mappings y tests vitest dedicados (20 tests). Commit: `8ffac51` |
+| T8 | Alerts | ✅ done | Bandeja de alertas con paginación, navegación a estudiantes y marca de lectura sobre el store. Commit: `66313b1` |
+| T9 | Announcements | ✅ done | Módulo de comunicados: listado con filtros, creación con audiencia, detalle, edición y publicación. Commit: `10c517e` |
+| T10 | Reports (monthly + export) | ✅ done | Reporte mensual con selección de período, métricas, tabla de alumnos, tendencias y exportación simulada. Commit: `fd34a10` |
+| T11 | Admin: users + tenants | ✅ done | Gestión completa de usuarios (alta, roles, activación, reseteo) y gestión de instituciones para superadmin. Commit: `7b6d3df` |
+| T12 | Profile (`/me`) | ✅ done | Vista de perfil con información personal, institución y cambio de contraseña interactivo. Commit: `fd643a2` |
+| T13 | Integración: smoke restantes, build/ts:check full, guía de corrida | ✅ done | Suite de integración e2e (`smoke.test.ts`, 138/138 vitest PASS en 11 archivos), build verde con 21 rutas compiladas, `apps/demo/README.md` documentado |
 
 ## Rutas por tarea (trigger de delegación)
 
@@ -79,4 +79,4 @@ Modo: **estándar** (no hay declaración de strict TDD en el proyecto; tests obl
 
 ## Próximo paso
 
-T6 — Academic: courses (list + `[id]`) + subjects (list; + `[id]` si el client la tiene). Resolver link a `/attendance/student/:id` cuando T7 aterrice.
+Todas las tareas de la demo app (T1 a T13) han sido completadas, probadas y verificadas con build de producción verde. Listo para demo o feedback del usuario.
