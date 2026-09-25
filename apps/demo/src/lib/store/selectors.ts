@@ -783,7 +783,11 @@ export function getDashboardMetrics(
 		coursesAtRisk: snapshots.filter(
 			(snap) => snap.statusColor !== COURSE_RISK_STATUS.OK,
 		),
-		weeklyTrend: weeklyTrendFromRecords(state.attendance),
+		weeklyTrend: weeklyTrendFromRecords(
+			courseIds
+				? state.attendance.filter((record) => courseIds.includes(record.courseId))
+				: state.attendance,
+		),
 	};
 }
 

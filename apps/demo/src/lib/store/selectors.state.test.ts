@@ -19,6 +19,7 @@ import {
 	getSuperAdminAnalytics,
 	getUnseenAlertsCount,
 	getUsers,
+	weeklyTrendFromRecords,
 } from './selectors.js';
 
 const state = createSeedState();
@@ -236,6 +237,16 @@ describe('dashboard', () => {
 			point.mondayWeek.toISOString().slice(0, 10),
 		);
 		expect([...weeks].sort()).toEqual(weeks);
+	});
+
+	it('scopes the weekly trend to the requested courses', () => {
+		const courseId = demoIds.course['crs-1a'];
+		const metrics = getDashboardMetrics(state, [courseId]);
+		const expectedTrend = weeklyTrendFromRecords(
+			state.attendance.filter((record) => record.courseId === courseId),
+		);
+
+		expect(metrics.weeklyTrend).toEqual(expectedTrend);
 	});
 });
 

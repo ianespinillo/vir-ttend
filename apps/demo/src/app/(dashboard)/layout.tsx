@@ -6,14 +6,15 @@
  * Mirrors the client's (dashboard) layout 1:1: renders the real
  * DashboardLayout (nav built internally from the session role), replaces the
  * product's user menu with the demo session controls (role switcher + reset),
- * and guards children with the shared isPathAllowedForRole rule.
+ * and guards children with the shared isPathAllowedForRole rule, with one
+ * deliberate demo exception: teachers can open the dashboard overview.
  *
  * Without a session (after exit/reset or on a stale URL) it redirects to '/'.
  */
 
 import { useDemo } from '@/lib/session/demo-provider';
 import { DemoSessionControls } from '@/lib/session/demo-session-controls';
-import { APP_ROUTES, isPathAllowedForRole } from '@repo/common';
+import { APP_ROUTES, ROLES, isPathAllowedForRole } from '@repo/common';
 import { DashboardLayout, Forbidden, LoadingSpinner } from '@repo/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -44,7 +45,9 @@ export default function DashboardLayoutRoute({
 
 	const tenant = session.tenant;
 	const { firstName, lastName, email, role, tenantId } = user;
-	const canOpenPath = isPathAllowedForRole(pathname, role);
+	const canOpenPath =
+		(role === ROLES.TEACHER && pathname === APP_ROUTES.dashboard) ||
+		isPathAllowedForRole(pathname, role);
 
 	return (
 		<DashboardLayout
