@@ -38,23 +38,23 @@ Vender mostrando el producto real con datos deterministas: "Entrar como...", rol
 
 ## TDD
 
-Modo: **estándar** (no hay declaración de strict TDD en el proyecto; tests obligatorios por work unit con el runner del repo). Runner: jest para el store (se confirma en T1 según convención de frontend del repo); smoke por página en los batches.
+Modo: **estándar** (no hay declaración de strict TDD en el proyecto; tests obligatorios por work unit con el runner del repo). Runner: **vitest ^2.1.9** (convención del repo: `packages/common`, `packages/ui`, `packages/hooks` usan `vitest run` con `vitest.config.ts`; el demo replica el patrón). Smoke por página en los batches.
 
 ## Delivery
 
 - Forecast de líneas: **> 1200** (app completa) → aplica `chained-pr`.
 - Estrategia: `ask-on-risk` — al momento de crear PRs se pregunta estrategia de cadena (`stacked-to-main` / `feature-branch-chain`). No bloquea la implementación; push/PR son decisión del usuario.
-- RDD: **ON** (global) → tras cada work-unit commit: `gentle-ai review assess --cwd <repo> --agent opencode --base-ref <boundary> --committed-only --json` y seguir transiciones.
+- RDD: **OFF** — desactivado por el usuario el 2026-09-24 (scope global; motivo: sin LLM premium, "omitir siempre este check"). NO correr assess/review; delivery bajo política ordinaria del repo.
 
 ## Checklist
 
 | ID | Tarea | Estado | Evidencia |
 |----|-------|--------|-----------|
-| T1 | Scaffold `apps/demo` (configs + layout raíz + build verde) | ✅ done | `apps/demo` creado (configs + layout/page raíz); `pnpm --filter demo build` PASS (Next 16.1.6); `pnpm --filter demo ts:check` PASS (exit 0). Commit A: `3752eda` (docs/task breakdown). Pendiente commit B del scaffold |
-| T2 | Store + seed determinista + persistencia + reset + tests | pendiente | |
-| T3 | Sesión demo: landing "Entrar como..." + shell dashboard + role switcher + reset | pendiente | |
-| T4 | Dashboard por rol | pendiente | |
-| T5 | Students CRUD (list / create / [id] / edit) | pendiente | |
+| T1 | Scaffold `apps/demo` (configs + layout raíz + build verde) | ✅ done | `apps/demo` creado (configs + layout/page raíz); `pnpm --filter demo build` PASS (Next 16.1.6); `pnpm --filter demo ts:check` PASS (exit 0). Commits: `3752eda` (docs) + `83fd0f8` (scaffold). RDD (boundary main, 604 líneas, medium): **declined** por el usuario (candidate-scoped; RDD sigue ON) |
+| T2 | Store + seed determinista + persistencia + reset + tests | ✅ done | 72/72 vitest (5 archivos; spot check del orquestador: 72/72); ts:check PASS; build PASS; lint:check limpio tras corrección de 147 `noNonNullAssertion` (sin biome-ignore). Commit: `66396ae`. RDD: usuario deshabilitó reviews global (sin LLM premium) — slice sin revisar, RDD OFF |
+| T3 | Sesión demo: landing "Entrar como..." + shell dashboard + role switcher + reset | ✅ done | 82/82 vitest (6 archivos; spot check: 82/82); ts:check PASS; build PASS (fix Turbopack→`--webpack` + `extensionAlias`); lint:check limpio. Commit: `c461988`. Landing `/` con 6 profiles; shell `/dashboard` (guard → Forbidden); switcher + reset; `useDemo()` API estable |
+| T4 | Dashboard por rol | ✅ done | 88/88 vitest (7 archivos; spot check: 88/88); ts:check PASS; build PASS (webpack); lint:check limpio. Commit: `ea1bd32`. Superadmin: plataforma; admin/preceptor: métricas (preceptor scopeado a sus cursos); teacher: sus cursos. Fix `getDashboardMetrics.weeklyTrend` respeta `courseIds` (+test). Excepción: teacher puede abrir `/dashboard` en el shell demo (producción intacta) |
+| T5 | Students CRUD (list / create / [id] / edit) | ✅ done | 95/95 vitest (8 archivos; spot check: 95/95); ts:check PASS; build PASS (rutas en output); lint:check limpio. Commit: `143def8`. List URL-driven + pagination; create; detail (tab report + modal enroll); edit como ruta `[id]/edit` (dev: producto usa `?edit=true`); sin sort (seed order preserva edge cases); sin loading branches (store sync). Devs: `student-mappings.ts` + 7 tests |
 | T6 | Academic: courses + subjects | pendiente | |
 | T7 | Attendance: daily + subject + justifications + copy | pendiente | |
 | T8 | Alerts | pendiente | |
@@ -79,4 +79,4 @@ Modo: **estándar** (no hay declaración de strict TDD en el proyecto; tests obl
 
 ## Próximo paso
 
-T2 — Store + seed determinista + persistencia + reset + tests.
+T6 — Academic: courses (list + `[id]`) + subjects (list; + `[id]` si el client la tiene). Resolver link a `/attendance/student/:id` cuando T7 aterrice.
