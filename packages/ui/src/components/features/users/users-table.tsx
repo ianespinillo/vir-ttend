@@ -1,6 +1,8 @@
 'use client';
 
 import type { IUserWithMembershipResponse } from '@repo/common';
+import { ChevronRight } from 'lucide-react';
+import { cn } from '../../../lib/utils';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import {
@@ -18,6 +20,17 @@ const ROLE_LABELS: Record<string, string> = {
 	preceptor: 'Preceptor',
 	teacher: 'Docente',
 	superadmin: 'Superadmin',
+};
+
+const ROLE_BADGE_STYLES: Record<string, string> = {
+	superadmin:
+		'bg-purple-100 text-purple-950 border-purple-200 dark:bg-purple-950/40 dark:text-purple-200 dark:border-purple-800',
+	admin:
+		'bg-sky-100 text-sky-950 border-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-800',
+	preceptor:
+		'bg-amber-100 text-amber-950 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800',
+	teacher:
+		'bg-emerald-100 text-emerald-950 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800',
 };
 
 export interface UsersTablePagination {
@@ -94,7 +107,13 @@ export function UsersTable({
 									</TableCell>
 								)}
 								<TableCell>
-									<Badge variant="secondary">
+									<Badge
+										variant="outline"
+										className={cn(
+											'font-medium border shadow-2xs',
+											ROLE_BADGE_STYLES[user.role] ?? 'bg-muted text-foreground',
+										)}
+									>
 										{ROLE_LABELS[user.role] ?? user.role}
 									</Badge>
 								</TableCell>
@@ -102,83 +121,98 @@ export function UsersTable({
 									<UserStatusBadge isActive={user.isActive} />
 								</TableCell>
 								<TableCell className="text-right">
-									<div className="flex justify-end gap-2">
-										{onChangeRole && (
-											<Button
-												variant="ghost"
-												size="sm"
-												onClick={(e) => {
-													e.stopPropagation();
-													onChangeRole(user);
-												}}
-											>
-												Cambiar Rol
-											</Button>
-										)}
-										{onEdit && (
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={(e) => {
-													e.stopPropagation();
-													onEdit(user);
-												}}
-											>
-												Editar
-											</Button>
-										)}
-										{onResetPassword && (
-											<Button
-												variant="ghost"
-												size="sm"
-												className="text-muted-foreground hover:text-foreground"
-												onClick={(e) => {
-													e.stopPropagation();
-													onResetPassword(user);
-												}}
-											>
-												Restablecer Clave
-											</Button>
-										)}
-										{onToggleStatus &&
-											(user.isActive ? (
+									{onUserClick ? (
+										<Button
+											variant="ghost"
+											size="sm"
+											className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+											onClick={(e) => {
+												e.stopPropagation();
+												onUserClick(user);
+											}}
+										>
+											<span>Gestionar</span>
+											<ChevronRight className="h-4 w-4" />
+										</Button>
+									) : (
+										<div className="flex justify-end gap-2">
+											{onChangeRole && (
 												<Button
 													variant="ghost"
 													size="sm"
-													className="text-destructive hover:text-destructive hover:bg-destructive/10"
 													onClick={(e) => {
 														e.stopPropagation();
-														onToggleStatus(user, false);
+														onChangeRole(user);
+													}}
+												>
+													Cambiar Rol
+												</Button>
+											)}
+											{onEdit && (
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={(e) => {
+														e.stopPropagation();
+														onEdit(user);
+													}}
+												>
+													Editar
+												</Button>
+											)}
+											{onResetPassword && (
+												<Button
+													variant="ghost"
+													size="sm"
+													className="text-muted-foreground hover:text-foreground"
+													onClick={(e) => {
+														e.stopPropagation();
+														onResetPassword(user);
+													}}
+												>
+													Restablecer Clave
+												</Button>
+											)}
+											{onToggleStatus &&
+												(user.isActive ? (
+													<Button
+														variant="ghost"
+														size="sm"
+														className="text-destructive hover:text-destructive hover:bg-destructive/10"
+														onClick={(e) => {
+															e.stopPropagation();
+															onToggleStatus(user, false);
+														}}
+													>
+														Desactivar
+													</Button>
+												) : (
+													<Button
+														variant="outline"
+														size="sm"
+														className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+														onClick={(e) => {
+															e.stopPropagation();
+															onToggleStatus(user, true);
+														}}
+													>
+														Activar
+													</Button>
+												))}
+											{!onToggleStatus && onDeactivate && user.isActive && (
+												<Button
+													variant="destructive"
+													size="sm"
+													onClick={(e) => {
+														e.stopPropagation();
+														onDeactivate(user);
 													}}
 												>
 													Desactivar
 												</Button>
-											) : (
-												<Button
-													variant="outline"
-													size="sm"
-													className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-													onClick={(e) => {
-														e.stopPropagation();
-														onToggleStatus(user, true);
-													}}
-												>
-													Activar
-												</Button>
-											))}
-										{!onToggleStatus && onDeactivate && user.isActive && (
-											<Button
-												variant="destructive"
-												size="sm"
-												onClick={(e) => {
-													e.stopPropagation();
-													onDeactivate(user);
-												}}
-											>
-												Desactivar
-											</Button>
-										)}
-									</div>
+											)}
+										</div>
+									)}
 								</TableCell>
 							</TableRow>
 						))}

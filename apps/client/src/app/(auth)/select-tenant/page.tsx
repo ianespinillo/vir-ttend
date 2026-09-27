@@ -44,7 +44,11 @@ export default function SelectTenantPage() {
 					if (result.data) {
 						setUser(result.data);
 					}
-					router.replace(redirectUrl);
+					const destination =
+						result.data?.role === 'teacher' && redirectUrl === APP_ROUTES.dashboard
+							? APP_ROUTES.attendanceSubject
+							: redirectUrl;
+					router.replace(destination);
 				},
 				onError: (err) => {
 					const message = err.response?.data?.message;

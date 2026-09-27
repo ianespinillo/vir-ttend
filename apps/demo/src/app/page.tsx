@@ -88,8 +88,13 @@ export default function HomePage() {
 	const [openFaq, setOpenFaq] = useState<string | null>('faq-1');
 
 	const handleEnter = (profileId: string) => {
+		const targetProfile = profiles.find((p) => p.user.id === profileId);
 		enterAs(profileId);
-		router.push(APP_ROUTES.dashboard);
+		if (targetProfile?.user.role === 'teacher') {
+			router.push(APP_ROUTES.attendanceSubject);
+		} else {
+			router.push(APP_ROUTES.dashboard);
+		}
 	};
 
 	const handleReset = () => {

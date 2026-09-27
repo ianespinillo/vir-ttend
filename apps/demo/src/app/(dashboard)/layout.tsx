@@ -45,9 +45,7 @@ export default function DashboardLayoutRoute({
 
 	const tenant = session.tenant;
 	const { firstName, lastName, email, role, tenantId } = user;
-	const canOpenPath =
-		(role === ROLES.TEACHER && pathname === APP_ROUTES.dashboard) ||
-		isPathAllowedForRole(pathname, role);
+	const canOpenPath = isPathAllowedForRole(pathname, role);
 
 	return (
 		<DashboardLayout
@@ -64,7 +62,15 @@ export default function DashboardLayoutRoute({
 			{canOpenPath ? (
 				children
 			) : (
-				<Forbidden onBack={() => router.push(APP_ROUTES.dashboard)} />
+				<Forbidden
+					onBack={() =>
+						router.push(
+							role === ROLES.TEACHER
+								? APP_ROUTES.attendanceSubject
+								: APP_ROUTES.dashboard,
+						)
+					}
+				/>
 			)}
 		</DashboardLayout>
 	);

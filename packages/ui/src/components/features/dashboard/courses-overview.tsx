@@ -17,7 +17,7 @@ export function CoursesOverview({
 		return (
 			<EmptyState
 				title="Sin cursos"
-				description="No hay cursos asignados para mostrar en el dashboard."
+				description="No hay cursos asignados para mostrar en el panel de gestión."
 			/>
 		);
 	}

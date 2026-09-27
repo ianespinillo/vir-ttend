@@ -66,7 +66,14 @@ export default function DashboardPage() {
 	);
 
 	const user = session.user;
-	if (!user) return null;
+
+	useEffect(() => {
+		if (user?.role === ROLES.TEACHER) {
+			router.replace(APP_ROUTES.attendanceSubject);
+		}
+	}, [user, router]);
+
+	if (!user || user.role === ROLES.TEACHER) return null;
 
 	const config = getDashboardConfig(user.role);
 

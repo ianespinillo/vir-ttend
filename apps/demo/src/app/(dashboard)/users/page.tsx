@@ -25,17 +25,55 @@ import {
 	ToggleUserStatusDialog,
 	UserCredentialsDialog,
 	UserForm,
+	UserManagementSheet,
 	UsersTable,
+	cn,
 } from '@repo/ui';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
-const ROLE_OPTIONS = [
-	{ value: 'all', label: 'Todos los roles' },
-	{ value: ROLES.ADMIN, label: 'Administrador' },
-	{ value: ROLES.PRECEPTOR, label: 'Preceptor' },
-	{ value: ROLES.TEACHER, label: 'Docente' },
-	{ value: ROLES.SUPERADMIN, label: 'Superadmin' },
+const ROLE_FILTERS = [
+	{
+		value: 'all',
+		label: 'Todos',
+		activeClasses:
+			'bg-slate-200 border-slate-400 text-slate-900 dark:bg-slate-700 dark:border-slate-500 dark:text-white ring-2 ring-slate-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700 dark:bg-slate-800/80 dark:hover:bg-slate-800 dark:border-slate-700 dark:text-slate-300',
+	},
+	{
+		value: ROLES.SUPERADMIN,
+		label: 'Superadmin',
+		superAdminOnly: true,
+		activeClasses:
+			'bg-purple-200 border-purple-400 text-purple-950 dark:bg-purple-900/70 dark:border-purple-500 dark:text-purple-100 ring-2 ring-purple-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-purple-100 hover:bg-purple-200/80 border-purple-200 text-purple-950 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 dark:border-purple-800 dark:text-purple-200',
+	},
+	{
+		value: ROLES.ADMIN,
+		label: 'Administrador',
+		activeClasses:
+			'bg-sky-200 border-sky-400 text-sky-950 dark:bg-sky-900/70 dark:border-sky-500 dark:text-sky-100 ring-2 ring-sky-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-sky-100 hover:bg-sky-200/80 border-sky-200 text-sky-950 dark:bg-sky-950/40 dark:hover:bg-sky-900/40 dark:border-sky-800 dark:text-sky-200',
+	},
+	{
+		value: ROLES.PRECEPTOR,
+		label: 'Preceptor',
+		activeClasses:
+			'bg-amber-200 border-amber-400 text-amber-950 dark:bg-amber-900/70 dark:border-amber-500 dark:text-amber-100 ring-2 ring-amber-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-amber-100 hover:bg-amber-200/80 border-amber-200 text-amber-950 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 dark:border-amber-800 dark:text-amber-200',
+	},
+	{
+		value: ROLES.TEACHER,
+		label: 'Docente',
+		activeClasses:
+			'bg-emerald-200 border-emerald-400 text-emerald-950 dark:bg-emerald-900/70 dark:border-emerald-500 dark:text-emerald-100 ring-2 ring-emerald-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-emerald-100 hover:bg-emerald-200/80 border-emerald-200 text-emerald-950 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-200',
+	},
 ];
 
 export default function UsersManagementPage() {
@@ -84,6 +122,8 @@ export default function UsersManagementPage() {
 		temporaryPassword?: string;
 		tenantName?: string;
 	} | null>(null);
+	const [selectedUser, setSelectedUser] =
+		useState<IUserWithMembershipResponse | null>(null);
 
 	const updateQueryParams = useCallback(
 		(newParams: Record<string, string | number | undefined>) => {
@@ -173,31 +213,47 @@ export default function UsersManagementPage() {
 				}
 			/>
 
-			<div className="flex flex-wrap items-center gap-3">
-				<div className="w-full sm:w-64">
-					<Input
-						placeholder="Buscar por nombre o email…"
-						value={search}
-						onChange={(e) => handleSearchChange(e.target.value)}
-					/>
+			<div className="space-y-3">
+				<div className="flex flex-wrap items-center gap-3">
+					<div className="w-full sm:w-80">
+						<Input
+							placeholder="Buscar por nombre, apellido o email…"
+							value={search}
+							onChange={(e) => handleSearchChange(e.target.value)}
+						/>
+					</div>
 				</div>
-				<Select value={role} onValueChange={handleRoleChange}>
-					<SelectTrigger className="w-[180px]">
-						<SelectValue placeholder="Rol" />
-					</SelectTrigger>
-					<SelectContent>
-						{ROLE_OPTIONS.map((opt) => (
-							<SelectItem key={opt.value} value={opt.value}>
-								{opt.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+
+				{/* Filtro de Roles como Chips / Etiquetas con Colores Pasteles */}
+				<div className="flex flex-wrap items-center gap-2">
+					{ROLE_FILTERS.map((chip) => {
+						if (chip.superAdminOnly && !isSuperAdmin) return null;
+						const isSelected = role === chip.value;
+						return (
+							<button
+								key={chip.value}
+								type="button"
+								onClick={() =>
+									handleRoleChange(
+										isSelected && chip.value !== 'all' ? 'all' : chip.value,
+									)
+								}
+								className={cn(
+									'inline-flex items-center px-3.5 py-1 rounded-full text-xs font-medium border transition-all cursor-pointer select-none',
+									isSelected ? chip.activeClasses : chip.inactiveClasses,
+								)}
+							>
+								{chip.label}
+							</button>
+						);
+					})}
+				</div>
 			</div>
 
 			<UsersTable
 				users={usersData.items}
 				showTenant={isSuperAdmin}
+				onUserClick={(u) => setSelectedUser(u)}
 				onEdit={(u) => setEditingUser(u)}
 				onChangeRole={(u) => setRoleUser(u)}
 				onToggleStatus={(u, targetStatus) =>
@@ -279,6 +335,30 @@ export default function UsersManagementPage() {
 				open={Boolean(credentials)}
 				onOpenChange={(open) => !open && setCredentials(null)}
 				credentials={credentials}
+			/>
+
+			{/* Panel de Gestión del Usuario (Lateral Derecho) */}
+			<UserManagementSheet
+				user={selectedUser}
+				open={Boolean(selectedUser)}
+				onOpenChange={(open) => !open && setSelectedUser(null)}
+				isSuperAdmin={isSuperAdmin}
+				onShowCredentials={(user) => {
+					setSelectedUser(null);
+					handleResetPassword(user);
+				}}
+				onEdit={(user) => {
+					setSelectedUser(null);
+					setEditingUser(user);
+				}}
+				onChangeRole={(user) => {
+					setSelectedUser(null);
+					setRoleUser(user);
+				}}
+				onToggleStatus={(user, targetStatus) => {
+					setSelectedUser(null);
+					setStatusUser({ user, targetStatus });
+				}}
 			/>
 		</div>
 	);

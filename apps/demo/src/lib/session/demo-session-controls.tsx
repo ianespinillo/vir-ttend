@@ -51,7 +51,9 @@ export function DemoSessionControls() {
 		// Land on a page the new role can actually open (the layout guards
 		// children with isPathAllowedForRole, mirroring the client shell).
 		if (!isPathAllowedForRole(pathname, role)) {
-			router.push(APP_ROUTES.dashboard);
+			router.push(
+				role === 'teacher' ? APP_ROUTES.attendanceSubject : APP_ROUTES.dashboard,
+			);
 		}
 	};
 
