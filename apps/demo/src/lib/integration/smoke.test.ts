@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest';
 import {
 	getScopedCourseIds,
 	getScopedSubjects,
-} from '../academic/academic-mappings.js';
+} from '../academic/academic-mappings';
 import {
 	getScopedAttendanceCourseIds,
 	getScopedAttendanceSubjects,
-} from '../attendance/attendance-mappings.js';
-import * as selectors from '../store/selectors.js';
-import { createDemoStore } from '../store/store.js';
+} from '../attendance/attendance-mappings';
+import * as selectors from '../store/selectors';
+import { createDemoStore } from '../store/store';
 
 describe('Demo App End-to-End Smoke & Integration Suite', () => {
 	it('loads fresh seed state with full data graph intact', () => {

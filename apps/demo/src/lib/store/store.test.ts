@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createSeedState, demoIds } from './seed-data.js';
-import { type DemoStore, createDemoStore } from './store.js';
+import { createSeedState, demoIds } from './seed-data';
+import { type DemoStore, createDemoStore } from './store';
 import {
 	DEMO_DEFAULT_PASSWORD,
 	DEMO_TODAY,
@@ -8,7 +8,7 @@ import {
 	ROLES,
 	SHIFT,
 	STUDENTSTATUS,
-} from './types.js';
+} from './types';
 
 function freshStore(): DemoStore {
 	return createDemoStore(createSeedState(), null);

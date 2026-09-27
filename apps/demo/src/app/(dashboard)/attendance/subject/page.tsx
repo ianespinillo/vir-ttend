@@ -17,6 +17,7 @@ import {
 import { SubjectAttendancePage } from '@repo/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function AttendanceSubjectPage() {
 	const router = useRouter();
@@ -129,6 +130,7 @@ export default function AttendanceSubjectPage() {
 			store.markSubjectAttendance(selectedSubjectId, courseId, selectedDate, [
 				{ studentId, status },
 			]);
+			toast.success('Asistencia guardada correctamente');
 		},
 		[store, selectedSubjectId, courseId, selectedDate],
 	);
@@ -145,6 +147,7 @@ export default function AttendanceSubjectPage() {
 				selectedDate,
 				entries,
 			);
+			toast.success('Asistencia guardada correctamente');
 		},
 		[store, courseStudents, selectedSubjectId, courseId, selectedDate],
 	);
@@ -167,6 +170,7 @@ export default function AttendanceSubjectPage() {
 				selectedRecordToJustify.id,
 				toJustifyInput(reason, notes),
 			);
+			toast.success('Justificación registrada correctamente');
 			handleCloseJustify();
 		},
 		[store, selectedRecordToJustify, handleCloseJustify],
@@ -193,6 +197,7 @@ export default function AttendanceSubjectPage() {
 			store.copyAttendance(
 				toSubjectCopyInput(selectedSubjectId, selectedDate, sourceDate),
 			);
+			toast.success('Asistencia copiada correctamente');
 			handleCloseCopy();
 		},
 		[store, selectedSubjectId, selectedDate, handleCloseCopy],

@@ -20,7 +20,7 @@ import {
 	toUpdateCourseInput,
 	toUpdateSubjectInput,
 	toUserResponse,
-} from './academic-mappings.js';
+} from './academic-mappings';
 
 const courses: ICourseResponse[] = [
 	{

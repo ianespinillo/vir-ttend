@@ -11,6 +11,7 @@ import {
 } from '@repo/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function AnnouncementDetailPage() {
 	const params = useParams();
@@ -53,6 +54,7 @@ export default function AnnouncementDetailPage() {
 	const handlePublish = () => {
 		try {
 			store.publishAnnouncement(announcementId);
+			toast.success('Comunicado publicado correctamente');
 		} catch {
 			// noop — demo
 		}
@@ -62,6 +64,7 @@ export default function AnnouncementDetailPage() {
 		setEditError(null);
 		try {
 			store.updateAnnouncement(announcementId, values);
+			toast.success('Comunicado actualizado correctamente');
 			setIsEditing(false);
 		} catch (err: unknown) {
 			setEditError(

@@ -14,7 +14,7 @@ import type {
 	CreateSubjectInput,
 	UpdateCourseInput,
 	UpdateSubjectInput,
-} from '../store/types.js';
+} from '../store/types';
 
 export const DEMO_COURSE_ROUTES = {
 	new: `${ACADEMIC_ROUTES.courses}/create`,

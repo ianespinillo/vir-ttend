@@ -1,13 +1,13 @@
 import { APP_ROUTES, ROLES, isPathAllowedForRole } from '@repo/common';
 import { describe, expect, it } from 'vitest';
-import { createSeedState, demoIds } from '../store/seed-data.js';
+import { createSeedState, demoIds } from '../store/seed-data';
 import {
 	PROFILE_DESCRIPTORS,
 	ROLE_LABELS,
 	allowedPathsForRole,
 	getDemoProfiles,
 	getInitials,
-} from './helpers.js';
+} from './helpers';
 
 describe('role labels', () => {
 	it('maps every role to its Spanish product label', () => {
@@ -91,15 +91,12 @@ describe('allowedPathsForRole', () => {
 });
 
 describe('demo profiles', () => {
-	it('returns exactly the six canonical profiles in seed order', () => {
+	it('returns the five institutional profiles in seed order, excluding superadmin', () => {
 		const state = createSeedState();
 		const profiles = getDemoProfiles(state);
-		expect(profiles).toHaveLength(6);
+		expect(profiles).toHaveLength(5);
+		expect(profiles.some((p) => p.user.role === ROLES.SUPERADMIN)).toBe(false);
 		expect(profiles[0]).toMatchObject({
-			user: { firstName: 'Carlos', lastName: 'Ramos', role: ROLES.SUPERADMIN },
-			tenantName: null,
-		});
-		expect(profiles[1]).toMatchObject({
 			user: { firstName: 'Ana', lastName: 'Gómez', role: ROLES.ADMIN },
 			tenantName: 'Colegio San Martín',
 		});
@@ -119,7 +116,7 @@ describe('demo profiles', () => {
 			mustChangePassword: true,
 			createdAt: '2026-06-19T12:00:00.000Z',
 		});
-		expect(getDemoProfiles(state)).toHaveLength(6);
+		expect(getDemoProfiles(state)).toHaveLength(5);
 	});
 
 	it('describes every canonical profile', () => {

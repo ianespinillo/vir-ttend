@@ -11,8 +11,8 @@
  * `null` so the caller re-seeds deterministically.
  */
 
-import type { DemoState } from './types.js';
-import { DEMO_STORAGE_KEY, STORAGE_SCHEMA_VERSION } from './types.js';
+import type { DemoState } from './types';
+import { DEMO_STORAGE_KEY, STORAGE_SCHEMA_VERSION } from './types';
 
 /** The minimal storage surface the demo needs (localStorage-shaped). */
 export interface MinimalStorage {

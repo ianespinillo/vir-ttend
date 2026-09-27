@@ -33,8 +33,8 @@ import {
 	getDefaultStorage,
 	loadState,
 	saveState,
-} from './persistence.js';
-import { createSeedState, demoUuid } from './seed-data.js';
+} from './persistence';
+import { createSeedState, demoUuid } from './seed-data';
 import {
 	type Announcement,
 	type AttendanceEntry,
@@ -58,7 +58,7 @@ import {
 	type UpdateStudentInput,
 	type UpdateSubjectInput,
 	demoTodayDate,
-} from './types.js';
+} from './types';
 
 // ---------------------------------------------------------------------------
 // Store factory
@@ -83,6 +83,10 @@ export interface DemoStore {
 
 	// Tenants
 	createTenant(payload: CreateTenantPayload): Tenant;
+	updateTenant(
+		tenantId: string,
+		data: { name?: string; contactEmail?: string },
+	): Tenant;
 	toggleTenantStatus(tenantId: string, isActive: boolean): Tenant;
 
 	// Students
@@ -325,6 +329,29 @@ export function createDemoStore(
 		next.tenants.push(tenant);
 		commit(next);
 		return tenant;
+	}
+
+	function updateTenant(
+		tenantId: string,
+		data: { name?: string; contactEmail?: string },
+	): Tenant {
+		requireTenant(tenantId);
+		const next = structuredClone(state);
+		next.tenants = next.tenants.map((tenant) =>
+			tenant.id === tenantId
+				? {
+						...tenant,
+						name: data.name ?? tenant.name,
+						contactEmail: data.contactEmail ?? tenant.contactEmail,
+					}
+				: tenant,
+		);
+		commit(next);
+		const updated = next.tenants.find((t) => t.id === tenantId);
+		if (!updated) {
+			throw new Error(`Sede no encontrada: ${tenantId}`);
+		}
+		return updated;
 	}
 
 	function toggleTenantStatus(tenantId: string, isActive: boolean): Tenant {
@@ -831,6 +858,7 @@ export function createDemoStore(
 		resetPassword,
 		changePassword,
 		createTenant,
+		updateTenant,
 		toggleTenantStatus,
 		createStudent,
 		updateStudent,

@@ -16,6 +16,7 @@ import {
 import { DailyAttendancePage } from '@repo/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function AttendanceDailyPage() {
 	const router = useRouter();
@@ -102,6 +103,7 @@ export default function AttendanceDailyPage() {
 			store.markDailyAttendance(selectedCourseId, selectedDate, [
 				{ studentId, status },
 			]);
+			toast.success('Asistencia guardada correctamente');
 		},
 		[store, selectedCourseId, selectedDate],
 	);
@@ -113,6 +115,7 @@ export default function AttendanceDailyPage() {
 				status,
 			}));
 			store.markDailyAttendance(selectedCourseId, selectedDate, entries);
+			toast.success('Asistencia guardada correctamente');
 		},
 		[store, courseStudents, selectedCourseId, selectedDate],
 	);
@@ -135,6 +138,7 @@ export default function AttendanceDailyPage() {
 				selectedRecordToJustify.id,
 				toJustifyInput(reason, notes),
 			);
+			toast.success('Justificación registrada correctamente');
 			handleCloseJustify();
 		},
 		[store, selectedRecordToJustify, handleCloseJustify],
@@ -161,13 +165,15 @@ export default function AttendanceDailyPage() {
 			store.copyAttendance(
 				toDailyCopyInput(selectedCourseId, selectedDate, sourceDate),
 			);
+			toast.success('Asistencia copiada correctamente');
 			handleCloseCopy();
 		},
 		[store, selectedCourseId, selectedDate, handleCloseCopy],
 	);
 
-	// No-ops: in the demo the store is always in sync — no pending changes to confirm or reset.
-	const handleConfirmChanges = useCallback(() => {}, []);
+	const handleConfirmChanges = useCallback(() => {
+		toast.success('Asistencia guardada correctamente');
+	}, []);
 	const handleResetChanges = useCallback(() => {}, []);
 
 	return (

@@ -31,7 +31,7 @@ import {
 	absencePercent,
 	absenceToAlertType,
 	generateLastBusinessDays,
-} from './selectors.js';
+} from './selectors';
 import {
 	DEMO_ACADEMIC_END,
 	DEMO_ACADEMIC_START,
@@ -43,7 +43,7 @@ import {
 	type DemoStudent,
 	type DemoUser,
 	demoTodayDate,
-} from './types.js';
+} from './types';
 
 // ---------------------------------------------------------------------------
 // Deterministic UUIDv4-format ids (FNV-1a 32-bit over "namespace:slug").

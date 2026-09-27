@@ -43,7 +43,7 @@ import {
 	type SuperAdminAnalytics,
 	type Tenant,
 	type WeeklyTrendPoint,
-} from './types.js';
+} from './types';
 import {
 	type AlertsQuery,
 	type AnnouncementsQuery,
@@ -60,7 +60,7 @@ import {
 	type StudentsQuery,
 	type UsersQuery,
 	demoTodayDate,
-} from './types.js';
+} from './types';
 
 // ---------------------------------------------------------------------------
 // Math helpers (single source of truth: seeds + alerts + tests)

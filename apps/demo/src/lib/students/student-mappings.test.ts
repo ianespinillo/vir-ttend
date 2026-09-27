@@ -9,7 +9,7 @@ import {
 	toDateInputValue,
 	toStudentFormDefaults,
 	toUpdateStudentInput,
-} from './student-mappings.js';
+} from './student-mappings';
 
 function paramsFrom(query: string) {
 	return new URLSearchParams(query);

@@ -11,6 +11,7 @@ import {
 } from '@repo/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function AnnouncementsPage() {
 	const router = useRouter();
@@ -56,6 +57,7 @@ export default function AnnouncementsPage() {
 					...values,
 					authorName: `${user.firstName} ${user.lastName}`,
 				});
+				toast.success('Comunicado publicado correctamente');
 				setShowCreateForm(false);
 			} catch (err: unknown) {
 				setCreateError(

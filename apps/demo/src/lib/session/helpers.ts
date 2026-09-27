@@ -7,9 +7,9 @@
  */
 
 import { ALL_NAV_ITEMS, type Roles, isPathAllowedForRole } from '@repo/common';
-import { demoIds } from '../store/seed-data.js';
-import { getLandingProfiles } from '../store/selectors.js';
-import type { DemoState } from '../store/types.js';
+import { demoIds } from '../store/seed-data';
+import { getLandingProfiles } from '../store/selectors';
+import type { DemoState } from '../store/types';
 
 /** Spanish role labels shown across the demo UI (same wording as the product). */
 export const ROLE_LABELS: Record<Roles, string> = {
@@ -30,9 +30,11 @@ export const ROLE_BADGE_VARIANTS: Record<
 	teacher: 'outline',
 };
 
-/** The fixed ids of the six canonical demo profiles (seed slugs). */
+/** The fixed ids of the five canonical institutional demo profiles (excluding superadmin). */
 export const DEMO_PROFILE_IDS: ReadonlySet<string> = new Set(
-	Object.values(demoIds.user),
+	Object.values(demoIds.user).filter(
+		(id) => id !== demoIds.user['carlos-ramos'],
+	),
 );
 
 /** Short descriptor per demo profile (landing cards and role switcher rows). */
@@ -58,8 +60,8 @@ export function allowedPathsForRole(role: Roles): string[] {
 }
 
 /**
- * The six canonical demo profiles, in seed order. Users created during a
- * session are excluded so the landing and the role switcher stay stable.
+ * The canonical institutional demo profiles, in seed order. Users created during a
+ * session and superadmins are excluded so prospective clients only explore school-level roles.
  */
 export function getDemoProfiles(state: DemoState): DemoProfile[] {
 	return getLandingProfiles(state).filter((profile) =>

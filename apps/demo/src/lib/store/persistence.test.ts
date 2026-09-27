@@ -6,9 +6,9 @@ import {
 	isValidDemoState,
 	loadState,
 	saveState,
-} from './persistence.js';
-import { createSeedState } from './seed-data.js';
-import { DEMO_STORAGE_KEY, STORAGE_SCHEMA_VERSION } from './types.js';
+} from './persistence';
+import { createSeedState } from './seed-data';
+import { DEMO_STORAGE_KEY, STORAGE_SCHEMA_VERSION } from './types';
 
 function createMockStorage(seed?: Record<string, string>): MinimalStorage {
 	const store = new Map<string, string>(Object.entries(seed ?? {}));

@@ -1,6 +1,6 @@
 import { ROLES } from '@repo/common';
 import { describe, expect, it } from 'vitest';
-import { DASHBOARD_CONFIGS, getDashboardConfig } from './dashboard-config.js';
+import { DASHBOARD_CONFIGS, getDashboardConfig } from './dashboard-config';
 
 describe('dashboard per-role config', () => {
 	it('superadmin sees platform analytics and no course sections', () => {

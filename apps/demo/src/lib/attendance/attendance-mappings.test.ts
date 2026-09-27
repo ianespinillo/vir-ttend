@@ -15,7 +15,7 @@ import {
 	toDailyCopyInput,
 	toJustifyInput,
 	toSubjectCopyInput,
-} from './attendance-mappings.js';
+} from './attendance-mappings';
 
 // ---------------------------------------------------------------------------
 // Fixtures

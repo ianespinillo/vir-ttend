@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSeedState, demoIds, demoUuid } from './seed-data.js';
+import { createSeedState, demoIds, demoUuid } from './seed-data';
 
 const UUID_RE = /^[0-9a-f]{8}-0000-4000-8000-0000[0-9a-f]{8}$/;
 

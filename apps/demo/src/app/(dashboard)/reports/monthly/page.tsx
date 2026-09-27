@@ -6,6 +6,7 @@ import type { ExportFormat } from '@repo/common';
 import { MonthlyReport, PageHeader, sortPeriodsDesc } from '@repo/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function ReportsMonthlyPage() {
 	const router = useRouter();
@@ -32,14 +33,19 @@ export default function ReportsMonthlyPage() {
 	const initialMonth = searchParams.get('month');
 	const initialYear = searchParams.get('year');
 
+	const initialPeriods = initialCourseId
+		? selectors.getAvailableReportPeriods(state, initialCourseId)
+		: [];
+	const defaultPeriod = sortPeriodsDesc(initialPeriods)[0];
+
 	const [selectedCourseId, setSelectedCourseId] =
 		useState<string>(initialCourseId);
 	const [selectedPeriod, setSelectedPeriod] = useState<{
 		month?: number;
 		year?: number;
 	}>({
-		month: initialMonth ? Number(initialMonth) : undefined,
-		year: initialYear ? Number(initialYear) : undefined,
+		month: initialMonth ? Number(initialMonth) : defaultPeriod?.month,
+		year: initialYear ? Number(initialYear) : defaultPeriod?.year,
 	});
 
 	const [pendingExport, setPendingExport] = useState<ExportFormat | null>(null);
@@ -70,11 +76,18 @@ export default function ReportsMonthlyPage() {
 		if (!selectedCourseId && courses.length > 0) {
 			const firstCourse = courses[0];
 			if (firstCourse) {
+				const firstPeriods = selectors.getAvailableReportPeriods(
+					state,
+					firstCourse.id,
+				);
+				const latest = sortPeriodsDesc(firstPeriods)[0];
+				const nextPeriod = latest ? { month: latest.month, year: latest.year } : {};
 				setSelectedCourseId(firstCourse.id);
-				updateUrl(firstCourse.id, selectedPeriod);
+				setSelectedPeriod(nextPeriod);
+				updateUrl(firstCourse.id, nextPeriod);
 			}
 		}
-	}, [selectedCourseId, courses, selectedPeriod, updateUrl]);
+	}, [selectedCourseId, courses, state, selectors, updateUrl]);
 
 	// Auto-select latest period if none selected
 	useEffect(() => {
@@ -106,10 +119,13 @@ export default function ReportsMonthlyPage() {
 	const handleCourseChange = useCallback(
 		(newCourseId: string) => {
 			setSelectedCourseId(newCourseId);
-			setSelectedPeriod({});
-			updateUrl(newCourseId, {});
+			const newPeriods = selectors.getAvailableReportPeriods(state, newCourseId);
+			const latest = sortPeriodsDesc(newPeriods)[0];
+			const nextPeriod = latest ? { month: latest.month, year: latest.year } : {};
+			setSelectedPeriod(nextPeriod);
+			updateUrl(newCourseId, nextPeriod);
 		},
-		[updateUrl],
+		[state, selectors, updateUrl],
 	);
 
 	const handlePeriodChange = useCallback(
@@ -134,6 +150,7 @@ export default function ReportsMonthlyPage() {
 		setPendingExport(format);
 		setTimeout(() => {
 			setPendingExport(null);
+			toast.success(`Reporte exportado correctamente (${format.toUpperCase()})`);
 		}, 400);
 	}, []);
 

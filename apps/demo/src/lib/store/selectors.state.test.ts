@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createSeedState } from './seed-data.js';
-import { demoIds } from './seed-data.js';
+import { createSeedState } from './seed-data';
+import { demoIds } from './seed-data';
 import {
 	getAlerts,
 	getAnnouncements,
@@ -20,7 +20,7 @@ import {
 	getUnseenAlertsCount,
 	getUsers,
 	weeklyTrendFromRecords,
-} from './selectors.js';
+} from './selectors';
 
 const state = createSeedState();
 

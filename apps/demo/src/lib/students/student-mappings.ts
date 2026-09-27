@@ -23,7 +23,7 @@ import {
 	STUDENT_ROUTES,
 } from '@repo/common';
 import type { StudentFiltersState } from '@repo/ui';
-import type { UpdateStudentInput } from '../store/types.js';
+import type { UpdateStudentInput } from '../store/types';
 
 /** Page size requested by the product students page (10 rows per page). */
 export const STUDENTS_PAGE_SIZE = 10;

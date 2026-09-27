@@ -8,8 +8,8 @@ import {
 	generateLastBusinessDays,
 	mondayOfWeek,
 	paginate,
-} from './selectors.js';
-import { DEMO_ATTENDANCE_DAYS, DEMO_TODAY } from './types.js';
+} from './selectors';
+import { DEMO_ATTENDANCE_DAYS, DEMO_TODAY } from './types';
 
 describe('math helpers (single source of truth)', () => {
 	it('converts 3 tardanzas into 1 inasistencia', () => {
