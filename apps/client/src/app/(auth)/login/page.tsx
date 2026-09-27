@@ -48,7 +48,11 @@ export default function LoginPage() {
 								if (result.data) {
 									setUser(result.data);
 								}
-								router.replace(redirectUrl);
+								const destination =
+									result.data?.role === 'teacher' && redirectUrl === '/dashboard'
+										? '/attendance/subject'
+										: redirectUrl;
+								router.replace(destination);
 							},
 							onError: (err) => {
 								setError(err.message || 'Error al seleccionar la institución.');

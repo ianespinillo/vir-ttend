@@ -17,13 +17,13 @@ export interface NavGroupConfig {
 
 export const ALL_NAV_ITEMS: NavItemConfig[] = [
 	{
-		label: 'Tenants',
+		label: 'Instituciones',
 		href: APP_ROUTES.tenants,
 		icon: 'Building2',
 		roles: [ROLES.SUPERADMIN],
 	},
 	{
-		label: 'Dashboard',
+		label: 'Panel de Gestión',
 		href: APP_ROUTES.dashboard,
 		icon: 'LayoutDashboard',
 		roles: [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR],

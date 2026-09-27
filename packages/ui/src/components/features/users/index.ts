@@ -13,3 +13,5 @@ export type { ToggleUserStatusDialogProps } from './toggle-user-status-dialog';
 export { ToggleUserStatusDialog } from './toggle-user-status-dialog';
 export type { UserCredentialsDialogProps } from './user-credentials-dialog';
 export { UserCredentialsDialog } from './user-credentials-dialog';
+export type { UserManagementSheetProps } from './user-management-sheet';
+export { UserManagementSheet } from './user-management-sheet';

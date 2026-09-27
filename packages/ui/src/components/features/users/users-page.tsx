@@ -19,6 +19,7 @@ import {
 import { Building2, Filter, Search } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { cn } from '../../../lib/utils';
 import { Button } from '../../../ui/button';
 import {
 	Dialog,
@@ -42,7 +43,60 @@ import { ChangeRoleDialog } from './change-role-dialog';
 import { ToggleUserStatusDialog } from './toggle-user-status-dialog';
 import { UserCredentialsDialog } from './user-credentials-dialog';
 import { UserForm } from './user-form';
+import { UserManagementSheet } from './user-management-sheet';
 import { UsersTable } from './users-table';
+
+interface RoleFilterOption {
+	value: string;
+	label: string;
+	superAdminOnly?: boolean;
+	activeClasses: string;
+	inactiveClasses: string;
+}
+
+const ROLE_FILTERS: RoleFilterOption[] = [
+	{
+		value: 'all',
+		label: 'Todos',
+		activeClasses:
+			'bg-slate-200 border-slate-400 text-slate-900 dark:bg-slate-700 dark:border-slate-500 dark:text-white ring-2 ring-slate-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700 dark:bg-slate-800/80 dark:hover:bg-slate-800 dark:border-slate-700 dark:text-slate-300',
+	},
+	{
+		value: ROLES.SUPERADMIN,
+		label: 'Superadmin',
+		superAdminOnly: true,
+		activeClasses:
+			'bg-purple-200 border-purple-400 text-purple-950 dark:bg-purple-900/70 dark:border-purple-500 dark:text-purple-100 ring-2 ring-purple-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-purple-100 hover:bg-purple-200/80 border-purple-200 text-purple-950 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 dark:border-purple-800 dark:text-purple-200',
+	},
+	{
+		value: ROLES.ADMIN,
+		label: 'Administrador',
+		activeClasses:
+			'bg-sky-200 border-sky-400 text-sky-950 dark:bg-sky-900/70 dark:border-sky-500 dark:text-sky-100 ring-2 ring-sky-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-sky-100 hover:bg-sky-200/80 border-sky-200 text-sky-950 dark:bg-sky-950/40 dark:hover:bg-sky-900/40 dark:border-sky-800 dark:text-sky-200',
+	},
+	{
+		value: ROLES.PRECEPTOR,
+		label: 'Preceptor',
+		activeClasses:
+			'bg-amber-200 border-amber-400 text-amber-950 dark:bg-amber-900/70 dark:border-amber-500 dark:text-amber-100 ring-2 ring-amber-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-amber-100 hover:bg-amber-200/80 border-amber-200 text-amber-950 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 dark:border-amber-800 dark:text-amber-200',
+	},
+	{
+		value: ROLES.TEACHER,
+		label: 'Docente',
+		activeClasses:
+			'bg-emerald-200 border-emerald-400 text-emerald-950 dark:bg-emerald-900/70 dark:border-emerald-500 dark:text-emerald-100 ring-2 ring-emerald-400/50 shadow-xs font-semibold',
+		inactiveClasses:
+			'bg-emerald-100 hover:bg-emerald-200/80 border-emerald-200 text-emerald-950 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-200',
+	},
+];
 
 export interface UsersPageProps {
 	isSuperAdmin?: boolean;
@@ -98,6 +152,9 @@ export function UsersPage({
 		temporaryPassword?: string;
 		tenantName?: string;
 	} | null>(null);
+	const [sheetUser, setSheetUser] = useState<IUserWithMembershipResponse | null>(
+		null,
+	);
 
 	const users = data?.items ?? [];
 
@@ -193,63 +250,68 @@ export function UsersPage({
 			/>
 
 			{/* Barra de Filtros y Búsqueda */}
-			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-					<Input
-						placeholder="Buscar por nombre, apellido o email..."
-						value={search}
-						onChange={(e) => {
-							setSearch(e.target.value);
-							setPage(1);
-						}}
-						className="pl-9"
-					/>
-				</div>
-
-				<div className="flex items-center gap-2">
-					<Select
-						value={role}
-						onValueChange={(val) => {
-							setRole(val);
-							setPage(1);
-						}}
-					>
-						<SelectTrigger className="w-[160px]">
-							<SelectValue placeholder="Rol" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Todos los roles</SelectItem>
-							<SelectItem value={ROLES.ADMIN}>Administrador</SelectItem>
-							<SelectItem value={ROLES.PRECEPTOR}>Preceptor</SelectItem>
-							<SelectItem value={ROLES.TEACHER}>Docente</SelectItem>
-							{isSuperAdmin && (
-								<SelectItem value={ROLES.SUPERADMIN}>Superadmin</SelectItem>
-							)}
-						</SelectContent>
-					</Select>
-
-					{isSuperAdmin && tenants && tenants.length > 0 && (
-						<Select
-							value={tenantId}
-							onValueChange={(val) => {
-								setTenantId(val);
+			<div className="space-y-3">
+				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+					<div className="relative flex-1">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Input
+							placeholder="Buscar por nombre, apellido o email..."
+							value={search}
+							onChange={(e) => {
+								setSearch(e.target.value);
 								setPage(1);
 							}}
-						>
-							<SelectTrigger className="w-[200px]">
-								<SelectValue placeholder="Institución" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">Todas las instituciones</SelectItem>
-								{tenants.map((t) => (
-									<SelectItem key={t.id} value={t.id}>
-										{t.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+							className="pl-9"
+						/>
+					</div>
+
+					{isSuperAdmin && tenants && tenants.length > 0 && (
+						<div className="flex items-center gap-2">
+							<Select
+								value={tenantId}
+								onValueChange={(val) => {
+									setTenantId(val);
+									setPage(1);
+								}}
+							>
+								<SelectTrigger className="w-[200px]">
+									<SelectValue placeholder="Institución" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">Todas las instituciones</SelectItem>
+									{tenants.map((t) => (
+										<SelectItem key={t.id} value={t.id}>
+											{t.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					)}
+				</div>
+
+				{/* Filtro de Roles como Chips / Etiquetas con Colores Pasteles */}
+				<div className="flex flex-wrap items-center gap-2">
+					{ROLE_FILTERS.map((chip) => {
+						if (chip.superAdminOnly && !isSuperAdmin) return null;
+						const isSelected = role === chip.value;
+						return (
+							<button
+								key={chip.value}
+								type="button"
+								onClick={() => {
+									setRole(isSelected && chip.value !== 'all' ? 'all' : chip.value);
+									setPage(1);
+								}}
+								className={cn(
+									'inline-flex items-center px-3.5 py-1 rounded-full text-xs font-medium border transition-all cursor-pointer select-none',
+									isSelected ? chip.activeClasses : chip.inactiveClasses,
+								)}
+							>
+								{chip.label}
+							</button>
+						);
+					})}
 				</div>
 			</div>
 
@@ -272,7 +334,10 @@ export function UsersPage({
 					<UsersTable
 						users={users}
 						showTenant={isSuperAdmin && (!tenantId || tenantId === 'all')}
-						onUserClick={onUserClick}
+						onUserClick={(user) => {
+							setSheetUser(user);
+							onUserClick?.(user);
+						}}
 						onEdit={handleEdit}
 						onToggleStatus={handleToggleStatus}
 						onChangeRole={handleChangeRole}
@@ -399,6 +464,30 @@ export function UsersPage({
 				open={Boolean(credentialsTarget)}
 				onOpenChange={(open) => !open && setCredentialsTarget(null)}
 				credentials={credentialsTarget}
+			/>
+
+			{/* Panel de Gestión del Usuario (Lateral Derecho) */}
+			<UserManagementSheet
+				user={sheetUser}
+				open={Boolean(sheetUser)}
+				onOpenChange={(open) => !open && setSheetUser(null)}
+				isSuperAdmin={isSuperAdmin}
+				onShowCredentials={(user) => {
+					setSheetUser(null);
+					handleResetPassword(user);
+				}}
+				onEdit={(user) => {
+					setSheetUser(null);
+					handleEdit(user);
+				}}
+				onChangeRole={(user) => {
+					setSheetUser(null);
+					handleChangeRole(user);
+				}}
+				onToggleStatus={(user, targetStatus) => {
+					setSheetUser(null);
+					handleToggleStatus(user, targetStatus);
+				}}
 			/>
 		</div>
 	);
