@@ -23,6 +23,7 @@ export * from './features/tenants/use-toggle-tenant-status';
 export * from './features/tenants/use-tenant-users';
 export * from './features/tenants/use-add-membership';
 export * from './features/tenants/use-remove-membership';
+export * from './features/tenants/use-public-config';
 
 // users
 export * from './features/users/use-users';

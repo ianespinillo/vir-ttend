@@ -13,12 +13,12 @@ Vir-ttend es un SaaS multi-tenant de gestión de asistencia escolar (primaria y 
 
 El **frontend, en cambio, está prácticamente vacío**. Lo que existe hoy:
 
-| Paquete | Estado real |
-|---|---|
-| `apps/client` | Next.js 16 template (`create-next-app`) + `src/lib/auth/provider.tsx` placeholder |
-| `packages/ui` | Primitivas shadcn/ui en `src/ui/*` + 4 componentes `shared` (empty-state, error-state, loading-spinner, page-header) + hooks de UI |
-| `packages/hooks` | `apiClient` (axios) + `TanstackProvider`. **Sin hooks de features.** |
-| `packages/common` | Tipos, constantes y rutas del contrato (parcial, desalineado con los docs) |
+| Paquete           | Estado real                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/client`     | Next.js 16 template (`create-next-app`) + `src/lib/auth/provider.tsx` placeholder                                                  |
+| `packages/ui`     | Primitivas shadcn/ui en `src/ui/*` + 4 componentes `shared` (empty-state, error-state, loading-spinner, page-header) + hooks de UI |
+| `packages/hooks`  | `apiClient` (axios) + `TanstackProvider`. **Sin hooks de features.**                                                               |
+| `packages/common` | Tipos, constantes y rutas del contrato (parcial, desalineado con los docs)                                                         |
 
 Esto significa que el planning viejo (`doc/planning/sprints/sprint-00..11`) **ya no aplica tal cual**: asumía desarrollo paralelo back+front. Hoy la API es un hecho consumado; el frontend se construye contra un contrato existente. Este documento re-planifica el frontend sobre esa realidad.
 
@@ -177,25 +177,26 @@ apps/client/src/
 
 El acceso por rol se aplica en **tres capas**: `middleware.ts` (ruta), `(dashboard)/layout.tsx` (guards) y el `AppShell` (qué items se renderizan en el menú). `tenantId` y `role` vienen del JWT en cookie (leído via `GET /users/me`).
 
-| Área | Ruta | `SUPERADMIN` | `ADMIN` | `PRECEPTOR` | `TEACHER` |
-|---|---|---|---|---|---|
-| Login / select tenant | `/login`, `/select-tenant` | ✅ (directo) | ✅ | ✅ | ✅ |
-| Home | `/dashboard` | → tenants | → dashboard admin | → panel preceptor | → mis materias |
-| Tenants (CRUD) | `/tenants` | ✅ | ❌ | ❌ | ❌ |
-| Usuarios del tenant | `/users` | ✅ | ✅ | ❌ | ❌ |
-| Años académicos | `/settings/academic` | ❌ | ✅ | ❌ | ❌ |
-| Cursos | `/courses`, `/courses/[id]` | ❌ | ✅ (todos) | ✅ (asignados) | ❌ |
-| Materias / horario | `/courses/[id]` | ❌ | ✅ | ✅ | ✅ (sus materias) |
-| Estudiantes | `/students` | ❌ | ✅ | ✅ | ❌ (vía curso) |
-| Asistencia diaria | `/attendance/daily` | ❌ | ✅ | ✅ | ❌ |
-| Asistencia por materia | `/attendance/subject` | ❌ | ✅ | ✅ (lectura) | ✅ (registra) |
-| Panel preceptoría | `/dashboard` | ❌ | ✅ | ✅ | ❌ |
-| Alertas | `/alerts` | ❌ | ✅ | ✅ (sus cursos) | ❌ |
-| Reportes | `/reports/*` | ❌ | ✅ | ✅ (sus cursos) | ❌ (vía admin) |
-| Comunicados | `/announcements/*` | ❌ | ✅ (CRUD) | ✅ (crear/ver) | ✅ (ver `for-me`) |
-| Perfil | `/settings/profile` | ✅ | ✅ | ✅ | ✅ |
+| Área                   | Ruta                        | `SUPERADMIN` | `ADMIN`           | `PRECEPTOR`       | `TEACHER`        |
+| ---------------------- | --------------------------- | ------------ | ----------------- | ----------------- | ---------------- |
+| Login / select tenant  | `/login`, `/select-tenant`  | ✅ (directo)  | ✅                 | ✅                 | ✅                |
+| Home                   | `/dashboard`                | → tenants    | → dashboard admin | → panel preceptor | → mis materias   |
+| Tenants (CRUD)         | `/tenants`                  | ✅            | ❌                 | ❌                 | ❌                |
+| Usuarios del tenant    | `/users`                    | ✅            | ✅                 | ❌                 | ❌                |
+| Años académicos        | `/settings/academic`        | ❌            | ✅                 | ❌                 | ❌                |
+| Cursos                 | `/courses`, `/courses/[id]` | ❌            | ✅ (todos)         | ✅ (asignados)     | ❌                |
+| Materias / horario     | `/courses/[id]`             | ❌            | ✅                 | ✅                 | ✅ (sus materias) |
+| Estudiantes            | `/students`                 | ❌            | ✅                 | ✅                 | ❌ (vía curso)    |
+| Asistencia diaria      | `/attendance/daily`         | ❌            | ✅                 | ✅                 | ❌                |
+| Asistencia por materia | `/attendance/subject`       | ❌            | ✅                 | ✅ (lectura)       | ✅ (registra)     |
+| Panel preceptoría      | `/dashboard`                | ❌            | ✅                 | ✅                 | ❌                |
+| Alertas                | `/alerts`                   | ❌            | ✅                 | ✅ (sus cursos)    | ❌                |
+| Reportes               | `/reports/*`                | ❌            | ✅                 | ✅ (sus cursos)    | ❌ (vía admin)    |
+| Comunicados            | `/announcements/*`          | ❌            | ✅ (CRUD)          | ✅ (crear/ver)     | ✅ (ver `for-me`) |
+| Perfil                 | `/settings/profile`         | ✅            | ✅                 | ✅                 | ✅                |
 
 **Principios del mapa:**
+
 - El menú se construye por rol y **no se renderizan items sin permiso** (menú = única fuente).
 - El `middleware` protege la ruta; el guard del layout da error 403 con navegación de vuelta.
 - `PRECEPTOR` ve solo sus cursos (`preceptorId` del JWT); `TEACHER` solo sus materias (`/attendance/teacher/subjects`).
@@ -225,38 +226,38 @@ NestJS API                 apps/api  (/docs → OpenAPI)
 
 ## 7. Convenciones
 
-| Concepto | Regla |
-|---|---|
-| Página | `page.tsx` en `apps/client`, solo importa un componente de `@repo/ui` |
+| Concepto          | Regla                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| Página            | `page.tsx` en `apps/client`, solo importa un componente de `@repo/ui`                                     |
 | Feature component | `<Name>Page.tsx` / `<Name>Form.tsx` / `<Name>Grid.tsx` en `packages/ui/src/components/features/<domain>/` |
-| Barrels | cada feature folder tiene `index.ts` re-exportando sus componentes |
-| Query hook | `use<Recurso>.ts` → `useStudents.ts` |
-| Mutation hook | `use<Acción><Recurso>.ts` → `useCreateStudent.ts` |
-| Query keys | factory tipada en `packages/hooks/src/keys.ts` (`['attendance','daily',{courseId,date}]`) |
-| Validación | Zod schemas en `@repo/common`, resueltos con `@hookform/resolvers` |
-| Roles | siempre desde `@repo/common` (`ROLES`), nunca strings sueltos |
-| Rutas | siempre desde `@repo/common/routes`, nunca hardcodeadas |
-| Fechas | `date-fns` (ya en `@repo/ui`) |
-| Estado global | solo sesión/tenant (AuthContext + stores ligeras); el resto es server state |
+| Barrels           | cada feature folder tiene `index.ts` re-exportando sus componentes                                        |
+| Query hook        | `use<Recurso>.ts` → `useStudents.ts`                                                                      |
+| Mutation hook     | `use<Acción><Recurso>.ts` → `useCreateStudent.ts`                                                         |
+| Query keys        | factory tipada en `packages/hooks/src/keys.ts` (`['attendance','daily',{courseId,date}]`)                 |
+| Validación        | Zod schemas en `@repo/common`, resueltos con `@hookform/resolvers`                                        |
+| Roles             | siempre desde `@repo/common` (`ROLES`), nunca strings sueltos                                             |
+| Rutas             | siempre desde `@repo/common/routes`, nunca hardcodeadas                                                   |
+| Fechas            | `date-fns` (ya en `@repo/ui`)                                                                             |
+| Estado global     | solo sesión/tenant (AuthContext + stores ligeras); el resto es server state                               |
 
 ---
 
 ## 8. Roadmap de sprints
 
-| Sprint | Nombre | Objetivo | Horas | Depende |
-|---|---|---|---|---|
-| 00 | Foundation | Contrato common completo, fix de hooks, shell del App Router, tooling frontend | 40 | — |
-| 01 | Auth & Sesión | Login 2 pasos, selector de tenant, sesión persistente, guards y middleware | 30 | 00 |
-| 02 | App Shell & Navegación | Dashboard layout por rol, sidebar/topbar, responsive, home por rol | 30 | 01 |
-| 03 | Estudiantes | Listado, filtros, CRUD, detalle, matriculación y transferencia | 30 | 02 |
-| 04 | Académico | Años lectivos, cursos, materias, grilla de horarios | 35 | 02 |
-| 05 | Asistencia Diaria | Panel preceptor primaria: grilla, quick actions, justificación, métricas | 35 | 03, 04 |
-| 06 | Asistencia por Materia | Panel docente secundaria: grilla por materia, copiar clase, tardanzas | 30 | 03, 04 |
-| 07 | Panel Preceptor + Alertas | Dashboard con semáforo, auto-refresh, alertas, badge | 30 | 05, 06 |
-| 08 | Reportes & Export | Reporte mensual, reporte de alumno, charts, export Excel/PDF | 30 | 07 |
-| 09 | Comunicados | Lista, creación con targeting, detalle, for-me | 25 | 02 |
-| 10 | Admin & Settings | Tenants (superadmin), usuarios/memberships (admin), perfil | 30 | 02 |
-| 11 | Polish, Tests & Deploy | Loading/empty/error, responsive, tests, performance, build | 35 | 03–10 |
+| Sprint | Nombre                    | Objetivo                                                                       | Horas | Depende |
+| ------ | ------------------------- | ------------------------------------------------------------------------------ | ----- | ------- |
+| 00     | Foundation                | Contrato common completo, fix de hooks, shell del App Router, tooling frontend | 40    | —       |
+| 01     | Auth & Sesión             | Login 2 pasos, selector de tenant, sesión persistente, guards y middleware     | 30    | 00      |
+| 02     | App Shell & Navegación    | Dashboard layout por rol, sidebar/topbar, responsive, home por rol             | 30    | 01      |
+| 03     | Estudiantes               | Listado, filtros, CRUD, detalle, matriculación y transferencia                 | 30    | 02      |
+| 04     | Académico                 | Años lectivos, cursos, materias, grilla de horarios                            | 35    | 02      |
+| 05     | Asistencia Diaria         | Panel preceptor primaria: grilla, quick actions, justificación, métricas       | 35    | 03, 04  |
+| 06     | Asistencia por Materia    | Panel docente secundaria: grilla por materia, copiar clase, tardanzas          | 30    | 03, 04  |
+| 07     | Panel Preceptor + Alertas | Dashboard con semáforo, auto-refresh, alertas, badge                           | 30    | 05, 06  |
+| 08     | Reportes & Export         | Reporte mensual, reporte de alumno, charts, export Excel/PDF                   | 30    | 07      |
+| 09     | Comunicados               | Lista, creación con targeting, detalle, for-me                                 | 25    | 02      |
+| 10     | Admin & Settings          | Tenants (superadmin), usuarios/memberships (admin), perfil                     | 30    | 02      |
+| 11     | Polish, Tests & Deploy    | Loading/empty/error, responsive, tests, performance, build                     | 35    | 03–10   |
 
 **Total estimado: ~370 h** (~12 semanas a tiempo completo).
 

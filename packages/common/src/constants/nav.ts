@@ -15,6 +15,10 @@ export interface NavGroupConfig {
 	items: NavItemConfig[];
 }
 
+export interface NavConfigOptions {
+	tenancyMode?: 'multi' | 'single';
+}
+
 export const ALL_NAV_ITEMS: NavItemConfig[] = [
 	{
 		label: 'Instituciones',
@@ -102,8 +106,17 @@ export const ALL_NAV_ITEMS: NavItemConfig[] = [
 	},
 ];
 
-export function getNavConfig(role: Roles): NavGroupConfig[] {
-	const allowedItems = ALL_NAV_ITEMS.filter((item) => item.roles.includes(role));
+export function getNavConfig(
+	role: Roles,
+	options?: NavConfigOptions,
+): NavGroupConfig[] {
+	const isSingle = options?.tenancyMode === 'single';
+	const allowedItems = ALL_NAV_ITEMS.filter((item) => {
+		if (isSingle && item.href === APP_ROUTES.tenants) {
+			return false;
+		}
+		return item.roles.includes(role);
+	});
 	return [
 		{
 			items: allowedItems,
@@ -111,8 +124,16 @@ export function getNavConfig(role: Roles): NavGroupConfig[] {
 	];
 }
 
-export function allowedRolesForPathname(pathname: string): Roles[] {
-	if (pathname.startsWith('/tenants')) return [ROLES.SUPERADMIN];
+export function allowedRolesForPathname(
+	pathname: string,
+	options?: NavConfigOptions,
+): Roles[] {
+	if (pathname.startsWith('/tenants')) {
+		if (options?.tenancyMode === 'single') {
+			return [];
+		}
+		return [ROLES.SUPERADMIN];
+	}
 	if (pathname === '/dashboard')
 		return [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/courses')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
@@ -148,7 +169,11 @@ export function requireRole(role: Roles, allowedRoles: Roles[]): boolean {
 	return allowedRoles.includes(role);
 }
 
-export function isPathAllowedForRole(pathname: string, role: Roles): boolean {
-	const allowed = allowedRolesForPathname(pathname);
+export function isPathAllowedForRole(
+	pathname: string,
+	role: Roles,
+	options?: NavConfigOptions,
+): boolean {
+	const allowed = allowedRolesForPathname(pathname, options);
 	return allowed.includes(role);
 }

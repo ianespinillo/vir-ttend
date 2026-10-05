@@ -6,6 +6,7 @@ import {
 	useAlertsCount,
 	useExitTenant,
 	useLogout,
+	usePublicConfig,
 	useSelectTenant,
 	useTenants,
 } from '@repo/hooks';
@@ -22,11 +23,18 @@ export default function AppDashboardLayout({
 	const exitTenantMutation = useExitTenant();
 	const selectTenantMutation = useSelectTenant();
 	const { data: alertsCount } = useAlertsCount();
+	const { data: publicConfig } = usePublicConfig();
 	const router = useRouter();
 	const pathname = usePathname();
 
+	const tenancyMode =
+		publicConfig?.tenancyMode ||
+		(process.env.NEXT_PUBLIC_TENANCY_MODE as 'multi' | 'single') ||
+		'multi';
+	const isSingle = tenancyMode === 'single';
+
 	const isSuperAdminOrImpersonating = Boolean(
-		user?.role === ROLES.SUPERADMIN || user?.isImpersonating,
+		!isSingle && (user?.role === ROLES.SUPERADMIN || user?.isImpersonating),
 	);
 
 	const { data: tenants } = useTenants({
@@ -73,7 +81,7 @@ export default function AppDashboardLayout({
 		);
 	};
 
-	const isAllowed = isPathAllowedForRole(pathname, user.role);
+	const isAllowed = isPathAllowedForRole(pathname, user.role, { tenancyMode });
 
 	return (
 		<DashboardLayout
@@ -84,12 +92,13 @@ export default function AppDashboardLayout({
 			LinkComponent={Link}
 			onNavigate={(href) => router.push(href)}
 			alertCount={alertsCount?.count}
-			isImpersonating={user.isImpersonating}
-			tenantName={user.tenantName}
+			isImpersonating={isSingle ? false : user.isImpersonating}
+			tenantName={user.tenantName || publicConfig?.tenantName}
 			currentTenantId={user.tenantId ?? undefined}
-			tenants={tenants}
-			onSelectTenant={handleSelectTenant}
-			onExitImpersonation={handleExitImpersonation}
+			tenants={isSingle ? undefined : tenants}
+			tenancyMode={tenancyMode}
+			onSelectTenant={isSingle ? undefined : handleSelectTenant}
+			onExitImpersonation={isSingle ? undefined : handleExitImpersonation}
 			isExitingImpersonation={exitTenantMutation.isPending}
 		>
 			{isAllowed ? (

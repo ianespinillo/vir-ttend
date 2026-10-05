@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES, Roles } from '@repo/common';
+import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { RefreshToken } from '../../../domain/entities/refresh-token.entity';
 import { User } from '../../../domain/entities/user.entity';
 import { UserLoggedInEvent } from '../../../domain/events/user-logged-in.event';
@@ -32,8 +33,17 @@ export class SelectTenantHandler {
 		private readonly tokenService: TokenService,
 		private readonly em: EventEmitter2,
 	) {}
+
 	async execute(command: SelectTenantCommand): Promise<ExpectedReturn> {
 		const { userId, tenantId, userAgent, ipAddress } = command;
+		const tenancy = getTenancyConfig();
+
+		if (tenancy.TENANCY_MODE === 'single') {
+			if (tenantId !== tenancy.TENANT_ID) {
+				throw new Error('Invalid tenant selection');
+			}
+		}
+
 		const membership = await this.memberRepo.findByUserAndTenant(
 			userId,
 			tenantId,
@@ -57,10 +67,15 @@ export class SelectTenantHandler {
 				if (memberships.length > 0) throw new Error('Invalid tenant selection');
 			}
 
+			if (tenancy.TENANCY_MODE === 'single' && !tenancy.ALLOW_SUPERADMIN) {
+				throw new Error('Superadmin access is disabled on this instance');
+			}
+
 			role = ROLES.ADMIN;
 			isImpersonating = true;
 			tenantName = tenant.name;
 		}
+
 		return this.issueSession(
 			userId,
 			tenantId,
@@ -77,6 +92,13 @@ export class SelectTenantHandler {
 		userAgent: string,
 		ipAddress: string,
 	): Promise<ExpectedReturn> {
+		const tenancy = getTenancyConfig();
+		if (tenancy.TENANCY_MODE === 'single' && !tenancy.ALLOW_SUPERADMIN) {
+			throw new Error(
+				'Superadmin access is disabled on this single-tenant instance',
+			);
+		}
+
 		return this.issueSession(
 			userId,
 			'',

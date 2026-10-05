@@ -30,6 +30,7 @@ export interface DashboardLayoutProps {
 	onSelectTenant?: (tenantId: string) => void;
 	onExitImpersonation?: () => void;
 	isExitingImpersonation?: boolean;
+	tenancyMode?: 'multi' | 'single';
 }
 
 export function DashboardLayout({
@@ -47,6 +48,7 @@ export function DashboardLayout({
 	tenantName,
 	currentTenantId,
 	tenants,
+	tenancyMode = 'multi',
 	onSelectTenant,
 	onExitImpersonation,
 	isExitingImpersonation,
@@ -74,6 +76,7 @@ export function DashboardLayout({
 		<SidebarProvider>
 			<AppSidebar
 				role={role}
+				tenancyMode={tenancyMode}
 				user={user}
 				currentPath={currentPath}
 				onNavigate={onNavigate}

@@ -16,6 +16,7 @@ import {
 import { ROLES } from '@repo/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
+import { getTenancyConfig } from '../../../shared/config/tenancy.config';
 import { LoginCommand } from '../../application/commands/login/login.command';
 import { LoginHandler } from '../../application/commands/login/login.handler';
 import { LogoutCommand } from '../../application/commands/logout/logout.command';
@@ -68,6 +69,8 @@ export class AuthController {
 			new LoginCommand(dto.email, dto.password),
 		);
 
+		const tenancy = getTenancyConfig();
+
 		if (result.isSuperAdmin) {
 			const session = await this.selectTenantHandler.startGlobalSuperAdminSession(
 				result.userId,
@@ -78,10 +81,25 @@ export class AuthController {
 			return result; // LoginResponseDto: { isSuperAdmin, tenants }
 		}
 
+		if (tenancy.TENANCY_MODE === 'single' && result.tenants.length === 1) {
+			const session = await this.selectTenantHandler.execute(
+				new SelectTenantCommand(
+					result.userId,
+					result.tenants[0].tenantId,
+					req.cookies['user-agent'] ?? '',
+					req.ip ?? '',
+					false,
+				),
+			);
+			this.setSessionCookies(res, session.accessToken, session.refreshToken);
+			return result;
+		}
+
 		// cookie temporal con userId — httpOnly, dura solo 10 minutos
+		const isProd = process.env.NODE_ENV === 'production';
 		res.cookie('pending_user_id', result.userId, {
 			httpOnly: true,
-			// secure: true,
+			secure: isProd,
 			sameSite: 'strict',
 			maxAge: 10 * 60 * 1000,
 		});
@@ -189,9 +207,10 @@ export class AuthController {
 		accessToken: string,
 		refreshToken: string,
 	) {
+		const isProd = process.env.NODE_ENV === 'production';
 		res.cookie('access_token', accessToken, {
 			httpOnly: true,
-			// secure: true,
+			secure: isProd,
 			sameSite: 'strict',
 			maxAge: 15 * 60 * 1000,
 			path: '/',
@@ -199,7 +218,7 @@ export class AuthController {
 
 		res.cookie('refresh_token', refreshToken, {
 			httpOnly: true,
-			// secure: true,
+			secure: isProd,
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000,
 			// Opción A: path '/' para que el navegador envíe la cookie a /auth/logout

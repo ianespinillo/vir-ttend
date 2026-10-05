@@ -225,4 +225,21 @@ describe('getNavConfig', () => {
 		expect(hrefs).toContain('/reports');
 		expect(hrefs).not.toContain('/tenants');
 	});
+
+	it('excludes /tenants when tenancyMode is single even for superadmin', () => {
+		const config = getNavConfig(ROLES.SUPERADMIN, { tenancyMode: 'single' });
+		const items = config.flatMap((g) => g.items);
+		const hrefs = items.map((i) => i.href);
+
+		expect(hrefs).not.toContain('/tenants');
+		expect(hrefs).toContain('/dashboard');
+	});
+
+	it('denies /tenants in isPathAllowedForRole when tenancyMode is single', () => {
+		expect(
+			isPathAllowedForRole('/tenants', ROLES.SUPERADMIN, {
+				tenancyMode: 'single',
+			}),
+		).toBe(false);
+	});
 });

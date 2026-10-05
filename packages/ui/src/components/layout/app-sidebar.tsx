@@ -21,6 +21,7 @@ import { TenantSwitcher } from './tenant-switcher';
 
 export interface AppSidebarProps {
 	role: Roles;
+	tenancyMode?: 'multi' | 'single';
 	user?: {
 		firstName?: string;
 		lastName?: string;
@@ -42,6 +43,7 @@ export interface AppSidebarProps {
 
 export function AppSidebar({
 	role,
+	tenancyMode = 'multi',
 	user,
 	currentPath,
 	onNavigate,
@@ -54,7 +56,7 @@ export function AppSidebar({
 	onSelectTenant,
 	onExitToGlobal,
 }: AppSidebarProps) {
-	const groups = getNavConfig(role);
+	const groups = getNavConfig(role, { tenancyMode });
 
 	return (
 		<Sidebar collapsible="icon">
@@ -65,6 +67,7 @@ export function AppSidebar({
 					brandName={brandName}
 					isSuperAdmin={isSuperAdmin}
 					isImpersonating={isImpersonating}
+					tenancyMode={tenancyMode}
 					onSelectTenant={onSelectTenant}
 					onExitToGlobal={onExitToGlobal}
 					onManageTenants={
