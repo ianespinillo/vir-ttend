@@ -31,6 +31,7 @@ import { GetTenantHandler } from './application/queries/get-tenant/get-tenant.ha
 import { GetUserWithMembershipHandler } from './application/queries/get-user-with-membership/get-user-with-membership.handler';
 import { ListTenantsHandler } from './application/queries/list-tenants/list-tenants.handler';
 import { ListUsersByTenantHandler } from './application/queries/list-users-by-tenant/list-users-by-tenant.handler';
+import { TenancyBootstrapService } from './application/services/tenancy-bootstrap.service';
 import { AuthorizationService } from './domain/services/authorization.service';
 import { PasswordService } from './domain/services/password.service';
 import { TokenService } from './domain/services/token.service';
@@ -62,6 +63,7 @@ import { UsersController } from './presentation/controllers/users.controller';
 		PasswordService,
 		TokenService,
 		AuthorizationService,
+		TenancyBootstrapService,
 
 		// Handlers de commands
 		CreateUserHandler,
@@ -108,5 +110,6 @@ import { UsersController } from './presentation/controllers/users.controller';
 		AnnouncementsController,
 		AdminController,
 	],
+	exports: [TenancyBootstrapService],
 })
 export class IdentityModule {}

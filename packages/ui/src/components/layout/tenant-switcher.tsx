@@ -23,6 +23,7 @@ export interface TenantSwitcherProps {
 	brandName?: string;
 	isSuperAdmin?: boolean;
 	isImpersonating?: boolean;
+	tenancyMode?: 'multi' | 'single';
 	onSelectTenant?: (tenantId: string) => void;
 	onExitToGlobal?: () => void;
 	onManageTenants?: () => void;
@@ -34,13 +35,17 @@ export function TenantSwitcher({
 	brandName = 'Vir-ttend',
 	isSuperAdmin = false,
 	isImpersonating = false,
+	tenancyMode = 'multi',
 	onSelectTenant,
 	onExitToGlobal,
 	onManageTenants,
 }: TenantSwitcherProps) {
 	const { isMobile } = useSidebar();
 	const canSwitch = Boolean(
-		(isSuperAdmin || isImpersonating) && tenants && tenants.length > 0,
+		tenancyMode !== 'single' &&
+			(isSuperAdmin || isImpersonating) &&
+			tenants &&
+			tenants.length > 0,
 	);
 
 	if (!canSwitch) {

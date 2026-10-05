@@ -92,10 +92,11 @@ pnpm mikro-orm migration:down
 
 ```bash
 # Build de la imagen (context = raíz del monorepo)
-docker build -f dockerfile -t virttend-api .
+docker build -f apps/api/dockerfile -t virttend-api .
 
 # Ejecutar con las variables de entorno
-docker run --rm -p 3000:3000 \
+docker run --rm -p 3001:3001 \
+  -e PORT=3001 \
   -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/virttend \
   -e REDIS_URL=redis://localhost:6379 \
   -e JWT_SECRET=change_me \
@@ -103,7 +104,7 @@ docker run --rm -p 3000:3000 \
   virttend-api
 ```
 
-El `Dockerfile.api` es multi-stage: compila `@repo/common` y la API en un stage `builder` y copia solo `node_modules`, `packages/common` y `apps/api/dist` al stage `runner` (imagen `node:20-alpine`, usuario `node`, expone el puerto `3000`). Ejecuta las migraciones antes de arrancar (`pnpm mikro-orm migration:up`).
+El `apps/api/dockerfile` es multi-stage: compila `@repo/common` y la API en un stage `builder` y copia solo `node_modules`, `packages/common` y `apps/api/dist` al stage `runner` (imagen `node:20-alpine`, usuario `node`, expone el puerto configurado). Ejecuta las migraciones antes de arrancar (`pnpm mikro-orm migration:up`).
 
 ## Arquitectura
 
