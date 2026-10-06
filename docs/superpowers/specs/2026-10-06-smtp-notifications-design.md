@@ -15,11 +15,15 @@ into the same seam without touching business logic.
 
 - New BC `apps/api/src/modules/notifications` with its own
   `domain / application / infrastructure` layers.
-- Listen to the existing `user.created` domain event (already emitted by
-  `create-user.handler`), render a Handlebars template, and send it via SMTP (Nodemailer).
+- **Email 1 — user created**: listen to `user.created` (already emitted by
+  `create-user.handler`), render the `user-created` Handlebars template (temporary
+  credentials), send via SMTP (Nodemailer).
+- **Email 2 — user linked to tenant**: listen to `user.tenant.linked` (already
+  emitted when an existing user is added to a tenant), render the
+  `user-tenant-linked` template (welcome, no credentials), send via SMTP.
 - Configuration via `getEnvs()`: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`,
   `SMTP_FROM`, `EMAIL_ENABLED` (default `false`), with production validation.
-- **Best-effort delivery**: an email failure must never break user creation.
+- **Best-effort delivery**: an email failure must never break user creation or tenant linking.
 - **Capture mode**: when SMTP is not configured, payloads are written to
   `logs/emails.ndjson` instead of being sent (dev/test friendliness).
 
@@ -44,26 +48,38 @@ from `identity` to email.
 | `TemplateRenderer` | application | Compiles `templates/*.hbs` with Handlebars; exposes `render(name, context)` |
 | `MailerService` | application | Implements `EmailSender`: creates Nodemailer transport once, best-effort, capture mode |
 | `UserCreatedEmailListener` | infrastructure | `@OnEvent('user.created')` → render `user-created` → `MailerService.send`; try/catch + `Logger.error`, never throws |
+| `UserTenantLinkedEmailListener` | infrastructure | `@OnEvent('user.tenant.linked')` → render `user-tenant-linked` → `MailerService.send`; try/catch + `Logger.error`, never throws |
 | `templates/user-created.hbs` | infrastructure | Versioned template: names, email, temporary password |
+| `templates/user-tenant-linked.hbs` | infrastructure | Versioned template: names, email, tenant name, role |
 | `app.config.ts` (extended) | shared | SMTP envs + prod validation |
 
 Module wiring: `NotificationsModule` declares `TemplateRenderer`,
-`MailerService`, `UserCreatedEmailListener`, and exports the `EmailSender`
-interface provider.
+`MailerService`, `UserCreatedEmailListener`, `UserTenantLinkedEmailListener`,
+and exports the `EmailSender` interface provider.
 
 ### Data flow
 
 ```
-create-user.handler (unchanged except event payload)
+create-user.handler (unchanged except event payloads)
   → emits 'user.created' { userId, email, tenantId, rawPassword, firstName, lastName }
   → UserCreatedEmailListener (BC notifications)
   → TemplateRenderer.render('user-created', context)
+  → MailerService.send({ to: email, subject, html })
+
+create-user.handler / existing-user branch
+  → emits 'user.tenant.linked' { userId, email, tenantId, role, tenantName }
+  → UserTenantLinkedEmailListener (BC notifications)
+  → TemplateRenderer.render('user-tenant-linked', context)
   → MailerService.send({ to: email, subject, html })
 ```
 
 The existing `UserCreatedEvent` carries `userId, email, tenantId, rawPassword`.
 It is extended with `firstName` and `lastName` (set in `create-user.handler`'s
 emit) so the email is human.
+
+The existing `UserTenantLinkedEvent` carries `userId, email, tenantId, role`.
+It is extended with `tenantName` (resolved in `create-user.handler`'s emit via
+the tenant repository) so the welcome email names the institution.
 
 ## Error handling (non-negotiable)
 
@@ -90,13 +106,15 @@ Added to `getEnvs()` (`apps/api/src/modules/shared/config/app.config.ts`):
 
 ## Testing (TDD)
 
-- **Renderer unit tests**: rendering `user-created.hbs` with a context yields html
-  containing firstName, email, and the temporary password (snapshot/contain assertions).
+- **Renderer unit tests**: rendering `user-created.hbs` and `user-tenant-linked.hbs`
+  with a context yields html containing the expected fields (firstName/email/password
+  for user-created; firstName/email/tenantName/role for user-tenant-linked).
 - **Mailer unit tests**: transport used is injected/fake (`jsonTransport` or mocked);
   asserts `to`, `subject`, `html`; respects `EMAIL_ENABLED=false` (no send attempted);
   capture mode writes the ndjson file.
-- **Listener unit tests**: emits a `user.created` event → `EmailSender.send` called
-  with the rendered payload; when send rejects, the listener logs and does not throw.
+- **Listener unit tests** (both listeners): emits the respective event →
+  `EmailSender.send` called with the rendered payload; when send rejects, the
+  listener logs and does not throw.
 - Existing suites must keep passing (`pnpm lint:check`, `pnpm ts:check`).
 
 ## Git workflow
@@ -118,3 +136,5 @@ Added to `getEnvs()` (`apps/api/src/modules/shared/config/app.config.ts`):
   later; the SMTP env contract already fits any provider).
 - Raw password in event/email: acceptable for this iteration (best-effort email of
   temporary credentials; `mustChangePassword` flag already forces rotation at first login).
+- `user.tenant.linked` fires when linking an existing user; the welcome email needs
+  `tenantName`, which requires resolving the tenant (small repo lookup in the emit path).
