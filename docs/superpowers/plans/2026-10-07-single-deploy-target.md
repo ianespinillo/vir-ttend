@@ -64,7 +64,7 @@ git status --porcelain | Select-String -Pattern "^(R|D|A|\?\?)"   # 6 renames + 
 
 **Contexto:** La VM corre este flag como hotfix local (spec F3). Sin portarlo, el primer deploy del pipeline revierte el hotfix de producción. El flag ya se usa en `mikro-orm.config.ts:25` y `scripts/seed.ts:641`; `app.module.ts` es el único punto que inicializa MikroORM inline.
 
-- [ ] **Step 1:** Editar `apps/api/src/app.module.ts`: insertar `allowGlobalContext: true,` INMEDIATAMENTE después de `autoLoadEntities: true,` (línea 26), dentro del objeto de `useFactory`. El bloque debe quedar así (indentación con TABS, como el resto del archivo — Biome usa tabs):
+- [x] **Step 1:** Editar `apps/api/src/app.module.ts`: insertar `allowGlobalContext: true,` INMEDIATAMENTE después de `autoLoadEntities: true,` (línea 26), dentro del objeto de `useFactory`. El bloque debe quedar así (indentación con TABS, como el resto del archivo — Biome usa tabs):
 
 ```ts
 		MikroOrmModule.forRootAsync({
@@ -82,7 +82,7 @@ git status --porcelain | Select-String -Pattern "^(R|D|A|\?\?)"   # 6 renames + 
 		}),
 ```
 
-- [ ] **Step 2:** Typecheck: `pnpm run ts:check` (turbo `ts:check` en la raíz) → exit code 0.
+- [x] **Step 2:** Typecheck: `pnpm run ts:check` (turbo `ts:check` en la raíz) → exit code 0.
 
 **Verification:**
 
