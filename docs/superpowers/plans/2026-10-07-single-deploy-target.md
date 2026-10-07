@@ -217,7 +217,7 @@ docker compose --env-file .env.production.example -f compose.prod.yml config | S
 rg -n "compose\.single-tenant" . --glob "!docs/superpowers/**"
 ```
 
-Esperado: el config sale 0; `Select-String` encuentra los 3 patrones (`NEXT_PUBLIC_API_URL: /api` aparece en `build.args` y en `environment`); `rg` no imprime nada (exit 1 = sin coincidencias).
+Esperado: el config sale 0; `rg` no imprime nada (exit 1 = sin coincidencias). NOTA (observado en la ejecución, d108ef0): `docker compose config` **interpola** `${POSTGRES_PASSWORD_URL}`, así que el literal del nombre NUNCA aparece en el output — lo que sí se verifica es el valor renderizado: `VIR_DOMAIN: virttend.duckdns.org` (1), `NEXT_PUBLIC_API_URL: /api` (2: `build.args` + `environment`), y `DATABASE_URL: postgresql://...change_me_strong_password_url_encoded@postgres...` con el valor de ejemplo URL-encoded.
 
 **Commit:**
 
@@ -237,7 +237,7 @@ git commit --no-verify -m "chore(deploy): canonicalize compose.prod.yml, retire 
 
 **Contexto:** Spec F2/D7. El repo sirve dos dominios y no tiene `handle_path`; la VM ya corre el bloque same-origin. Con `NEXT_PUBLIC_API_URL=/api` (Task 3), el client y la API comparten origen y se elimina el bloque del subdominio `-api`.
 
-- [ ] **Step 1:** Reemplazar TODO el contenido de `Caddyfile` por exactamente este contenido (indentación de 4 espacios, sin cambios):
+- [x] **Step 1:** Reemplazar TODO el contenido de `Caddyfile` por exactamente este contenido (indentación de 4 espacios, sin cambios):
 
 ```caddy
 # Caddyfile — Vir-ttend production reverse proxy (canónico)
@@ -257,15 +257,15 @@ git commit --no-verify -m "chore(deploy): canonicalize compose.prod.yml, retire 
 }
 ```
 
-- [ ] **Step 2:** Validar la sintaxis con Docker Desktop en marcha (PowerShell, desde la raíz del repo):
+- [x] **Step 2:** Validar la sintaxis con Docker Desktop en marcha (PowerShell, desde la raíz del repo). NOTA: `caddy validate` sin `--config` falla en este subcomando (solo busca `./Caddyfile` en CWD) — el flag es obligatorio:
 
 ```powershell
-docker run --rm -e VIR_DOMAIN=virttend.duckdns.org -v "${PWD}\Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate
+docker run --rm -e VIR_DOMAIN=virttend.duckdns.org -v "${PWD}\Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile
 ```
 
-Esperado: `Valid configuration`.
+Esperado: `Valid configuration` (exit 0). Un `warn` de `caddy fmt` sobre formato es cosmético e informativo.
 
-- [ ] **Step 3:** Verificar que no quedó referencia de dominio al subdominio `-api`:
+- [x] **Step 3:** Verificar que no quedó referencia de dominio al subdominio `-api`:
 
 ```powershell
 rg -n "virttend-api" Caddyfile docs README.md --glob "!docs/superpowers/**"
