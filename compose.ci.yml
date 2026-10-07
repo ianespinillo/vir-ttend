@@ -1,0 +1,10 @@
+# Compose override used by the CD pipeline (.github/workflows/cd.yaml).
+# Points the api and client services at the GHCR images pushed by the CD
+# pipeline instead of building them on the VM. IMAGE_TAG is exported by the
+# deploy script on the VM (git sha of the deployed commit).
+# See docs/ci-cd.md.
+services:
+  api:
+    image: ghcr.io/ianespinillo/vir-ttend/api:${IMAGE_TAG:-latest}
+  client:
+    image: ghcr.io/ianespinillo/vir-ttend/client:${IMAGE_TAG:-latest}
