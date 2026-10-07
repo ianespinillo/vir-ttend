@@ -9,16 +9,17 @@ on:
       target:
         description: GitHub Environment a desplegar
         required: false
-        default: prod
+        default: eest3
       sha:
         description: Commit sha completo a desplegar (vacío = construir main)
         required: false
         default: ""
 
-# Only one deploy in flight at a time; a second push queues behind the first
-# instead of racing the migration step.
+# One CD run in flight at a time: pushes AND dispatches share this group, so a
+# second run queues instead of racing the migration step. Matrix legs inside a
+# run still deploy to all target environments in parallel.
 concurrency:
-  group: cd-${{ inputs.target || 'prod' }}
+  group: cd
   cancel-in-progress: false
 
 permissions:
@@ -34,6 +35,29 @@ env:
   IMAGE_TAG: sha-${{ inputs.sha || github.sha }}
 
 jobs:
+  targets:
+    # Resolves the environments to deploy:
+    #  - push to main: EVERY environment in the fan-out list below
+    #  - workflow_dispatch: only the environment chosen via `target`
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.list.outputs.environments }}
+    steps:
+      - name: Resolve target environments
+        id: list
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_TARGET: ${{ inputs.target }}
+        run: |
+          if [ "$EVENT_NAME" = "push" ]; then
+            # Fan-out list: one GitHub environment name per entry; every merge to
+            # main deploys to all of them in parallel. How to extend: docs/ci-cd.md
+            # section "Agregar o quitar un entorno".
+            echo 'environments=["eest3"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "environments=$(jq -cn --arg target "$DISPATCH_TARGET" '[$target]')" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     if: ${{ github.event_name == 'push' || inputs.sha == '' }}
     runs-on: ubuntu-latest
@@ -110,10 +134,14 @@ jobs:
         run: docker manifest inspect "ghcr.io/${{ github.repository }}/client:${{ env.IMAGE_TAG }}"
 
   deploy:
-    needs: [build, verify-images]
-    if: ${{ always() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.verify-images.result == 'success' || needs.verify-images.result == 'skipped') }}
+    needs: [targets, build, verify-images]
+    if: ${{ always() && needs.targets.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.verify-images.result == 'success' || needs.verify-images.result == 'skipped') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: ${{ fromJSON(needs.targets.outputs.environments) }}
     runs-on: ubuntu-latest
-    environment: ${{ inputs.target || 'prod' }}
+    environment: ${{ matrix.environment }}
 
     env:
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}

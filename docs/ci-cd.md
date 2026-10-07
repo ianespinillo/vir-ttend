@@ -1,6 +1,6 @@
 # CI/CD Pipeline
 
-The repo ships a two-stage pipeline: **CI** (`.github/workflows/ci.yaml`) validates every pull request and non-main branch push; **CD** (`.github/workflows/cd.yaml`) builds Docker images for the API and client, pushes them to GHCR, and deploys them to the production VM on every push to `main`.
+The repo ships a two-stage pipeline: **CI** (`.github/workflows/ci.yaml`) validates every pull request and non-main branch push; **CD** (`.github/workflows/cd.yaml`) builds Docker images for the API and client, pushes them to GHCR, and on every push to `main` deploys them to EVERY environment in its fan-out list (in parallel), while `workflow_dispatch` deploys a single chosen environment.
 
 ```
 push to main
@@ -32,7 +32,7 @@ Key facts:
 
 ## Required GitHub Secrets (por GitHub Environment)
 
-Crea un Environment de GitHub llamado `prod` (Settings → Environments → New environment) y agrega estos secretos como **secretos del ambiente**. El workflow de CD puerta el job `deploy` con `environment: prod`, así que cada despliegue resuelve sus credenciales desde el ambiente destino; agregar más environments (p. ej. `staging`) agrega más targets. No se requiere `gh` CLI (usar la web UI).
+Crea un Environment de GitHub (Settings → Environments → New environment) y agrega estos secretos como **secretos del ambiente**. El workflow de CD resuelve el environment del job `deploy` por leg de la matriz (`matrix.environment`): en un push a `main` es cada nombre de la lista fan-out de `jobs.targets`; en un `workflow_dispatch` es el input `target`. Cada despliegue resuelve así sus credenciales desde el ambiente destino; agregar más environments agrega más targets (ver "Agregar o quitar un entorno"). No se requiere `gh` CLI (usar la web UI).
 
 | Secret | Purpose |
 |--------|---------|
@@ -54,12 +54,24 @@ Notas:
 
 | Disparador | `target` | `sha` | Comportamiento |
 |---|---|---|---|
-| Push a `main` | vacío → `prod` | vacío → el commit del push | build + deploy del HEAD de main |
-| `workflow_dispatch` | Environment a desplegar (default `prod`) | vacío | build + deploy del HEAD actual de main |
+| Push a `main` | ignorado (push usa la lista fan-out de `jobs.targets`) | vacío → el commit del push | build + deploy del HEAD de main a TODOS los environments de la lista, en paralelo (`fail-fast: false`) |
+| `workflow_dispatch` | Environment a desplegar (default `eest3`) | vacío | build + deploy del HEAD actual de main |
 | `workflow_dispatch` | Environment a desplegar | commit sha completo | build saltado; `verify-images` confirma que `sha-<sha>` existe en GHCR; deploy de ese commit |
 
 - Cada environment resuelve sus propios secretos `SSH_*` y `GHCR_*`.
 - **Rollback:** Actions → `cd` → Run workflow → `target` = ambiente, `sha` = último commit bueno. El deploy hace `git fetch` + `git checkout --detach` de ese sha y levanta exactamente sus imágenes (`sha-<sha>`).
+
+## Agregar o quitar un entorno
+
+Cada merge a `main` despliega en paralelo **todos** los environments de la lista fan-out de `jobs.targets` en `.github/workflows/cd.yaml` (hoy: `eest3`); un `workflow_dispatch` despliega solo el `target` elegido.
+
+| Paso | Acción |
+|------|--------|
+| 1. Crear el environment | Settings → Environments → New environment `<nombre>` → agregar los 5 Environment secrets (`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN`). Detalle y generación de la clave: [`./vm-bootstrap.md#8-environment-prod-en-github`](./vm-bootstrap.md#8-environment-prod-en-github) |
+| 2. Agregarlo al fan-out | Editar `jobs.targets` en `.github/workflows/cd.yaml` y sumar el nombre a la lista JSON del paso `push` (p. ej. `["eest3","staging"]`). Esa lista es lo que decide qué entornos se despliegan en **cada merge a main** |
+| 3. Dispatch manual | Run workflow con `target=<nombre>` despliega UN solo entorno sin esperar merge (el default del input es `eest3`; cambiarlo en `cd.yaml` si el entorno principal cambia) |
+| 4. Probar antes del merge | Disparar `Run workflow` con `target=<nombre>` y verificar el job `deploy` con ese environment |
+| 5. Quitar del fan-out | Borrar su nombre de la lista en `jobs.targets`; el environment en GitHub puede permanecer (solo deja de auto-desplegarse) |
 
 ## Alta de nueva instancia (checklist)
 
@@ -75,7 +87,7 @@ Notas:
    - `CORS_ORIGINS=https://<dominio-de-la-instancia>`
    - `JWT_SECRET`, `JWT_REFRESH_SECRET`
    - `TENANT_ID`, `TENANT_SLUG`, `TENANT_NAME`, `SCHOOL_NAME`, `BOOTSTRAP_ADMIN_*`, `ALLOW_SUPERADMIN` (tenancy de la instancia; `TENANCY_MODE=single` va fijo en `compose.prod.yml`)
-4. GitHub: Settings → Environments → crear el ambiente (p. ej. `prod`) con los 5 secretos: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` (PAT `read:packages`).
+4. GitHub: Settings → Environments → crear el ambiente (p. ej. `eest3`) con los 5 secretos: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` (PAT `read:packages`).
 5. Primer despliegue: Actions → `cd` → Run workflow (`target` = ese ambiente, `sha` vacío) y verificar health + `docker compose ps`.
 
 ## Migration step (T3) — how and why
@@ -158,7 +170,7 @@ Rollback preferido: disparar `cd` por `workflow_dispatch` con el `sha` del últi
 
 ## Setup checklist (first CD run)
 
-- [ ] GitHub Environment `prod` creado con `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` como secretos del ambiente
+- [ ] GitHub Environment `eest3` creado con `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` como secretos del ambiente
 - [ ] VM can be reached from GitHub Actions (public IP / security group allows SSH from the runner; agent-based hopping is not supported by the current pipeline)
 - [ ] VM has the repo checked out at `/home/ubuntu/vir-ttend` on `main` (el pipeline hace `checkout --detach` del sha a desplegar) and `compose.ci.yml` present
 - [ ] First deploy: `docker compose -f compose.prod.yml -f compose.ci.yml ps` shows `api`/`client` healthy and Caddy serving HTTPS
