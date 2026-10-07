@@ -5,7 +5,7 @@
 | **Fecha** | 2026-10-07 |
 | **Rama** | `feat/single-deploy-target` |
 | **Plan de implementación** | `docs/superpowers/plans/2026-10-07-single-deploy-target.md` |
-| **Estado** | Propuesta A aprobada por el usuario |
+| **Estado** | Propuesta A aprobada por el usuario + alcance de unificación de docs (lista de borrado) aprobado |
 
 ## 1. Contexto y problema
 
@@ -30,7 +30,7 @@ Objetivo (propuesta A aprobada): UNA definición canónica de despliegue (compos
 | F9 | Feature anterior (commit `3d97fb8`) agregó: `.github/workflows/cd.yaml` (build → imágenes GHCR `ghcr.io/ianespinillo/vir-ttend/{api,client}` con tags `sha-<full>` + `latest`; deploy vía `appleboy/ssh-action@v1` con concurrency, `git pull --ff-only` y paso explícito de migración MikroORM), `compose.ci.yml` (override de `image:` a `ghcr.io/ianespinillo/vir-ttend/api:${IMAGE_TAG:-latest}`), `.github/workflows/ci.yaml` (`branches-ignore: [main, dev]`) y `docs/ci-cd.md`. | Lectura de los 4 archivos |
 | F10 | El API NO tiene prefijo global (`apps/api/src/main.ts` nunca llama a `setGlobalPrefix`): `handle_path /api/*` funciona tal cual. CORS sale de `CORS_ORIGINS` (`main.ts` / `app.config.ts`). | Grep `setGlobalPrefix` en `apps/api/src` → 0 hits |
 | F11 | `apps/client/src/app/(dashboard)/layout.tsx` es `'use client'` y lee `tenancyMode` del config runtime (`/config/public` vía `usePublicConfig()`) con fallback a env: el modo de tenancy NO está horneado; una imagen sirve `multi` y `single`. | Lectura del layout + hook de config pública |
-| F12 | `compose.single-tenant` solo se referencia en `README.md:77` y `doc/deployment-configuration.md:189,192`. `virttend-api` como DOMINIO solo está en el `Caddyfile` del repo (línea 11); `apps/api/README.md:95,104` lo usa como tag de imagen de Docker: NO tocar. | Grep en todo el repo |
+| F12 | `compose.single-tenant` solo se referencia en `README.md:77` y `docs/deployment-configuration.md:189,192`. `virttend-api` como DOMINIO solo está en el `Caddyfile` del repo (línea 11); `apps/api/README.md:95,104` lo usa como tag de imagen de Docker: NO tocar. | Grep en todo el repo |
 | F13 | Ningún archivo `.env*`, `.md` ni `.yml` del repo documenta `POSTGRES_PASSWORD_URL`/`REDIS_PASSWORD_URL` (0 hits). | Grep en md/yml/example |
 | H1 | Hallazgo al escribir este diseño: `.env.production.example:52` YA define `NEXT_PUBLIC_API_URL` con un valor absoluto de ejemplo. Hay que REEMPLAZAR ese valor por `/api`, no agregar una clave duplicada. (El archivo es de solo lectura por permisos; verificado vía grep.) | Grep de `.env.production.example` |
 
@@ -40,7 +40,7 @@ Objetivo (propuesta A aprobada): UNA definición canónica de despliegue (compos
 
 - **D2 — `NEXT_PUBLIC_API_URL=/api` relativo (same-origin).** Build-arg fijo en CI, default `${NEXT_PUBLIC_API_URL:-/api}` en compose, `.env` de la VM cambiado a `/api`. Se elimina el secreto `NEXT_PUBLIC_API_URL` de GitHub. *Rationale:* mismo origen → las cookies SameSite se envían en las llamadas fetch (fix del 401) y UNA imagen sirve a todas las instancias. *Tradeoff:* la API debe exponerse bajo el mismo dominio (ya es así vía `handle_path`) y se pierde la posibilidad de apuntar a un host API separado, modelo que además era la causa del problema.
 
-- **D3 — `compose.prod.yml` es el único compose canónico.** Se elimina `compose.single-tenant.yml` y se actualizan sus referencias (`README.md:77`, `doc/deployment-configuration.md` §Paso 4). *Rationale:* una sola definición parametrizable; las dos variantes ya divergían. *Tradeoff:* diff de delete que hay que revisar, y los docs pierden (temporalmente) el ejemplo de "compose distinto por tenant", que era ilusorio.
+- **D3 — `compose.prod.yml` es el único compose canónico.** Se elimina `compose.single-tenant.yml` y se actualizan sus referencias (`README.md:77`, `docs/deployment-configuration.md` §Paso 4). *Rationale:* una sola definición parametrizable; las dos variantes ya divergían. *Tradeoff:* diff de delete que hay que revisar, y los docs pierden (temporalmente) el ejemplo de "compose distinto por tenant", que era ilusorio.
 
 - **D4 — CD parametrizado con GitHub Environments.** Push a `main` despliega el ambiente `prod`; `workflow_dispatch` acepta `target` (ambiente, default `prod`) y `sha` (commit completo, opcional → redeploy/rollback). Secretos por ambiente: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` (PAT con `read:packages` para el pull de GHCR desde la VM). El build usa `GITHUB_TOKEN` con `permissions: packages: write`. *Rationale:* aislamiento de credenciales por target y despliegues controlados. *Tradeoff:* alta manual de ambientes en la UI (no hay `gh` CLI).
 
@@ -54,7 +54,8 @@ Objetivo (propuesta A aprobada): UNA definición canónica de despliegue (compos
 
 - **D9 — Semántica de inputs.** `workflow_dispatch` con `sha` vacío construye y despliega el HEAD actual de `main`. En eventos `push`, `inputs.*` evalúa vacío → `environment: ${{ inputs.target || 'prod' }}` y a nivel de workflow `DEPLOY_SHA`/`IMAGE_TAG` = `sha-${{ inputs.sha || github.sha }}`.
 
-- **D10 — La VM se reconcilia ANTES del primer deploy del pipeline.** El repo no adopta un deploy con `git pull` sobre drift: la VM tiene que quedar limpia (los 3 archivos con drift ya fueron portados al repo por las Tasks 1-3, y los leftovers sin trackear se retiran) como tarea con gate posterior al push. Es la garantía de que el pipeline despliega exactamente lo que se revisó.
+- **D10 — La VM se reconcilia ANTES del primer deploy del pipeline.** El repo no adopta un deploy con `git pull` sobre drift: la VM tiene que quedar limpia (los 3 archivos con drift ya fueron portados al repo por las Tasks 2-4, y los leftovers sin trackear se retiran) como tarea con gate posterior al push. Es la garantía de que el pipeline despliega exactamente lo que se revisó.
+- **D11 — Una sola carpeta canónica `docs/` y solo docs vivos.** `doc/` se elimina: los 3 docs de referencia viva se mueven a `docs/`, los 3 docs de `apps/demo` a `docs/demo/`, y 33 artefactos terminados (sprints, estructuras de directorio stale, planes/specs ejecutados) se borran — el historial de git los conserva. Nueva guía `docs/vm-bootstrap.md` documenta el alta de una VM desde cero. *Rationale:* decisión explícita del usuario; el estado actual (dos carpetas `doc/`+`docs/`, sprints terminados como "documentación") genera confusión sobre qué es vivo. *Tradeoff:* acceso inmediato a planes históricos pasa por git; mitigado con grep de referencias antes del commit.
 
 ## 4. Alcance / Fuera de alcance
 
@@ -64,8 +65,10 @@ Objetivo (propuesta A aprobada): UNA definición canónica de despliegue (compos
 - `compose.prod.yml` como compose canónico (defaults `_URL`, default `/api`, `VIR_DOMAIN`), retiro de `compose.single-tenant.yml` y sus referencias en docs.
 - `Caddyfile` canónico de un solo origen con `handle_path /api/*` parametrizado por `{$VIR_DOMAIN}`.
 - `cd.yaml` parametrizado: `workflow_dispatch` (`target`, `sha`), GitHub Environments, `verify-images`, checkout exacto del sha en la VM.
-- Documentación: `docs/ci-cd.md` y `doc/deployment-configuration.md`.
-- Runbook de reconciliación de la VM + primer deploy (Task 6, con gate de usuario).
+- Documentación: `docs/ci-cd.md` y `docs/deployment-configuration.md`.
+- Unificación de docs (Task 1, aprobada por el usuario): `doc/` → `docs/` (mover 6 docs vivos a `docs/` y `docs/demo/`), borrado de 33 artefactos terminados (sprints backend/frontend, estructuras de directorio de feb-2026, planes/specs ejecutados), actualización de todas las referencias (README, AI_CONTEXT, comentarios de `apps/demo`).
+- Guía de alta de VM: `docs/vm-bootstrap.md` (de cero a instancia operativa: provisioning, SSH, Docker, DNS, plantilla `.env`, environment de GitHub, primer deploy, troubleshooting).
+- Runbook de reconciliación de la VM + primer deploy (Task 7, con gate de usuario).
 
 **Fuera de alcance:**
 
@@ -80,7 +83,8 @@ Objetivo (propuesta A aprobada): UNA definición canónica de despliegue (compos
 
 | Riesgo | Mitigación |
 |---|---|
-| Si se omite la reconciliación de la VM (D10), el primer deploy revierte los 3 archivos con drift (hotfix de prod perdido). | Task 6 con gate explícito: solo después de merge+push de las Tasks 1-3; comandos exactos de `git checkout -- .` + retiro de leftovers. |
+| Si se omite la reconciliación de la VM (D10), el primer deploy revierte los 3 archivos con drift (hotfix de prod perdido). | Task 7 con gate explícito: solo después de merge+push de las Tasks 2-4; comandos exactos de `git checkout -- .` + retiro de leftovers. |
+| El borrado/unificación de docs deja enlaces rotos en archivos no detectados. | Verification de la Task 1 con grep de `\bdoc/` sobre `README.md`, `AI_CONTEXT.md`, `docs/`, `apps/`, `odd/` → 0 hits antes del commit; git conserva el historial de lo borrado. |
 | Redeploy de un commit anterior al pipeline: sus imágenes nunca se publicaron en GHCR. | Job `verify-images` (`docker manifest inspect`) falla con mensaje claro ANTES de tocar la VM. |
 | `.env.production` sin trackear y sin git-ignorar en la VM: puede ser un leftover con datos o basura. | NO se borra sin confirmación; se inspecciona y la decisión queda con el usuario. |
 | `GHCR_TOKEN` con scope de más o de menos: el pull en la VM requiere PAT con `read:packages`. | Secretos documentados con su scope exacto en `docs/ci-cd.md`; PAT solo para pull. |

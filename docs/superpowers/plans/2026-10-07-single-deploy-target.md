@@ -21,11 +21,43 @@
 - Artefactos técnicos en español neutro/profesional; comandos/identificadores en su forma natural (English).
 - Nunca imprimir secrets ni `.env` en outputs/logs.
 - Los comandos de **Verification** son EXACTAMENTE los que ejecuta el executor (PowerShell-compatible salvo donde se indique Bash en la VM); cada tarea lista los suyos.
-- Un commit work-unit por tarea (Task 6: n/a — runbook).
+- Un commit work-unit por tarea (Task 7: n/a — runbook).
 
 ---
 
-### Task 1: Portar hotfix `allowGlobalContext` a MikroORM inline
+### Task 1: Unificación de docs en `docs/` + guía `vm-bootstrap.md`
+
+**Files:**
+- Create: `docs/vm-bootstrap.md`
+- Create dir + move: `docs/demo/` ← `doc/planning/2026-09-24-demo-app-design.md`, `doc/planning/demo-data-seeds-plan.md`, `doc/opencode/demo-guide.md` (referencia viva de `apps/demo`)
+- Move: `doc/deployment-configuration.md` → `docs/deployment-configuration.md`
+- Move: `doc/tenancy-single-tenant.md` → `docs/tenancy-single-tenant.md`
+- Move: `doc/TECHNICAL_DOCUMENTATION.md` → `docs/TECHNICAL_DOCUMENTATION.md`
+- Modify: `README.md` (links `doc/...`), `AI_CONTEXT.md` (3 links), `apps/demo/src/lib/store/types.ts:9` y `apps/demo/src/lib/store/seed-data.ts:9` (comentarios), `odd/tasks/demo-app.md:6-7`, cross-refs internas entre los 3 docs demo movidos
+- Delete (33 archivos): `doc/planning/sprints/**` (12 sprints backend terminados), `doc/planning/frontend/**` (13: README + 12 sprints frontend terminados), `doc/ui/DIRECTORY_STRUCTURE.md`, `doc/backend/DIRECTORY_STRUCTURE.md` (feb-2026, stale), `doc/opencode/demo-seed-plan.md` (plan meta ya ejecutado), `docs/superpowers/plans/2026-08-23-sprint-08-reports-export.md`, `docs/superpowers/plans/2026-08-23-announcements.md`, `docs/superpowers/plans/2026-08-23-admin-settings.md`, `docs/superpowers/plans/2026-08-29-superadmin-flow-and-admin-settings.md`, `docs/superpowers/specs/2026-08-23-admin-settings-design.md` (planes/specs de sprints ejecutados)
+
+**Contexto:** Lista de borrado aprobada por el usuario. Una sola carpeta canónica: `docs/`; `doc/` desaparece. Git conserva el historial de todo lo borrado. Esta tarea corre PRIMERO (antes de las Tasks 2-6, que operan sobre los paths ya unificados).
+
+- [ ] **Step 1:** Mover y borrar con git (no `Remove-Item` suelto): `New-Item -ItemType Directory docs/demo`, luego `git mv` de los 6 archivos listados, `git rm -r` de los 33. Verificar que `doc/` queda inexistente.
+
+- [ ] **Step 2:** Crear `docs/vm-bootstrap.md` — guía completa "de cero a VM operativa", en español neutro, secciones: (1) prerequisitos (cuenta cloud, dominio, terminal); (2) aprovisionar VM Ubuntu 24.04 LTS + security group 22/80/443; (3) acceso SSH inicial (par de claves, `authorized_keys`); (4) instalar Docker Engine + Compose v2 (comandos + verificación); (5) clonar el repo a `/home/ubuntu/vir-ttend`; (6) DNS: registro A → IP de la VM; (7) plantilla COMPLETA de `.env` con TODAS las claves que exige `compose.prod.yml` (placeholders + `openssl rand -base64 32` para generar; nota: los valores con `+/=` se URL-encodean para `POSTGRES_PASSWORD_URL`/`REDIS_PASSWORD_URL`); (8) crear Environment `prod` en GitHub con los 5 secretos (`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` generada con `ssh-keygen -t ed25519` y su pubkey en la VM, `GHCR_USERNAME`, `GHCR_TOKEN` PAT `read:packages`); (9) primer deploy vía `workflow_dispatch` + verificación (`docker compose ps`, `curl https://<dominio>/api/health`, logs de caddy/api); (10) troubleshooting básico (certificados caddy, `docker compose logs`, migraciones) y puntero a `docs/ci-cd.md` para operación continua y rollback. NUNCA imprimir valores reales de secretos.
+
+- [ ] **Step 3:** Actualizar TODAS las referencias a los paths movidos/borrados: `README.md` (~líneas 79, 165-167), `AI_CONTEXT.md` (líneas 119, 184-185), los 2 comentarios en `apps/demo` → `docs/demo/demo-data-seeds-plan.md`, `odd/tasks/demo-app.md:6-7`, y cross-refs dentro de los 3 docs demo. Corregir cualquier otro hit que aparezca en la Verification.
+
+**Verification:**
+
+```powershell
+Test-Path doc                                                # debe ser False
+rg -n "\bdoc/" README.md AI_CONTEXT.md docs apps odd --glob "!node_modules/**"   # 0 hits
+rg -n "planning/sprints|frontend/sprints|DIRECTORY_STRUCTURE|demo-seed-plan" . --glob "!node_modules/**" --glob "!.git/**"   # 0 hits
+git status --porcelain | Select-String -Pattern "^(R|D|A|\?\?)"   # 6 renames + 33 deletes + vm-bootstrap.md nuevo
+```
+
+**Commit:** `docs: unify docs folder and add vm bootstrap guide` — solo `docs/`, `doc/`, `README.md`, `AI_CONTEXT.md`, `apps/demo/src/lib/store/{types,seed-data}.ts`, `odd/tasks/demo-app.md`. SIN tocar `compose.prod.yml`/`Caddyfile`/`app.module.ts` (tareas siguientes).
+
+---
+
+### Task 2: Portar hotfix `allowGlobalContext` a MikroORM inline
 
 **Files:**
 - Modify: `apps/api/src/app.module.ts:26` (dentro de `MikroOrmModule.forRootAsync` → `useFactory`)
@@ -69,14 +101,14 @@ git commit --no-verify -m "fix(api): enable mikro-orm global context to match pr
 
 ---
 
-### Task 2: Compose canónico (`compose.prod.yml`, `.env.production.example`, retiro del single-tenant)
+### Task 3: Compose canónico (`compose.prod.yml`, `.env.production.example`, retiro del single-tenant)
 
 **Files:**
 - Modify: `compose.prod.yml:42-43` (connection strings), `:76-78` (build-arg del client), `:84` (env del client), `:89-102` (servicio `caddy`)
 - Modify: `.env.production.example:52` + append al final del archivo
 - Delete: `compose.single-tenant.yml`
 - Modify: `README.md:77`
-- Modify: `doc/deployment-configuration.md:187-198` (§Paso 4)
+- Modify: `docs/deployment-configuration.md:187-198` (§Paso 4)
 
 **Contexto:** `compose.prod.yml` es el único compose canónico (spec D3). La VM ya usa las variantes `_URL` de los passwords (spec F1); el repo debe igualarlas. `NEXT_PUBLIC_API_URL` pasa a relativo `/api` con default (spec D2). Caddy recibe `VIR_DOMAIN` por environment (spec D7).
 
@@ -155,7 +187,7 @@ VIR_DOMAIN=virttend.duckdns.org
 | **Orquestación Docker** | `compose.yml` | `compose.prod.yml` |
 ```
 
-- [ ] **Step 8:** `doc/deployment-configuration.md` §Paso 4 (líneas 187-198), reemplazar el bloque actual (que enlaza `compose.single-tenant.yml` vía `file:///` y lista contenedores `virttend_colegio-san-martin_*`) por:
+- [ ] **Step 8:** `docs/deployment-configuration.md` §Paso 4 (líneas 187-198), reemplazar el bloque actual (que enlaza `compose.single-tenant.yml` vía `file:///` y lista contenedores `virttend_colegio-san-martin_*`) por:
 
 ````markdown
 ### Paso 4: Despliegue con Docker Compose
@@ -190,7 +222,7 @@ Esperado: el config sale 0; `Select-String` encuentra los 3 patrones (`NEXT_PUBL
 **Commit:**
 
 ```powershell
-git add compose.prod.yml .env.production.example README.md doc/deployment-configuration.md
+git add compose.prod.yml .env.production.example README.md docs/deployment-configuration.md
 git commit --no-verify -m "chore(deploy): canonicalize compose.prod.yml, retire single-tenant"
 ```
 
@@ -198,12 +230,12 @@ git commit --no-verify -m "chore(deploy): canonicalize compose.prod.yml, retire 
 
 ---
 
-### Task 3: Caddyfile canónico same-origin
+### Task 4: Caddyfile canónico same-origin
 
 **Files:**
 - Modify (reemplazo completo del contenido): `Caddyfile`
 
-**Contexto:** Spec F2/D7. El repo sirve dos dominios y no tiene `handle_path`; la VM ya corre el bloque same-origin. Con `NEXT_PUBLIC_API_URL=/api` (Task 2), el client y la API comparten origen y se elimina el bloque del subdominio `-api`.
+**Contexto:** Spec F2/D7. El repo sirve dos dominios y no tiene `handle_path`; la VM ya corre el bloque same-origin. Con `NEXT_PUBLIC_API_URL=/api` (Task 3), el client y la API comparten origen y se elimina el bloque del subdominio `-api`.
 
 - [ ] **Step 1:** Reemplazar TODO el contenido de `Caddyfile` por exactamente este contenido (indentación de 4 espacios, sin cambios):
 
@@ -252,7 +284,7 @@ git commit --no-verify -m "fix(deploy): single-origin Caddyfile for client and a
 
 ---
 
-### Task 4: CD parametrizado (Environments, `target`, `sha`, checkout exacto)
+### Task 5: CD parametrizado (Environments, `target`, `sha`, checkout exacto)
 
 **Files:**
 - Modify: `.github/workflows/cd.yaml`
@@ -420,13 +452,13 @@ git commit --no-verify -m "ci(cd): parametrize deploy target and revision via en
 
 ---
 
-### Task 5: Docs — Environments, alta de instancia, same-origin
+### Task 6: Docs — Environments, alta de instancia, same-origin
 
 **Files:**
 - Modify: `docs/ci-cd.md`
-- Modify: `doc/deployment-configuration.md:127` y `:179`
+- Modify: `docs/deployment-configuration.md:127` y `:179`
 
-**Contexto:** la Task 4 quita el secreto `NEXT_PUBLIC_API_URL` y cambia el deploy a Environments + checkout por sha; los docs deben reflejarlo (spec D2/D4/D8). La referencia a `compose.single-tenant.yml` ya se arregló en la Task 2 — re-verificar.
+**Contexto:** la Task 5 quita el secreto `NEXT_PUBLIC_API_URL` y cambia el deploy a Environments + checkout por sha; los docs deben reflejarlo (spec D2/D4/D8). La referencia a `compose.single-tenant.yml` ya se arregló en la Task 3 — re-verificar.
 
 - [ ] **Step 1:** `docs/ci-cd.md` — diagrama (líneas 5-21): en la línea `CD (on main)` escribir `CD (on main / dispatch)`; en la línea del diagrama que dice `git pull --ff-only` (justo debajo de `SSH to VM (/home/ubuntu/vir-ttend)`) reemplazarla por `git fetch --prune + checkout $DEPLOY_SHA`.
 
@@ -470,6 +502,8 @@ Notas:
 
 ## Alta de nueva instancia (checklist)
 
+> Guía completa paso a paso (de cero a VM operativa): [`docs/vm-bootstrap.md`](../vm-bootstrap.md).
+
 1. VM nueva Ubuntu con Docker + Docker Compose v2 y puertos 80/443 abiertos.
 2. Clonar el repo en la ruta esperada: `git clone <repo-url> /home/ubuntu/vir-ttend`.
 3. Crear `/home/ubuntu/vir-ttend/.env` con la configuración de la instancia:
@@ -501,7 +535,7 @@ Rollback preferido: disparar `cd` por `workflow_dispatch` con el `sha` del últi
 
 - [ ] **Step 6:** `docs/ci-cd.md` — `## Setup checklist (first CD run)` (líneas 130-135): el primer bullet pasa a ser `- [ ] GitHub Environment `prod` creado con `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` como secretos del ambiente` (sin `NEXT_PUBLIC_API_URL`); el bullet del repo en la VM pasa a decir "on `main` (el pipeline hace `checkout --detach` del sha a desplegar) and `compose.ci.yml` present".
 
-- [ ] **Step 7:** `doc/deployment-configuration.md` — línea 127 (bloque env de `apps/client/.env` en el Paso multi), reemplazar:
+- [ ] **Step 7:** `docs/deployment-configuration.md` — línea 127 (bloque env de `apps/client/.env` en el Paso multi), reemplazar:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api.vir-ttend.app/api/v1
@@ -514,7 +548,7 @@ por:
 NEXT_PUBLIC_API_URL=/api
 ```
 
-- [ ] **Step 8:** `doc/deployment-configuration.md` — línea 179 (bloque env de `apps/client/.env` en el Paso single), reemplazar:
+- [ ] **Step 8:** `docs/deployment-configuration.md` — línea 179 (bloque env de `apps/client/.env` en el Paso single), reemplazar:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api-sanmartin.vir-ttend.app/api/v1
@@ -527,7 +561,7 @@ por:
 NEXT_PUBLIC_API_URL=/api
 ```
 
-- [ ] **Step 9:** Confirmar que no quedó ninguna referencia al compose retirado en `doc/deployment-configuration.md` (el §Paso 4 se arregló en la Task 2).
+- [ ] **Step 9:** Confirmar que no quedó ninguna referencia al compose retirado en `docs/deployment-configuration.md` (el §Paso 4 se arregló en la Task 3).
 
 **Verification:**
 
@@ -540,15 +574,15 @@ Esperado: sin salidas (exit 1 = sin coincidencias). El glob excluye `docs/superp
 **Commit:**
 
 ```powershell
-git add docs/ci-cd.md doc/deployment-configuration.md
+git add docs/ci-cd.md docs/deployment-configuration.md
 git commit --no-verify -m "docs(cd): environments, instance bootstrap, same-origin api url"
 ```
 
 ---
 
-### Task 6: Reconciliación de la VM + primer deploy
+### Task 7: Reconciliación de la VM + primer deploy
 
-> **BLOQUEADA / GATED:** esta tarea NO se ejecuta hasta que el usuario apruebe el push/PR/merge a `main` (el Step 2 es una decisión del orquestador con el usuario). Los pasos de SSH solo son seguros con las Tasks 1-3 ya mergeadas y pusheadas (spec D10). Los comandos de esta tarea corren en la VM vía SSH (Bash), no en PowerShell local.
+> **BLOQUEADA / GATED:** esta tarea NO se ejecuta hasta que el usuario apruebe el push/PR/merge a `main` (el Step 2 es una decisión del orquestador con el usuario). Los pasos de SSH solo son seguros con las Tasks 2-4 ya mergeadas y pusheadas (spec D10). Los comandos de esta tarea corren en la VM vía SSH (Bash), no en PowerShell local.
 
 **Files:**
 - Sin cambios en el repo — el artefacto es este runbook; se ejecuta post-merge.
@@ -563,10 +597,10 @@ cd /home/ubuntu/vir-ttend
 git status --porcelain
 ```
 
-Los 3 `M` (`Caddyfile`, `compose.prod.yml`, `apps/api/src/app.module.ts`) deben corresponder a lo portado en las Tasks 1-3. Recién entonces descartar el drift y limpiar leftovers de compose:
+Los 3 `M` (`Caddyfile`, `compose.prod.yml`, `apps/api/src/app.module.ts`) deben corresponder a lo portado en las Tasks 2-4. Recién entonces descartar el drift y limpiar leftovers de compose:
 
 ```bash
-git checkout -- .                          # descartar drift local (SEGURO solo tras merge+push de Tasks 1-3)
+git checkout -- .                          # descartar drift local (SEGURO solo tras merge+push de Tasks 2-4)
 rm -f compose.caddy.yml compose.prod.yml.bak compose.prod.yml.bak2
 ```
 
@@ -605,4 +639,4 @@ Esperado: el health devuelve estado healthy y `docker ps` muestra los 5 contened
 
 **Verification:** los comandos de los Steps 1 y 4 con sus esperados.
 
-**Commit:** n/a — runbook ejecutado post-merge; este documento es el artefacto (sin cambios de repo en la Task 6).
+**Commit:** n/a — runbook ejecutado post-merge; este documento es el artefacto (sin cambios de repo en la Task 7).
