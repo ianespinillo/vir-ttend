@@ -460,9 +460,9 @@ git commit --no-verify -m "ci(cd): parametrize deploy target and revision via en
 
 **Contexto:** la Task 5 quita el secreto `NEXT_PUBLIC_API_URL` y cambia el deploy a Environments + checkout por sha; los docs deben reflejarlo (spec D2/D4/D8). La referencia a `compose.single-tenant.yml` ya se arregló en la Task 3 — re-verificar.
 
-- [ ] **Step 1:** `docs/ci-cd.md` — diagrama (líneas 5-21): en la línea `CD (on main)` escribir `CD (on main / dispatch)`; en la línea del diagrama que dice `git pull --ff-only` (justo debajo de `SSH to VM (/home/ubuntu/vir-ttend)`) reemplazarla por `git fetch --prune + checkout $DEPLOY_SHA`.
+- [x] **Step 1:** `docs/ci-cd.md` — diagrama (líneas 5-21): en la línea `CD (on main)` escribir `CD (on main / dispatch)`; en la línea del diagrama que dice `git pull --ff-only` (justo debajo de `SSH to VM (/home/ubuntu/vir-ttend)`) reemplazarla por `git fetch --prune + checkout $DEPLOY_SHA`.
 
-- [ ] **Step 2:** `docs/ci-cd.md` — reemplazar la sección `## Required GitHub Secrets` (líneas 33-45, heading + intro + tabla) por:
+- [x] **Step 2:** `docs/ci-cd.md` — reemplazar la sección `## Required GitHub Secrets` (líneas 33-45, heading + intro + tabla) por:
 
 ````markdown
 ## Required GitHub Secrets (por GitHub Environment)
@@ -486,7 +486,7 @@ Notas:
 - El `.env` de la VM (`/home/ubuntu/vir-ttend/.env`) lo toca el pipeline: `compose.prod.yml` lo lee igual que antes.
 ````
 
-- [ ] **Step 3:** `docs/ci-cd.md` — agregar dos secciones nuevas INMEDIATAMENTE después de la sección de secrets (antes de `## Migration step (T3)`):
+- [x] **Step 3:** `docs/ci-cd.md` — agregar dos secciones nuevas INMEDIATAMENTE después de la sección de secrets (antes de `## Migration step (T3)`):
 
 ````markdown
 ## Despliegue parametrizado (workflow_dispatch)
@@ -518,9 +518,9 @@ Notas:
 5. Primer despliegue: Actions → `cd` → Run workflow (`target` = ese ambiente, `sha` vacío) y verificar health + `docker compose ps`.
 ````
 
-- [ ] **Step 4:** `docs/ci-cd.md` — párrafo `How image tags reach the VM` (línea 91): en la frase que empieza `The deploy job exports IMAGE_TAG=sha-<git sha>`, cambiar "derived from `github.sha`" por "derived from `inputs.sha || github.sha`".
+- [x] **Step 4:** `docs/ci-cd.md` — párrafo `How image tags reach the VM` (línea 91): en la frase que empieza `The deploy job exports IMAGE_TAG=sha-<git sha>`, cambiar "derived from `github.sha`" por "derived from `inputs.sha || github.sha`".
 
-- [ ] **Step 5:** `docs/ci-cd.md` — sección `## Manual deploy (fallback)` (líneas 104-128): reemplazar la línea `git pull --ff-only` por:
+- [x] **Step 5:** `docs/ci-cd.md` — sección `## Manual deploy (fallback)` (líneas 104-128): reemplazar la línea `git pull --ff-only` por:
 
 ```bash
 git fetch --prune origin
@@ -533,9 +533,9 @@ Y reemplazar la línea 128, que empieza con "Rollback: point IMAGE_TAG back at t
 Rollback preferido: disparar `cd` por `workflow_dispatch` con el `sha` del último commit bueno (ver "Despliegue parametrizado"). Fallback manual: exportar `IMAGE_TAG=sha-<sha>` y repetir los pasos de pull + `up -d --wait`.
 ```
 
-- [ ] **Step 6:** `docs/ci-cd.md` — `## Setup checklist (first CD run)` (líneas 130-135): el primer bullet pasa a ser `- [ ] GitHub Environment `prod` creado con `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` como secretos del ambiente` (sin `NEXT_PUBLIC_API_URL`); el bullet del repo en la VM pasa a decir "on `main` (el pipeline hace `checkout --detach` del sha a desplegar) and `compose.ci.yml` present".
+- [x] **Step 6:** `docs/ci-cd.md` — `## Setup checklist (first CD run)` (líneas 130-135): el primer bullet pasa a ser `- [ ] GitHub Environment `prod` creado con `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN` como secretos del ambiente` (sin `NEXT_PUBLIC_API_URL`); el bullet del repo en la VM pasa a decir "on `main` (el pipeline hace `checkout --detach` del sha a desplegar) and `compose.ci.yml` present".
 
-- [ ] **Step 7:** `docs/deployment-configuration.md` — línea 127 (bloque env de `apps/client/.env` en el Paso multi), reemplazar:
+- [x] **Step 7:** `docs/deployment-configuration.md` — línea 127 (bloque env de `apps/client/.env` en el Paso multi), reemplazar:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api.vir-ttend.app/api/v1
@@ -548,7 +548,7 @@ por:
 NEXT_PUBLIC_API_URL=/api
 ```
 
-- [ ] **Step 8:** `docs/deployment-configuration.md` — línea 179 (bloque env de `apps/client/.env` en el Paso single), reemplazar:
+- [x] **Step 8:** `docs/deployment-configuration.md` — línea 179 (bloque env de `apps/client/.env` en el Paso single), reemplazar:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api-sanmartin.vir-ttend.app/api/v1
@@ -561,7 +561,7 @@ por:
 NEXT_PUBLIC_API_URL=/api
 ```
 
-- [ ] **Step 9:** Confirmar que no quedó ninguna referencia al compose retirado en `docs/deployment-configuration.md` (el §Paso 4 se arregló en la Task 3).
+- [x] **Step 9:** Confirmar que no quedó ninguna referencia al compose retirado en `docs/deployment-configuration.md` (el §Paso 4 se arregló en la Task 3).
 
 **Verification:**
 

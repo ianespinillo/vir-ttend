@@ -124,7 +124,8 @@ TENANCY_MODE=multi
 
 En `apps/client/.env`:
 ```env
-NEXT_PUBLIC_API_URL=https://api.vir-ttend.app/api/v1
+# Relativo y same-origin: el reverse proxy expone la API en /api (evita 401 por cookies SameSite)
+NEXT_PUBLIC_API_URL=/api
 NEXT_PUBLIC_APP_DOMAIN=vir-ttend.app
 ```
 
@@ -176,7 +177,8 @@ BOOTSTRAP_ADMIN_LAST_NAME=San Martín
 
 En `apps/client/.env`:
 ```env
-NEXT_PUBLIC_API_URL=https://api-sanmartin.vir-ttend.app/api/v1
+# Relativo y same-origin: el reverse proxy expone la API en /api (evita 401 por cookies SameSite)
+NEXT_PUBLIC_API_URL=/api
 ```
 
 ### Paso 3: Ejecutar migraciones de base de datos
