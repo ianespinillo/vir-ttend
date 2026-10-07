@@ -1,16 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsDate, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
+/**
+ * El tenant (escuela) NO viaja en el body: el controller lo toma de la sesión
+ * autenticada (`user.tenantId`). schoolId en el body era un campo muerto que
+ * rompía la validación porque el form del cliente nunca lo envía.
+ */
 export class CreateAcademicYearRequestDto {
-	@IsNotEmpty()
-	@IsString()
-	@ApiProperty({
-		type: String,
-		description: 'ID del tenant (escuela) al que pertenece el año académico.',
-		example: 'a1b2c3d4-5e6f-7890-abcd-ef1234567890',
-	})
-	schoolId!: string;
-
 	@IsNotEmpty()
 	@IsNumber()
 	@ApiProperty({
@@ -40,17 +37,21 @@ export class CreateAcademicYearRequestDto {
 	})
 	endDate!: Date;
 
-	@IsNotEmpty()
+	@IsOptional()
+	@Transform(({ value }: { value?: unknown }) =>
+		Array.isArray(value) ? value.map((day) => new Date(day as string)) : value,
+	)
 	@IsDate({
 		each: true,
 	})
-	@ApiProperty({
+	@ApiPropertyOptional({
 		type: 'array',
 		items: { type: 'string', format: 'date-time' },
-		description: 'Días no laborables del ciclo lectivo (feriados y recesos).',
+		description:
+			'Días no laborables del ciclo lectivo (feriados y recesos). Opcional; se envía como array de fechas ISO.',
 		example: ['2026-07-09T00:00:00.000Z', '2026-12-25T00:00:00.000Z'],
 	})
-	nonWorkingDays!: Date[];
+	nonWorkingDays?: Date[];
 
 	@IsNotEmpty()
 	@IsNumber()

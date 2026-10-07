@@ -48,8 +48,8 @@ export class AcademicYearsController {
 	@ApiOperation({
 		summary: 'Crear un año académico',
 		description:
-			'Crea un nuevo año académico para el tenant (escuela) del usuario autenticado. Roles permitidos: admin. ' +
-			'Body de ejemplo: {"schoolId": "a1b2c3d4-5e6f-7890-abcd-ef1234567890", "year": 2026, "startDate": "2026-03-02T00:00:00.000Z", "endDate": "2026-12-18T00:00:00.000Z", "nonWorkingDays": ["2026-07-09T00:00:00.000Z"], "absenceThresholdPercent": 15, "lateCountAbscenseAfterMinutes": 10}. ' +
+			'Crea un nuevo año académico para el tenant (escuela) del usuario autenticado; el schoolId se toma de la sesión, no del body. Roles permitidos: admin. ' +
+			'Body de ejemplo: {"year": 2026, "startDate": "2026-03-02T00:00:00.000Z", "endDate": "2026-12-18T00:00:00.000Z", "nonWorkingDays": ["2026-07-09T00:00:00.000Z"], "absenceThresholdPercent": 15, "lateCountAbscenseAfterMinutes": 10}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
 	@ApiResponse({
