@@ -5,6 +5,8 @@ export class UserCreatedEvent {
 		readonly email: string,
 		readonly tenantId: string,
 		readonly rawPassword: string,
+		readonly firstName: string,
+		readonly lastName: string,
 	) {
 		this.ocurredAt = new Date();
 	}

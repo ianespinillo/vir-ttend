@@ -4,10 +4,12 @@ import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { CreateUserCommand } from '../../../src/modules/identity/application/commands/create-user/create-user.command';
 import { CreateUserHandler } from '../../../src/modules/identity/application/commands/create-user/create-user.handler';
+import { Tenant } from '../../../src/modules/identity/domain/entities/tenant.entity';
 import { UserTenantMembership } from '../../../src/modules/identity/domain/entities/user-tenant-membership.entity';
 import { User } from '../../../src/modules/identity/domain/entities/user.entity';
 import { UserCreatedEvent } from '../../../src/modules/identity/domain/events/user-created.event';
 import { UserTenantLinkedEvent } from '../../../src/modules/identity/domain/events/user-tenant-linked.event';
+import { ITenantRepository } from '../../../src/modules/identity/domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../src/modules/identity/domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../src/modules/identity/domain/repositories/user.repository.interface';
 import { PasswordService } from '../../../src/modules/identity/domain/services/password.service';
@@ -17,12 +19,14 @@ describe('CreateUserHandler', () => {
 	let handler: CreateUserHandler;
 	let userRepo: MockProxy<IUserRepository>;
 	let membershipRepo: MockProxy<IUserTenantMembershipRepository>;
+	let tenantRepo: MockProxy<ITenantRepository>;
 	let passwordService: MockProxy<PasswordService>;
 	let eventEmitter: MockProxy<EventEmitter2>;
 
 	beforeEach(() => {
 		userRepo = mock<IUserRepository>();
 		membershipRepo = mock<IUserTenantMembershipRepository>();
+		tenantRepo = mock<ITenantRepository>();
 		passwordService = mock<PasswordService>();
 		eventEmitter = mock<EventEmitter2>();
 
@@ -31,6 +35,7 @@ describe('CreateUserHandler', () => {
 			membershipRepo,
 			passwordService,
 			eventEmitter,
+			tenantRepo,
 		);
 	});
 
@@ -56,6 +61,14 @@ describe('CreateUserHandler', () => {
 		expect(eventEmitter.emit).toHaveBeenCalledWith(
 			'user.created',
 			expect.any(UserCreatedEvent),
+		);
+		expect(eventEmitter.emit.mock.calls[0][1]).toEqual(
+			expect.objectContaining({
+				email: 'test@test.com',
+				firstName: 'John',
+				lastName: 'Doe',
+				rawPassword: expect.any(String),
+			}),
 		);
 		expect(result.temporaryPassword).toBeDefined();
 		expect(result.email).toBe('test@test.com');
@@ -111,6 +124,17 @@ describe('CreateUserHandler', () => {
 			}),
 		);
 		membershipRepo.findByUserAndTenant.mockResolvedValue(null);
+		tenantRepo.findById.mockResolvedValue(
+			Tenant.reconstitute({
+				id: 'tenant-id',
+				name: 'Colegio Test',
+				isActive: true,
+				contactEmail: 'contact@test.com',
+				subdomain: 'test',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			}),
+		);
 
 		const result = await handler.execute(
 			new CreateUserCommand(
@@ -125,9 +149,17 @@ describe('CreateUserHandler', () => {
 
 		expect(userRepo.save).not.toHaveBeenCalled();
 		expect(membershipRepo.save).toHaveBeenCalledTimes(1);
+		expect(tenantRepo.findById).toHaveBeenCalledWith('tenant-id');
 		expect(eventEmitter.emit).toHaveBeenCalledWith(
 			'user.tenant.linked',
 			expect.any(UserTenantLinkedEvent),
+		);
+		expect(eventEmitter.emit.mock.calls[0][1]).toEqual(
+			expect.objectContaining({
+				email: 'existing@test.com',
+				tenantName: 'Colegio Test',
+				role: ROLES.PRECEPTOR,
+			}),
 		);
 		expect(result.temporaryPassword).toBeUndefined();
 	});
