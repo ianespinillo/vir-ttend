@@ -74,7 +74,7 @@ Vir-ttend soporta dos modalidades de despliegue sin necesidad de bifurcar o fork
 | **Bootstrap inicial** | Manual / Seeds | Automático e idempotente al arrancar |
 | **Acceso Superadmin** | Habilitado por defecto | Bloqueado por defecto (`ALLOW_SUPERADMIN=false`) |
 | **Gestión `/tenants`** | Visible para Superadmin | Oculta y denegada en toda la UI |
-| **Orquestación Docker** | `compose.yml` | `compose.single-tenant.yml` |
+| **Orquestación Docker** | `compose.yml` | `compose.prod.yml` |
 
 Para el detalle completo de la arquitectura y el paso a paso, consultar [docs/tenancy-single-tenant.md](docs/tenancy-single-tenant.md).
 

@@ -112,7 +112,7 @@ git commit --no-verify -m "fix(api): enable mikro-orm global context to match pr
 
 **Contexto:** `compose.prod.yml` es el único compose canónico (spec D3). La VM ya usa las variantes `_URL` de los passwords (spec F1); el repo debe igualarlas. `NEXT_PUBLIC_API_URL` pasa a relativo `/api` con default (spec D2). Caddy recibe `VIR_DOMAIN` por environment (spec D7).
 
-- [ ] **Step 1:** En `api.environment` de `compose.prod.yml`, reemplazar (líneas 42-43):
+- [x] **Step 1:** En `api.environment` de `compose.prod.yml`, reemplazar (líneas 42-43):
 
 ```yaml
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -128,7 +128,7 @@ por:
 
 NO tocar los passwords crudos de los servicios `postgres` (líneas 7-9) ni `redis` (líneas 23 y 28): siguen siendo obligatorios; solo las cadenas de conexión migran a las variantes `_URL`.
 
-- [ ] **Step 2:** En `client.build.args` (líneas 76-78), reemplazar:
+- [x] **Step 2:** En `client.build.args` (líneas 76-78), reemplazar:
 
 ```yaml
       args:
@@ -144,7 +144,7 @@ por:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
 ```
 
-- [ ] **Step 3:** En `client.environment` (línea 84), reemplazar:
+- [x] **Step 3:** En `client.environment` (línea 84), reemplazar:
 
 ```yaml
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
@@ -156,14 +156,14 @@ por:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
 ```
 
-- [ ] **Step 4:** En el servicio `caddy`, insertar un bloque `environment` entre `restart: unless-stopped` y `ports:` (indentación: 4 espacios para `environment:`, 6 para `VIR_DOMAIN:`):
+- [x] **Step 4:** En el servicio `caddy`, insertar un bloque `environment` entre `restart: unless-stopped` y `ports:` (indentación: 4 espacios para `environment:`, 6 para `VIR_DOMAIN:`):
 
 ```yaml
     environment:
       VIR_DOMAIN: ${VIR_DOMAIN:-virttend.duckdns.org}
 ```
 
-- [ ] **Step 5:** `.env.production.example` (el patrón de permisos `*.env.*` puede pedir aprobación al leer/editar el archivo — aceptarla; seguir el estilo `clave=valor` con comentarios `#` del archivo):
+- [x] **Step 5:** `.env.production.example` (el patrón de permisos `*.env.*` puede pedir aprobación al leer/editar el archivo — aceptarla; seguir el estilo `clave=valor` con comentarios `#` del archivo):
   - a) Reemplazar el valor de la línea 52 (hoy un valor absoluto de ejemplo): la línea debe quedar exactamente `NEXT_PUBLIC_API_URL=/api`. Si la línea de comentario contigua menciona una URL absoluta, ajustarla a: `# Relativo y same-origin: el client llama a la API en /api (estándar para todas las instancias)`. NO agregar una segunda clave `NEXT_PUBLIC_API_URL`.
   - b) Append al final del archivo:
 
@@ -179,15 +179,15 @@ REDIS_PASSWORD_URL=change_me_redis_password_url_encoded
 VIR_DOMAIN=virttend.duckdns.org
 ```
 
-- [ ] **Step 6:** Eliminar el compose huérfano: `git rm compose.single-tenant.yml`.
+- [x] **Step 6:** Eliminar el compose huérfano: `git rm compose.single-tenant.yml`.
 
-- [ ] **Step 7:** `README.md` línea 77, la fila de la tabla debe quedar:
+- [x] **Step 7:** `README.md` línea 77, la fila de la tabla debe quedar:
 
 ```markdown
 | **Orquestación Docker** | `compose.yml` | `compose.prod.yml` |
 ```
 
-- [ ] **Step 8:** `docs/deployment-configuration.md` §Paso 4 (líneas 187-198), reemplazar el bloque actual (que enlaza `compose.single-tenant.yml` vía `file:///` y lista contenedores `virttend_colegio-san-martin_*`) por:
+- [x] **Step 8:** `docs/deployment-configuration.md` §Paso 4 (líneas 187-198), reemplazar el bloque actual (que enlaza `compose.single-tenant.yml` vía `file:///` y lista contenedores `virttend_colegio-san-martin_*`) por:
 
 ````markdown
 ### Paso 4: Despliegue con Docker Compose

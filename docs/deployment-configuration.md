@@ -186,16 +186,18 @@ pnpm --filter api prisma migrate deploy
 
 ### Paso 4: Despliegue con Docker Compose
 
-Puedes utilizar el archivo preparado [`compose.single-tenant.yml`](file:///C:/Users/Espin/Documentos/GitHub/vir-ttend/compose.single-tenant.yml):
+El archivo canónico de producción es [`compose.prod.yml`](../compose.prod.yml): una instancia = una pila por VM, parametrizada por su `.env`.
 
 ```bash
-docker compose -f compose.single-tenant.yml up -d
+docker compose -f compose.prod.yml up -d
 ```
 
 Este comando levanta:
-- Contenedor PostgreSQL (`virttend_colegio-san-martin_postgres`) con volumen persistente propio.
-- Contenedor Redis (`virttend_colegio-san-martin_redis`) con prefijo de llaves aislado.
-- Contenedor API NestJS (`virttend_colegio-san-martin_api`) ejecutando el auto-bootstrap al arrancar.
+- Contenedor PostgreSQL (`vir-ttend_postgres`) con volumen persistente propio.
+- Contenedor Redis (`vir-ttend_redis`).
+- Contenedor API NestJS (`vir-ttend_api`) ejecutando el auto-bootstrap al arrancar.
+- Contenedor Next.js (`vir-ttend_client`).
+- Contenedor Caddy (`vir-ttend_caddy`) como reverse proxy de un solo origen.
 
 ### Paso 5: Primer arranque y Auto-Bootstrap
 Al iniciar, NestJS ejecuta `TenancyBootstrapService`:
