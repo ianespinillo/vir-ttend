@@ -6,7 +6,7 @@
  * generator is idempotent and pure — calling createSeedState() twice yields
  * two value-equal states, which is what the persistence tests rely on.
  *
- * Source of truth: doc/planning/demo-data-seeds-plan.md §2 (users, courses,
+ * Source of truth: docs/demo/demo-data-seeds-plan.md §2 (users, courses,
  * schedule, students + attendance profiles) and §3 (alerts, announcements).
  * Absence math (bands, late equivalence) is imported from selectors.ts so the
  * seeded alerts ALWAYS match what the selectors compute at render time.

@@ -6,7 +6,7 @@
  * @repo/common so the real feature components from @repo/ui can be fed with the
  * exact same shapes they receive from the API-backed hooks.
  *
- * Business rules seeded (source: doc/planning/demo-data-seeds-plan.md §2.3):
+ * Business rules seeded (source: docs/demo/demo-data-seeds-plan.md §2.3):
  * - Absence threshold: 15%
  * - Equivalency: 3 tardanzas (lateness) = 1 inasistencia (absence)
  * - Warning band starts at 10% (two thirds of the 15% threshold)

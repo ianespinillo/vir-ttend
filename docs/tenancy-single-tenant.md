@@ -1,6 +1,6 @@
 # Plan: instancias privadas por escuela (single-tenant) en Vir-ttend
 
-> Documento para un agente de código. Leer `AI_CONTEXT.md` y `doc/tenancy-single-tenant.md` antes de empezar.
+> Documento para un agente de código. Leer `AI_CONTEXT.md` y `docs/tenancy-single-tenant.md` antes de empezar.
 
 ## 1. Objetivo
 

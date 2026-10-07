@@ -3,8 +3,8 @@
 **Feature:** demo-app
 **Branch:** `feat/demo-app`
 **Fecha:** 2026-09-24
-**Referencia de diseño:** `doc/planning/2026-09-24-demo-app-design.md`
-**Referencia de datos:** `doc/planning/demo-data-seeds-plan.md`
+**Referencia de diseño:** `docs/demo/2026-09-24-demo-app-design.md`
+**Referencia de datos:** `docs/demo/demo-data-seeds-plan.md`
 
 ## Objetivo
 
