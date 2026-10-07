@@ -7,7 +7,7 @@ on:
   push:
     branches-ignore:
       - main
-      - develop
+      - dev
 
 jobs:
   pre-deploy:

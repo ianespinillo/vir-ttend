@@ -32,7 +32,7 @@ vir-ttend/
 │   ├── ui/                  # Design System (Radix UI, Tailwind CSS, layouts y componentes de presentación)
 │   ├── typescript-config/   # tsconfig base compartidos
 │   └── eslint-config/       # Reglas y configuraciones base de ESLint
-├── doc/                     # Documentación de arquitectura, C4, sprints y planes de tenancy
+├── docs/                    # Documentación viva: arquitectura (C4), despliegue, CI/CD y demos
 ├── compose.yml              # Orquestación Docker de PostgreSQL (16), Redis (7), API y Cliente
 └── AI_CONTEXT.md            # Este archivo de contexto
 ```
@@ -116,7 +116,7 @@ Cuando generes o modifiques código en este repositorio, **debes cumplir estrict
    - Cualquier tipo, enum, DTO o schema de validación que deba conocerse entre cliente y servidor debe residir en `packages/common`.
 5. **Multi-tenancy y Aislamiento:**
    - En base de datos, las entidades pertenecientes a un tenant deben incluir `tenantId`.
-   - No eliminar `tenantId` ni las políticas de seguridad aunque se opere en modo single-tenant (ver [doc/tenancy-single-tenant.md](doc/tenancy-single-tenant.md)).
+   - No eliminar `tenantId` ni las políticas de seguridad aunque se opere en modo single-tenant (ver [docs/tenancy-single-tenant.md](docs/tenancy-single-tenant.md)).
 6. **Manejo de base de datos:**
    - No modificar el esquema de PostgreSQL mediante `schema:update` en caliente. Siempre generar y versionar migraciones con MikroORM (`pnpm mikro-orm migration:create`).
 
@@ -181,8 +181,8 @@ pnpm ts:check
 
 ## 7. Referencias Cruzadas de Documentación
 
-- **Arquitectura Detallada:** [doc/TECHNICAL_DOCUMENTATION.md](doc/TECHNICAL_DOCUMENTATION.md)
-- **Estrategia Single-Tenant:** [doc/tenancy-single-tenant.md](doc/tenancy-single-tenant.md)
+- **Arquitectura Detallada:** [docs/TECHNICAL_DOCUMENTATION.md](docs/TECHNICAL_DOCUMENTATION.md)
+- **Estrategia Single-Tenant:** [docs/tenancy-single-tenant.md](docs/tenancy-single-tenant.md)
 - **README Principal:** [README.md](README.md)
 - **README Backend:** [apps/api/README.md](apps/api/README.md)
 - **README Frontend:** [apps/client/README.md](apps/client/README.md)

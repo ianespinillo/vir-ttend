@@ -1,13 +1,15 @@
-# Caddyfile — Vir-ttend production reverse proxy
+# Caddyfile — Vir-ttend production reverse proxy (canónico)
 #
-# Caddy automatically obtains and renews TLS certificates via Let's Encrypt.
-# The VM must be reachable on ports 80 and 443 from the internet.
-# Replace the subdomains below with your actual DuckDNS subdomains.
+# {$VIR_DOMAIN} se inyecta desde compose.prod.yml (environment VIR_DOMAIN,
+# default virttend.duckdns.org). Caddy obtiene y renueva TLS vía Let's Encrypt;
+# los puertos 80/443 deben estar abiertos en la VM.
+#
+# Mismo origen: el client llama a la API en /api (NEXT_PUBLIC_API_URL=/api)
+# y handle_path quita el prefijo antes del proxy (fix del 401 SameSite).
 
-virttend.duckdns.org {
+{$VIR_DOMAIN} {
+    handle_path /api/* {
+        reverse_proxy api:3001
+    }
     reverse_proxy client:3000
-}
-
-virttend-api.duckdns.org {
-    reverse_proxy api:3001
 }

@@ -33,7 +33,7 @@ vir-ttend/
 │   ├── typescript-config/   # Configuraciones base de TypeScript (tsconfig)
 │   └── eslint-config/       # Configuraciones base de linting y Biome
 │
-├── doc/                     # Documentación técnica, diseño de módulos y guías de arquitectura
+├── docs/                    # Documentación viva: arquitectura, despliegue, CI/CD y demos
 ├── compose.yml              # Orquestación de servicios en Docker (PostgreSQL, Redis, API, Client)
 └── AI_CONTEXT.md            # Contexto técnico exhaustivo para asistentes de IA y LLMs
 ```
@@ -74,9 +74,9 @@ Vir-ttend soporta dos modalidades de despliegue sin necesidad de bifurcar o fork
 | **Bootstrap inicial** | Manual / Seeds | Automático e idempotente al arrancar |
 | **Acceso Superadmin** | Habilitado por defecto | Bloqueado por defecto (`ALLOW_SUPERADMIN=false`) |
 | **Gestión `/tenants`** | Visible para Superadmin | Oculta y denegada en toda la UI |
-| **Orquestación Docker** | `compose.yml` | `compose.single-tenant.yml` |
+| **Orquestación Docker** | `compose.yml` | `compose.prod.yml` |
 
-Para el detalle completo de la arquitectura y el paso a paso, consultar [doc/tenancy-single-tenant.md](doc/tenancy-single-tenant.md).
+Para el detalle completo de la arquitectura y el paso a paso, consultar [docs/tenancy-single-tenant.md](docs/tenancy-single-tenant.md).
 
 ---
 
@@ -162,9 +162,9 @@ pnpm --filter demo dev     # Iniciar Demo en http://localhost:3002
 ## 📖 Documentación Adicional
 
 - 🤖 **[AI_CONTEXT.md](AI_CONTEXT.md):** Mapa mental y contexto condensado para LLMs y asistentes de programación.
-- 📐 **[Documentación Técnica de Arquitectura](doc/TECHNICAL_DOCUMENTATION.md):** Modelo de dominio, Bounded Contexts y diagramas C4/ERD.
-- 🏢 **[Despliegues Aislados Single-Tenant](doc/tenancy-single-tenant.md):** Estrategia de despliegues por colegio sin bifurcar el repositorio.
-- ⚙️ **[Guía de Configuración según Tipo](doc/deployment-configuration.md):** Guía práctica para desplegar en modo Multi-Tenant (SaaS) o Single-Tenant (Aislado).
+- 📐 **[Documentación Técnica de Arquitectura](docs/TECHNICAL_DOCUMENTATION.md):** Modelo de dominio, Bounded Contexts y diagramas C4/ERD.
+- 🏢 **[Despliegues Aislados Single-Tenant](docs/tenancy-single-tenant.md):** Estrategia de despliegues por colegio sin bifurcar el repositorio.
+- ⚙️ **[Guía de Configuración según Tipo](docs/deployment-configuration.md):** Guía práctica para desplegar en modo Multi-Tenant (SaaS) o Single-Tenant (Aislado).
 - 📑 **READMEs individuales:**
   - [API Backend (apps/api)](apps/api/README.md)
   - [Web Client (apps/client)](apps/client/README.md)

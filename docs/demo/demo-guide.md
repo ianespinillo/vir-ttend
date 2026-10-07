@@ -1,7 +1,7 @@
 # Guía de Demo — Evaluación de Endpoints
 
 **Proyecto:** Vir-ttend
-**Requisito previo:** haber corrido `pnpm --filter api db:seed` (ver `demo-seed-plan.md`).
+**Requisito previo:** haber corrido `pnpm --filter api db:seed`.
 **API:** `http://localhost:3000` · **Swagger:** `http://localhost:3000/docs`
 **Formato de respuesta:** `{ success, data, timeStamp }` (salvo export).
 

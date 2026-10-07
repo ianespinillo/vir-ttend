@@ -113,7 +113,7 @@ No hay HTTP. Las páginas demo reemplazan los hooks de red de `@repo/hooks` por 
 
 ## 5. Capa de datos: seed determinista
 
-Fuente única del dataset: **`doc/planning/demo-data-seeds-plan.md`**. El seed se expresa como módulo TypeScript con **IDs fijos** para que cualquier estado sea reproducible.
+Fuente única del dataset: **`docs/demo/demo-data-seeds-plan.md`**. El seed se expresa como módulo TypeScript con **IDs fijos** para que cualquier estado sea reproducible.
 
 ### Contenido sembrado
 
