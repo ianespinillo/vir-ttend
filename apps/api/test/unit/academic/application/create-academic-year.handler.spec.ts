@@ -95,4 +95,23 @@ describe('CreateAcademicYearHandler', () => {
 		expect(result.absenceThresholdPercent).toBe(75);
 		expect(result.lateCountAbscenseAfterMinutes).toBe(15);
 	});
+
+	it('should persist the thresholds sent in the command', async () => {
+		academicYearRepository.findBySchoolAndYear.mockResolvedValue(null);
+
+		const result = await handler.execute(
+			new CreateAcademicYearCommand(
+				'tenant-id',
+				2026,
+				new Date('2026-03-01'),
+				new Date('2026-12-31'),
+				[],
+				15,
+				10,
+			),
+		);
+
+		expect(result.absenceThresholdPercent).toBe(15);
+		expect(result.lateCountAbscenseAfterMinutes).toBe(10);
+	});
 });

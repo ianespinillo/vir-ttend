@@ -5,7 +5,9 @@ export class CreateAcademicYearCommand {
 		readonly startDate: Date,
 		readonly endDate: Date,
 		readonly nonWorkingDays: Date[],
-		readonly abscenseThresholdPercent: number,
-		readonly lateCountAsAbscenseAfterMinutes: number,
+		// Nombres idénticos a AcademicYear.CreateProps: el handler hace
+		// `{...command}` y un desfasamiento de nombre descarta el valor en silencio.
+		readonly absenceThresholdPercent: number,
+		readonly lateCountAbscenseAfterMinutes: number,
 	) {}
 }
