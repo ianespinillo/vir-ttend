@@ -483,7 +483,7 @@ Notas:
 - `NEXT_PUBLIC_API_URL` ya NO es secreto: el workflow compila el client con el build-arg fijo `/api` (same-origin, ver spec); cada instancia lo define en su `.env` runtime.
 - Los GHCR packages son privados por defecto. Mantenerlos privados es lo que el pipeline asume (el login de la VM con `GHCR_TOKEN` lo resuelve).
 - `GITHUB_TOKEN` (automático) se usa dentro del workflow: `permissions: packages: write` permite pushear a GHCR sin ningún secreto.
-- El `.env` de la VM (`/home/ubuntu/vir-ttend/.env`) lo toca el pipeline: `compose.prod.yml` lo lee igual que antes.
+- El `.env` de la VM (`/home/ubuntu/vir-ttend/.env`) NO lo modifica el pipeline (solo lectura): `compose.prod.yml` lo lee igual que antes.
 ````
 
 - [x] **Step 3:** `docs/ci-cd.md` — agregar dos secciones nuevas INMEDIATAMENTE después de la sección de secrets (antes de `## Migration step (T3)`):
