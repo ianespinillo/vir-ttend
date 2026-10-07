@@ -4,11 +4,21 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      target:
+        description: GitHub Environment a desplegar
+        required: false
+        default: prod
+      sha:
+        description: Commit sha completo a desplegar (vacío = construir main)
+        required: false
+        default: ""
 
 # Only one deploy in flight at a time; a second push queues behind the first
 # instead of racing the migration step.
 concurrency:
-  group: cd-${{ github.ref }}
+  group: cd-${{ inputs.target || 'prod' }}
   cancel-in-progress: false
 
 permissions:
@@ -16,13 +26,16 @@ permissions:
   packages: write
 
 env:
-  # Tag pushed to GHCR by the build job and used by the deploy job to pull
-  # the exact images on the VM. Must match the `type=sha,format=long` tags
-  # produced by docker/metadata-action below.
-  IMAGE_TAG: sha-${{ github.sha }}
+  # Commit a desplegar: en push = el commit que disparó el workflow; en
+  # workflow_dispatch con sha explícito = ese commit (redeploy/rollback).
+  DEPLOY_SHA: ${{ inputs.sha || github.sha }}
+  # Tag de GHCR a desplegar. Debe coincidir con los tags `type=sha,format=long`
+  # que docker/metadata-action genera cuando el commit entra en main.
+  IMAGE_TAG: sha-${{ inputs.sha || github.sha }}
 
 jobs:
   build:
+    if: ${{ github.event_name == 'push' || inputs.sha == '' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -74,11 +87,33 @@ jobs:
           tags: ${{ steps.meta-client.outputs.tags }}
           labels: ${{ steps.meta-client.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_URL=/api
+
+  verify-images:
+    # Solo aplica a workflow_dispatch con sha: esas imágenes se publicaron
+    # cuando el commit entró en main (el build se saltea).
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.sha != '' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify API image exists for IMAGE_TAG
+        run: docker manifest inspect "ghcr.io/${{ github.repository }}/api:${{ env.IMAGE_TAG }}"
+
+      - name: Verify client image exists for IMAGE_TAG
+        run: docker manifest inspect "ghcr.io/${{ github.repository }}/client:${{ env.IMAGE_TAG }}"
 
   deploy:
-    needs: build
+    needs: [build, verify-images]
+    if: ${{ always() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.verify-images.result == 'success' || needs.verify-images.result == 'skipped') }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.target || 'prod' }}
 
     env:
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
@@ -91,13 +126,14 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_TAG,GHCR_USERNAME,GHCR_TOKEN
+          envs: IMAGE_TAG,DEPLOY_SHA,GHCR_USERNAME,GHCR_TOKEN
           script: |
             set -euo pipefail
 
             cd /home/ubuntu/vir-ttend
 
-            git pull --ff-only
+            git fetch --prune origin
+            git -c advice.detachedHead=false checkout --quiet --detach "$DEPLOY_SHA"
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 

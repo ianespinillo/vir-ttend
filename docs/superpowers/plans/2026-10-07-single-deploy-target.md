@@ -291,7 +291,7 @@ git commit --no-verify -m "fix(deploy): single-origin Caddyfile for client and a
 
 > **NOTA OBLIGATORIA:** el paso de migración, el health loop y los pasos de pull/`up` del script SSH se copian VERBATIM del `cd.yaml` actual — no reescribirlos de memoria. El bloque `script:` de este paso ya los incluye literalmente (líneas 106-131 del archivo actual), con el único cambio de `git pull --ff-only` por `fetch` + `checkout`. Leer el archivo antes de editar.
 
-- [ ] **Step 1:** Bloque `on:` (líneas 3-6), reemplazar por:
+- [x] **Step 1:** Bloque `on:` (líneas 3-6), reemplazar por:
 
 ```yaml
 on:
@@ -310,7 +310,7 @@ on:
         default: ""
 ```
 
-- [ ] **Step 2:** Concurrency (línea 11), cambiar solo la group:
+- [x] **Step 2:** Concurrency (línea 11), cambiar solo la group:
 
 ```yaml
   group: cd-${{ inputs.target || 'prod' }}
@@ -318,7 +318,7 @@ on:
 
 (el `cancel-in-progress: false` y el comentario de arriba se mantienen).
 
-- [ ] **Step 3:** `env` a nivel de workflow (líneas 18-22), reemplazar por:
+- [x] **Step 3:** `env` a nivel de workflow (líneas 18-22), reemplazar por:
 
 ```yaml
 env:
@@ -330,7 +330,7 @@ env:
   IMAGE_TAG: sha-${{ inputs.sha || github.sha }}
 ```
 
-- [ ] **Step 4:** Job `build`: agregar `if` justo después de `runs-on: ubuntu-latest` (línea 26):
+- [x] **Step 4:** Job `build`: agregar `if` justo después de `runs-on: ubuntu-latest` (línea 26):
 
 ```yaml
     if: ${{ github.event_name == 'push' || inputs.sha == '' }}
@@ -343,7 +343,7 @@ Y cambiar el `build-args` del build del client (líneas 76-77) — se elimina la
             NEXT_PUBLIC_API_URL=/api
 ```
 
-- [ ] **Step 5:** Agregar el job `verify-images` nuevo (entre `build` y `deploy`):
+- [x] **Step 5:** Agregar el job `verify-images` nuevo (entre `build` y `deploy`):
 
 ```yaml
   verify-images:
@@ -367,7 +367,7 @@ Y cambiar el `build-args` del build del client (líneas 76-77) — se elimina la
         run: docker manifest inspect "ghcr.io/${{ github.repository }}/client:${{ env.IMAGE_TAG }}"
 ```
 
-- [ ] **Step 6:** Reemplazar el job `deploy` completo (líneas 79-131) por:
+- [x] **Step 6:** Reemplazar el job `deploy` completo (líneas 79-131) por:
 
 ```yaml
   deploy:
@@ -430,7 +430,7 @@ Y cambiar el `build-args` del build del client (líneas 76-77) — se elimina la
 
 Todo lo demás del archivo (`permissions`, comentarios, `steps` del `build`) queda byte-idéntico al actual salvo los cambios de los Steps 1-4.
 
-- [ ] **Step 7:** Self-review del diff: `git diff .github/workflows/cd.yaml` → confirmar que no queda `${{ secrets.NEXT_PUBLIC_API_URL }}`, que `environment:` existe en `deploy`, y que hay tres `if:` (build, verify-images, deploy).
+- [x] **Step 7:** Self-review del diff: `git diff .github/workflows/cd.yaml` → confirmar que no queda `${{ secrets.NEXT_PUBLIC_API_URL }}`, que `environment:` existe en `deploy`, y que hay tres `if:` (build, verify-images, deploy).
 
 **Verification:**
 
