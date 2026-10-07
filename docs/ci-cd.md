@@ -32,7 +32,7 @@ Key facts:
 
 ## Required GitHub Secrets (por GitHub Environment)
 
-Crea un Environment de GitHub (Settings → Environments → New environment) y agrega estos secretos como **secretos del ambiente**. El workflow de CD resuelve el environment del job `deploy` por leg de la matriz (`matrix.environment`): en un push a `main` es cada nombre de la lista fan-out de `jobs.targets`; en un `workflow_dispatch` es el input `target`. Cada despliegue resuelve así sus credenciales desde el ambiente destino; agregar más environments agrega más targets (ver "Agregar o quitar un entorno"). No se requiere `gh` CLI (usar la web UI).
+Crea un Environment de GitHub (Settings → Environments → New environment) y agrega estos secretos como **secretos del ambiente**. El workflow de CD resuelve el environment del job `deploy` por leg de la matriz (`matrix.environment`): en un push a `main` es cada nombre de la lista fan-out de `jobs.targets`; en un `workflow_dispatch` es el input `target`. Cada despliegue resuelve así sus credenciales desde el ambiente destino; crear un environment habilita el dispatch a ese nombre, y para que además cada merge a `main` lo despliegue hay que sumarlo a la lista fan-out de `jobs.targets` (ver "Agregar o quitar un entorno"). No se requiere `gh` CLI (usar la web UI).
 
 | Secret | Purpose |
 |--------|---------|
@@ -67,7 +67,7 @@ Cada merge a `main` despliega en paralelo **todos** los environments de la lista
 
 | Paso | Acción |
 |------|--------|
-| 1. Crear el environment | Settings → Environments → New environment `<nombre>` → agregar los 5 Environment secrets (`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN`). Detalle y generación de la clave: [`./vm-bootstrap.md#8-environment-prod-en-github`](./vm-bootstrap.md#8-environment-prod-en-github) |
+| 1. Crear el environment | Settings → Environments → New environment `<nombre>` → agregar los 5 Environment secrets (`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN`). Detalle y generación de la clave: [`./vm-bootstrap.md#8-environment-de-github`](./vm-bootstrap.md#8-environment-de-github) |
 | 2. Agregarlo al fan-out | Editar `jobs.targets` en `.github/workflows/cd.yaml` y sumar el nombre a la lista JSON del paso `push` (p. ej. `["eest3","staging"]`). Esa lista es lo que decide qué entornos se despliegan en **cada merge a main** |
 | 3. Dispatch manual | Run workflow con `target=<nombre>` despliega UN solo entorno sin esperar merge (el default del input es `eest3`; cambiarlo en `cd.yaml` si el entorno principal cambia) |
 | 4. Probar antes del merge | Disparar `Run workflow` con `target=<nombre>` y verificar el job `deploy` con ese environment |
@@ -75,7 +75,7 @@ Cada merge a `main` despliega en paralelo **todos** los environments de la lista
 
 ## Alta de nueva instancia (checklist)
 
-> Guía completa paso a paso (de cero a VM operativa): [`docs/vm-bootstrap.md`](../vm-bootstrap.md).
+> Guía completa paso a paso (de cero a VM operativa): [`docs/vm-bootstrap.md`](./vm-bootstrap.md).
 
 1. VM nueva Ubuntu con Docker + Docker Compose v2 y puertos 80/443 abiertos.
 2. Clonar el repo en la ruta esperada: `git clone <repo-url> /home/ubuntu/vir-ttend`.

@@ -1,6 +1,6 @@
 # Bootstrap de VM: de cero a instanciaVir-ttend operativa
 
-Guía paso a paso para aprovisionar una VM Ubuntu, instalar Docker, configurar DNS y `.env`, crear el Environment `prod` de GitHub y ejecutar el primer deploy del pipeline CD. Al terminar, la instancia sirve `https://<dominio>` con client y API bajo un solo origen.
+Guía paso a paso para aprovisionar una VM Ubuntu, instalar Docker, configurar DNS y `.env`, crear el environment de GitHub y ejecutar el primer deploy del pipeline CD. Al terminar, la instancia sirve `https://<dominio>` con client y API bajo un solo origen.
 
 > **Regla de seguridad:** nunca pegues valores reales de secretos en este archivo, en commits ni en logs. Todo lo marcado con `<...>` es un placeholder.
 
@@ -9,7 +9,7 @@ Guía paso a paso para aprovisionar una VM Ubuntu, instalar Docker, configurar D
 1. Aprovisionar la VM (Ubuntu 24.04, puertos 22/80/443) y habilitar acceso SSH.
 2. Instalar Docker Engine + Compose v2 y clonar el repo en `/home/ubuntu/vir-ttend`.
 3. Apuntar el DNS y crear `/home/ubuntu/vir-ttend/.env`.
-4. Crear el Environment `prod` en GitHub con sus 5 secretos.
+4. Crear el environment de GitHub (el nombre debe coincidir con la lista fan-out de `jobs.targets`) con sus 5 secretos.
 5. Deploy por Actions y verificar con el checklist del final.
 
 ## 1. Prerrequisitos
@@ -183,9 +183,9 @@ Notas importantes:
 
   Esperado: `CONFIG_OK` (un error `variable is not set` indica la clave faltante).
 
-## 8. Environment `prod` en GitHub
+## 8. Environment de GitHub
 
-En el repo: **Settings → Environments → New environment** → nombre `prod`. Agregar estos 5 secretos como secretos **del ambiente**:
+En el repo: **Settings → Environments → New environment** → nombre del environment (p. ej. `eest3`; debe coincidir con la lista fan-out de `jobs.targets` en `.github/workflows/cd.yaml` y con el `target` del paso 9). Agregar estos 5 secretos como secretos **del ambiente**:
 
 | Secreto | Valor |
 |---------|-------|
@@ -209,7 +209,7 @@ La clave privada nunca se versiona ni se imprime en logs.
 ## 9. Primer deploy
 
 1. **Actions → `cd` → Run workflow.**
-2. Seleccionar `target=prod` y dejar `sha` vacío → **Run workflow**.
+2. Seleccionar `target=<nombre>` (el del environment del paso 8) y dejar `sha` vacío → **Run workflow**.
 3. Observar en el log: el paso de migraciones, el health loop (`API health OK`) y el `docker compose ps` final.
 
 Verificación en la VM:
@@ -249,7 +249,7 @@ Para operación continua (deploys por commit, deploy por `sha`, rollback) ver [`
 - [ ] Repo clonado en `/home/ubuntu/vir-ttend`.
 - [ ] Registro A resuelve `<dominio>` → IP pública.
 - [ ] `.env` completo (todas las claves del paso 7) con `chmod 600`.
-- [ ] Environment `prod` creado con los 5 secretos.
+- [ ] Environment de GitHub creado con los 5 secretos.
 - [ ] Run de `cd` en verde; `docker compose ps` con los 5 contenedores.
 - [ ] `https://<dominio>/api/health` responde `status: ok` y el sitio carga por HTTPS.
 

@@ -17,7 +17,9 @@ on:
 
 # One CD run in flight at a time: pushes AND dispatches share this group, so a
 # second run queues instead of racing the migration step. Matrix legs inside a
-# run still deploy to all target environments in parallel.
+# run still deploy to all target environments in parallel. Note: GitHub keeps a
+# single PENDING run per group — a newer run replaces a queued one that has not
+# started yet (cancel-in-progress only governs runs already in progress).
 concurrency:
   group: cd
   cancel-in-progress: false
@@ -55,6 +57,12 @@ jobs:
             # section "Agregar o quitar un entorno".
             echo 'environments=["eest3"]' >> "$GITHUB_OUTPUT"
           else
+            # An empty target (required: false can be cleared) would yield [""],
+            # one matrix leg with no environment and no secrets. Fail fast.
+            if [ -z "$DISPATCH_TARGET" ]; then
+              echo "target input is empty; pass a GitHub environment name" >&2
+              exit 1
+            fi
             echo "environments=$(jq -cn --arg target "$DISPATCH_TARGET" '[$target]')" >> "$GITHUB_OUTPUT"
           fi
 
