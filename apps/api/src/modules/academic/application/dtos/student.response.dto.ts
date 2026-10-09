@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IStudentResponse, STUDENTSTATUS, StudentStatus } from '@repo/common';
 import { Student } from '../../domain/entities/student.entity';
 
@@ -62,6 +62,13 @@ export class StudentResponseDto implements IStudentResponse {
 	})
 	courseId: string;
 
+	@ApiPropertyOptional({
+		type: String,
+		description: 'Nombre descriptivo del curso del estudiante.',
+		example: '1° A - Mañana',
+	})
+	courseName?: string;
+
 	@ApiProperty({
 		enum: STUDENTSTATUS,
 		description: 'Estado del estudiante.',
@@ -69,7 +76,7 @@ export class StudentResponseDto implements IStudentResponse {
 	})
 	status: StudentStatus;
 
-	constructor(student: Student) {
+	constructor(student: Student, courseName?: string) {
 		this.id = student.id;
 		this.fullName = student.fullName;
 		this.firstName = student.firstName;
@@ -78,6 +85,7 @@ export class StudentResponseDto implements IStudentResponse {
 		this.birthDate = student.birthDate;
 		this.age = student.age;
 		this.courseId = student.courseId;
+		this.courseName = courseName;
 		this.status = student.status;
 	}
 }

@@ -11,8 +11,18 @@ export class RefreshTokenRepository
 	implements IRefreshTokenRepository
 {
 	async save(token: RefreshToken): Promise<void> {
-		const orm = RefreshTokenMapper.toOrm(token);
-		this.em.persist(orm);
+		const existing = await this.findOne({ id: token.id });
+		if (existing) {
+			existing.userId = token.userId;
+			existing.tenantId = token.tenantId;
+			existing.token = token.token;
+			existing.expiresAt = token.expiresAt;
+			existing.revokedAt = token.revokedAt;
+			existing.createdAt = token.createdAt;
+		} else {
+			const orm = RefreshTokenMapper.toOrm(token);
+			this.em.persist(orm);
+		}
 		await this.em.flush();
 	}
 	async findByHash(token: string): Promise<RefreshToken | null> {

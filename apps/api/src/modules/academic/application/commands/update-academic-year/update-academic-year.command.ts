@@ -8,5 +8,9 @@ export class UpdateAcademicYearCommand {
 		readonly academicYearId: string,
 		readonly thresholds: Thresholds,
 		readonly nonWorkingDays?: Date[],
+		readonly year?: number,
+		readonly startDate?: Date,
+		readonly endDate?: Date,
+		readonly isActive?: boolean,
 	) {}
 }

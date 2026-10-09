@@ -15,6 +15,7 @@ import {
 } from '@repo/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function CreateAnnouncementPage() {
 	const router = useRouter();
@@ -60,17 +61,19 @@ export default function CreateAnnouncementPage() {
 				...values,
 				publishAt: serializePublishAt(values.publishAt),
 			});
+			toast.success('Comunicado creado exitosamente');
 			router.push('/announcements');
 		} catch (err: unknown) {
 			const errorObj = err as {
 				response?: { data?: { message?: string } };
 				message?: string;
 			};
-			setErrorMessage(
+			const message =
 				errorObj?.response?.data?.message ??
-					errorObj?.message ??
-					'No se pudo crear el comunicado. Intentá de nuevo.',
-			);
+				errorObj?.message ??
+				'No se pudo crear el comunicado. Intentá de nuevo.';
+			setErrorMessage(message);
+			toast.error(message);
 		}
 	};
 

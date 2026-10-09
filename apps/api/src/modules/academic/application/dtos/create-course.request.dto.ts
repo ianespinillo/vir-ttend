@@ -1,6 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { LEVEL, LevelType, SHIFT, ShiftType } from '@repo/common';
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+	IsEnum,
+	IsNotEmpty,
+	IsNumber,
+	IsOptional,
+	IsString,
+} from 'class-validator';
 
 export class CreateCourseRequestDto {
 	@IsNotEmpty()
@@ -12,14 +18,14 @@ export class CreateCourseRequestDto {
 	})
 	academicYearId!: string;
 
-	@IsNotEmpty()
+	@IsOptional()
 	@IsString()
-	@ApiProperty({
+	@ApiPropertyOptional({
 		type: String,
 		description: 'ID del tenant (escuela) al que pertenece el curso.',
 		example: 'a1b2c3d4-5e6f-7890-abcd-ef1234567890',
 	})
-	schoolId!: string;
+	schoolId?: string;
 
 	@IsNotEmpty()
 	@IsEnum(LEVEL)

@@ -4,6 +4,7 @@ import type { AttendanceRecord } from '@repo/common';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, FileCheck, Info } from 'lucide-react';
+import { localizeCourseName } from '../../../lib/shift';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import {
@@ -51,7 +52,7 @@ export function ReviewJustificationsModal({
 						<span>
 							Curso:{' '}
 							<strong className="text-foreground">
-								{courseName || 'Seleccionado'}
+								{localizeCourseName(courseName) || 'Seleccionado'}
 							</strong>
 						</span>
 						<span>•</span>

@@ -1,8 +1,14 @@
-import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { UpdateUserCommand } from './update-user.command';
 
+@Injectable()
 export class UpdateUserHandler {
 	constructor(
 		@Inject('IUserRepository') private userRepository: IUserRepository,

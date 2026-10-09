@@ -10,7 +10,7 @@ import { createSubjectSchema } from './subject.schema.js';
 describe('academic schemas', () => {
 	const validUUID = '123e4567-e89b-12d3-a456-426614174000';
 
-	it('valida un año lectivo válido', () => {
+	it('valida un año lectivo válido y asigna isActive true por defecto', () => {
 		const result = createAcademicYearSchema.safeParse({
 			year: 2026,
 			startDate: '2026-03-01',
@@ -19,6 +19,24 @@ describe('academic schemas', () => {
 			lateCountAbscenseAfterMinutes: 15,
 		});
 		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.isActive).toBe(true);
+		}
+	});
+
+	it('respeta isActive false si se pasa explícitamente', () => {
+		const result = createAcademicYearSchema.safeParse({
+			year: 2026,
+			startDate: '2026-03-01',
+			endDate: '2026-12-15',
+			absenceThresholdPercent: 15,
+			lateCountAbscenseAfterMinutes: 15,
+			isActive: false,
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.isActive).toBe(false);
+		}
 	});
 
 	it('valida un curso válido', () => {

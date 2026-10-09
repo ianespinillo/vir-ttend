@@ -2,6 +2,7 @@
 
 import type { ICourseResponse } from '@repo/common';
 import { BookOpen, GraduationCap, Sun, UserCheck, Users } from 'lucide-react';
+import { formatShift, localizeCourseName } from '../../../lib/shift';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
@@ -26,15 +27,10 @@ export function CourseCard({
 				? 'Secundaria'
 				: 'Inicial';
 
-	const shiftLabel =
-		course.shift === 'MORNING'
-			? 'Mañana'
-			: course.shift === 'AFTERNOON'
-				? 'Tarde'
-				: 'Noche';
+	const shiftLabel = formatShift(course.shift);
 
 	const titleName =
-		course.fullName ||
+		localizeCourseName(course.fullName) ||
 		`${course.yearNumber}° "${course.division}" - ${levelLabel}`;
 
 	return (

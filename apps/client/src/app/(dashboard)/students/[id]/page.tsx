@@ -12,16 +12,20 @@ import {
 	useUpdateStudent,
 } from '@repo/hooks';
 import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
 	EnrollmentModal,
 	ErrorState,
 	LoadingSpinner,
-	PageHeader,
 	StudentDetail,
 	StudentForm,
 	StudentReport,
 } from '@repo/ui';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../../../../lib/auth/provider';
 
 export default function StudentDetailPage() {
@@ -39,10 +43,10 @@ export default function StudentDetailPage() {
 	const isPreceptor = role === 'preceptor';
 
 	const { data: student, isLoading, isError, error } = useStudent(studentId);
-	const { data: coursesData } = useCourses();
-	const courses = coursesData || [];
-
 	const { data: activeYear } = useActiveAcademicYear();
+	const { data: coursesData } = useCourses({ academicYearId: activeYear?.id });
+	const courses = coursesData ?? [];
+
 	const { data: report, isLoading: isLoadingReport } = useStudentReport({
 		studentId,
 		academicYearId: activeYear?.id,
@@ -55,10 +59,11 @@ export default function StudentDetailPage() {
 
 	const [modalState, setModalState] = useState<{
 		open: boolean;
-		mode: 'enroll' | 'transfer';
+		mode: 'enroll' | 'change';
 	}>({ open: false, mode: 'enroll' });
 
 	const [formError, setFormError] = useState<string | null>(null);
+	const [errorField, setErrorField] = useState<keyof CreateStudentFormValues>();
 
 	const handleBack = () => {
 		router.push('/students');
@@ -66,13 +71,14 @@ export default function StudentDetailPage() {
 
 	const handleUpdateSubmit = async (values: CreateStudentFormValues) => {
 		setFormError(null);
+		setErrorField(undefined);
 		try {
 			await updateMutation.mutateAsync({
 				id: studentId,
 				data: values,
 			});
+			toast.success('Estudiante actualizado exitosamente');
 			setIsEditing(false);
-			router.replace(`/students/${studentId}`);
 		} catch (err: unknown) {
 			const errorObj = err as {
 				response?: { status?: number; data?: { message?: string } };
@@ -80,31 +86,67 @@ export default function StudentDetailPage() {
 				message?: string;
 			};
 			const statusCode = errorObj?.response?.status || errorObj?.status;
-			if (statusCode === 409) {
-				setFormError(
-					'El número de documento ingresado ya pertenece a otro estudiante.',
-				);
-			} else {
-				setFormError(
-					errorObj?.response?.data?.message ||
+			setErrorField(statusCode === 409 ? 'documentNumber' : undefined);
+			const message =
+				statusCode === 409
+					? 'El número de documento ingresado ya pertenece a otro estudiante.'
+					: errorObj?.response?.data?.message ||
 						errorObj?.message ||
-						'Ocurrió un error al actualizar los datos del estudiante.',
-				);
-			}
+						'Ocurrió un error al actualizar los datos del estudiante.';
+			setFormError(message);
+			toast.error(message);
 		}
 	};
 
 	const handleModalSubmit = async (targetCourseId: string) => {
-		if (modalState.mode === 'enroll') {
+		const isEnroll = modalState.mode === 'enroll';
+		try {
 			await enrollMutation.mutateAsync({
 				id: studentId,
 				data: { courseId: targetCourseId },
 			});
-		} else {
-			await transferMutation.mutateAsync({
-				id: studentId,
-				data: { targetCourseId },
-			});
+			toast.success(
+				isEnroll
+					? 'Estudiante matriculado exitosamente'
+					: 'Curso cambiado exitosamente',
+			);
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					(isEnroll
+						? 'Error al matricular el estudiante'
+						: 'Error al cambiar el curso del estudiante'),
+			);
+		}
+	};
+
+	const handleTransfer = async () => {
+		if (!student) return;
+		if (
+			!window.confirm(
+				`¿Confirma el traslado de ${student.fullName} a otra escuela? El alumno quedará marcado como Transferido.`,
+			)
+		) {
+			return;
+		}
+		try {
+			await transferMutation.mutateAsync({ id: studentId });
+			toast.success('Estudiante trasladado a otra escuela');
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					'Error al trasladar el estudiante',
+			);
 		}
 	};
 
@@ -113,7 +155,20 @@ export default function StudentDetailPage() {
 			student &&
 			window.confirm(`¿Está seguro de que desea desactivar a ${student.fullName}?`)
 		) {
-			await deleteMutation.mutateAsync(studentId);
+			try {
+				await deleteMutation.mutateAsync(studentId);
+				toast.success('Estudiante desactivado exitosamente');
+			} catch (err: unknown) {
+				const errorObj = err as {
+					response?: { data?: { message?: string } };
+					message?: string;
+				};
+				toast.error(
+					errorObj?.response?.data?.message ||
+						errorObj?.message ||
+						'Error al desactivar el estudiante',
+				);
+			}
 		}
 	};
 
@@ -138,39 +193,9 @@ export default function StudentDetailPage() {
 		);
 	}
 
-	if (isEditing) {
-		const formattedBirthDate = student.birthDate
-			? String(student.birthDate).split('T')[0]
-			: '';
-
-		return (
-			<div className="space-y-6">
-				<PageHeader
-					title={`Editar: ${student.lastName}, ${student.firstName}`}
-					description="Modifique los datos personales o la información del tutor"
-				/>
-
-				<StudentForm
-					isEditing
-					defaultValues={{
-						firstName: student.firstName,
-						lastName: student.lastName,
-						documentNumber: student.documentNumber,
-						birthDate: formattedBirthDate,
-						courseId: student.courseId,
-						tutorName: student.tutorName,
-						tutorPhone: student.tutorPhone,
-						tutorEmail: student.tutorEmail || '',
-					}}
-					onSubmit={handleUpdateSubmit}
-					isLoading={updateMutation.isPending}
-					courses={courses}
-					onCancel={() => setIsEditing(false)}
-					errorMessage={formError}
-				/>
-			</div>
-		);
-	}
+	const formattedBirthDate = student.birthDate
+		? String(student.birthDate).split('T')[0]
+		: '';
 
 	return (
 		<div className="space-y-6">
@@ -180,7 +205,8 @@ export default function StudentDetailPage() {
 				onBack={handleBack}
 				onEdit={() => setIsEditing(true)}
 				onEnroll={() => setModalState({ open: true, mode: 'enroll' })}
-				onTransfer={() => setModalState({ open: true, mode: 'transfer' })}
+				onChangeCourse={() => setModalState({ open: true, mode: 'change' })}
+				onTransfer={handleTransfer}
 				onDeactivate={handleDeactivate}
 				isAdmin={isAdmin}
 				isPreceptor={isPreceptor}
@@ -190,6 +216,38 @@ export default function StudentDetailPage() {
 				}
 			/>
 
+			{/* Modal Editar estudiante */}
+			<Dialog
+				open={isEditing}
+				onOpenChange={(open) => !open && setIsEditing(false)}
+			>
+				<DialogContent className="sm:max-w-3xl">
+					<DialogHeader>
+						<DialogTitle>{`Editar: ${student.lastName}, ${student.firstName}`}</DialogTitle>
+					</DialogHeader>
+					<StudentForm
+						isEditing
+						variant="dialog"
+						errorField={errorField}
+						defaultValues={{
+							firstName: student.firstName,
+							lastName: student.lastName,
+							documentNumber: student.documentNumber,
+							birthDate: formattedBirthDate,
+							courseId: student.courseId,
+							tutorName: student.tutorName,
+							tutorPhone: student.tutorPhone,
+							tutorEmail: student.tutorEmail || '',
+						}}
+						onSubmit={handleUpdateSubmit}
+						isLoading={updateMutation.isPending}
+						courses={courses}
+						onCancel={() => setIsEditing(false)}
+						errorMessage={formError}
+					/>
+				</DialogContent>
+			</Dialog>
+
 			<EnrollmentModal
 				open={modalState.open}
 				onOpenChange={(open) => setModalState((prev) => ({ ...prev, open }))}
@@ -198,7 +256,7 @@ export default function StudentDetailPage() {
 				mode={modalState.mode}
 				courses={courses}
 				onSubmit={handleModalSubmit}
-				isLoading={enrollMutation.isPending || transferMutation.isPending}
+				isLoading={enrollMutation.isPending}
 			/>
 		</div>
 	);

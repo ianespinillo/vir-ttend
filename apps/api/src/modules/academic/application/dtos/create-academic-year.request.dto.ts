@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsDate, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import {
+	IsBoolean,
+	IsDate,
+	IsNotEmpty,
+	IsNumber,
+	IsOptional,
+} from 'class-validator';
 
 /**
  * El tenant (escuela) NO viaja en el body: el controller lo toma de la sesión
@@ -74,4 +80,13 @@ export class CreateAcademicYearRequestDto {
 		example: 10,
 	})
 	lateCountAbscenseAfterMinutes!: number;
+
+	@IsOptional()
+	@IsBoolean()
+	@ApiPropertyOptional({
+		type: Boolean,
+		description: 'Indica si el ciclo lectivo debe crearse como activo.',
+		example: true,
+	})
+	isActive?: boolean;
 }

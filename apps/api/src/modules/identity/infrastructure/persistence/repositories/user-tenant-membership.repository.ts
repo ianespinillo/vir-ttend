@@ -56,8 +56,18 @@ export class UserTenantMembershipRepository
 		return UserTenantMembershipMapper.toDomain(orm);
 	}
 	async save(uTMember: UserTenantMembership): Promise<void> {
-		const orm = UserTenantMembershipMapper.toOrm(uTMember);
-		this.em.persist(orm);
+		const existing = await this.findOne({ id: uTMember.id });
+		if (existing) {
+			existing.userId = uTMember.userId;
+			existing.tenantId = uTMember.tenantId;
+			existing.role = uTMember.role;
+			existing.isActive = uTMember.isActive;
+			existing.createdAt = uTMember.createdAt;
+			existing.updatedAt = uTMember.updatedAt;
+		} else {
+			const orm = UserTenantMembershipMapper.toOrm(uTMember);
+			this.em.persist(orm);
+		}
 		await this.em.flush();
 	}
 }

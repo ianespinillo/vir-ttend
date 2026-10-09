@@ -105,18 +105,25 @@ export class StudentsController {
 	@Get()
 	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
-		summary: 'Listar estudiantes de un curso',
+		summary: 'Listar estudiantes de un curso o institución',
 		description:
-			'Lista paginada de los estudiantes del curso indicado del tenant (escuela) del usuario autenticado, con filtro opcional por estado. Roles permitidos: admin, preceptor. ' +
-			'URL de ejemplo: /students?courseId=f47ac10b-58cc-4372-a567-0e02b2c3d479&status=ACTIVE&page=1&limit=20. ' +
+			'Lista paginada de los estudiantes del tenant del usuario autenticado, con filtros opcionales por curso, estado y búsqueda por nombre o DNI. Roles permitidos: admin, preceptor. ' +
+			'URL de ejemplo: /students?courseId=f47ac10b-58cc-4372-a567-0e02b2c3d479&status=ACTIVE&search=González&page=1&limit=20. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
 	@ApiQuery({
 		name: 'courseId',
-		required: true,
+		required: false,
 		type: String,
-		description: 'ID del curso.',
+		description: 'ID del curso (opcional).',
 		example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+	})
+	@ApiQuery({
+		name: 'search',
+		required: false,
+		type: String,
+		description: 'Búsqueda por nombre, apellido o DNI (opcional).',
+		example: 'González',
 	})
 	@ApiQuery({
 		name: 'status',
@@ -149,13 +156,23 @@ export class StudentsController {
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	async list(
 		@CurrentUser() user: JwtPayload,
-		@Query('courseId') courseId: string,
+		@Query('courseId') courseId?: string,
+		@Query('search') search?: string,
+		@Query('q') q?: string,
 		@Query('status') status?: StudentStatus,
 		@Query('page') page = 1,
 		@Query('limit') limit = 20,
 	) {
+		const searchQuery = search || q;
 		return this.getStudentsByCourseHandler.execute(
-			new GetStudentsByCourseQuery(user.tenantId, courseId, +page, +limit, status),
+			new GetStudentsByCourseQuery(
+				user.tenantId,
+				courseId,
+				+page,
+				+limit,
+				status,
+				searchQuery,
+			),
 		);
 	}
 
@@ -318,10 +335,11 @@ export class StudentsController {
 	@Post(':id/transfer')
 	@RolesDecorator(ROLES.ADMIN)
 	@ApiOperation({
-		summary: 'Trasladar un estudiante de curso',
+		summary: 'Trasladar un estudiante a otra escuela',
 		description:
-			'Traslada al estudiante al curso de destino indicado, marcando su estado como transferido. Roles permitidos: admin. ' +
-			'Body de ejemplo: {"newCourseId": "f47ac10b-58cc-4372-a567-0e02b2c3d479"}. ' +
+			'Marca al estudiante como transferido (pase a otra escuela). Conserva el curso actual como referencia histórica. ' +
+			'Roles permitidos: admin. ' +
+			'Body opcional: {"reason": "Pase a la Escuela Nº 12"}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
 	@ApiParam({
@@ -329,20 +347,26 @@ export class StudentsController {
 		description: 'ID del estudiante a trasladar.',
 		example: '9f8c6d4b-2a10-4f4e-8c3d-5b1e7a0d9f22',
 	})
-	@ApiResponse({ status: 201, description: 'Estudiante trasladado de curso.' })
-	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({
+		status: 201,
+		description: 'Estudiante trasladado a otra escuela.',
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Validación falló o el estudiante no está activo',
+	})
 	@ApiResponse({ status: 401, description: 'No autenticado' })
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	@ApiResponse({
 		status: 404,
-		description: 'Estudiante o curso de destino no encontrado',
+		description: 'Estudiante no encontrado',
 	})
 	async transfer(
 		@Param('id') id: string,
 		@Body() dto: TransferStudentRequestDto,
 	) {
 		return this.transferStudentHandler.execute(
-			new TransferStudentCommand(id, dto.newCourseId),
+			new TransferStudentCommand(id, dto.reason),
 		);
 	}
 }

@@ -29,8 +29,8 @@ export class StudentDetailResponseDto
 	})
 	tutorEmail?: string;
 
-	constructor(student: Student) {
-		super(student);
+	constructor(student: Student, courseName?: string) {
+		super(student, courseName);
 		this.tutorName = student.tutorName;
 		this.tutorPhone = student.tutorPhone;
 		this.tutorEmail = student.tutorEmail;

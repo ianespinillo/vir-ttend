@@ -20,6 +20,7 @@ import {
 	Users,
 } from 'lucide-react';
 import { useState } from 'react';
+import { formatShift, localizeCourseName } from '../../../lib/shift';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
@@ -73,15 +74,10 @@ export function CourseDetail({
 				? 'Secundaria'
 				: 'Inicial';
 
-	const shiftLabel =
-		course.shift === 'MORNING'
-			? 'Mañana'
-			: course.shift === 'AFTERNOON'
-				? 'Tarde'
-				: 'Noche';
+	const shiftLabel = formatShift(course.shift);
 
 	const courseTitle =
-		course.fullName ||
+		localizeCourseName(course.fullName) ||
 		`${course.yearNumber}° "${course.division}" - ${levelLabel}`;
 
 	const handleAddSlot = async (slot: ScheduleSlotFormValues) => {

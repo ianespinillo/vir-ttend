@@ -114,4 +114,41 @@ describe('CreateAcademicYearHandler', () => {
 		expect(result.absenceThresholdPercent).toBe(15);
 		expect(result.lateCountAbscenseAfterMinutes).toBe(10);
 	});
+
+	it('should assign standard national holidays by default when nonWorkingDays is empty', async () => {
+		academicYearRepository.findBySchoolAndYear.mockResolvedValue(null);
+
+		const result = await handler.execute(
+			new CreateAcademicYearCommand(
+				'tenant-id',
+				2026,
+				new Date('2026-03-01'),
+				new Date('2026-12-18'),
+				[],
+			),
+		);
+
+		expect(result.endDate).toEqual(new Date('2026-12-18'));
+		expect(result.nonWorkingDays.length).toBeGreaterThan(0);
+		// 2026 should have 14 holidays including Carnaval and Viernes Santo
+		expect(result.nonWorkingDays).toHaveLength(14);
+	});
+
+	it('should keep custom nonWorkingDays when provided', async () => {
+		academicYearRepository.findBySchoolAndYear.mockResolvedValue(null);
+		const customDays = [new Date('2026-07-09'), new Date('2026-12-25')];
+
+		const result = await handler.execute(
+			new CreateAcademicYearCommand(
+				'tenant-id',
+				2026,
+				new Date('2026-03-01'),
+				new Date('2026-12-18'),
+				customDays,
+			),
+		);
+
+		expect(result.nonWorkingDays).toHaveLength(2);
+		expect(result.nonWorkingDays).toEqual(customDays);
+	});
 });

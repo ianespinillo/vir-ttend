@@ -16,6 +16,7 @@ import {
 	REPORT_ALERT_META,
 	REPORT_STATUS_META,
 } from '../../../../lib/report-format';
+import { localizeCourseName } from '../../../../lib/shift';
 import { Avatar, AvatarFallback } from '../../../../ui/avatar';
 import { Card, CardContent } from '../../../../ui/card';
 import { Skeleton } from '../../../../ui/skeleton';
@@ -85,7 +86,7 @@ export function StudentReport({ report, isLoading }: StudentReportProps) {
 					<div className="min-w-0 flex-1">
 						<p className="truncate font-semibold">{report.fullName}</p>
 						<p className="text-sm text-muted-foreground">
-							{report.documentNumber} • {report.courseName}
+							{report.documentNumber} • {localizeCourseName(report.courseName)}
 						</p>
 					</div>
 					<ReportStatusBadge

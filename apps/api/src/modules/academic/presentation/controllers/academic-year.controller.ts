@@ -73,6 +73,7 @@ export class AcademicYearsController {
 				dto.nonWorkingDays,
 				dto.absenceThresholdPercent,
 				dto.lateCountAbscenseAfterMinutes,
+				dto.isActive ?? true,
 			),
 		);
 	}
@@ -139,7 +140,11 @@ export class AcademicYearsController {
 		description: 'ID del año académico a actualizar.',
 		example: 'e6f5a4b3-2c1d-4e5f-8a9b-0c1d2e3f4a5b',
 	})
-	@ApiResponse({ status: 200, description: 'Año académico actualizado.' })
+	@ApiResponse({
+		status: 200,
+		description: 'Año académico actualizado.',
+		type: AcademicYearResponseDto,
+	})
 	@ApiResponse({ status: 400, description: 'Validación falló' })
 	@ApiResponse({ status: 401, description: 'No autenticado' })
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
@@ -156,6 +161,10 @@ export class AcademicYearsController {
 					lateCountAbscenseAfterMinutes: dto.lateCountAbscenseAfterMinutes,
 				},
 				dto.nonWorkingDays,
+				dto.year,
+				dto.startDate,
+				dto.endDate,
+				dto.isActive,
 			),
 		);
 	}

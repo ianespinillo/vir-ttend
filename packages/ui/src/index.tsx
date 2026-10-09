@@ -30,6 +30,7 @@ export * from './components/features/profile';
 export * from './lib/utils';
 export * from './lib/format';
 export * from './lib/report-format';
+export * from './lib/shift';
 
 // Shadcn primitives
 export * from './ui/alert';

@@ -75,33 +75,33 @@ export function UserCredentialsDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				{hasPassword ? (
-					<div className="space-y-4 py-2">
-						<div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-							<div>
-								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-									Email de acceso
-								</span>
-								<div className="flex items-center justify-between mt-1">
-									<code className="text-sm font-semibold text-foreground break-all">
-										{credentials.email}
-									</code>
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										className="h-8 w-8 ml-2 shrink-0"
-										onClick={() => copyToClipboard(credentials.email, 'email')}
-									>
-										{copiedField === 'email' ? (
-											<Check className="h-4 w-4 text-emerald-600" />
-										) : (
-											<Copy className="h-4 w-4" />
-										)}
-									</Button>
-								</div>
+				<div className="space-y-4 py-2">
+					<div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+						<div>
+							<span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+								Email de acceso
+							</span>
+							<div className="flex items-center justify-between mt-1">
+								<code className="text-sm font-semibold text-foreground break-all">
+									{credentials.email}
+								</code>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 ml-2 shrink-0"
+									onClick={() => copyToClipboard(credentials.email, 'email')}
+								>
+									{copiedField === 'email' ? (
+										<Check className="h-4 w-4 text-emerald-600" />
+									) : (
+										<Copy className="h-4 w-4" />
+									)}
+								</Button>
 							</div>
+						</div>
 
+						{hasPassword ? (
 							<div className="border-t pt-3">
 								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
 									Contraseña temporal
@@ -142,40 +142,45 @@ export function UserCredentialsDialog({
 									</div>
 								</div>
 							</div>
-						</div>
-
-						<div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-							<ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
-							<p>
-								Esta contraseña es provisoria. El sistema le exigirá al usuario crear
-								una nueva contraseña en su primer inicio de sesión.
-							</p>
-						</div>
-
-						<Button
-							type="button"
-							variant="outline"
-							className="w-full"
-							onClick={copyAll}
-						>
-							{copiedField === 'all' ? (
-								<>
-									<Check className="mr-2 h-4 w-4 text-emerald-600" />
-									Credenciales copiadas
-								</>
-							) : (
-								<>
-									<Copy className="mr-2 h-4 w-4" />
-									Copiar email y contraseña
-								</>
-							)}
-						</Button>
+						) : (
+							<div className="border-t pt-3 text-xs text-muted-foreground">
+								El usuario ya tiene una cuenta activa en el sistema y puede ingresar con
+								su contraseña existente.
+							</div>
+						)}
 					</div>
-				) : (
-					<div className="py-2 text-sm text-muted-foreground text-center">
-						El usuario puede continuar iniciando sesión con su contraseña existente.
-					</div>
-				)}
+
+					{hasPassword && (
+						<>
+							<div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+								<ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+								<p>
+									Esta contraseña es provisoria. El sistema le exigirá al usuario crear
+									una nueva contraseña en su primer inicio de sesión.
+								</p>
+							</div>
+
+							<Button
+								type="button"
+								variant="outline"
+								className="w-full"
+								onClick={copyAll}
+							>
+								{copiedField === 'all' ? (
+									<>
+										<Check className="mr-2 h-4 w-4 text-emerald-600" />
+										Credenciales copiadas
+									</>
+								) : (
+									<>
+										<Copy className="mr-2 h-4 w-4" />
+										Copiar email y contraseña
+									</>
+								)}
+							</Button>
+						</>
+					)}
+				</div>
 
 				<DialogFooter>
 					<Button className="w-full" onClick={() => onOpenChange(false)}>

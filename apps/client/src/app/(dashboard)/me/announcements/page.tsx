@@ -7,7 +7,12 @@ import {
 	useReadAnnouncements,
 	useRelevantAnnouncements,
 } from '@repo/hooks';
-import { ForMeList, LoadingSpinner, PageHeader } from '@repo/ui';
+import {
+	ForMeList,
+	LoadingSpinner,
+	PageHeader,
+	localizeCourseName,
+} from '@repo/ui';
 import { useRouter } from 'next/navigation';
 
 export default function ForMeAnnouncementsPage() {
@@ -30,7 +35,9 @@ export default function ForMeAnnouncementsPage() {
 		isPreceptor ? { academicYearId: activeYear?.id, isPreceptor: true } : {},
 	);
 	const courseNames = isPreceptor
-		? Object.fromEntries((myCourses ?? []).map((c) => [c.id, c.fullName]))
+		? Object.fromEntries(
+				(myCourses ?? []).map((c) => [c.id, localizeCourseName(c.fullName)]),
+			)
 		: undefined;
 
 	if (!user) {

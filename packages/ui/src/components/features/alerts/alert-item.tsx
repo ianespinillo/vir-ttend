@@ -3,6 +3,7 @@
 import type { Alert } from '@repo/common';
 import { format } from 'date-fns';
 import { Eye, User } from 'lucide-react';
+import { localizeCourseName } from '../../../lib/shift';
 import { Button } from '../../../ui/button';
 import { AlertTypeBadge } from './alert-type-badge';
 
@@ -38,7 +39,7 @@ export function AlertItem({
 						{alert.studentName}
 					</p>
 					<p className="text-xs text-muted-foreground truncate">
-						{alert.courseName}
+						{localizeCourseName(alert.courseName)}
 					</p>
 				</div>
 			</div>
