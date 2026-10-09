@@ -1,8 +1,8 @@
 import { AuthProvider } from '@/lib/auth/provider';
 import { TanstackProvider } from '@repo/hooks';
-import { Toaster } from '@repo/ui';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 const geistSans = localFont({

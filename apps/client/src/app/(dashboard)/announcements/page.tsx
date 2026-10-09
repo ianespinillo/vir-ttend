@@ -14,6 +14,7 @@ import {
 	ForbiddenState,
 	LoadingSpinner,
 	PageHeader,
+	localizeCourseName,
 } from '@repo/ui';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -53,7 +54,7 @@ export default function AnnouncementsPage() {
 	const { data: activeYear } = useActiveAcademicYear();
 	const { data: coursesData } = useCourses({ academicYearId: activeYear?.id });
 	const courseNames = Object.fromEntries(
-		(coursesData ?? []).map((c) => [c.id, c.fullName]),
+		(coursesData ?? []).map((c) => [c.id, localizeCourseName(c.fullName)]),
 	);
 
 	const { data, isLoading } = useAnnouncements({

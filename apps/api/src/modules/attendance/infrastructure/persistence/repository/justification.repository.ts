@@ -15,7 +15,17 @@ export class JustificationRepository
 	}
 
 	async save(record: Justification): Promise<void> {
-		this.em.persist(JustificationMapper.toOrm(record));
+		const existing = await this.findOne({ id: record.id });
+		if (existing) {
+			existing.attendanceRecordId = record.attendanceRecordId.getRaw();
+			existing.reason = record.reason.getRaw();
+			existing.notes = record.notes ?? undefined;
+			existing.createdBy = record.createdBy;
+			existing.createdAt = record.createdAt;
+		} else {
+			const orm = JustificationMapper.toOrm(record);
+			this.em.persist(orm);
+		}
 		await this.em.flush();
 	}
 }

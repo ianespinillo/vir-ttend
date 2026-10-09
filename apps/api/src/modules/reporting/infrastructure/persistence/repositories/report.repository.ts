@@ -67,7 +67,13 @@ export class ReportRepository
 	async save(report: MonthlyReport): Promise<void> {
 		const existing = await this.findOne({ id: report.id });
 		if (existing) {
-			this.em.assign(existing, ReportMapper.toOrm(report));
+			existing.tenantId = report.tenantId;
+			existing.courseId = report.courseId;
+			existing.academicYearId = report.academicYearId;
+			existing.month = report.month;
+			existing.year = report.year;
+			existing.data = report.data.toJSON;
+			existing.generatedAt = report.generatedAt;
 		} else {
 			this.em.persist(ReportMapper.toOrm(report));
 		}

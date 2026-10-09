@@ -70,7 +70,7 @@ export class ScheduleController {
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	async set(@Body() dto: SetScheduleRequestDto) {
 		return this.setScheduleHandler.execute(
-			new SetScheduleCommand(dto.subjectId, dto.slots),
+			new SetScheduleCommand(dto.subjectId, dto.slots, dto.courseId),
 		);
 	}
 }

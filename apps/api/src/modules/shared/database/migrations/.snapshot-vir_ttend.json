@@ -205,13 +205,13 @@
 				},
 				"seen_at": {
 					"name": "seen_at",
-					"type": "date",
+					"type": "timestamptz",
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
 					"nullable": true,
-					"length": 0,
-					"mappedType": "date"
+					"length": 6,
+					"mappedType": "datetime"
 				},
 				"created_at": {
 					"name": "created_at",
@@ -1121,6 +1121,16 @@
 					"primary": false,
 					"nullable": false,
 					"mappedType": "uuid"
+				},
+				"deleted_at": {
+					"name": "deleted_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"length": 6,
+					"mappedType": "datetime"
 				}
 			},
 			"name": "subjects",

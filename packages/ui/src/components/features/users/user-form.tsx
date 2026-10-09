@@ -116,9 +116,21 @@ export function UserForm({
 	const showTenantSelector =
 		isCreate && isSuperAdmin && watchedRole !== ROLES.SUPERADMIN;
 
+	function handleFormSubmit(data: CreateUserInput | UpdateUserInput) {
+		if (isCreate) {
+			const createData = data as CreateUserInput;
+			onSubmit({
+				...createData,
+				tenantId: createData.tenantId?.trim() || undefined,
+			});
+		} else {
+			onSubmit(data);
+		}
+	}
+
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+			<form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
 				{!isCreate && (
 					<div className="rounded-lg border bg-muted/40 p-3 space-y-2 mb-4">
 						<div className="flex items-center justify-between">

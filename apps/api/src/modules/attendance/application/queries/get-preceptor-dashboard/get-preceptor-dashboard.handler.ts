@@ -20,9 +20,13 @@ export class GetPreceptorDashboardQueryHandler {
 		query: GetPreceptorDashboardQuery,
 	): Promise<PreceptorDashboardResponseDto> {
 		const year = await this.academicYearPort.findActiveByTenant(query.tenantId);
+		if (!year) {
+			return new PreceptorDashboardResponseDto(query.date, []);
+		}
+
 		let courses =
 			(await this.coursePort.findByPreceptorId(query.preceptorId)) ?? [];
-		if (courses.length === 0 && year) {
+		if (courses.length === 0) {
 			courses = (await this.coursePort.getByAcademicYear(year.id)) ?? [];
 		}
 		const snapshots: CourseSnapshotDto[] = [];

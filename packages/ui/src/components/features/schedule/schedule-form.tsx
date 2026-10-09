@@ -46,7 +46,7 @@ export function ScheduleForm({
 	onCancel,
 	isLoading = false,
 }: ScheduleFormProps) {
-	const [overlapError, setOverlapError] = useState<string | null>(null);
+	const [formError, setFormError] = useState<string | null>(null);
 
 	const form = useForm<ScheduleSlotFormValues>({
 		resolver: zodResolver(scheduleSlotSchema),
@@ -59,7 +59,7 @@ export function ScheduleForm({
 	});
 
 	const handleSubmit = async (values: ScheduleSlotFormValues) => {
-		setOverlapError(null);
+		setFormError(null);
 
 		// Client-side overlap validation
 		const isOverlapping = checkScheduleOverlap([
@@ -72,10 +72,28 @@ export function ScheduleForm({
 		]);
 
 		if (isOverlapping) {
-			setOverlapError(
+			setFormError(
 				'La franja horaria ingresada se solapa con una clase ya existente para este día.',
 			);
 			return;
+		}
+
+		const subject = subjects.find((sub) => sub.id === values.subjectId);
+		if (subject) {
+			const scheduledMinutes = existingSlots
+				.filter((slot) => slot.subjectId === values.subjectId)
+				.reduce(
+					(total, slot) => total + minutesBetween(slot.startTime, slot.endTime),
+					0,
+				);
+			const newSlotMinutes = minutesBetween(values.startTime, values.endTime);
+
+			if (scheduledMinutes + newSlotMinutes > subject.weeklyHours * 60) {
+				setFormError(
+					`Esta franja haría que ${subject.name} supere sus horas semanales (máximo ${subject.weeklyHours} hs/sem).`,
+				);
+				return;
+			}
 		}
 
 		await onSubmit(values);
@@ -84,9 +102,9 @@ export function ScheduleForm({
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 pt-2">
-				{overlapError && (
+				{formError && (
 					<div className="bg-destructive/15 text-destructive p-3 rounded-md text-sm font-medium">
-						{overlapError}
+						{formError}
 					</div>
 				)}
 
@@ -197,3 +215,9 @@ export function ScheduleForm({
 		</Form>
 	);
 }
+
+const minutesBetween = (start: string, end: string): number => {
+	const [startHours = 0, startMinutes = 0] = start.split(':').map(Number);
+	const [endHours = 0, endMinutes = 0] = end.split(':').map(Number);
+	return endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
+};

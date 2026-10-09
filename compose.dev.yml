@@ -1,0 +1,41 @@
+# Local development infra only: postgres + redis, no image builds.
+# Starts in seconds. Usage:  docker compose -f compose.dev.yml up -d  (or pnpm dev:infra)
+# Same container names, ports, credentials and volumes as compose.yml, so the
+# data and the DSN are identical either way — api/client run from source with
+# `pnpm dev` instead of being built into images.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vir-ttend_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: virttend
+      POSTGRES_PASSWORD: 2026virttend
+      POSTGRES_DB: vir_ttend
+    ports:
+      - "${POSTGRES_PORT:-5436}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U virttend -d vir_ttend"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: vir-ttend_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

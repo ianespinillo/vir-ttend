@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { SHIFT, ShiftType } from '@repo/common';
-import { IsOptional, IsString } from 'class-validator';
+import { LEVEL, LevelType, SHIFT, ShiftType } from '@repo/common';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateCourseRequestDto {
 	@IsString()
@@ -20,4 +20,43 @@ export class UpdateCourseRequestDto {
 		example: SHIFT.MORNING,
 	})
 	shift?: ShiftType;
+
+	@IsString()
+	@IsOptional()
+	@ApiPropertyOptional({
+		type: String,
+		description: 'ID del año académico (opcional).',
+	})
+	academicYearId?: string;
+
+	@IsString()
+	@IsOptional()
+	@ApiPropertyOptional({
+		type: String,
+		description: 'ID de la escuela/tenant (opcional).',
+	})
+	schoolId?: string;
+
+	@IsOptional()
+	@ApiPropertyOptional({
+		enum: LEVEL,
+		description: 'Nivel educativo (opcional).',
+	})
+	level?: LevelType;
+
+	@IsNumber()
+	@IsOptional()
+	@ApiPropertyOptional({
+		type: Number,
+		description: 'Año/grado (opcional).',
+	})
+	yearNumber?: number;
+
+	@IsString()
+	@IsOptional()
+	@ApiPropertyOptional({
+		type: String,
+		description: 'División (opcional).',
+	})
+	division?: string;
 }

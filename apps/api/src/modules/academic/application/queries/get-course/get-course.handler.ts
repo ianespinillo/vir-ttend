@@ -21,14 +21,16 @@ export class GetCourseHandler {
 	async execute(query: GetCourseQuery): Promise<CourseDetailResponseDto> {
 		const course = await this.courseRepo.findById(query.courseId);
 		if (!course) throw new Error('Course not found');
-		const preceptor = await this.userRepo.findById(course.preceptorId);
+		const preceptor = course.preceptorId
+			? await this.userRepo.findById(course.preceptorId)
+			: null;
 		const schedules = await this.slotRepo.findByCourse(course.id.getRaw());
 		const subjects = await this.subjectRepo.findByCourse(course.id.getRaw());
 		return new CourseDetailResponseDto(
 			course,
 			subjects,
 			schedules,
-			preceptor.fullName,
+			preceptor?.fullName ?? 'Sin asignar',
 		);
 	}
 }

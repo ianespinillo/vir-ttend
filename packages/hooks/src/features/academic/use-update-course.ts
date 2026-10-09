@@ -24,18 +24,17 @@ export function useUpdateCourse() {
 		UpdateCourseParams
 	>({
 		mutationFn: async ({ id, data }) => {
+			const payload = {
+				...data,
+				preceptorId:
+					data.preceptorId && data.preceptorId !== 'NONE'
+						? data.preceptorId
+						: undefined,
+			};
 			const res = await apiClient.put<ApiResponse<ICourseResponse>>(
 				ACADEMIC_ROUTES.course(id),
-				data,
+				payload,
 			);
-			if (data.preceptorId) {
-				await apiClient.put<ApiResponse<void>>(
-					ACADEMIC_ROUTES.coursePreceptor(id),
-					{
-						preceptorId: data.preceptorId,
-					},
-				);
-			}
 			return res.data.data;
 		},
 		onSuccess: (_, variables) => {

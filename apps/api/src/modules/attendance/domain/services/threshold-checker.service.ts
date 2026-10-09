@@ -9,8 +9,8 @@ export class ThresholdCheckerService {
 		const alertType = AlertType.fromPercent(absencePercent);
 		if (!alertType) return null;
 
-		const existingAlert = existingAlerts.some(
-			(alert) => alert.alertType.equals(alertType) && !alert.seenAt,
+		const existingAlert = existingAlerts.some((alert) =>
+			alert.alertType.equals(alertType),
 		);
 		if (existingAlert) return null;
 		return alertType;

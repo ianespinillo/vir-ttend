@@ -50,8 +50,8 @@ describe('GetPreceptorDashboardQueryHandler', () => {
 		);
 	});
 
-	it('retorna dashboard vacío si el preceptor no tiene cursos', async () => {
-		coursePort.findByPreceptorId.mockResolvedValue([]);
+	it('retorna dashboard vacío si no hay ciclo lectivo activo', async () => {
+		academicYearPort.findActiveByTenant.mockResolvedValue(null);
 
 		const result = await handler.execute(
 			new GetPreceptorDashboardQuery(
@@ -62,6 +62,24 @@ describe('GetPreceptorDashboardQueryHandler', () => {
 		);
 
 		expect(result.courses).toEqual([]);
+		expect(coursePort.findByPreceptorId).not.toHaveBeenCalled();
+		expect(snapshotBuilder.buildCourseSnapshot).not.toHaveBeenCalled();
+	});
+
+	it('retorna dashboard vacío si el preceptor no tiene cursos y el ciclo lectivo tampoco tiene cursos', async () => {
+		coursePort.findByPreceptorId.mockResolvedValue([]);
+		coursePort.getByAcademicYear.mockResolvedValue([]);
+
+		const result = await handler.execute(
+			new GetPreceptorDashboardQuery(
+				'tenant-1',
+				'preceptor-1',
+				new Date('2026-07-01'),
+			),
+		);
+
+		expect(result.courses).toEqual([]);
+		expect(coursePort.getByAcademicYear).toHaveBeenCalledWith(activeYear.id);
 		expect(snapshotBuilder.buildCourseSnapshot).not.toHaveBeenCalled();
 	});
 

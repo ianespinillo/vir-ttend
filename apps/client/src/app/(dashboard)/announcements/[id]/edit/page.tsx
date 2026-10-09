@@ -15,6 +15,7 @@ import {
 } from '@repo/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function EditAnnouncementPage() {
 	const params = useParams();
@@ -86,17 +87,19 @@ export default function EditAnnouncementPage() {
 					targetId: values.targetId || undefined,
 				},
 			});
+			toast.success('Comunicado actualizado exitosamente');
 			router.push(`/announcements/${id}`);
 		} catch (err: unknown) {
 			const errorObj = err as {
 				response?: { data?: { message?: string } };
 				message?: string;
 			};
-			setErrorMessage(
+			const message =
 				errorObj?.response?.data?.message ??
-					errorObj?.message ??
-					'No se pudo guardar el comunicado. Intentá de nuevo.',
-			);
+				errorObj?.message ??
+				'No se pudo guardar el comunicado. Intentá de nuevo.';
+			setErrorMessage(message);
+			toast.error(message);
 		}
 	};
 

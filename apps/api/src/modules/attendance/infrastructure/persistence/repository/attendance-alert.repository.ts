@@ -122,7 +122,21 @@ export class AttendanceAlertRepository
 	}
 
 	async save(alert: AttendanceAlert): Promise<void> {
-		this.em.persist(AttendanceAlertMapper.toOrm(alert));
+		const existing = await this.findOne({ id: alert.id });
+		if (existing) {
+			existing.studentId = alert.studentId;
+			existing.courseId = alert.courseId;
+			existing.academicYearId = alert.academicYearId;
+			existing.tenantId = alert.tenantId;
+			existing.alertType = alert.alertType.status;
+			existing.absencePercent = alert.absencePercent;
+			existing.seenBy = alert.seenBy ?? null;
+			existing.seenAt = alert.seenAt ?? null;
+			existing.createdAt = alert.createdAt;
+		} else {
+			const orm = AttendanceAlertMapper.toOrm(alert);
+			this.em.persist(orm);
+		}
 		await this.em.flush();
 	}
 }

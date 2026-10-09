@@ -3,15 +3,17 @@
 import { useAuth } from '@/lib/auth/provider';
 import type { IStudentResponse, StudentStatus } from '@repo/common';
 import {
+	useActiveAcademicYear,
 	useCourses,
 	useDeleteStudent,
 	useEnrollStudent,
 	useStudents,
 	useTransferStudent,
 } from '@repo/hooks';
-import { ErrorState, type StudentFiltersState, StudentsPage } from '@repo/ui';
+import { type StudentFiltersState, StudentsPage } from '@repo/ui';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 
 export default function Page() {
 	const router = useRouter();
@@ -35,8 +37,9 @@ export default function Page() {
 		status,
 	};
 
-	const { data: coursesData } = useCourses();
-	const courses = coursesData || [];
+	const { data: activeYear } = useActiveAcademicYear();
+	const { data: coursesData } = useCourses({ academicYearId: activeYear?.id });
+	const courses = coursesData ?? [];
 
 	const { data: studentsResponse, isLoading } = useStudents({
 		search,
@@ -94,27 +97,105 @@ export default function Page() {
 		studentId: string,
 		targetCourseId: string,
 	) => {
-		await enrollMutation.mutateAsync({
-			id: studentId,
-			data: { courseId: targetCourseId },
-		});
+		try {
+			await enrollMutation.mutateAsync({
+				id: studentId,
+				data: { courseId: targetCourseId },
+			});
+			toast.success('Estudiante matriculado exitosamente', {
+				action: {
+					label: 'Ver alumno',
+					onClick: () => router.push(`/students/${studentId}`),
+				},
+			});
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					'Error al matricular el estudiante',
+			);
+		}
 	};
 
-	const handleTransferSubmit = async (
+	const handleChangeCourseSubmit = async (
 		studentId: string,
 		targetCourseId: string,
 	) => {
-		await transferMutation.mutateAsync({
-			id: studentId,
-			data: { targetCourseId },
-		});
+		try {
+			await enrollMutation.mutateAsync({
+				id: studentId,
+				data: { courseId: targetCourseId },
+			});
+			toast.success('Curso cambiado exitosamente', {
+				action: {
+					label: 'Ver alumno',
+					onClick: () => router.push(`/students/${studentId}`),
+				},
+			});
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					'Error al cambiar el curso del estudiante',
+			);
+		}
+	};
+
+	const handleTransferSubmit = async (student: IStudentResponse) => {
+		if (
+			!window.confirm(
+				`¿Confirma el traslado de ${student.fullName} a otra escuela? El alumno quedará marcado como Transferido.`,
+			)
+		) {
+			return;
+		}
+		try {
+			await transferMutation.mutateAsync({ id: student.id });
+			toast.success('Estudiante trasladado a otra escuela', {
+				action: {
+					label: 'Ver alumno',
+					onClick: () => router.push(`/students/${student.id}`),
+				},
+			});
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					'Error al trasladar el estudiante',
+			);
+		}
 	};
 
 	const handleDeactivate = async (student: IStudentResponse) => {
 		if (
 			window.confirm(`¿Está seguro de que desea desactivar a ${student.fullName}?`)
 		) {
-			await deleteMutation.mutateAsync(student.id);
+			try {
+				await deleteMutation.mutateAsync(student.id);
+				toast.success('Estudiante desactivado exitosamente');
+			} catch (err: unknown) {
+				const errorObj = err as {
+					response?: { data?: { message?: string } };
+					message?: string;
+				};
+				toast.error(
+					errorObj?.response?.data?.message ||
+						errorObj?.message ||
+						'Error al desactivar el estudiante',
+				);
+			}
 		}
 	};
 
@@ -133,6 +214,7 @@ export default function Page() {
 			onCreate={handleCreate}
 			onEdit={handleEdit}
 			onEnrollSubmit={handleEnrollSubmit}
+			onChangeCourseSubmit={handleChangeCourseSubmit}
 			onTransferSubmit={handleTransferSubmit}
 			onDeactivate={handleDeactivate}
 			isAdmin={isAdmin}

@@ -19,9 +19,14 @@ export function useCreateStudent() {
 		CreateStudentFormValues
 	>({
 		mutationFn: async (data: CreateStudentFormValues) => {
+			const { tutorEmail, ...rest } = data;
+			const body: CreateStudentFormValues = { ...rest };
+			// Omit empty/whitespace tutor emails so the API's @IsOptional applies.
+			const normalizedTutorEmail = tutorEmail?.trim();
+			if (normalizedTutorEmail) body.tutorEmail = normalizedTutorEmail;
 			const res = await apiClient.post<ApiResponse<IStudentDetailResponse>>(
 				STUDENT_ROUTES.students,
-				data,
+				body,
 			);
 			return res.data.data;
 		},

@@ -1,6 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ROLES, Roles } from '@repo/common';
-import { IsEmail, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+	IsEmail,
+	IsEnum,
+	IsOptional,
+	IsString,
+	IsUUID,
+	ValidateIf,
+} from 'class-validator';
 
 // create-user.request.dto.ts
 export class CreateUserRequestDto {
@@ -34,10 +42,13 @@ export class CreateUserRequestDto {
 	role!: Roles;
 
 	@IsOptional()
+	@Transform(({ value }) => (value === '' ? undefined : value))
+	@ValidateIf((o) => Boolean(o.tenantId))
 	@IsUUID()
 	@ApiProperty({
 		description: 'Identificador del tenant al que se vincula el usuario.',
 		example: '2d4e0f5a-8c1b-4d3e-9a2f-6b8c0d1e2f3a',
+		required: false,
 	})
 	tenantId?: string;
 }

@@ -5,6 +5,7 @@ import {
 	type CreateAcademicYearFormValues,
 	createAcademicYearSchema,
 } from '@repo/common';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
@@ -20,11 +21,9 @@ import { Input } from '../../../ui/input';
 import { Switch } from '../../../ui/switch';
 
 export interface AcademicYearFormProps {
-	onSubmit: (
-		data: CreateAcademicYearFormValues & { isActive?: boolean },
-	) => Promise<void> | void;
+	onSubmit: (data: CreateAcademicYearFormValues) => Promise<void> | void;
 	isLoading?: boolean;
-	defaultValues?: Partial<CreateAcademicYearFormValues & { isActive?: boolean }>;
+	defaultValues?: Partial<CreateAcademicYearFormValues>;
 	isEditing?: boolean;
 	onCancel?: () => void;
 }
@@ -38,7 +37,7 @@ export function AcademicYearForm({
 }: AcademicYearFormProps) {
 	const currentYear = new Date().getFullYear();
 
-	const form = useForm<CreateAcademicYearFormValues & { isActive?: boolean }>({
+	const form = useForm<CreateAcademicYearFormValues>({
 		resolver: zodResolver(createAcademicYearSchema),
 		defaultValues: {
 			year: defaultValues?.year || currentYear,
@@ -54,6 +53,22 @@ export function AcademicYearForm({
 			isActive: defaultValues?.isActive ?? true,
 		},
 	});
+
+	useEffect(() => {
+		form.reset({
+			year: defaultValues?.year || currentYear,
+			startDate: defaultValues?.startDate
+				? String(defaultValues.startDate).split('T')[0]
+				: `${currentYear}-03-01`,
+			endDate: defaultValues?.endDate
+				? String(defaultValues.endDate).split('T')[0]
+				: `${currentYear}-12-15`,
+			absenceThresholdPercent: defaultValues?.absenceThresholdPercent ?? 15,
+			lateCountAbscenseAfterMinutes:
+				defaultValues?.lateCountAbscenseAfterMinutes ?? 15,
+			isActive: defaultValues?.isActive ?? true,
+		});
+	}, [defaultValues, form, currentYear]);
 
 	return (
 		<Form {...form}>
@@ -150,6 +165,16 @@ export function AcademicYearForm({
 								</FormItem>
 							)}
 						/>
+
+						<div className="rounded-lg border p-3 bg-muted/40 text-xs text-muted-foreground md:col-span-2">
+							<p className="font-medium text-foreground">
+								Feriados y días no laborables
+							</p>
+							<p>
+								Se asignarán automáticamente los feriados nacionales estándar
+								correspondientes al año seleccionado.
+							</p>
+						</div>
 					</CardContent>
 				</Card>
 

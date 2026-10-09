@@ -2,6 +2,7 @@
 
 import type { ICourseResponse } from '@repo/common';
 import { GraduationCap } from 'lucide-react';
+import { formatShift, localizeCourseName } from '../../../../lib/shift';
 import {
 	Select,
 	SelectContent,
@@ -49,18 +50,14 @@ export function CourseSelector({
 									? 'Secundaria'
 									: 'Inicial';
 						const label =
-							course.fullName ||
+							localizeCourseName(course.fullName) ||
 							`${course.yearNumber}° "${course.division}" (${levelLabel})`;
 						return (
 							<SelectItem key={course.id} value={course.id}>
 								<div className="flex items-center justify-between gap-4 w-full">
 									<span className="font-medium">{label}</span>
 									<span className="text-xs text-muted-foreground">
-										{course.shift === 'MORNING'
-											? 'Mañana'
-											: course.shift === 'AFTERNOON'
-												? 'Tarde'
-												: 'Noche'}
+										{formatShift(course.shift)}
 									</span>
 								</div>
 							</SelectItem>

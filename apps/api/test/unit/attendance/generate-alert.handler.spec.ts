@@ -121,23 +121,25 @@ describe('GenerateAlertHandler', () => {
 				equals: (other: AlertType) => other.status === 'warning',
 			},
 			seenAt: undefined,
+			academicYearId: 'year-1',
 		});
 		alertRepo.findByStudentId.mockResolvedValue([existingAlert]);
 		await handler.execute(cmd);
 		expect(alertRepo.save).not.toHaveBeenCalled();
 	});
 
-	it('crea alerta si la existente fue vista', async () => {
+	it('no crea alerta si la existente fue vista', async () => {
 		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
 		const seenAlert = mock<AttendanceAlert>({
 			alertType: {
 				equals: (other: AlertType) => other.status === 'warning',
 			},
 			seenAt: new Date(),
+			academicYearId: 'year-1',
 		});
 		alertRepo.findByStudentId.mockResolvedValue([seenAlert]);
 		await handler.execute(cmd);
-		expect(alertRepo.save).toHaveBeenCalledTimes(1);
+		expect(alertRepo.save).not.toHaveBeenCalled();
 	});
 
 	it('escala a critical cuando el porcentaje es >= 75', async () => {
@@ -167,6 +169,7 @@ describe('GenerateAlertHandler', () => {
 				equals: (other: AlertType) => other.status === 'warning',
 			},
 			seenAt: undefined,
+			academicYearId: 'year-1',
 		});
 		alertRepo.findByStudentId.mockResolvedValue([existingWarning]);
 		await handler.execute(cmd);
@@ -175,5 +178,33 @@ describe('GenerateAlertHandler', () => {
 			'alert.trigered',
 			expect.objectContaining({ status: 'critical' }),
 		);
+	});
+
+	it('crea alerta si existe una alerta del mismo tipo en año académico anterior', async () => {
+		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
+		const previousYearAlert = mock<AttendanceAlert>({
+			alertType: {
+				equals: (other: AlertType) => other.status === 'warning',
+			},
+			seenAt: undefined,
+			academicYearId: 'year-previous',
+		});
+		alertRepo.findByStudentId.mockResolvedValue([previousYearAlert]);
+		await handler.execute(cmd);
+		expect(alertRepo.save).toHaveBeenCalledTimes(1);
+	});
+
+	it('no crea alerta si existe una alerta del mismo tipo en el mismo año académico', async () => {
+		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
+		const sameYearAlert = mock<AttendanceAlert>({
+			alertType: {
+				equals: (other: AlertType) => other.status === 'warning',
+			},
+			seenAt: undefined,
+			academicYearId: 'year-1',
+		});
+		alertRepo.findByStudentId.mockResolvedValue([sameYearAlert]);
+		await handler.execute(cmd);
+		expect(alertRepo.save).not.toHaveBeenCalled();
 	});
 });

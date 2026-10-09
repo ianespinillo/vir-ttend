@@ -64,7 +64,20 @@ export class AttendanceRecordRepository
 	}
 	async bulkSave(records: AttendanceRecord[]): Promise<void> {
 		for (const record of records) {
-			this.em.persist(AttendanceRecordMapper.toOrm(record));
+			const existing = await this.findOne({ id: record.id });
+			if (existing) {
+				existing.tenantId = record.tenantId;
+				existing.studentId = record.studentId;
+				existing.courseId = record.courseId;
+				existing.subjectId = record.subjectId;
+				existing.date = record.date;
+				existing.status = record.status;
+				existing.editedBy = record.editedBy;
+				existing.editedAt = record.editedAt;
+				existing.createdAt = record.createdAt;
+			} else {
+				this.em.persist(AttendanceRecordMapper.toOrm(record));
+			}
 		}
 		await this.em.flush();
 
@@ -166,7 +179,20 @@ export class AttendanceRecordRepository
 	}
 
 	async save(record: AttendanceRecord): Promise<void> {
-		this.em.persist(AttendanceRecordMapper.toOrm(record));
+		const existing = await this.findOne({ id: record.id });
+		if (existing) {
+			existing.tenantId = record.tenantId;
+			existing.studentId = record.studentId;
+			existing.courseId = record.courseId;
+			existing.subjectId = record.subjectId;
+			existing.date = record.date;
+			existing.status = record.status;
+			existing.editedBy = record.editedBy;
+			existing.editedAt = record.editedAt;
+			existing.createdAt = record.createdAt;
+		} else {
+			this.em.persist(AttendanceRecordMapper.toOrm(record));
+		}
 		await this.em.flush();
 
 		try {

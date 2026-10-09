@@ -18,6 +18,7 @@ import {
 } from '@repo/ui';
 import { Button } from '@repo/ui';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function TenantDetailRoute() {
 	const params = useParams();
@@ -69,7 +70,19 @@ export default function TenantDetailRoute() {
 					<h2 className="text-lg font-semibold">Usuarios</h2>
 					<AddMembershipModal
 						tenantId={id}
-						onSubmit={(data) => addMembership.mutate({ tenantId: id, data })}
+						onSubmit={(data) =>
+							addMembership.mutate(
+								{ tenantId: id, data },
+								{
+									onSuccess: () => {
+										toast.success('Usuario agregado a la institución');
+									},
+									onError: (err) => {
+										toast.error(err.message ?? 'Error al agregar usuario');
+									},
+								},
+							)
+						}
 					/>
 				</div>
 
@@ -77,10 +90,20 @@ export default function TenantDetailRoute() {
 					<TenantUsersTable
 						users={users}
 						onRemove={(user) =>
-							removeMembership.mutate({
-								email: user.email,
-								tenantId: id,
-							})
+							removeMembership.mutate(
+								{
+									email: user.email,
+									tenantId: id,
+								},
+								{
+									onSuccess: () => {
+										toast.success('Usuario removido de la institución');
+									},
+									onError: (err) => {
+										toast.error(err.message ?? 'Error al remover usuario');
+									},
+								},
+							)
 						}
 					/>
 				) : (
