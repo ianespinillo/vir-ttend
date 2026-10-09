@@ -11,6 +11,7 @@ import { UserTenantMembership } from '../../../domain/entities/user-tenant-membe
 import { User } from '../../../domain/entities/user.entity';
 import { UserCreatedEvent } from '../../../domain/events/user-created.event';
 import { UserTenantLinkedEvent } from '../../../domain/events/user-tenant-linked.event';
+import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { PasswordService } from '../../../domain/services/password.service';
@@ -38,6 +39,8 @@ export class CreateUserHandler {
 		private readonly memberRepo: IUserTenantMembershipRepository,
 		private readonly passwordService: PasswordService,
 		private readonly eventEmitter: EventEmitter2,
+		@Inject('ITenantRepository')
+		private readonly tenantRepo: ITenantRepository,
 	) {}
 
 	async execute(command: CreateUserCommand): Promise<CreateUserResponse> {
@@ -80,6 +83,8 @@ export class CreateUserHandler {
 					user.email,
 					command.tenantId ?? '',
 					rawPassword.getRaw(),
+					user.firstName,
+					user.lastName,
 				),
 			);
 		} else {
@@ -96,6 +101,7 @@ export class CreateUserHandler {
 					command.role,
 				);
 				await this.memberRepo.save(membership);
+				const tenant = await this.tenantRepo.findById(command.tenantId);
 				this.eventEmitter.emit(
 					'user.tenant.linked',
 					new UserTenantLinkedEvent(
@@ -103,6 +109,7 @@ export class CreateUserHandler {
 						user.email,
 						command.tenantId,
 						command.role,
+						tenant?.name ?? '',
 					),
 				);
 			}

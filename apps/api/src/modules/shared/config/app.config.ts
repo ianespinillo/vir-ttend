@@ -46,6 +46,18 @@ export const validateAppConfig = (config: Record<string, unknown>) => {
 		if (!config.REDIS_URL) {
 			throw new Error('REDIS_URL is required in production');
 		}
+		if (config.EMAIL_ENABLED === true) {
+			if (!config.SMTP_HOST) {
+				throw new Error(
+					'SMTP_HOST is required in production when EMAIL_ENABLED is true',
+				);
+			}
+			if (!config.SMTP_FROM) {
+				throw new Error(
+					'SMTP_FROM is required in production when EMAIL_ENABLED is true',
+				);
+			}
+		}
 	}
 };
 
@@ -60,6 +72,12 @@ export const getEnvs = () => {
 			.asArray(),
 		JWT_SECRET: env.get('JWT_SECRET').required().asString(),
 		JWT_REFRESH_SECRET: env.get('JWT_REFRESH_SECRET').required().asString(),
+		EMAIL_ENABLED: env.get('EMAIL_ENABLED').default('false').asBool(),
+		SMTP_HOST: env.get('SMTP_HOST').default('').asString(),
+		SMTP_PORT: env.get('SMTP_PORT').default('587').asInt(),
+		SMTP_USER: env.get('SMTP_USER').default('').asString(),
+		SMTP_PASS: env.get('SMTP_PASS').default('').asString(),
+		SMTP_FROM: env.get('SMTP_FROM').default('').asString(),
 		...getRedisConfig(),
 		...getDatabaseConfig(),
 		...tenancy,
