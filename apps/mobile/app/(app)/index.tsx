@@ -301,6 +301,7 @@ export default function HomeScreen() {
 										subjectId: subject.subjectId,
 										name: subject.name,
 										courseName: subject.courseName,
+										courseId: subject.courseId,
 									},
 								})
 							}
