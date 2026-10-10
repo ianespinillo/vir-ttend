@@ -38,7 +38,8 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 - Slices: (pending)
 
 ## Tasks
-- [ ] **T1 — USB connectivity.** Android default base URL `http://localhost:3001` plus `adb reverse tcp:3001 tcp:3001` (and Metro 8081) script in `apps/mobile/package.json`; single source of truth for the API URL (remove duplicate fallbacks in `src/config/app-config.ts` and `src/context/auth-context.tsx`); ensure cleartext http works on dev builds; document in mobile README/`.env.example`. Route: inline-or-delegated (decided at start).
+- [x] **T1 — USB connectivity.** (commit `17ceb7e`; `ts:check` pass, biome pass, hook pass; `adb reverse --list` shows 3001/8081 with phone attached; review: high_risk → granted → approved and acknowledged, lineage `review-c2887eae58ef7658`, reviewed boundary `7df8489`; manual check of app traffic in API logs pending on user)
+  - Advisory (non-blocking) follow-ups: the emulator without `adb reverse` no longer reaches the API (the old default was `10.0.2.2`), so run `android:reverse` on the emulator too or set `EXPO_PUBLIC_API_URL`; the `adb reverse` scripts assume a single attached device (`-s <serial>` needed for several); there is no automated check of URL resolution. Android default base URL `http://localhost:3001` plus `adb reverse tcp:3001 tcp:3001` (and Metro 8081) script in `apps/mobile/package.json`; single source of truth for the API URL (remove duplicate fallbacks in `src/config/app-config.ts` and `src/context/auth-context.tsx`); ensure cleartext http works on dev builds; document in mobile README/`.env.example`. Route: inline-or-delegated (decided at start).
   - Check: `ts:check` passes; from the device, the API logs show app requests.
 - [ ] **T2 — API mobile refresh.** `POST /auth/refresh` accepts `refreshToken` in the body when no cookie is present and returns `{accessToken, refreshToken}` in the body (keeping cookie behavior for web); respect existing rotation/revocation. `POST /auth/logout` accepts the body token too.
   - Check: jest unit tests for the controller/handler paths; existing API tests green.
@@ -55,9 +56,10 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 | Task | Route | Trigger evidence |
 |------|-------|------------------|
 | T1 | delegated direct | touches 2+ non-trivial files (api.ts, app-config.ts, auth-context.tsx, package.json, app.json, docs) |
+| T2+T3 | delegated direct (one writer, two commits) | API controller/handler + tests and mobile auth/api client: 2+ non-trivial files |
 
 ## Progress / evidence
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
 
 ## Next step
-T1 (delegated writer).
+T2 + T3 (one delegated writer, one commit per task).
