@@ -11,6 +11,13 @@ import { JustificationOrmEntity } from './justification.orm-entity';
 
 @Entity({ tableName: 'attendanceRecord' })
 @Unique({ properties: ['courseId', 'studentId', 'subjectId', 'date'] })
+// Daily records have a NULL subjectId, which the unique above treats as distinct:
+// this partial index enforces one daily record per student, course and date.
+@Unique({
+	name: 'attendanceRecord_daily_unique',
+	expression:
+		'create unique index "attendanceRecord_daily_unique" on "attendanceRecord" ("course_id", "student_id", "date") where "subject_id" is null',
+})
 @Index({ properties: ['courseId', 'date'] })
 export class AttendanceRecordOrmEntity {
 	@PrimaryKey({
