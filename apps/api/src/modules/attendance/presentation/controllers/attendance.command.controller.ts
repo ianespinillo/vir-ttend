@@ -267,6 +267,7 @@ export class AttendanceCommandController {
 			new CopyAttendanceCommand(
 				user.sub,
 				user.role,
+				user.tenantId,
 				dto.subjectId,
 				new Date(dto.targetDate),
 				dto.sourceDate ? new Date(dto.sourceDate) : undefined,

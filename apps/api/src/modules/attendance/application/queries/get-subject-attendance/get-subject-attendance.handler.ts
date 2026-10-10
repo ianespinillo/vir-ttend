@@ -30,6 +30,7 @@ export class GetSubjectAttendanceQueryHandler {
 		assertCanReadSubjectAttendance(subject, {
 			userId: query.userId,
 			role: query.userRole,
+			tenantId: query.tenantId,
 		});
 		if (Number.isNaN(query.date.getTime()))
 			throw new BadRequestException('Invalid date');

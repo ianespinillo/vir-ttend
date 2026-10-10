@@ -195,6 +195,34 @@ describe('RegisterSubjectAttendanceHandler', () => {
 				'Invalid subject id',
 			);
 		});
+
+		it('should reject when the subject belongs to another tenant', async () => {
+			subjectPort.getSubjectById.mockResolvedValue(
+				Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1', 'other-tenant'),
+			);
+
+			await expect(handler.execute(buildCommand(payload))).rejects.toThrow(
+				ForbiddenException,
+			);
+			expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+		});
+
+		it('should reject when courseId does not match subject courseId', async () => {
+			const mismatched = new RegisterSubjectAttendanceCommand(
+				'tenant-1',
+				'user-1',
+				ROLES.TEACHER,
+				'sub-1',
+				'wrong-course',
+				mondayDate,
+				payload,
+			);
+
+			await expect(handler.execute(mismatched)).rejects.toThrow(
+				'Course does not match subject',
+			);
+			expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('class day', () => {

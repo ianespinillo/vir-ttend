@@ -33,6 +33,7 @@ export class BulkUpdateSubjectStatusHandler {
 		assertCanWriteSubjectAttendance(subject, {
 			userId: command.userId,
 			role: command.userRole,
+			tenantId: command.tenantId,
 		});
 		const students = await this.studentPort.getByCourseId(subject.courseId);
 		const changedRecords = await this.unitOfWork.run(async () => {
