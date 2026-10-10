@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vinculación institucional — Vir-ttend</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+    }
+    table {
+      border-collapse: collapse;
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+          
+          <!-- Header Brand -->
+          <tr>
+            <td style="padding: 32px 32px 24px 32px; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);">
+              <table role="presentation" width="100%">
+                <tr>
+                  <td>
+                    <div style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Vir-ttend</div>
+                    <div style="font-size: 13px; color: #e0e7ff; margin-top: 4px;">Sistema de Gestión Académica y Asistencia</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Content Body -->
+          <tr>
+            <td style="padding: 32px;">
+              <h1 style="font-size: 20px; font-weight: 600; color: #0f172a; margin: 0 0 16px 0;">
+                {{#if firstName}}¡Hola, {{firstName}} {{lastName}}!{{else}}¡Hola!{{/if}}
+              </h1>
+              <p style="font-size: 15px; line-height: 24px; color: #334155; margin: 0 0 24px 0;">
+                Te informamos que tu cuenta ha sido vinculada exitosamente a una nueva institución en <strong>Vir-ttend</strong>:
+              </p>
+
+              <!-- Institution Card -->
+              <table role="presentation" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <div style="margin-bottom: 12px;">
+                      <span style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">Institución</span>
+                      <span style="display: block; font-size: 16px; font-weight: 600; color: #0f172a; margin-top: 2px;">{{tenantName}}</span>
+                    </div>
+                    <div>
+                      <span style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">Rol Asignado</span>
+                      <span style="display: inline-block; font-size: 13px; font-weight: 600; color: #4f46e5; background-color: #eef2ff; border: 1px solid #c7d2fe; padding: 3px 10px; border-radius: 9999px; text-transform: capitalize; margin-top: 4px;">{{role}}</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Notice -->
+              <p style="font-size: 14px; line-height: 22px; color: #334155; margin: 0 0 24px 0;">
+                Ya podés acceder a esta institución con tu correo electrónico (<strong>{{email}}</strong>) y tu contraseña habitual.
+              </p>
+
+              <!-- Support Note -->
+              <p style="font-size: 13px; line-height: 20px; color: #64748b; margin: 0;">
+                Si considerás que esta asignación fue un error, por favor contactá al administrador de la institución.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
+              <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+                © 2026 Vir-ttend — Plataforma de Gestión Escolar. Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

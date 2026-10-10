@@ -7,6 +7,7 @@ export class UserTenantLinkedEvent {
 		readonly email: string,
 		readonly tenantId: string,
 		readonly role: Roles,
+		readonly tenantName: string,
 	) {
 		this.ocurredAt = new Date();
 	}

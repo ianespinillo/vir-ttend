@@ -4,9 +4,7 @@ import {
 	Check,
 	CheckCircle2,
 	Copy,
-	Eye,
-	EyeOff,
-	KeyRound,
+	MailCheck,
 	ShieldAlert,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -39,7 +37,6 @@ export function UserCredentialsDialog({
 	onOpenChange,
 	credentials,
 }: Readonly<UserCredentialsDialogProps>) {
-	const [showPassword, setShowPassword] = useState(true);
 	const [copiedField, setCopiedField] = useState<string | null>(null);
 
 	if (!credentials) return null;
@@ -53,11 +50,6 @@ export function UserCredentialsDialog({
 		setTimeout(() => setCopiedField(null), 2000);
 	}
 
-	function copyAll() {
-		const text = `Acceso a vir-ttend:\nUsuario: ${credentials?.email}\nContraseña: ${credentials?.temporaryPassword}`;
-		copyToClipboard(text, 'all');
-	}
-
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-md">
@@ -66,11 +58,13 @@ export function UserCredentialsDialog({
 						<CheckCircle2 className="h-6 w-6" />
 					</div>
 					<DialogTitle className="text-xl">
-						{hasPassword ? 'Usuario creado con éxito' : 'Usuario vinculado con éxito'}
+						{hasPassword
+							? 'Usuario registrado con éxito'
+							: 'Usuario vinculado con éxito'}
 					</DialogTitle>
 					<DialogDescription className="text-sm">
 						{hasPassword
-							? `Se registró a ${credentials.firstName} ${credentials.lastName}. Entrégale las credenciales para su primer ingreso.`
+							? `Se registró a ${credentials.firstName} ${credentials.lastName}. Las credenciales de acceso fueron enviadas a su correo electrónico.`
 							: `${credentials.firstName} ${credentials.lastName} ya tenía cuenta en el sistema y fue vinculado correctamente.`}
 					</DialogDescription>
 				</DialogHeader>
@@ -102,45 +96,9 @@ export function UserCredentialsDialog({
 						</div>
 
 						{hasPassword ? (
-							<div className="border-t pt-3">
-								<span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-									Contraseña temporal
-								</span>
-								<div className="flex items-center justify-between mt-1">
-									<code className="text-base font-bold tracking-wider text-primary">
-										{showPassword ? credentials.temporaryPassword : '••••••••'}
-									</code>
-									<div className="flex items-center gap-1 shrink-0">
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="h-8 w-8"
-											onClick={() => setShowPassword(!showPassword)}
-										>
-											{showPassword ? (
-												<EyeOff className="h-4 w-4" />
-											) : (
-												<Eye className="h-4 w-4" />
-											)}
-										</Button>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="h-8 w-8"
-											onClick={() =>
-												copyToClipboard(credentials.temporaryPassword ?? '', 'pass')
-											}
-										>
-											{copiedField === 'pass' ? (
-												<Check className="h-4 w-4 text-emerald-600" />
-											) : (
-												<Copy className="h-4 w-4" />
-											)}
-										</Button>
-									</div>
-								</div>
+							<div className="border-t pt-3 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+								<MailCheck className="h-4 w-4 shrink-0" />
+								<span>Contraseña temporal despachada por correo</span>
 							</div>
 						) : (
 							<div className="border-t pt-3 text-xs text-muted-foreground">
@@ -151,34 +109,14 @@ export function UserCredentialsDialog({
 					</div>
 
 					{hasPassword && (
-						<>
-							<div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-								<ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
-								<p>
-									Esta contraseña es provisoria. El sistema le exigirá al usuario crear
-									una nueva contraseña en su primer inicio de sesión.
-								</p>
-							</div>
-
-							<Button
-								type="button"
-								variant="outline"
-								className="w-full"
-								onClick={copyAll}
-							>
-								{copiedField === 'all' ? (
-									<>
-										<Check className="mr-2 h-4 w-4 text-emerald-600" />
-										Credenciales copiadas
-									</>
-								) : (
-									<>
-										<Copy className="mr-2 h-4 w-4" />
-										Copiar email y contraseña
-									</>
-								)}
-							</Button>
-						</>
+						<div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+							<ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+							<p>
+								Por seguridad, la contraseña temporal no se muestra en pantalla. El
+								usuario deberá ingresar con la clave recibida por correo y el sistema le
+								solicitará definir una nueva en su primer acceso.
+							</p>
+						</div>
 					)}
 				</div>
 
