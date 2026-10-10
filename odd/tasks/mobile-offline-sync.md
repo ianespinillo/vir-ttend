@@ -16,9 +16,11 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 - Mobile: API URL resolution, auth refresh, persisted query cache, preload, offline outbox, pending-sync UI.
 - API: mobile-friendly refresh (body token in/out), idempotent daily attendance save.
 
+## Scope change (2026-10-10)
+User: preload and offline queue must cover BOTH daily attendance (preceptor) and per-subject attendance (teacher). Teacher API access and a teacher mobile flow are now in scope; tasks are re-planned after mapping the teacher flow.
+
 ## Out of scope
-- Teacher role access to list endpoints (`/courses`, `/students` return 403 for teachers). Tracked as a follow-up.
-- Subject attendance (`/attendance/subject`) offline support.
+- (none recorded yet after the scope change)
 
 ## Constraints and assumptions
 - Device: physical **Android** phone over USB → use `adb reverse` so the phone's `localhost:3001` maps to the laptop. Assumption: Android (Windows host, USB).
@@ -60,6 +62,12 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
     - Redis cache invalidation runs before commit.
     - Unrelated pending migration `Migration20261009120000_alter_courses_division_and_preceptor` on the dev DB. Wrap the save in a transaction; migration making the attendance unique key treat NULL `subjectId` as equal (Postgres 16 `NULLS NOT DISTINCT`), handling existing duplicates; avoid re-emitting `attendance.registered` for unchanged records.
   - Check: jest tests for replay (same payload twice → no duplicates, no extra events); migration runs on the docker DB.
+  - T3b+T4 review: high_risk → granted → approved and acknowledged, lineage `review-4e14e2de0b1eba67`, reviewed boundary `578a294`. The branch-wide candidate from `6c8c613` (268 files) stopped with `lens_context_budget_exceeded`, so it is reviewed as these slices instead.
+- [ ] **T4b — Fix review advisories on T3b/T4 (regressions we introduced).**
+  - (1) Mobile logout revocation must work when the access token expired: refresh via a bare call, then revoke, or revoke with the refresh token alone; never skip revocation when a refresh token exists.
+  - (2) Redis cache invalidation must happen after the transaction commits.
+  - (3) The dedup migration must copy removed attendance and justification rows into backup tables before deleting them, so production keeps an audit. The dev DB already ran the old version.
+  - Check: api tests, ts:check, biome.
 - [ ] **T5 — Offline preload.** Install AsyncStorage, NetInfo and the React Query persister; persisted `QueryClient` with a long `gcTime`; preload service: active academic year → courses by preceptor → students and today's daily attendance per course; triggered after login, on app foreground and on reconnect; fix the home `/courses` fallback that omits `academicYearId`.
   - Check: `ts:check`; manual: airplane mode shows courses and students.
 - [ ] **T6 — Offline attendance outbox.** Persisted outbox coalesced per `(courseId, date)` (last write wins); optimistic cache update; flush on reconnect, foreground and after token refresh with backoff; permanent 4xx (non-401) errors surfaced and kept for the user to resolve; pending-sync indicator on the attendance screen and home.
@@ -76,4 +84,4 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
 
 ## Next step
-Review T3b+T4 slice (assess: high_risk, 1085 lines, base `ed0076c`). Open scope question: should T5/T6 also cover subject attendance for teachers? Then T5.
+T4b (delegated writer) while the teacher flow is mapped; then re-plan T5/T6 plus the teacher API and mobile tasks.
