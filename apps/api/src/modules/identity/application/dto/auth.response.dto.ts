@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserResponseDto } from './user.response.dto';
 
 // auth.response.dto.ts
@@ -18,7 +18,25 @@ export class AuthResponseDto {
 	})
 	user!: UserResponseDto;
 
-	constructor(user: UserResponseDto) {
+	@ApiPropertyOptional({
+		description: 'Access token JWT (para clientes móviles/nativos).',
+		type: String,
+	})
+	accessToken?: string;
+
+	@ApiPropertyOptional({
+		description: 'Refresh token JWT (para clientes móviles/nativos).',
+		type: String,
+	})
+	refreshToken?: string;
+
+	constructor(
+		user: UserResponseDto,
+		accessToken?: string,
+		refreshToken?: string,
+	) {
 		this.user = user;
+		this.accessToken = accessToken;
+		this.refreshToken = refreshToken;
 	}
 }

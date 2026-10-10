@@ -130,10 +130,14 @@ export class AuthController {
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		let userId = req.cookies?.pending_user_id;
+		let userId = req.cookies?.pending_user_id || dto.userId;
 		let isCurrentImpersonating = false;
 		if (!userId) {
-			const accessToken = req.cookies?.access_token;
+			const accessToken =
+				req.cookies?.access_token ||
+				(req.headers.authorization?.startsWith('Bearer ')
+					? req.headers.authorization.substring(7)
+					: undefined);
 			if (!accessToken) throw new UnauthorizedException();
 			try {
 				const payload = this.tokenService.verifyAccessToken(accessToken);
@@ -161,7 +165,11 @@ export class AuthController {
 		// limpiar cookie temporal
 		res.clearCookie('pending_user_id');
 
-		return new AuthResponseDto(result.user);
+		return new AuthResponseDto(
+			result.user,
+			result.accessToken,
+			result.refreshToken,
+		);
 	}
 
 	@Post('exit-tenant')
