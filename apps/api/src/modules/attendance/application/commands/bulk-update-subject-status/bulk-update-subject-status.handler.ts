@@ -6,6 +6,7 @@ import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
+import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
 import { BulkUpdateSubjectStatusCommand } from './bulk-update-subject-status.command';
 
 /**
@@ -29,6 +30,10 @@ export class BulkUpdateSubjectStatusHandler {
 			command.subjectId,
 		);
 		if (!subject) throw new BadRequestException('Subject not found');
+		assertCanWriteSubjectAttendance(subject, {
+			userId: command.userId,
+			role: command.userRole,
+		});
 		const students = await this.studentPort.getByCourseId(subject.courseId);
 		const changedRecords = await this.unitOfWork.run(async () => {
 			const existingByStudent = new Map(

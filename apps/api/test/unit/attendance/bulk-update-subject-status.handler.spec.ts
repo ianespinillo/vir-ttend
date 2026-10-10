@@ -1,5 +1,6 @@
+import { ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ATTENDANCE_STATUS } from '@repo/common';
+import { ATTENDANCE_STATUS, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { BulkUpdateSubjectStatusCommand } from '../../../src/modules/attendance/application/commands/bulk-update-subject-status/bulk-update-subject-status.command';
 import { BulkUpdateSubjectStatusHandler } from '../../../src/modules/attendance/application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
@@ -22,6 +23,7 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 	const date = new Date('2026-07-06T12:00:00Z');
 	const command = new BulkUpdateSubjectStatusCommand(
 		'user-1',
+		ROLES.TEACHER,
 		'tenant-1',
 		'sub-1',
 		date,
@@ -56,7 +58,7 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 			eventEmitter,
 		);
 		subjectPort.getSubjectById.mockResolvedValue(
-			Subject.reconstitute('sub-1', 'course-1', 'Math'),
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1'),
 		);
 		studentPort.getByCourseId.mockResolvedValue([
 			Student.reconstitute('student-1', 'Ana'),
@@ -92,5 +94,36 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 		expect(eventEmitter.emit).not.toHaveBeenCalled();
+	});
+
+	it('should reject a teacher who does not teach the subject', async () => {
+		const foreign = new BulkUpdateSubjectStatusCommand(
+			'other-teacher',
+			ROLES.TEACHER,
+			'tenant-1',
+			'sub-1',
+			date,
+			ATTENDANCE_STATUS.PRESENT,
+		);
+
+		await expect(handler.execute(foreign)).rejects.toThrow(ForbiddenException);
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+		expect(eventEmitter.emit).not.toHaveBeenCalled();
+	});
+
+	it('should allow an admin on a subject taught by someone else', async () => {
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+		const asAdmin = new BulkUpdateSubjectStatusCommand(
+			'admin-1',
+			ROLES.ADMIN,
+			'tenant-1',
+			'sub-1',
+			date,
+			ATTENDANCE_STATUS.PRESENT,
+		);
+
+		await handler.execute(asAdmin);
+
+		expect(attendanceRepo.bulkSave).toHaveBeenCalledTimes(1);
 	});
 });

@@ -4,8 +4,14 @@ import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.response.dto';
 import { SubjectAttendanceResponseDto } from '../../dtos/subject-attendance.response.dto';
+import { assertCanReadSubjectAttendance } from '../../services/subject-access.policy';
 import { GetSubjectAttendanceQuery } from './get-subject-attendance.query';
 
+/**
+ * Attendance of a subject on a date, as a full roster: every active student of
+ * the subject's course appears, with the stored status or none if not recorded
+ * yet (same convention as the daily attendance query).
+ */
 @Injectable()
 export class GetSubjectAttendanceQueryHandler {
 	constructor(
@@ -21,21 +27,30 @@ export class GetSubjectAttendanceQueryHandler {
 	): Promise<SubjectAttendanceResponseDto> {
 		const subject = await this.subjectPort.getSubjectById(query.subjectId);
 		if (!subject) throw new BadRequestException('Invalid subject id');
-		const records = await this.attendanceRepo.findBySubjectAndDate(
-			query.subjectId,
-			query.date,
-		);
-		const dto: AttendanceRecordResponseDto[] = [];
-		for (const record of records) {
-			const student = await this.studentPort.findById(record.studentId);
-			dto.push(new AttendanceRecordResponseDto(student, record));
-		}
+		assertCanReadSubjectAttendance(subject, {
+			userId: query.userId,
+			role: query.userRole,
+		});
+		if (Number.isNaN(query.date.getTime()))
+			throw new BadRequestException('Invalid date');
+
+		const [records, students] = await Promise.all([
+			this.attendanceRepo.findBySubjectAndDate(query.subjectId, query.date),
+			this.studentPort.getActiveByCourseId(subject.courseId),
+		]);
+		const recordByStudent = new Map(records.map((r) => [r.studentId, r]));
+		const roster = [...students]
+			.sort((a, b) => a.name.localeCompare(b.name))
+			.map(
+				(student) =>
+					new AttendanceRecordResponseDto(student, recordByStudent.get(student.id)),
+			);
 		return new SubjectAttendanceResponseDto({
 			subjectId: subject.id,
 			subjectName: subject.name,
 			courseId: subject.courseId,
-			date: query.date.toLocaleDateString(),
-			records: dto,
+			date: query.date.toISOString().slice(0, 10),
+			records: roster,
 		});
 	}
 }
