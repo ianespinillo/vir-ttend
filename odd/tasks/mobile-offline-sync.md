@@ -108,8 +108,11 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
   - Teacher preload: `GET /subjects/mine` → per subject `GET /subjects/:id/students` + today's `GET /attendance/subject`.
   - Home screen lists today's subjects for teachers and displays offline / last-synced status indicator.
   - Check: `ts:check` passes; manual on device.
-- [ ] **T5b — Mobile teacher subject attendance screen.** New route `app/(app)/attendance/subject/[subjectId].tsx` (registered in `(app)/_layout.tsx`) reusing the status buttons, counts bar and save bar from the daily screen; statuses P/A/T only (justified needs the preceptor justification flow).
-  - Check: `ts:check`; manual on device.
+- [x] **T5b — Mobile teacher subject attendance screen.** (commit `18c225f`; turbo ts:check 7/7 pass; biome pass.)
+  - New route `app/(app)/attendance/subject/[subjectId].tsx` reusing status buttons, summary badge bar, "Todos presentes" action and sticky save confirmation bar from the daily screen.
+  - Reads students and existing attendance from the persisted React Query cache (`subjectStudents` and `subjectAttendance`).
+  - Supports P/A/T statuses, preserves existing justified records, validates courseId resolution.
+  - Check: `ts:check` passes; manual on device.
 - [ ] **T6 — Offline attendance outbox (daily + subject).** Persisted outbox coalesced per `(courseId, date)` for daily and `(subjectId, date)` for subject; "Invalid class day" and 403 are permanent errors surfaced to the user. (last write wins); optimistic cache update; flush on reconnect, foreground and after token refresh with backoff; permanent 4xx (non-401) errors surfaced and kept for the user to resolve; pending-sync indicator on the attendance screen and home.
   - Check: `ts:check`; manual: mark offline → reconnect → API logs show the POST and the DB has one row per student.
 
@@ -123,10 +126,11 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
 | T4c | delegated direct (two commits) | academic controller/queries/DTOs + attendance policy/handlers/adapters + tests |
 | T4d | inline direct | attendance policy/handlers/controllers + academic queries + migration + tests |
 | T5 | delegated direct | mobile deps, query client, preload service, home screen: 2+ non-trivial files |
+| T5b | inline direct | subject attendance screen + home subject navigation params |
 
 ## Progress / evidence
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
-- T1 to T5 completed and verified.
+- T1 to T5b completed and verified.
 
 ## Next step
-T5b — Mobile teacher subject attendance screen.
+T6 — Offline attendance outbox (daily + subject).
