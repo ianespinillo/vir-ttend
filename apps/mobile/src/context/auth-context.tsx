@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
+	API_URL,
 	type MobileAppConfig,
 	type TenancyMode,
 	getAppConfig,
@@ -65,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		tenancyMode: 'multi',
 		defaultTenantId: null,
 		defaultTenantName: null,
-		apiUrl: 'http://localhost:3001',
+		apiUrl: API_URL,
 	});
 
 	useEffect(() => {

@@ -1,20 +1,9 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
-
-// In development, default to localhost on iOS/Web or 10.0.2.2 on Android emulator
-const getDefaultBaseUrl = () => {
-	if (process.env.EXPO_PUBLIC_API_URL) {
-		return process.env.EXPO_PUBLIC_API_URL;
-	}
-	if (Platform.OS === 'android') {
-		return 'http://10.0.2.2:3001';
-	}
-	return 'http://localhost:3001';
-};
+import { API_URL } from '../config/app-config';
 
 export const api = axios.create({
-	baseURL: getDefaultBaseUrl(),
+	baseURL: API_URL,
 	headers: {
 		'Content-Type': 'application/json',
 	},
