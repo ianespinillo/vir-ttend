@@ -63,8 +63,7 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
     - `POST /attendance/bulk` can still overwrite subject records.
     - `AttendanceRecord.isDaily/isSubject` compare `=== undefined` while the DB gives `null`.
     - Redis cache invalidation runs before commit.
-    - Unrelated pending migration `Migration20261009120000_alter_courses_division_and_preceptor` on the dev DB. Wrap the save in a transaction; migration making the attendance unique key treat NULL `subjectId` as equal (Postgres 16 `NULLS NOT DISTINCT`), handling existing duplicates; avoid re-emitting `attendance.registered` for unchanged records.
-  - Check: jest tests for replay (same payload twice → no duplicates, no extra events); migration runs on the docker DB.
+    - Unrelated pending migration `Migration20261009120000_alter_courses_division_and_preceptor` on the dev DB.
   - T3b+T4 review: high_risk → granted → approved and acknowledged, lineage `review-4e14e2de0b1eba67`, reviewed boundary `578a294`. The branch-wide candidate from `6c8c613` (268 files) stopped with `lens_context_budget_exceeded`, so it is reviewed as these slices instead.
 - [x] **T4b — Fix review advisories on T3b/T4 (regressions we introduced).**
   - **Commit:** `16079ba`.
@@ -78,7 +77,16 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
   - (2) Redis cache invalidation must happen after the transaction commits.
   - (3) The dedup migration must copy removed attendance and justification rows into backup tables before deleting them, so production keeps an audit. The dev DB already ran the old version.
   - Check: api tests, ts:check, biome.
-- [ ] **T4c — API teacher endpoints and scoping** (from the teacher-flow map).
+- [x] **T4c — API teacher endpoints and scoping** (from the teacher-flow map).
+  - **Commits:** `7539575` (endpoints) and `9312055` (scoping).
+  - **Checks:** api 75 suites / 403 tests pass; turbo ts:check 7/7 pass; biome pass.
+  - **Web bug:** the web teacher page bug (missing `courseId`) is confirmed and fixed by the DTO.
+  - **Slice review:** high, 1658 lines → granted, lineage `review-09642d27e6e51e48`, running.
+  - **Gaps:**
+    - `GET /attendance/subject/:id/history` has no ownership check.
+    - `POST /attendance/subject` trusts the body `courseId` and `studentId`s.
+    - The bulk handler includes non-active students.
+    - Subject lookups are not tenant-scoped.
   - **New endpoints:**
     - `GET /subjects/mine` (teacher/admin). It returns the teacher's subjects for the active year: `{subjectId, name, courseId, courseName, slots[{dayOfWeek,startTime,endTime}]}` for the whole week, so mobile can preload and filter by weekday locally.
     - `GET /subjects/:id/students` (teacher scoped to own subject; admin/preceptor allowed).
@@ -100,9 +108,12 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
 | T1 | delegated direct | touches 2+ non-trivial files (api.ts, app-config.ts, auth-context.tsx, package.json, app.json, docs) |
 | T2+T3 | delegated direct (one writer, two commits) | API controller/handler + tests and mobile auth/api client: 2+ non-trivial files |
 | T3b+T4 | delegated direct (one writer, two commits) | auth controller/handlers/tests + mobile auth; attendance handler/repo/migration/tests: 2+ non-trivial files |
+| T4b | delegated direct | mobile api client + UoW adapter + repository + migration + tests |
+| T4c | delegated direct (two commits) | academic controller/queries/DTOs + attendance policy/handlers/adapters + tests |
+| T5 | delegated direct | mobile deps, query client, preload service, home screen: 2+ non-trivial files |
 
 ## Progress / evidence
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
 
 ## Next step
-T4c (delegated writer).
+T5 (delegated writer) while the T4b+T4c review runs.
