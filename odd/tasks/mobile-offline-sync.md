@@ -19,8 +19,11 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 ## Scope change (2026-10-10)
 User: preload and offline queue must cover BOTH daily attendance (preceptor) and per-subject attendance (teacher). Teacher API access and a teacher mobile flow are now in scope; tasks are re-planned after mapping the teacher flow.
 
-## Out of scope
-- (none recorded yet after the scope change)
+## Out of scope (follow-ups)
+- Preceptor scoping: `POST /attendance/daily` does not verify the course belongs to the preceptor; the preceptor dashboard falls back to all courses when the preceptor has none.
+- `GET /subjects?academicYearId` lets a teacher pass any `teacherId`.
+- `POST /attendance/subject/all` uses `@IsDate` on a JSON string date.
+- Justified status on mobile (needs the preceptor justification flow).
 
 ## Constraints and assumptions
 - Device: physical **Android** phone over USB → use `adb reverse` so the phone's `localhost:3001` maps to the laptop. Assumption: Android (Windows host, USB).
@@ -68,9 +71,20 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
   - (2) Redis cache invalidation must happen after the transaction commits.
   - (3) The dedup migration must copy removed attendance and justification rows into backup tables before deleting them, so production keeps an audit. The dev DB already ran the old version.
   - Check: api tests, ts:check, biome.
-- [ ] **T5 — Offline preload.** Install AsyncStorage, NetInfo and the React Query persister; persisted `QueryClient` with a long `gcTime`; preload service: active academic year → courses by preceptor → students and today's daily attendance per course; triggered after login, on app foreground and on reconnect; fix the home `/courses` fallback that omits `academicYearId`.
+- [ ] **T4c — API teacher endpoints and scoping** (from the teacher-flow map).
+  - **New endpoints:**
+    - `GET /subjects/mine` (teacher/admin). It returns the teacher's subjects for the active year: `{subjectId, name, courseId, courseName, slots[{dayOfWeek,startTime,endTime}]}` for the whole week, so mobile can preload and filter by weekday locally.
+    - `GET /subjects/:id/students` (teacher scoped to own subject; admin/preceptor allowed).
+  - **Ownership guard:** subject attendance handlers (register, bulk, copy, get) throw `ForbiddenException` unless `subject.teacherId === user.sub` or the user is admin. This adds `teacherId` to the attendance `Subject` and `SubjectAdapter`.
+  - **DTO fixes:** add `courseId` to `SubjectResponseDto`; the web teacher page reads it and silently fails without it. `GET /attendance/subject` returns the full roster, like daily.
+  - **Class-day check:** compute the weekday from the `YYYY-MM-DD` string, not the server timezone.
+  - Check: api tests for scoping (403 for another teacher), roster, `mine`.
+- [ ] **T5 — Offline preload (both roles).** Install AsyncStorage, NetInfo and the React Query persister; persisted `QueryClient` with a long `gcTime`; preload service: active academic year → courses by preceptor → students and today's daily attendance per course; triggered after login, on app foreground and on reconnect; fix the home `/courses` fallback that omits `academicYearId`.
+  - Teacher preload: `GET /subjects/mine` → per subject `GET /subjects/:id/students` + today's `GET /attendance/subject`. Teacher home branch shows today's subjects (filter slots by local weekday).
   - Check: `ts:check`; manual: airplane mode shows courses and students.
-- [ ] **T6 — Offline attendance outbox.** Persisted outbox coalesced per `(courseId, date)` (last write wins); optimistic cache update; flush on reconnect, foreground and after token refresh with backoff; permanent 4xx (non-401) errors surfaced and kept for the user to resolve; pending-sync indicator on the attendance screen and home.
+- [ ] **T5b — Mobile teacher subject attendance screen.** New route `app/(app)/attendance/subject/[subjectId].tsx` (registered in `(app)/_layout.tsx`) reusing the status buttons, counts bar and save bar from the daily screen; statuses P/A/T only (justified needs the preceptor justification flow).
+  - Check: `ts:check`; manual on device.
+- [ ] **T6 — Offline attendance outbox (daily + subject).** Persisted outbox coalesced per `(courseId, date)` for daily and `(subjectId, date)` for subject; "Invalid class day" and 403 are permanent errors surfaced to the user. (last write wins); optimistic cache update; flush on reconnect, foreground and after token refresh with backoff; permanent 4xx (non-401) errors surfaced and kept for the user to resolve; pending-sync indicator on the attendance screen and home.
   - Check: `ts:check`; manual: mark offline → reconnect → API logs show the POST and the DB has one row per student.
 
 ## Route log
