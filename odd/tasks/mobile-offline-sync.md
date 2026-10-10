@@ -81,7 +81,7 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
   - **Commits:** `7539575` (endpoints) and `9312055` (scoping).
   - **Checks:** api 75 suites / 403 tests pass; turbo ts:check 7/7 pass; biome pass.
   - **Web bug:** the web teacher page bug (missing `courseId`) is confirmed and fixed by the DTO.
-  - **Slice review:** high, 1658 lines → granted, lineage `review-09642d27e6e51e48`, running.
+  - **Slice review:** high, 1658 lines → granted → approved and acknowledged, lineage `review-09642d27e6e51e48`, reviewed boundary `9312055`. The branch-wide candidate from `6c8c613` failed again with `lens_context_budget_exceeded` (296 files).
   - **Gaps:**
     - `GET /attendance/subject/:id/history` has no ownership check.
     - `POST /attendance/subject` trusts the body `courseId` and `studentId`s.
@@ -94,6 +94,13 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
   - **DTO fixes:** add `courseId` to `SubjectResponseDto`; the web teacher page reads it and silently fails without it. `GET /attendance/subject` returns the full roster, like daily.
   - **Class-day check:** compute the weekday from the `YYYY-MM-DD` string, not the server timezone.
   - Check: api tests for scoping (403 for another teacher), roster, `mine`.
+- [ ] **T4d — Fix T4c review advisories.**
+  - **Tenant scoping (R1/R3-003):** subject attendance reads and writes must verify the subject belongs to the actor's tenant. This is especially needed because the roster now exposes all students.
+  - **Course from subject (R3-002):** `POST /attendance/subject` uses `subject.courseId` and rejects a mismatched body `courseId`.
+  - **History:** add an ownership check to `GET /attendance/subject/:id/history`.
+  - **Rotation non-issue:** the refresh-rotation advisories (R3-001, R4) do not apply, since `RefreshTokenHandler` does not rotate (verified in T2).
+  - **Migration note:** document that the dev DB ran the dedup migration before the backup tables were added (R2).
+  - **Check:** api tests for cross-tenant 403/404.
 - [ ] **T5 — Offline preload (both roles).** Install AsyncStorage, NetInfo and the React Query persister; persisted `QueryClient` with a long `gcTime`; preload service: active academic year → courses by preceptor → students and today's daily attendance per course; triggered after login, on app foreground and on reconnect; fix the home `/courses` fallback that omits `academicYearId`.
   - Teacher preload: `GET /subjects/mine` → per subject `GET /subjects/:id/students` + today's `GET /attendance/subject`. Teacher home branch shows today's subjects (filter slots by local weekday).
   - Check: `ts:check`; manual: airplane mode shows courses and students.
