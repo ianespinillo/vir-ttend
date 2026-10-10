@@ -1,6 +1,7 @@
 'use client';
 
 import { useChangePassword, useProfile } from '@repo/hooks';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { ErrorState } from '../../shared/error-state';
 import { LoadingSpinner } from '../../shared/loading-spinner';
@@ -48,7 +49,16 @@ export function ProfilePage() {
 					</CardHeader>
 					<CardContent>
 						<PasswordForm
-							onSubmit={(data) => changePassword.mutate(data)}
+							onSubmit={(data) =>
+								changePassword.mutate(data, {
+									onSuccess: () => {
+										toast.success('Contraseña actualizada correctamente');
+									},
+									onError: (err) => {
+										toast.error(err.message || 'Error al cambiar la contraseña');
+									},
+								})
+							}
 							isLoading={changePassword.isPending}
 						/>
 					</CardContent>

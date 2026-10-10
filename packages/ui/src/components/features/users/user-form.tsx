@@ -200,7 +200,8 @@ export function UserForm({
 										<Input type="email" placeholder="usuario@colegio.edu" {...field} />
 									</FormControl>
 									<FormDescription className="text-xs">
-										Se generará una contraseña provisoria para el primer acceso.
+										Se enviará un correo electrónico con las instrucciones de acceso y su
+										contraseña provisoria.
 									</FormDescription>
 									<FormMessage />
 								</FormItem>
