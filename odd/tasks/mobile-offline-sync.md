@@ -66,7 +66,14 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
     - Unrelated pending migration `Migration20261009120000_alter_courses_division_and_preceptor` on the dev DB. Wrap the save in a transaction; migration making the attendance unique key treat NULL `subjectId` as equal (Postgres 16 `NULLS NOT DISTINCT`), handling existing duplicates; avoid re-emitting `attendance.registered` for unchanged records.
   - Check: jest tests for replay (same payload twice → no duplicates, no extra events); migration runs on the docker DB.
   - T3b+T4 review: high_risk → granted → approved and acknowledged, lineage `review-4e14e2de0b1eba67`, reviewed boundary `578a294`. The branch-wide candidate from `6c8c613` (268 files) stopped with `lens_context_budget_exceeded`, so it is reviewed as these slices instead.
-- [ ] **T4b — Fix review advisories on T3b/T4 (regressions we introduced).**
+- [x] **T4b — Fix review advisories on T3b/T4 (regressions we introduced).**
+  - **Commit:** `16079ba`.
+  - **What changed:**
+    - Logout revocation does a bare refresh+retry on 401 or when the access token is missing.
+    - An `AfterCommitQueue` (AsyncLocalStorage) defers Redis invalidation until after `em.transactional`.
+    - The migration backs up removed rows into `attendance_record_dedup_backup` and `justification_dedup_backup`.
+  - **Checks:** SQL validated in a rolled-back transaction on docker Postgres; api 71 suites / 368 tests pass; ts:check pass; biome pass.
+  - **Review:** assess returned medium, 380 lines, `under_budget`, so it stays pending in the slice from `578a294`.
   - (1) Mobile logout revocation must work when the access token expired: refresh via a bare call, then revoke, or revoke with the refresh token alone; never skip revocation when a refresh token exists.
   - (2) Redis cache invalidation must happen after the transaction commits.
   - (3) The dedup migration must copy removed attendance and justification rows into backup tables before deleting them, so production keeps an audit. The dev DB already ran the old version.
@@ -98,4 +105,4 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
 
 ## Next step
-T4b (delegated writer) while the teacher flow is mapped; then re-plan T5/T6 plus the teacher API and mobile tasks.
+T4c (delegated writer).
