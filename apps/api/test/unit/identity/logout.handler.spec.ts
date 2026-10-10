@@ -1,4 +1,5 @@
 // logout.handler.spec.ts
+import { UnauthorizedException } from '@nestjs/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { LogoutCommand } from '../../../src/modules/identity/application/commands/logout/logout.command';
 import { LogoutHandler } from '../../../src/modules/identity/application/commands/logout/logout.handler';
@@ -46,6 +47,10 @@ describe('LogoutHandler', () => {
 		await expect(handler.execute(new LogoutCommand('raw-token'))).rejects.toThrow(
 			'Invalid refresh token',
 		);
+		await expect(
+			handler.execute(new LogoutCommand('raw-token')),
+		).rejects.toBeInstanceOf(UnauthorizedException);
+		expect(refreshTokenRepo.save).not.toHaveBeenCalled();
 	});
 
 	it('should revoke all refresh tokens for a user', async () => {

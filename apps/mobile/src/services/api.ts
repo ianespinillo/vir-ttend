@@ -11,6 +11,8 @@ import {
 } from './session-storage';
 
 const REQUEST_TIMEOUT_MS = 10000;
+// Server-side revocation on logout is best effort: keep it short so it never lingers.
+const LOGOUT_REVOKE_TIMEOUT_MS = 5000;
 
 export const api = axios.create({
 	baseURL: API_URL,
@@ -46,6 +48,7 @@ const NO_REFRESH_PATHS = [
 	'/auth/login',
 	'/auth/select-tenant',
 	'/auth/refresh',
+	'/auth/logout',
 ];
 
 const shouldAttemptRefresh = (error: AxiosError): boolean => {
@@ -98,6 +101,32 @@ const requestNewAccessToken = async (): Promise<string> => {
 			await expireSession();
 		}
 		throw error;
+	}
+};
+
+/**
+ * Revokes the refresh token server side, best effort. Uses a bare axios call
+ * with credentials captured by the caller, so it works after local storage was
+ * cleared and bypasses the interceptors of `api`: a 401 here can never trigger
+ * the refresh/retry chain or `notifySessionExpired`. Never rejects.
+ */
+export const revokeSessionOnServer = async (credentials: {
+	accessToken: string | null;
+	refreshToken: string | null;
+}): Promise<void> => {
+	const { accessToken, refreshToken } = credentials;
+	if (!accessToken || !refreshToken) return;
+	try {
+		await axios.post(
+			`${API_URL}/auth/logout`,
+			{ refreshToken },
+			{
+				headers: { Authorization: `Bearer ${accessToken}` },
+				timeout: LOGOUT_REVOKE_TIMEOUT_MS,
+			},
+		);
+	} catch (error) {
+		console.warn('Could not revoke the session on the server', error);
 	}
 };
 
