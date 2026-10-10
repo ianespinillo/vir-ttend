@@ -8,6 +8,7 @@ import {
 	saveCustomAppName,
 	saveTenancyMode,
 } from '../config/app-config';
+import { clearAllOfflineCaches } from '../features/offline/clear-offline-cache';
 import { api, revokeSessionOnServer } from '../services/api';
 import {
 	REFRESH_TOKEN_KEY,
@@ -239,9 +240,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 			await clearStoredSession();
 		} catch (error) {
 			console.warn('Error clearing SecureStore', error);
-		} finally {
-			resetSessionState();
 		}
+		// The previous user's offline data must be gone before the next sign-in.
+		await clearAllOfflineCaches();
+		resetSessionState();
 
 		// A network failure must not delay or prevent the local sign-out.
 		void revokeSessionOnServer(credentials);

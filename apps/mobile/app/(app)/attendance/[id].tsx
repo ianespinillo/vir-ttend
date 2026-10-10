@@ -7,10 +7,11 @@ import {
 	Check,
 	CheckCheck,
 	Clock,
+	CloudOff,
 	Users,
 	X,
 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
 	ActivityIndicator,
 	Alert,
@@ -20,16 +21,15 @@ import {
 	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { attendanceQueries } from '../../../src/features/attendance/queries';
+import type {
+	AttendanceStatus,
+	StudentItem,
+} from '../../../src/features/attendance/types';
+import { toLocalDateString } from '../../../src/lib/date';
 import { api } from '../../../src/services/api';
 
-type AttendanceStatus = 'present' | 'absent' | 'late';
-
-interface StudentItem {
-	id: string;
-	firstName: string;
-	lastName: string;
-	documentNumber?: string;
-}
+const NO_STUDENTS: StudentItem[] = [];
 
 // NativeWind crash workaround: className must stay STATIC per render.
 // Dynamic visual state goes through inline `style` so css-interop never
@@ -61,66 +61,48 @@ export default function AttendanceSheetScreen() {
 	const courseId = typeof params.id === 'string' ? params.id : '';
 	const courseName = typeof params.name === 'string' ? params.name : 'Curso';
 
-	// Today in YYYY-MM-DD format
-	const todayStr = useMemo(() => {
-		const d = new Date();
-		const year = d.getFullYear();
-		const month = String(d.getMonth() + 1).padStart(2, '0');
-		const day = String(d.getDate()).padStart(2, '0');
-		return `${year}-${month}-${day}`;
-	}, []);
+	// Today in YYYY-MM-DD format (device local time)
+	const todayStr = useMemo(() => toLocalDateString(), []);
 
 	// State for attendance map: studentId -> status
 	const [attendanceMap, setAttendanceMap] = useState<
 		Record<string, AttendanceStatus>
 	>({});
 	const [isSaving, setIsSaving] = useState(false);
+	// Once the user edits, server data must not overwrite their changes.
+	const hasUserEdits = useRef(false);
 
-	// Fetch students of the course
+	// Students of the course: shared key, filled by the offline preload.
 	const {
 		data: studentsData,
 		isLoading: isLoadingStudents,
+		fetchStatus: studentsFetchStatus,
 		error: studentsError,
 	} = useQuery({
-		queryKey: ['students-course', courseId],
-		queryFn: async () => {
-			const res = await api.get('/students', {
-				params: { courseId, limit: 100 },
-			});
-			const payload = res.data?.data || res.data;
-			return Array.isArray(payload) ? payload : payload?.items || [];
-		},
+		...attendanceQueries.courseStudents(courseId),
 		enabled: !!courseId,
 	});
 
-	// Fetch today's existing attendance if registered
+	// Today's existing attendance (full roster, `status` unset when not taken).
 	const { data: existingAttendance } = useQuery({
-		queryKey: ['attendance-course', courseId, todayStr],
-		queryFn: async () => {
-			try {
-				const res = await api.get('/attendance/daily', {
-					params: { courseId, date: todayStr },
-				});
-				return res.data?.data || res.data || [];
-			} catch {
-				return [];
-			}
-		},
+		...attendanceQueries.dailyAttendance(courseId, todayStr),
 		enabled: !!courseId,
 	});
 
-	const students: StudentItem[] = studentsData || [];
+	const students = studentsData ?? NO_STUDENTS;
+	// Offline and never downloaded: the query is paused, not loading or failed.
+	const isOfflineWithoutRoster =
+		studentsData === undefined && studentsFetchStatus === 'paused';
 
 	// Populate attendance state from existing attendance or default
 	useEffect(() => {
-		if (!students.length) return;
+		if (!students.length || hasUserEdits.current) return;
 
 		const map: Record<string, AttendanceStatus> = {};
-		if (Array.isArray(existingAttendance) && existingAttendance.length > 0) {
-			for (const record of existingAttendance) {
-				if (record.studentId && record.status) {
-					map[record.studentId] = record.status;
-				}
+		for (const record of existingAttendance?.records ?? []) {
+			if (record.studentId && record.status) {
+				// 'justified' is kept as is so saving does not erase a justification.
+				map[record.studentId] = record.status as AttendanceStatus;
 			}
 		}
 
@@ -135,6 +117,7 @@ export default function AttendanceSheetScreen() {
 	}, [students, existingAttendance]);
 
 	const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+		hasUserEdits.current = true;
 		setAttendanceMap((prev) => ({
 			...prev,
 			[studentId]: status,
@@ -142,6 +125,7 @@ export default function AttendanceSheetScreen() {
 	};
 
 	const markAllPresent = () => {
+		hasUserEdits.current = true;
 		const newMap: Record<string, AttendanceStatus> = {};
 		for (const s of students) {
 			newMap[s.id] = 'present';
@@ -252,7 +236,14 @@ export default function AttendanceSheetScreen() {
 						Cargando nómina de alumnos...
 					</Text>
 				</View>
-			) : studentsError ? (
+			) : isOfflineWithoutRoster ? (
+				<View className="flex-1 items-center justify-center px-6">
+					<CloudOff size={36} color="#94A3B8" />
+					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+						Sin conexión. La lista de alumnos de este curso todavía no se descargó.
+					</Text>
+				</View>
+			) : studentsError && studentsData === undefined ? (
 				<View className="flex-1 items-center justify-center px-6">
 					<AlertCircle size={36} color="#EF4444" />
 					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
