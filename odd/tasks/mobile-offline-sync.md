@@ -41,10 +41,13 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 - [x] **T1 — USB connectivity.** (commit `17ceb7e`; `ts:check` pass, biome pass, hook pass; `adb reverse --list` shows 3001/8081 with phone attached; review: high_risk → granted → approved and acknowledged, lineage `review-c2887eae58ef7658`, reviewed boundary `7df8489`; manual check of app traffic in API logs pending on user)
   - Advisory (non-blocking) follow-ups: the emulator without `adb reverse` no longer reaches the API (the old default was `10.0.2.2`), so run `android:reverse` on the emulator too or set `EXPO_PUBLIC_API_URL`; the `adb reverse` scripts assume a single attached device (`-s <serial>` needed for several); there is no automated check of URL resolution. Android default base URL `http://localhost:3001` plus `adb reverse tcp:3001 tcp:3001` (and Metro 8081) script in `apps/mobile/package.json`; single source of truth for the API URL (remove duplicate fallbacks in `src/config/app-config.ts` and `src/context/auth-context.tsx`); ensure cleartext http works on dev builds; document in mobile README/`.env.example`. Route: inline-or-delegated (decided at start).
   - Check: `ts:check` passes; from the device, the API logs show app requests.
-- [ ] **T2 — API mobile refresh.** `POST /auth/refresh` accepts `refreshToken` in the body when no cookie is present and returns `{accessToken, refreshToken}` in the body (keeping cookie behavior for web); respect existing rotation/revocation. `POST /auth/logout` accepts the body token too.
+- [x] **T2 — API mobile refresh.** (commit `20ff402`; `api test` 67 suites/339 tests pass, new `auth.controller.spec.ts` 12 tests; ts:check pass. RefreshTokenHandler does NOT rotate — same refresh token returned. Handlers now throw `UnauthorizedException` instead of plain `Error`, which was surfacing as 500.) `POST /auth/refresh` accepts `refreshToken` in the body when no cookie is present and returns `{accessToken, refreshToken}` in the body (keeping cookie behavior for web); respect existing rotation/revocation. `POST /auth/logout` accepts the body token too.
   - Check: jest unit tests for the controller/handler paths; existing API tests green.
-- [ ] **T3 — Mobile token refresh.** Persist `refreshToken` in SecureStore at select-tenant; axios 401 interceptor with single-flight refresh and request retry; sign out on refresh failure; logout revokes and clears.
+- [x] **T3 — Mobile token refresh.** (commit `ed0076c`; mobile ts:check pass; `session-storage.ts` + single-flight interceptor in `api.ts`; network/5xx on refresh never signs out. Manual device check pending. Known gaps: refresh token now also readable by web JS via body; role-rejected select-tenant session not revoked; login/select-tenant still throw plain `Error` → 500.) Persist `refreshToken` in SecureStore at select-tenant; axios 401 interceptor with single-flight refresh and request retry; sign out on refresh failure; logout revokes and clears.
   - Check: `ts:check`; manual: expired access token renews transparently.
+  - T2+T3 review: high_risk → granted → approved and acknowledged, lineage `review-1851e0e2fe5f6465`, reviewed boundary `ed0076c`.
+- [ ] **T3b — Fix review advisories on T2/T3 (regression we introduced).** Reason: the R1 warning says `/auth/refresh` now returns the refresh token in the body even for cookie-authenticated web clients, so XSS can read it. Fixes: (1) return the refresh token in the body only when it was supplied in the body (mobile); cookie clients get the access token only. (2) Mobile logout clears the local session immediately and revokes server-side best-effort without the 401 refresh chain (no ~20 s stall, no session-expired event during logout). (3) Add handler-level tests asserting `UnauthorizedException` from `RefreshTokenHandler` and `LogoutHandler`. Also fix the typo in the client-facing refresh handler message.
+  - Check: api tests, api and mobile ts:check, biome.
 - [ ] **T4 — API idempotent daily attendance.** Wrap the save in a transaction; migration making the attendance unique key treat NULL `subjectId` as equal (Postgres 16 `NULLS NOT DISTINCT`), handling existing duplicates; avoid re-emitting `attendance.registered` for unchanged records.
   - Check: jest tests for replay (same payload twice → no duplicates, no extra events); migration runs on the docker DB.
 - [ ] **T5 — Offline preload.** Install AsyncStorage, NetInfo and the React Query persister; persisted `QueryClient` with a long `gcTime`; preload service: active academic year → courses by preceptor → students and today's daily attendance per course; triggered after login, on app foreground and on reconnect; fix the home `/courses` fallback that omits `academicYearId`.
@@ -57,9 +60,10 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 |------|-------|------------------|
 | T1 | delegated direct | touches 2+ non-trivial files (api.ts, app-config.ts, auth-context.tsx, package.json, app.json, docs) |
 | T2+T3 | delegated direct (one writer, two commits) | API controller/handler + tests and mobile auth/api client: 2+ non-trivial files |
+| T3b+T4 | delegated direct (one writer, two commits) | auth controller/handlers/tests + mobile auth; attendance handler/repo/migration/tests: 2+ non-trivial files |
 
 ## Progress / evidence
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
 
 ## Next step
-T2 + T3 (one delegated writer, one commit per task).
+T3b + T4 (one delegated writer, one commit per task).
