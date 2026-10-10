@@ -32,6 +32,21 @@ import { SelectTenantRequestDto } from '../../application/dto/select-tenant.requ
 import { TokenService } from '../../domain/services/token.service';
 
 // auth.controller.ts
+
+/**
+ * Define si las cookies de sesión llevan el flag `Secure`.
+ * Sobre HTTP (desarrollo local: Docker + LAN, Expo Go, adb reverse) `Secure`
+ * hace que Android/navegadores rechacen la cookie, por lo que el flag se
+ * controla explícitamente con COOKIES_SECURE (true|false). Sin override se
+ * conserva el comportamiento anterior (production => Secure).
+ */
+function cookiesAreSecure(): boolean {
+	if (process.env.COOKIES_SECURE !== undefined) {
+		return process.env.COOKIES_SECURE === 'true';
+	}
+	return process.env.NODE_ENV === 'production';
+}
+
 @Controller('auth')
 @ApiTags('Auth')
 export class AuthController {
@@ -96,10 +111,10 @@ export class AuthController {
 		}
 
 		// cookie temporal con userId — httpOnly, dura solo 10 minutos
-		const isProd = process.env.NODE_ENV === 'production';
+		const secureCookies = cookiesAreSecure();
 		res.cookie('pending_user_id', result.userId, {
 			httpOnly: true,
-			secure: isProd,
+			secure: secureCookies,
 			sameSite: 'strict',
 			maxAge: 10 * 60 * 1000,
 		});
@@ -215,10 +230,10 @@ export class AuthController {
 		accessToken: string,
 		refreshToken: string,
 	) {
-		const isProd = process.env.NODE_ENV === 'production';
+		const secureCookies = cookiesAreSecure();
 		res.cookie('access_token', accessToken, {
 			httpOnly: true,
-			secure: isProd,
+			secure: secureCookies,
 			sameSite: 'strict',
 			maxAge: 15 * 60 * 1000,
 			path: '/',
@@ -226,7 +241,7 @@ export class AuthController {
 
 		res.cookie('refresh_token', refreshToken, {
 			httpOnly: true,
-			secure: isProd,
+			secure: secureCookies,
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000,
 			// Opción A: path '/' para que el navegador envíe la cookie a /auth/logout
@@ -289,7 +304,7 @@ export class AuthController {
 
 		res.cookie('access_token', result.accessToken, {
 			httpOnly: true,
-			secure: true,
+			secure: cookiesAreSecure(),
 			sameSite: 'strict',
 			maxAge: 15 * 60 * 1000,
 			path: '/',
