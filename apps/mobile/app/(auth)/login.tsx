@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Lock, Mail } from 'lucide-react-native';
+import { Lock, Mail, School } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
 	ActivityIndicator,
@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/auth-context';
 
 export default function LoginScreen() {
-	const { login } = useAuth();
+	const { login, config } = useAuth();
 	const router = useRouter();
 
 	const [email, setEmail] = useState('');
@@ -75,11 +75,27 @@ export default function LoginScreen() {
 							<Text className="text-3xl font-extrabold text-white">V</Text>
 						</View>
 						<Text className="text-2xl font-bold tracking-tight text-slate-900">
-							Vir-ttend
+							{config.appName}
 						</Text>
-						<Text className="mt-1 text-center text-sm text-slate-500">
-							Gestión de asistencia escolar para preceptores y docentes
-						</Text>
+
+						{config.tenancyMode === 'single' ? (
+							<View className="mt-2 flex-row items-center rounded-full bg-indigo-50 px-3 py-1 border border-indigo-100">
+								<School size={14} color="#4F46E5" />
+								<Text className="ml-1.5 text-xs font-semibold text-indigo-700">
+									{config.defaultTenantName || 'Instancia Institucional'}
+								</Text>
+							</View>
+						) : (
+							<Text className="mt-1 text-center text-sm text-slate-500">
+								Gestión de asistencia escolar
+							</Text>
+						)}
+
+						<View className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1 border border-amber-200">
+							<Text className="text-[11px] font-semibold text-amber-800">
+								Exclusivo para Preceptores y Docentes
+							</Text>
+						</View>
 					</View>
 
 					{/* Form Card */}
@@ -147,9 +163,15 @@ export default function LoginScreen() {
 						</TouchableOpacity>
 					</View>
 
-					<Text className="mt-8 text-center text-xs text-slate-400">
-						Vir-ttend v1.0 • Sistema Escolar
-					</Text>
+					{/* Tenancy Mode Badge */}
+					<View className="mt-8 items-center">
+						<Text className="text-xs text-slate-400">
+							Modo:{' '}
+							{config.tenancyMode === 'single'
+								? 'Institución Única (Single-Tenant)'
+								: 'Multi-Tenant (Múltiples Escuelas)'}
+						</Text>
+					</View>
 				</ScrollView>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
