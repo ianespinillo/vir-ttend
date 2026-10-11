@@ -121,6 +121,39 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
   - Pending-sync and error indicators/banners on both attendance sheets (`[id].tsx`, `[subjectId].tsx`), course and subject cards on home screen, and enhanced `SyncIndicator`.
   - Check: `ts:check` passes; manual on device: mark offline → reconnect → auto flush.
 
+## Scope change (2026-10-11) — user-reported gaps vs web
+User: "the course is not updated to attendance already taken" and "the whole justification section from the web is missing on mobile". The user asked us to compare web vs mobile and do what is optimal.
+
+- [ ] **T7 — "Attendance taken" state (mobile).**
+  - **Root cause:** `/dashboard` snapshots are year-to-date aggregates. Mobile home derives "taken" from `notRecorded < totalStudents` on those numbers, so it is almost always false.
+  - **Masking bug:** the outbox optimistically overwrites the dashboard with today-only counts, then the post-flush refetch reverts them.
+  - **Fix:**
+    - Derive "taken today" from the cached `dailyAttendance(courseId, today)` for preceptors, and from `subjectAttendance(subjectId, today)` for teachers. A day counts as taken when any record has a status, or an outbox item exists.
+    - Stop writing today-only numbers into the dashboard cache.
+    - The optimistic update must preserve the record `id` and `justification`.
+    - The course-list fallback must also show the state.
+  - Check: `ts:check`; manual: save, then the card shows taken after sync and after restart.
+  - Also folds in outbox advisories from the T4d+T5b+T6 review:
+    - (R3-002) `init()` in-flight guard.
+    - (R4) transient failed items counted and visible.
+    - (R4) permanent failures from past dates surfaced on home with retry and discard.
+    - (R4) persistence failure surfaced instead of a false "saved locally" message.
+- [ ] **T8 — Justifications on mobile (parity with web).**
+  - **Who:** preceptor only (API roles PRECEPTOR/ADMIN). Teachers see the justified badge read-only.
+  - **Justify action:** on ABSENT rows that have a record `id`. A bottom sheet offers the web's preset reasons (Certificado médico, Motivos personales / familiares, Trámite personal, Problema de transporte, Licencia escolar, Otro → free text) plus optional notes, and calls `POST /attendance/:id/justify`.
+  - **Display:** justified badge with reason and notes on both sheets. Read-only "Justificaciones del mes" list per course, mirroring the web review modal.
+  - **Connectivity:** online-only v1. The record id exists only after sync and the endpoint is not idempotent. The action is disabled with a message while offline or while the day has a pending outbox item.
+  - **Web fix:** the "Justificar" button is shown for LATE rows, but the API only accepts ABSENT, so LATE gets a 400. Show it for ABSENT only.
+  - Check: `ts:check`, biome, web ts:check; manual on device.
+  - Also folds in from the T4d+T5b+T6 review:
+    - (R3-003) the subject sheet must preserve `justified` records instead of saving them as present.
+    - (R1-001/R3-005) the API subject access policy must fail closed when the subject or actor tenant is empty, with no ADMIN/empty-tenant defaults in query/command constructors.
+- T4d+T5b+T6 slice review: high → granted → `correction_required`.
+  - **Correction:** two CRITICAL lost-update findings in the outbox flush. Fixed in `3792e62` (keep items re-enqueued mid-flight, rerun the flush).
+  - **Outcome:** the targeted validator approved; acknowledged, lineage `review-64a0b6a0e3ecd21b`, reviewed boundary `3792e62`.
+  - **Tooling note:** the validator only ran with a clean worktree (`repository_context_unavailable` while the doc was modified).
+  - **Branch-wide candidate:** `lens_context_budget_exceeded` again (322 files).
+
 ## Route log
 | Task | Route | Trigger evidence |
 |------|-------|------------------|
@@ -139,5 +172,5 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
 - T1 to T6 completed, tested, and verified.
 
 ## Next step
-- Manual verification on device with `pnpm --filter mobile android:usb` (mark offline → reconnect → verify outbox flushes).
-- Prepare feature PR to `dev`.
+- T7 (delegated writer), then T8 (delegated writer).
+- Then manual verification on device with `pnpm --filter mobile android:usb`, and prepare the feature PR to `dev`.
