@@ -141,7 +141,16 @@ User: "the course is not updated to attendance already taken" and "the whole jus
     - (R4) transient failed items counted and visible.
     - (R4) permanent failures from past dates surfaced on home with retry and discard.
     - (R4) persistence failure surfaced instead of a false "saved locally" message.
-- [ ] **T8 — Justifications on mobile (parity with web).**
+- [x] **T8 — Justifications on mobile (parity with web).**
+  - **Commits:** `2e82a89` (API fail-closed tenant policy), `988997f` (web: justify ABSENT only), `a1b60bf` (mobile justify sheet, badge, monthly list, and the subject sheet keeps justified).
+  - **Checks:** api 77 suites / 431 tests pass; turbo ts:check 7/7 pass; biome pass; ui vitest attendance 7 pass.
+  - **Root-cause fix:** `fetchDailyAttendance` read `payload.records`, but `GET /attendance/daily` returns a bare array (verified at `get-daily-attendance.handler.ts:24-59`). The T5 change had broken it, so day records were always empty, which kept the T7 "taken" state reverting after sync.
+  - **Review:** medium, 1237 lines → granted → approved and acknowledged, lineage `review-4aefa16e53e3dc72`, reviewed boundary `a1b60bf`.
+  - **Follow-ups:**
+    - (R3-004) The daily sheet still shows P/A/T controls on justified rows, so changing one overwrites the justification. The subject sheet is read-only. Product decision pending.
+    - (R3-001) Subjects without a tenant now get 403 everywhere. Verify there are no legacy rows.
+    - (R3-002) The pure helpers have no tests (no mobile test runner).
+    - The teacher subject view shows the justified badge without the reason, because the endpoint doesn't embed it.
   - **Who:** preceptor only (API roles PRECEPTOR/ADMIN). Teachers see the justified badge read-only.
   - **Justify action:** on ABSENT rows that have a record `id`. A bottom sheet offers the web's preset reasons (Certificado médico, Motivos personales / familiares, Trámite personal, Problema de transporte, Licencia escolar, Otro → free text) plus optional notes, and calls `POST /attendance/:id/justify`.
   - **Display:** justified badge with reason and notes on both sheets. Read-only "Justificaciones del mes" list per course, mirroring the web review modal.
@@ -177,5 +186,5 @@ User: "the course is not updated to attendance already taken" and "the whole jus
 - T1 to T6 completed, tested, and verified.
 
 ## Next step
-- T8 (delegated writer).
+- Manual verification on device of T7 (taken state) and T8 (justifications).
 - Then manual verification on device with `pnpm --filter mobile android:usb`, and prepare the feature PR to `dev`.
