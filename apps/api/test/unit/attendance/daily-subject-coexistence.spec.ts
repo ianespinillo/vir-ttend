@@ -48,7 +48,7 @@ describe('daily and subject attendance coexistence', () => {
 		unitOfWork.run.mockImplementation(async (work) => work());
 		const subjectPort = mock<ISubjectPort>();
 		subjectPort.getSubjectById.mockResolvedValue(
-			Subject.reconstitute('sub-1', 'course-1', 'Math', 'teacher-1'),
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'teacher-1', 'tenant-1'),
 		);
 		const schedulePort = mock<ISchedulePort>();
 		schedulePort.findBySubject.mockResolvedValue([

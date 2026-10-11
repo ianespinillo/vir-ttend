@@ -151,6 +151,7 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 					new Date('not-a-date'),
 					'teacher-1',
 					ROLES.TEACHER,
+					'tenant-1',
 				),
 			),
 		).rejects.toThrow('Invalid date');

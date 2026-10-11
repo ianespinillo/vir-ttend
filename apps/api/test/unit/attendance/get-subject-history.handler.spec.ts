@@ -63,6 +63,28 @@ describe('GetSubjectHistoryQueryHandler', () => {
 		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
 	});
 
+	it('should reject when the requester has no tenant', async () => {
+		await expect(
+			handler.execute(buildQuery('teacher-1', ROLES.TEACHER, '')),
+		).rejects.toThrow(ForbiddenException);
+		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
+	});
+
+	it('should reject when the subject tenant could not be resolved', async () => {
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'teacher-1', ''),
+		);
+		await expect(
+			handler.execute(buildQuery('admin-1', ROLES.ADMIN)),
+		).rejects.toThrow(ForbiddenException);
+		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
+	});
+
+	it('requires the requester identity, role and tenant to be explicit', () => {
+		// @ts-expect-error role and tenant no longer default (used to fall back to ADMIN)
+		new GetSubjectHistoryQuery('sub-1', from, to);
+	});
+
 	it('should throw NotFoundException when subject does not exist', async () => {
 		subjectPort.getSubjectById.mockResolvedValue(null);
 		await expect(handler.execute(buildQuery())).rejects.toThrow(

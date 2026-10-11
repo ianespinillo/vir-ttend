@@ -55,7 +55,7 @@ describe('RegisterSubjectAttendanceHandler', () => {
 		schedulePort = mock<ISchedulePort>();
 		subjectPort = mock<ISubjectPort>();
 		subjectPort.getSubjectById.mockResolvedValue(
-			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1'),
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1', 'tenant-1'),
 		);
 		unitOfWork = mock<IUnitOfWorkPort>();
 		unitOfWork.run.mockImplementation(async (work) => work());
