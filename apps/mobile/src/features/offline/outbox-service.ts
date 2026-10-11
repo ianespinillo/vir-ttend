@@ -226,6 +226,13 @@ export interface OutboxService {
 	dispose: () => void;
 }
 
+/**
+ * Enqueue replaces `records` and bumps `updatedAt`, so an item whose records
+ * reference and timestamp are unchanged is the same revision that was sent.
+ */
+const isSameRevision = (a: OutboxItem, b: OutboxItem): boolean =>
+	a.updatedAt === b.updatedAt && a.records === b.records;
+
 export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 	const now = deps.now ?? (() => Date.now());
 	const loadItems =
@@ -280,6 +287,9 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		initialized: false,
 	};
 	let runningFlush: Promise<void> | null = null;
+	// Set when flush() is requested while one is running, so edits enqueued
+	// mid-flush are sent by a follow-up pass instead of waiting for a trigger.
+	let rerunRequested = false;
 	let retryTimer: ReturnType<typeof setTimeout> | null = null;
 	let disposed = false;
 
@@ -351,6 +361,7 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		}
 
 		if (runningFlush) {
+			rerunRequested = true;
 			return runningFlush;
 		}
 
@@ -425,15 +436,18 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 							});
 						}
 
-						// Remove synced item from outbox
-						const remaining = state.items.filter((i) => i.id !== id);
+						// Remove the synced item only if it was not re-enqueued while
+						// the request was in flight; a newer revision stays pending.
+						const remaining = state.items.filter(
+							(i) => !(i.id === id && isSameRevision(i, currentItem)),
+						);
 						await persistStateItems(remaining);
 					} catch (error) {
 						const classified = classifyError(error);
 						const attemptTime = now();
 
 						const updated = state.items.map((i) => {
-							if (i.id !== id) return i;
+							if (i.id !== id || !isSameRevision(i, currentItem)) return i;
 							if (classified.isPermanent) {
 								return {
 									...i,
@@ -477,6 +491,10 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 
 		runningFlush = execute().finally(() => {
 			runningFlush = null;
+			if (rerunRequested && !disposed) {
+				rerunRequested = false;
+				void flush();
+			}
 		});
 
 		return runningFlush;
