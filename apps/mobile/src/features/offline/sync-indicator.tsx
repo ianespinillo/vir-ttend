@@ -22,12 +22,13 @@ const toneColors: Record<
 export function SyncIndicator() {
 	const online = useIsOnline();
 	const { status, lastSyncedAt } = usePreload();
-	const { pendingCount, errorCount, isSyncing } = useOutbox();
+	const { pendingCount, retryingCount, errorCount, isSyncing } = useOutbox();
 	const { tone, text } = describeSyncStatus({
 		online,
 		status,
 		lastSyncedAt,
 		outboxPendingCount: pendingCount,
+		outboxRetryingCount: retryingCount,
 		outboxErrorCount: errorCount,
 		isOutboxSyncing: isSyncing,
 	});

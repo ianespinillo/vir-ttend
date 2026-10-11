@@ -11,7 +11,7 @@ export const preceptorCourseToListItem = (
 });
 
 /**
- * Picks the course list to show: the dashboard (it carries today's counters)
+ * Picks the course list to show: the dashboard (year-to-date counters)
  * when it has courses, otherwise the courses assigned to the preceptor.
  */
 export const resolveCourseList = (

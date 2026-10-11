@@ -1,7 +1,6 @@
 import { onlineManager, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
-	AlertCircle,
 	BookOpen,
 	Calendar,
 	CheckCircle,
@@ -25,7 +24,14 @@ import {
 	formatSlotRanges,
 	getTodaysSubjects,
 } from '../../src/features/attendance/schedule';
+import { deriveTakenState } from '../../src/features/attendance/taken';
+import { TodayStatusBadges } from '../../src/features/attendance/today-status-badges';
 import { usePreceptorCourses } from '../../src/features/attendance/use-preceptor-courses';
+import {
+	useCoursesTodayRecords,
+	useSubjectsTodayRecords,
+} from '../../src/features/attendance/use-today-records';
+import { FailedSyncBanner } from '../../src/features/offline/failed-sync-banner';
 import { preloadRoleOf } from '../../src/features/offline/preload';
 import { usePreload } from '../../src/features/offline/preload-provider';
 import { SyncIndicator } from '../../src/features/offline/sync-indicator';
@@ -62,6 +68,20 @@ export default function HomeScreen() {
 	);
 
 	const courses = preceptor.courses;
+
+	// "Taken today" comes from the day's own records (cache-first, works
+	// offline); the dashboard snapshots are year-to-date and cannot tell.
+	const courseIds = useMemo(() => courses.map((c) => c.courseId), [courses]);
+	const subjectIds = useMemo(
+		() => todaysSubjects.map(({ subject }) => subject.subjectId),
+		[todaysSubjects],
+	);
+	const courseRecords = useCoursesTodayRecords(courseIds, todayStr, isPreceptor);
+	const subjectRecords = useSubjectsTodayRecords(
+		subjectIds,
+		todayStr,
+		isTeacher,
+	);
 	const isLoading = isPreceptor ? preceptor.isLoading : subjectsQuery.isLoading;
 	const hasContent = isPreceptor
 		? courses.length > 0
@@ -128,6 +148,7 @@ export default function HomeScreen() {
 
 			{/* Offline / last-synced indicator */}
 			<SyncIndicator />
+			<FailedSyncBanner />
 
 			{/* Quick Stats Summary */}
 			{isPreceptor ? (
@@ -222,10 +243,11 @@ export default function HomeScreen() {
 				<View className="space-y-3 pb-8">
 					{courses.map((course) => {
 						const outboxItem = getItemForCourse(course.courseId, todayStr);
-						const hasAttendanceTaken =
-							course.totalStudents !== undefined &&
-							course.notRecorded !== undefined &&
-							course.notRecorded < course.totalStudents;
+						const taken = deriveTakenState({
+							records: courseRecords.get(course.courseId),
+							outboxItem,
+						});
+						const hasAttendanceTaken = taken.kind === 'taken';
 
 						return (
 							<TouchableOpacity
@@ -259,43 +281,14 @@ export default function HomeScreen() {
 										</View>
 									</View>
 
-									{/* Status badge for preceptors */}
-									{course.totalStudents !== undefined && (
-										<View className="mt-2 flex-row items-center">
-											{outboxItem ? (
-												outboxItem.error?.isPermanent ? (
-													<View className="rounded-md bg-red-50 px-2 py-0.5 border border-red-200 flex-row items-center">
-														<AlertCircle size={11} color="#DC2626" />
-														<Text className="ml-1 text-[11px] font-semibold text-red-700">
-															Error de sincronización
-														</Text>
-													</View>
-												) : (
-													<View className="rounded-md bg-amber-50 px-2 py-0.5 border border-amber-200 flex-row items-center">
-														<Clock size={11} color="#D97706" />
-														<Text className="ml-1 text-[11px] font-semibold text-amber-700">
-															{outboxItem.status === 'syncing'
-																? 'Sincronizando…'
-																: 'Pendiente de sincronizar'}
-														</Text>
-													</View>
-												)
-											) : hasAttendanceTaken ? (
-												<View className="rounded-md bg-emerald-50 px-2 py-0.5 border border-emerald-200">
-													<Text className="text-[11px] font-semibold text-emerald-700">
-														✓ {course.present || 0}P • {course.absent || 0}A •{' '}
-														{course.late || 0}T ({course.attendancePercent || 0}
-														%)
-													</Text>
-												</View>
-											) : (
-												<View className="rounded-md bg-slate-100 px-2 py-0.5">
-													<Text className="text-[11px] font-semibold text-slate-600">
-														Pendiente de toma
-													</Text>
-												</View>
-											)}
-										</View>
+									{/* Today's state (works for the dashboard and the fallback list) */}
+									<TodayStatusBadges taken={taken} outboxItem={outboxItem} />
+
+									{/* Dashboard numbers are year-to-date, not today's */}
+									{course.attendancePercent !== undefined && (
+										<Text className="text-[11px] text-slate-400">
+											Asistencia acumulada del año: {course.attendancePercent}%
+										</Text>
 									)}
 								</View>
 
@@ -315,6 +308,10 @@ export default function HomeScreen() {
 				<View className="space-y-3 pb-8">
 					{todaysSubjects.map(({ subject, slots }) => {
 						const outboxItem = getItemForSubject(subject.subjectId, todayStr);
+						const taken = deriveTakenState({
+							records: subjectRecords.get(subject.subjectId),
+							outboxItem,
+						});
 
 						return (
 							<TouchableOpacity
@@ -346,34 +343,14 @@ export default function HomeScreen() {
 										</Text>
 									</View>
 
-									{/* Status badge for teachers */}
-									{outboxItem && (
-										<View className="mt-2 flex-row items-center">
-											{outboxItem.error?.isPermanent ? (
-												<View className="rounded-md bg-red-50 px-2 py-0.5 border border-red-200 flex-row items-center">
-													<AlertCircle size={11} color="#DC2626" />
-													<Text className="ml-1 text-[11px] font-semibold text-red-700">
-														Error de sincronización
-													</Text>
-												</View>
-											) : (
-												<View className="rounded-md bg-amber-50 px-2 py-0.5 border border-amber-200 flex-row items-center">
-													<Clock size={11} color="#D97706" />
-													<Text className="ml-1 text-[11px] font-semibold text-amber-700">
-														{outboxItem.status === 'syncing'
-															? 'Sincronizando…'
-															: 'Pendiente de sincronizar'}
-													</Text>
-												</View>
-											)}
-										</View>
-									)}
+									{/* Today's state for teachers */}
+									<TodayStatusBadges taken={taken} outboxItem={outboxItem} />
 								</View>
 
 								<View className="flex-row items-center">
 									<View className="rounded-lg bg-indigo-50 px-2.5 py-1.5">
 										<Text className="text-xs font-semibold text-indigo-700">
-											{outboxItem ? 'Editar' : 'Pasar lista'}
+											{outboxItem || taken.kind === 'taken' ? 'Editar' : 'Pasar lista'}
 										</Text>
 									</View>
 									<ChevronRight size={18} color="#94A3B8" className="ml-1" />

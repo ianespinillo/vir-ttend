@@ -22,12 +22,17 @@ import type {
 } from './outbox-types';
 
 export interface OutboxContextValue extends OutboxState {
+	/** Pending or syncing items. */
 	pendingCount: number;
+	/** Transient failures: still queued, retried automatically. */
+	retryingCount: number;
+	/** Permanent failures awaiting the user (retry or discard). */
 	errorCount: number;
 	enqueueDaily: (input: EnqueueDailyInput) => Promise<void>;
 	enqueueSubject: (input: EnqueueSubjectInput) => Promise<void>;
 	flush: (options?: { force?: boolean }) => Promise<void>;
 	removeItem: (id: string) => Promise<void>;
+	retryItem: (id: string) => Promise<void>;
 	getItem: (id: string) => OutboxItem | undefined;
 	getItemForCourse: (
 		courseId: string,
@@ -46,6 +51,9 @@ const DEFAULT_STATE: OutboxState = {
 };
 
 export const OutboxContext = createContext<OutboxContextValue | null>(null);
+
+const NO_SESSION_MESSAGE =
+	'No hay una sesión activa para guardar la asistencia.';
 
 const noopSubscribe = () => () => undefined;
 const getDefaultState = () => DEFAULT_STATE;
@@ -96,18 +104,25 @@ export function OutboxProvider({ children }: { children: React.ReactNode }) {
 		() => ({
 			...state,
 			pendingCount: service?.getPendingCount() ?? 0,
+			retryingCount: service?.getRetryingCount() ?? 0,
 			errorCount: service?.getErrorCount() ?? 0,
+			// Without a session nothing can be saved: reject instead of faking success.
 			enqueueDaily: async (input) => {
-				await service?.enqueueDaily(input);
+				if (!service) throw new Error(NO_SESSION_MESSAGE);
+				await service.enqueueDaily(input);
 			},
 			enqueueSubject: async (input) => {
-				await service?.enqueueSubject(input);
+				if (!service) throw new Error(NO_SESSION_MESSAGE);
+				await service.enqueueSubject(input);
 			},
 			flush: async (options) => {
 				await service?.flush(options);
 			},
 			removeItem: async (id) => {
 				await service?.removeItem(id);
+			},
+			retryItem: async (id) => {
+				await service?.retryItem(id);
 			},
 			getItem: (id) => service?.getItem(id),
 			getItemForCourse: (courseId, date) =>
