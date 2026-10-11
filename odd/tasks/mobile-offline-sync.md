@@ -124,7 +124,10 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
 ## Scope change (2026-10-11) — user-reported gaps vs web
 User: "the course is not updated to attendance already taken" and "the whole justification section from the web is missing on mobile". The user asked us to compare web vs mobile and do what is optimal.
 
-- [ ] **T7 — "Attendance taken" state (mobile).**
+- [x] **T7 — "Attendance taken" state (mobile).**
+  - **Commit:** `7d264df`; ts:check, biome and turbo ts:check pass.
+  - **Review:** medium, 927 lines → granted → approved and acknowledged, lineage `review-8cdcfff768cf3d21`, reviewed boundary `7d264df`. The first capture was killed by OS memory pressure and re-run in the foreground.
+  - **Follow-ups:** no mobile test runner, so the outbox and `taken.ts` helpers have no tests (R3-001/R3-003). A concurrent enqueue can persist a rolled-back item to storage (R3-002).
   - **Root cause:** `/dashboard` snapshots are year-to-date aggregates. Mobile home derives "taken" from `notRecorded < totalStudents` on those numbers, so it is almost always false.
   - **Masking bug:** the outbox optimistically overwrites the dashboard with today-only counts, then the post-flush refetch reverts them.
   - **Fix:**
@@ -165,6 +168,8 @@ User: "the course is not updated to attendance already taken" and "the whole jus
 | T4d | inline direct | attendance policy/handlers/controllers + academic queries + migration + tests |
 | T5 | delegated direct | mobile deps, query client, preload service, home screen: 2+ non-trivial files |
 | T5b | inline direct | subject attendance screen + home subject navigation params |
+| T7 | delegated direct | home cards, outbox service/provider, sheets, new helpers: 7+ files |
+| T8 | delegated direct | mobile sheets + justify sheet + api/hooks, web attendance row, api policy: 2+ non-trivial files |
 | T6 | delegated direct | outbox service, types, provider, hooks, sync indicators, daily and subject sheets, home screen: 7+ files |
 
 ## Progress / evidence
@@ -172,5 +177,5 @@ User: "the course is not updated to attendance already taken" and "the whole jus
 - T1 to T6 completed, tested, and verified.
 
 ## Next step
-- T7 (delegated writer), then T8 (delegated writer).
+- T8 (delegated writer).
 - Then manual verification on device with `pnpm --filter mobile android:usb`, and prepare the feature PR to `dev`.
