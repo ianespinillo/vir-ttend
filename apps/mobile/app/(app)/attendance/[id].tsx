@@ -26,8 +26,9 @@ import type {
 	AttendanceStatus,
 	StudentItem,
 } from '../../../src/features/attendance/types';
+import { useIsOnline } from '../../../src/features/offline/use-is-online';
+import { useOutbox } from '../../../src/features/offline/use-outbox';
 import { toLocalDateString } from '../../../src/lib/date';
-import { api } from '../../../src/services/api';
 
 const NO_STUDENTS: StudentItem[] = [];
 
@@ -57,12 +58,15 @@ const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'late'];
 export default function AttendanceSheetScreen() {
 	const params = useLocalSearchParams();
 	const router = useRouter();
+	const online = useIsOnline();
+	const { enqueueDaily, getItemForCourse } = useOutbox();
 
 	const courseId = typeof params.id === 'string' ? params.id : '';
 	const courseName = typeof params.name === 'string' ? params.name : 'Curso';
 
 	// Today in YYYY-MM-DD format (device local time)
 	const todayStr = useMemo(() => toLocalDateString(), []);
+	const outboxItem = getItemForCourse(courseId, todayStr);
 
 	// State for attendance map: studentId -> status
 	const [attendanceMap, setAttendanceMap] = useState<
@@ -94,12 +98,16 @@ export default function AttendanceSheetScreen() {
 	const isOfflineWithoutRoster =
 		studentsData === undefined && studentsFetchStatus === 'paused';
 
-	// Populate attendance state from existing attendance or default
+	// Populate attendance state from outbox, existing attendance or default
 	useEffect(() => {
 		if (!students.length || hasUserEdits.current) return;
 
 		const map: Record<string, AttendanceStatus> = {};
-		for (const record of existingAttendance?.records ?? []) {
+		const sourceRecords = outboxItem?.records?.length
+			? outboxItem.records
+			: (existingAttendance?.records ?? []);
+
+		for (const record of sourceRecords) {
 			if (record.studentId && record.status) {
 				// 'justified' is kept as is so saving does not erase a justification.
 				map[record.studentId] = record.status as AttendanceStatus;
@@ -114,7 +122,7 @@ export default function AttendanceSheetScreen() {
 		}
 
 		setAttendanceMap(map);
-	}, [students, existingAttendance]);
+	}, [students, existingAttendance, outboxItem]);
 
 	const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
 		hasUserEdits.current = true;
@@ -155,27 +163,22 @@ export default function AttendanceSheetScreen() {
 				status,
 			}));
 
-			await api.post('/attendance/daily', {
+			await enqueueDaily({
 				courseId,
+				courseName,
 				date: todayStr,
 				records,
 			});
 
 			Alert.alert(
 				'¡Asistencia Guardada!',
-				`Se registraron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas.`,
+				online
+					? `Se registraron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas.`
+					: `Se guardaron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas localmente. Se sincronizarán automáticamente al recuperar conexión.`,
 				[{ text: 'Aceptar', onPress: () => router.back() }],
 			);
 		} catch (error: unknown) {
-			const err = error as {
-				response?: { data?: { message?: string } };
-				message?: string;
-			};
-			const msg =
-				err?.response?.data?.message ||
-				err?.message ||
-				'Error al registrar asistencia';
-			Alert.alert('Error', typeof msg === 'string' ? msg : 'Error inesperado');
+			Alert.alert('Error', 'No se pudo guardar la asistencia localmente.');
 		} finally {
 			setIsSaving(false);
 		}
@@ -227,6 +230,53 @@ export default function AttendanceSheetScreen() {
 					</View>
 				</View>
 			</View>
+
+			{/* Outbox Status Banner */}
+			{outboxItem && (
+				<View
+					className="mx-5 mt-4 rounded-xl p-3 border"
+					style={
+						outboxItem.error?.isPermanent
+							? { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }
+							: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }
+					}
+				>
+					<View className="flex-row items-center">
+						{outboxItem.error?.isPermanent ? (
+							<AlertCircle size={15} color="#DC2626" />
+						) : (
+							<Clock size={15} color="#D97706" />
+						)}
+						<Text
+							className="ml-2 font-bold text-xs"
+							style={{
+								color: outboxItem.error?.isPermanent ? '#991B1B' : '#92400E',
+							}}
+						>
+							{outboxItem.error?.isPermanent
+								? 'Error al sincronizar'
+								: outboxItem.status === 'syncing'
+									? 'Sincronizando cambios…'
+									: 'Cambios pendientes de sincronizar'}
+						</Text>
+					</View>
+					{outboxItem.error?.message ? (
+						<Text className="mt-1 text-xs text-red-700">
+							{outboxItem.error.message}
+						</Text>
+					) : null}
+					<Text
+						className="mt-0.5 text-[11px]"
+						style={{
+							color: outboxItem.error?.isPermanent ? '#B91C1C' : '#B45309',
+						}}
+					>
+						{outboxItem.error?.isPermanent
+							? 'Revisá la asistencia y volvé a guardar para reintentar.'
+							: 'Los cambios están guardados en tu dispositivo y se sincronizarán automáticamente.'}
+					</Text>
+				</View>
+			)}
 
 			{/* Student Roster */}
 			{isLoadingStudents ? (

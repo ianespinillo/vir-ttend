@@ -1,9 +1,10 @@
-import { CloudOff, RefreshCw } from 'lucide-react-native';
+import { AlertCircle, CloudOff, RefreshCw } from 'lucide-react-native';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { usePreload } from './preload-provider';
 import { type SyncTone, describeSyncStatus } from './sync-status';
 import { useIsOnline } from './use-is-online';
+import { useOutbox } from './use-outbox';
 
 // NativeWind: className stays static, the tone is applied through inline style.
 const toneColors: Record<
@@ -21,9 +22,18 @@ const toneColors: Record<
 export function SyncIndicator() {
 	const online = useIsOnline();
 	const { status, lastSyncedAt } = usePreload();
-	const { tone, text } = describeSyncStatus({ online, status, lastSyncedAt });
+	const { pendingCount, errorCount, isSyncing } = useOutbox();
+	const { tone, text } = describeSyncStatus({
+		online,
+		status,
+		lastSyncedAt,
+		outboxPendingCount: pendingCount,
+		outboxErrorCount: errorCount,
+		isOutboxSyncing: isSyncing,
+	});
 	const colors = toneColors[tone];
-	const Icon = tone === 'offline' ? CloudOff : RefreshCw;
+	const Icon =
+		tone === 'offline' ? CloudOff : tone === 'error' ? AlertCircle : RefreshCw;
 
 	return (
 		<View

@@ -3,6 +3,7 @@ import { Settings } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../src/context/auth-context';
+import { OutboxProvider } from '../../src/features/offline/outbox-provider';
 import { PreloadProvider } from '../../src/features/offline/preload-provider';
 
 export default function AppLayout() {
@@ -10,67 +11,69 @@ export default function AppLayout() {
 	const router = useRouter();
 
 	return (
-		<PreloadProvider>
-			<Stack
-				screenOptions={{
-					headerStyle: {
-						backgroundColor: '#FFFFFF',
-					},
-					headerShadowVisible: false,
-					headerTintColor: '#0F172A',
-					headerTitleStyle: {
-						fontWeight: '700',
-					},
-				}}
-			>
-				<Stack.Screen
-					name="index"
-					options={{
-						headerTitle: () => (
-							<View className="flex-row items-center space-x-2">
-								<View className="h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
-									<Text className="text-sm font-bold text-white">V</Text>
+		<OutboxProvider>
+			<PreloadProvider>
+				<Stack
+					screenOptions={{
+						headerStyle: {
+							backgroundColor: '#FFFFFF',
+						},
+						headerShadowVisible: false,
+						headerTintColor: '#0F172A',
+						headerTitleStyle: {
+							fontWeight: '700',
+						},
+					}}
+				>
+					<Stack.Screen
+						name="index"
+						options={{
+							headerTitle: () => (
+								<View className="flex-row items-center space-x-2">
+									<View className="h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
+										<Text className="text-sm font-bold text-white">V</Text>
+									</View>
+									<Text className="ml-2 text-lg font-bold text-slate-900">
+										{config.appName}
+									</Text>
 								</View>
-								<Text className="ml-2 text-lg font-bold text-slate-900">
-									{config.appName}
-								</Text>
-							</View>
-						),
-						headerRight: () => (
-							<TouchableOpacity
-								onPress={() => router.push('/(app)/settings')}
-								className="flex-row items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5"
-							>
-								<Settings size={16} color="#475569" />
-								<Text className="ml-1 text-xs font-semibold text-slate-700">
-									Ajustes
-								</Text>
-							</TouchableOpacity>
-						),
-					}}
-				/>
-				<Stack.Screen
-					name="attendance/[id]"
-					options={{
-						title: 'Pase de Lista',
-						headerBackTitle: 'Atrás',
-					}}
-				/>
-				<Stack.Screen
-					name="attendance/subject/[subjectId]"
-					options={{
-						title: 'Asistencia de Materia',
-						headerBackTitle: 'Atrás',
-					}}
-				/>
-				<Stack.Screen
-					name="settings"
-					options={{
-						title: 'Configuración & Entorno',
-						headerBackTitle: 'Atrás',
-					}}
-				/>
-			</Stack>
-		</PreloadProvider>
+							),
+							headerRight: () => (
+								<TouchableOpacity
+									onPress={() => router.push('/(app)/settings')}
+									className="flex-row items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5"
+								>
+									<Settings size={16} color="#475569" />
+									<Text className="ml-1 text-xs font-semibold text-slate-700">
+										Ajustes
+									</Text>
+								</TouchableOpacity>
+							),
+						}}
+					/>
+					<Stack.Screen
+						name="attendance/[id]"
+						options={{
+							title: 'Pase de Lista',
+							headerBackTitle: 'Atrás',
+						}}
+					/>
+					<Stack.Screen
+						name="attendance/subject/[subjectId]"
+						options={{
+							title: 'Asistencia de Materia',
+							headerBackTitle: 'Atrás',
+						}}
+					/>
+					<Stack.Screen
+						name="settings"
+						options={{
+							title: 'Configuración & Entorno',
+							headerBackTitle: 'Atrás',
+						}}
+					/>
+				</Stack>
+			</PreloadProvider>
+		</OutboxProvider>
 	);
 }
