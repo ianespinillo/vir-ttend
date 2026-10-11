@@ -149,12 +149,37 @@ export default function AttendanceSheetScreen() {
 		setAttendanceMap(map);
 	}, [students, existingAttendance, outboxItem]);
 
-	const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+	const applyStatusChange = (studentId: string, status: AttendanceStatus) => {
 		hasUserEdits.current = true;
 		setAttendanceMap((prev) => ({
 			...prev,
 			[studentId]: status,
 		}));
+	};
+
+	// Changing a justified student's status deletes the justification on save,
+	// so ask for confirmation instead of applying it on a single tap.
+	const handleStatusChange = (
+		studentId: string,
+		studentName: string,
+		status: AttendanceStatus,
+	) => {
+		if (attendanceMap[studentId] !== 'justified') {
+			applyStatusChange(studentId, status);
+			return;
+		}
+		Alert.alert(
+			'Quitar justificación',
+			`${studentName} tiene una justificación. Si cambiás el estado se va a borrar al guardar. ¿Continuar?`,
+			[
+				{ text: 'Cancelar', style: 'cancel' },
+				{
+					text: 'Cambiar estado',
+					style: 'destructive',
+					onPress: () => applyStatusChange(studentId, status),
+				},
+			],
+		);
 	};
 
 	const markAllPresent = () => {
@@ -490,7 +515,13 @@ export default function AttendanceSheetScreen() {
 										return (
 											<TouchableOpacity
 												key={status}
-												onPress={() => handleStatusChange(student.id, status)}
+												onPress={() =>
+													handleStatusChange(
+														student.id,
+														`${student.firstName} ${student.lastName}`,
+														status,
+													)
+												}
 												className={`h-9 w-9 items-center justify-center rounded-md ${
 													i > 0 ? 'ml-1' : ''
 												}`}
