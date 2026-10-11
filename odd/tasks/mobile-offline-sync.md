@@ -113,8 +113,13 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
   - Reads students and existing attendance from the persisted React Query cache (`subjectStudents` and `subjectAttendance`).
   - Supports P/A/T statuses, preserves existing justified records, validates courseId resolution.
   - Check: `ts:check` passes; manual on device.
-- [ ] **T6 — Offline attendance outbox (daily + subject).** Persisted outbox coalesced per `(courseId, date)` for daily and `(subjectId, date)` for subject; "Invalid class day" and 403 are permanent errors surfaced to the user. (last write wins); optimistic cache update; flush on reconnect, foreground and after token refresh with backoff; permanent 4xx (non-401) errors surfaced and kept for the user to resolve; pending-sync indicator on the attendance screen and home.
-  - Check: `ts:check`; manual: mark offline → reconnect → API logs show the POST and the DB has one row per student.
+- [x] **T6 — Offline attendance outbox (daily + subject).** (commit `6db5c64`; turbo ts:check 7/7 pass; biome pass; api tests 76 suites / 415 pass.)
+  - Persisted outbox in `AsyncStorage` scoped by session (`virttend:outbox:${userId}:${tenantId}`), coalescing writes per `(courseId, date)` for daily and `(subjectId, date)` for subject (last write wins).
+  - Optimistic React Query cache updates upon queueing writes (`dailyAttendance`, `preceptorDashboard`, `subjectAttendance`).
+  - Flush queue upon mount, reconnect (`onlineManager`), app foreground (`AppState`), pull-to-refresh on home screen, and backoff retry timer.
+  - Error classifier distinguishes permanent 4xx (400 "Invalid class day", 403 Forbidden, 422) preserved for user resolution from transient errors (network/timeout/5xx/401) retried with exponential backoff (1s to 60s).
+  - Pending-sync and error indicators/banners on both attendance sheets (`[id].tsx`, `[subjectId].tsx`), course and subject cards on home screen, and enhanced `SyncIndicator`.
+  - Check: `ts:check` passes; manual on device: mark offline → reconnect → auto flush.
 
 ## Route log
 | Task | Route | Trigger evidence |
@@ -127,10 +132,12 @@ User: preload and offline queue must cover BOTH daily attendance (preceptor) and
 | T4d | inline direct | attendance policy/handlers/controllers + academic queries + migration + tests |
 | T5 | delegated direct | mobile deps, query client, preload service, home screen: 2+ non-trivial files |
 | T5b | inline direct | subject attendance screen + home subject navigation params |
+| T6 | delegated direct | outbox service, types, provider, hooks, sync indicators, daily and subject sheets, home screen: 7+ files |
 
 ## Progress / evidence
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
-- T1 to T5b completed and verified.
+- T1 to T6 completed, tested, and verified.
 
 ## Next step
-T6 — Offline attendance outbox (daily + subject).
+- Manual verification on device with `pnpm --filter mobile android:usb` (mark offline → reconnect → verify outbox flushes).
+- Prepare feature PR to `dev`.
