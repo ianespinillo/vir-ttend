@@ -19,9 +19,15 @@ import {
 	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+	markAllPresentKeepingJustified,
+	toSavableRecords,
+} from '../../../../src/features/attendance/justification';
+import { JustificationBadge } from '../../../../src/features/attendance/justification-badge';
 import { attendanceQueries } from '../../../../src/features/attendance/queries';
 import type {
 	AttendanceStatus,
+	RecordedAttendanceStatus,
 	StudentItem,
 } from '../../../../src/features/attendance/types';
 import { useIsOnline } from '../../../../src/features/offline/use-is-online';
@@ -70,9 +76,10 @@ export default function SubjectAttendanceScreen() {
 	const todayStr = useMemo(() => toLocalDateString(), []);
 	const outboxItem = getItemForSubject(subjectId, todayStr);
 
-	// State for attendance map: studentId -> status
+	// State for attendance map: studentId -> status. `justified` rows come from
+	// the server (set by a preceptor): they are read-only here and never saved.
 	const [attendanceMap, setAttendanceMap] = useState<
-		Record<string, AttendanceStatus>
+		Record<string, RecordedAttendanceStatus>
 	>({});
 	const [isSaving, setIsSaving] = useState(false);
 	const hasUserEdits = useRef(false);
@@ -104,14 +111,14 @@ export default function SubjectAttendanceScreen() {
 	useEffect(() => {
 		if (!students.length || hasUserEdits.current) return;
 
-		const map: Record<string, AttendanceStatus> = {};
+		const map: Record<string, RecordedAttendanceStatus> = {};
 		const sourceRecords = outboxItem?.records?.length
 			? outboxItem.records
 			: (existingAttendance?.records ?? []);
 
 		for (const record of sourceRecords) {
-			if (record.studentId && record.status && record.status !== 'justified') {
-				map[record.studentId] = record.status as AttendanceStatus;
+			if (record.studentId && record.status) {
+				map[record.studentId] = record.status;
 			}
 		}
 
@@ -135,11 +142,12 @@ export default function SubjectAttendanceScreen() {
 
 	const markAllPresent = () => {
 		hasUserEdits.current = true;
-		const newMap: Record<string, AttendanceStatus> = {};
-		for (const s of students) {
-			newMap[s.id] = 'present';
-		}
-		setAttendanceMap(newMap);
+		setAttendanceMap((prev) =>
+			markAllPresentKeepingJustified(
+				students.map((s) => s.id),
+				prev,
+			),
+		);
 	};
 
 	// Counts
@@ -147,12 +155,14 @@ export default function SubjectAttendanceScreen() {
 		let present = 0;
 		let absent = 0;
 		let late = 0;
+		let justified = 0;
 		for (const status of Object.values(attendanceMap)) {
 			if (status === 'present') present++;
 			else if (status === 'absent') absent++;
 			else if (status === 'late') late++;
+			else if (status === 'justified') justified++;
 		}
-		return { present, absent, late, total: students.length };
+		return { present, absent, late, justified, total: students.length };
 	}, [attendanceMap, students]);
 
 	const handleSave = async () => {
@@ -167,10 +177,13 @@ export default function SubjectAttendanceScreen() {
 
 		setIsSaving(true);
 		try {
-			const records = Object.entries(attendanceMap).map(([studentId, status]) => ({
-				studentId,
-				status,
-			}));
+			// Justified students are left out: only preceptors can justify, and
+			// sending 'present' (or a stale 'justified') would overwrite it.
+			const records = toSavableRecords(attendanceMap);
+			if (records.length === 0) {
+				Alert.alert('Sin cambios', 'No hay asistencia para guardar.');
+				return;
+			}
 
 			await enqueueSubject({
 				subjectId,
@@ -242,6 +255,13 @@ export default function SubjectAttendanceScreen() {
 					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 py-1.5 border border-amber-100">
 						<Text className="text-xs font-bold text-amber-700">{counts.late} T</Text>
 					</View>
+					{counts.justified > 0 ? (
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-indigo-50 py-1.5 border border-indigo-100">
+							<Text className="text-xs font-bold text-indigo-700">
+								{counts.justified} J
+							</Text>
+						</View>
+					) : null}
 					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-slate-100 py-1.5">
 						<Text className="text-xs font-bold text-slate-600">
 							{counts.total} Total
@@ -355,40 +375,45 @@ export default function SubjectAttendanceScreen() {
 									)}
 								</View>
 
-								{/* Segmented Controls: P | A | T */}
-								<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
-									{STATUS_ORDER.map((status, i) => {
-										const isActive = currentStatus === status;
-										const label = status[0].toUpperCase();
-										const colors = statusStyles[status];
-										return (
-											<TouchableOpacity
-												key={status}
-												onPress={() => handleStatusChange(student.id, status)}
-												className={`h-9 w-9 items-center justify-center rounded-md ${
-													i > 0 ? 'ml-1' : ''
-												}`}
-												style={
-													isActive
-														? {
-																backgroundColor: colors.activeBackground,
-																...statusButtonActiveStyle,
-															}
-														: undefined
-												}
-											>
-												<Text
-													className="text-sm font-bold"
-													style={{
-														color: isActive ? colors.activeText : '#475569',
-													}}
+								{/* Justified by a preceptor: read-only for teachers */}
+								{currentStatus === 'justified' ? (
+									<JustificationBadge />
+								) : (
+									/* Segmented Controls: P | A | T */
+									<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
+										{STATUS_ORDER.map((status, i) => {
+											const isActive = currentStatus === status;
+											const label = status[0].toUpperCase();
+											const colors = statusStyles[status];
+											return (
+												<TouchableOpacity
+													key={status}
+													onPress={() => handleStatusChange(student.id, status)}
+													className={`h-9 w-9 items-center justify-center rounded-md ${
+														i > 0 ? 'ml-1' : ''
+													}`}
+													style={
+														isActive
+															? {
+																	backgroundColor: colors.activeBackground,
+																	...statusButtonActiveStyle,
+																}
+															: undefined
+													}
 												>
-													{label}
-												</Text>
-											</TouchableOpacity>
-										);
-									})}
-								</View>
+													<Text
+														className="text-sm font-bold"
+														style={{
+															color: isActive ? colors.activeText : '#475569',
+														}}
+													>
+														{label}
+													</Text>
+												</TouchableOpacity>
+											);
+										})}
+									</View>
+								)}
 							</View>
 						);
 					})}

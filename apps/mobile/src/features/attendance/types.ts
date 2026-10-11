@@ -68,6 +68,8 @@ export interface AttendanceRecordItem {
 	studentId: string;
 	studentName?: string;
 	status?: RecordedAttendanceStatus;
+	/** ISO date of the record; present on history reads. */
+	date?: string;
 	justification?: AttendanceJustification;
 }
 

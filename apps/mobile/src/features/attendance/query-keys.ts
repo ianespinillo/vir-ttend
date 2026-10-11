@@ -12,6 +12,11 @@ export const queryKeys = {
 		['students', 'course', courseId] as const,
 	dailyAttendance: (courseId: string, date: string) =>
 		['attendance', 'daily', courseId, date] as const,
+	/** Prefix of every history query of a course (any month). */
+	courseHistoryPrefix: (courseId: string) =>
+		['attendance', 'history', courseId] as const,
+	courseHistory: (courseId: string, from: string, to: string) =>
+		['attendance', 'history', courseId, from, to] as const,
 	mySubjects: () => ['subjects', 'mine'] as const,
 	subjectStudents: (subjectId: string) =>
 		['subjects', subjectId, 'students'] as const,

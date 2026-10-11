@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import {
 	fetchActiveAcademicYear,
+	fetchCourseHistory,
 	fetchCourseStudents,
 	fetchDailyAttendance,
 	fetchMySubjects,
@@ -40,6 +41,11 @@ export const attendanceQueries = {
 		queryOptions({
 			queryKey: queryKeys.dailyAttendance(courseId, date),
 			queryFn: () => fetchDailyAttendance(courseId, date),
+		}),
+	courseHistory: (courseId: string, from: string, to: string) =>
+		queryOptions({
+			queryKey: queryKeys.courseHistory(courseId, from, to),
+			queryFn: () => fetchCourseHistory(courseId, from, to),
 		}),
 	mySubjects: () =>
 		queryOptions({
