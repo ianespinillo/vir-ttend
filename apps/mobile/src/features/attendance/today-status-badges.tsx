@@ -3,7 +3,12 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { describeOutboxBadge } from '../offline/outbox-display';
 import type { OutboxItem } from '../offline/outbox-types';
-import { type TakenState, formatDayCounts } from './taken';
+import {
+	type TakenState,
+	dayAttendancePercent,
+	formatDayCounts,
+	formatPercent,
+} from './taken';
 
 // NativeWind: className stays static, the tone is applied through inline style.
 const TAKEN = { background: '#ECFDF5', border: '#A7F3D0', text: '#047857' };
@@ -38,58 +43,69 @@ export function TodayStatusBadges({ taken, outboxItem }: Props) {
 
 	if (taken.kind === 'unknown' && !outbox) return null;
 
-	return (
-		<View className="mt-2 flex-row flex-wrap items-center">
-			{taken.kind === 'taken' ? (
-				<View
-					className="mb-1 mr-2 flex-row items-center rounded-md border px-2 py-0.5"
-					style={{ backgroundColor: TAKEN.background, borderColor: TAKEN.border }}
-				>
-					<CheckCircle size={11} color={TAKEN.text} />
-					<Text
-						className="ml-1 text-[11px] font-semibold"
-						style={{ color: TAKEN.text }}
-					>
-						Lista tomada · {formatDayCounts(taken.counts)}
-					</Text>
-				</View>
-			) : taken.kind === 'pending' ? (
-				<View
-					className="mb-1 mr-2 rounded-md border px-2 py-0.5"
-					style={{
-						backgroundColor: PENDING_TAKE.background,
-						borderColor: PENDING_TAKE.border,
-					}}
-				>
-					<Text
-						className="text-[11px] font-semibold"
-						style={{ color: PENDING_TAKE.text }}
-					>
-						Pendiente de toma
-					</Text>
-				</View>
-			) : null}
+	const todayPercent =
+		taken.kind === 'taken' ? dayAttendancePercent(taken.counts) : null;
 
-			{outbox ? (
-				<View
-					className="mb-1 flex-row items-center rounded-md border px-2 py-0.5"
-					style={{
-						backgroundColor: outboxColors.background,
-						borderColor: outboxColors.border,
-					}}
-				>
-					{outbox.tone === 'error' ? (
-						<AlertCircle size={11} color={outboxColors.text} />
-					) : (
-						<Clock size={11} color={outboxColors.text} />
-					)}
-					<Text
-						className="ml-1 text-[11px] font-semibold"
-						style={{ color: outboxColors.text }}
+	return (
+		<View className="mt-2">
+			<View className="flex-row flex-wrap items-center">
+				{taken.kind === 'taken' ? (
+					<View
+						className="mb-1 mr-2 flex-row items-center rounded-md border px-2 py-0.5"
+						style={{ backgroundColor: TAKEN.background, borderColor: TAKEN.border }}
 					>
-						{outbox.label}
-					</Text>
-				</View>
+						<CheckCircle size={11} color={TAKEN.text} />
+						<Text
+							className="ml-1 text-[11px] font-semibold"
+							style={{ color: TAKEN.text }}
+						>
+							Lista tomada · {formatDayCounts(taken.counts)}
+						</Text>
+					</View>
+				) : taken.kind === 'pending' ? (
+					<View
+						className="mb-1 mr-2 rounded-md border px-2 py-0.5"
+						style={{
+							backgroundColor: PENDING_TAKE.background,
+							borderColor: PENDING_TAKE.border,
+						}}
+					>
+						<Text
+							className="text-[11px] font-semibold"
+							style={{ color: PENDING_TAKE.text }}
+						>
+							Pendiente de toma
+						</Text>
+					</View>
+				) : null}
+
+				{outbox ? (
+					<View
+						className="mb-1 flex-row items-center rounded-md border px-2 py-0.5"
+						style={{
+							backgroundColor: outboxColors.background,
+							borderColor: outboxColors.border,
+						}}
+					>
+						{outbox.tone === 'error' ? (
+							<AlertCircle size={11} color={outboxColors.text} />
+						) : (
+							<Clock size={11} color={outboxColors.text} />
+						)}
+						<Text
+							className="ml-1 text-[11px] font-semibold"
+							style={{ color: outboxColors.text }}
+						>
+							{outbox.label}
+						</Text>
+					</View>
+				) : null}
+			</View>
+
+			{todayPercent !== null ? (
+				<Text className="text-[11px] text-slate-500">
+					Asistencia de hoy: {formatPercent(todayPercent)}
+				</Text>
 			) : null}
 		</View>
 	);

@@ -281,15 +281,8 @@ export default function HomeScreen() {
 										</View>
 									</View>
 
-									{/* Today's state (works for the dashboard and the fallback list) */}
+									{/* Today's state and attendance rate (dashboard and fallback list) */}
 									<TodayStatusBadges taken={taken} outboxItem={outboxItem} />
-
-									{/* Dashboard numbers are year-to-date, not today's */}
-									{course.attendancePercent !== undefined && (
-										<Text className="text-[11px] text-slate-400">
-											Asistencia acumulada del año: {course.attendancePercent}%
-										</Text>
-									)}
 								</View>
 
 								<View className="flex-row items-center">

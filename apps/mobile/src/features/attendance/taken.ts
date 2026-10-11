@@ -75,6 +75,19 @@ export const deriveTakenState = (input: {
 		: { kind: 'pending' };
 };
 
+/**
+ * Today's attendance rate over the students recorded today: present and late
+ * count as attended; absent and justified do not. `null` when nothing recorded.
+ */
+export const dayAttendancePercent = (counts: DayCounts): number | null => {
+	const total = totalRecorded(counts);
+	return total === 0 ? null : ((counts.present + counts.late) / total) * 100;
+};
+
+/** At most two decimals, Spanish decimal comma: 86.666 → "86,67%", 100 → "100%". */
+export const formatPercent = (value: number): string =>
+	`${String(Number(value.toFixed(2))).replace('.', ',')}%`;
+
 /** "12P • 2A • 1T", plus "• 1J" only when there are justified students. */
 export const formatDayCounts = (counts: DayCounts): string => {
 	const base = `${counts.present}P • ${counts.absent}A • ${counts.late}T`;
