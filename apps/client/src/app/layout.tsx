@@ -3,6 +3,7 @@ import { TanstackProvider } from '@repo/hooks';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Toaster } from 'sonner';
+import '@repo/ui/tokens.css';
 import './globals.css';
 
 const geistSans = localFont({

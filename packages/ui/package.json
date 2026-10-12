@@ -75,6 +75,7 @@
 	"exports": {
 		".": "./src/index.tsx",
 		"./globals.css": "./src/globals.css",
+		"./tokens.css": "./src/tokens.css",
 		"./postcss.config": "./postcss.config.mjs",
 		"./tailwind.config": "./tailwind.config.ts"
 	}
