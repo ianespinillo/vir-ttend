@@ -6,7 +6,6 @@ import {
 	type Tenant,
 	getNavConfig,
 } from '@repo/common';
-import { School } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import {
 	Sidebar,
@@ -48,7 +47,7 @@ export function AppSidebar({
 	currentPath,
 	onNavigate,
 	LinkComponent,
-	brandName = 'Vir-ttend',
+	brandName,
 	tenants,
 	currentTenantId,
 	isSuperAdmin,

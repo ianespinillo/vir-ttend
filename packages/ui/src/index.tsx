@@ -8,6 +8,9 @@ export * from './components/shared/page-header';
 export * from './components/shared/data-table';
 export * from './components/shared/forbidden-state';
 
+// Brand
+export * from './components/brand';
+
 // Layout
 export * from './components/layout';
 
