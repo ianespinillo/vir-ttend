@@ -57,6 +57,10 @@ services:
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
       ALLOW_SUPERADMIN: ${ALLOW_SUPERADMIN:-false}
       INSTANCE_ID: ${TENANT_SLUG}
+      # Marca de la instancia (ver docs/deployment-configuration.md)
+      BRANDING_DIR: /app/branding
+    volumes:
+      - ./deploy/branding/${BRANDING_SLUG:-_none}:/app/branding:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,6 +101,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/branding/${BRANDING_SLUG:-_none}:/srv/branding:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

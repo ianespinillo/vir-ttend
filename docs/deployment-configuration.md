@@ -101,6 +101,15 @@ Al levantar la instancia por primera vez con una base de datos limpia, el servic
 > [!TIP]
 > Si no defines `BOOTSTRAP_ADMIN_PASSWORD`, el sistema generará una contraseña criptográfica aleatoria y la imprimirá en los logs de la consola en un banner visible al arrancar.
 
+### 3.4 Variables de Marca (solo modo `single`)
+
+| Variable | Dónde se define | Descripción |
+|---|---|---|
+| `BRANDING_SLUG` | `.env` de la VM (lo lee `compose.prod.yml`) | Carpeta de `deploy/branding/` que se monta en la instancia (ej. `eest3`). Vacía equivale a `_none`: marca Vir-ttend. |
+| `BRANDING_DIR` | API (`compose.prod.yml` la fija en `/app/branding`) | Carpeta con `branding.json` y los assets. En desarrollo local, por ejemplo `../../deploy/branding/eest3` junto con `TENANCY_MODE=single`. |
+
+Ver [Paso 6: Marca de la instancia](#paso-6-marca-de-la-instancia-opcional).
+
 ---
 
 ## 4. Configuración Paso a Paso: Modo Multi-Tenant (SaaS)
@@ -226,6 +235,44 @@ Al iniciar, NestJS ejecuta `TenancyBootstrapService`:
    =================================================================
    ```
 
+### Paso 6: Marca de la instancia (opcional)
+
+En modo `single` la instancia puede mostrar la identidad de la escuela (nombre, escudo y colores) junto con un sello fijo "con vir-ttend". La marca es un dato de la instancia, no código: vive en `deploy/branding/<slug>/`, versionada en git, y la VM la monta según `BRANDING_SLUG`. Sin marca (`BRANDING_SLUG` vacío), la instancia usa la marca Vir-ttend.
+
+**Formato de `branding.json`** (diseño completo en la [spec de branding](superpowers/specs/2026-10-12-instance-branding-design.md)):
+
+```json
+{
+  "version": 1,
+  "displayName": "Colegio San Martín",
+  "shortName": "San Martín",
+  "colors": { "primary": "#023064", "accent": "#0195EF", "highlight": "#F9D648" },
+  "assets": {
+    "crest": "crest.png",
+    "crestSmall": "crest-small.svg",
+    "crestSmallPng": "crest-small-256.png",
+    "favicon": "favicon.ico"
+  }
+}
+```
+
+- `version`, `displayName`, `shortName` y `colors.primary` son obligatorios; `colors.accent`, `colors.highlight` y cada entrada de `assets` son opcionales.
+- Los colores son `#RRGGBB`. Si el primario no tiene contraste suficiente (4.5:1) con texto blanco o azul noche, los clientes usan la marca Vir-ttend y la API deja un aviso en el log al arrancar.
+- Los assets son archivos de la misma carpeta (`png`, `webp`, `svg` o `ico`). La API calcula una versión (hash de `branding.json` y de los assets) y la agrega a las URLs (`/branding/crest.png?v=...`), así que cambiar un archivo invalida la caché.
+
+**Agregar una escuela:**
+
+1. Crear `deploy/branding/<slug>/` con `branding.json` y los assets.
+2. Validar: `pnpm --filter api test -- branding`. Un `branding.json` con un color inválido o un asset faltante hace fallar el arranque de la API con un mensaje que nombra el campo o el archivo.
+3. Commitear la carpeta. La VM hace checkout del sha exacto, así que compose monta solo la carpeta de **su** escuela.
+4. Definir `BRANDING_SLUG=<slug>` en el `.env` de la VM y volver a desplegar (`docker compose -f compose.prod.yml up -d`).
+5. Verificar `GET /api/config/public`: `branding.source` debe ser `instance` y `branding.colors.primary` el de la escuela. Los assets se sirven desde `https://<dominio>/branding/<archivo>`.
+
+**Cómo se sirven los assets:** en producción, Caddy atiende `/branding/*` desde la carpeta montada (`/srv/branding`). En desarrollo, sin Caddy, la API sirve `BRANDING_DIR` en `/branding` (solo si `NODE_ENV` no es `production`).
+
+> [!NOTE]
+> En modo `multi` la marca se ignora: la API responde siempre la marca Vir-ttend (`branding.source = "virttend"`) y no lee el disco, aunque `BRANDING_DIR` exista. Si una instancia `single` no tiene `branding.json`, arranca con la marca Vir-ttend y deja un aviso en el log.
+
 ---
 
 ## 6. Verificación y Validación Post-Despliegue
@@ -245,7 +292,21 @@ Respuesta esperada en modo single (todas las respuestas de la API vienen envuelt
     "tenantId": "e2b83490-6c92-4217-a065-98782d46e121",
     "tenantSlug": "colegio-san-martin",
     "tenantName": "Colegio San Martín",
-    "allowSuperadmin": false
+    "allowSuperadmin": false,
+    "branding": {
+      "source": "instance",
+      "version": "f0d5abcfae",
+      "displayName": "Colegio San Martín",
+      "shortName": "San Martín",
+      "colors": { "primary": "#023064", "accent": "#0195EF", "highlight": "#F9D648" },
+      "assets": {
+        "crest": "/branding/crest.png?v=f0d5abcfae",
+        "crestSmall": "/branding/crest-small.svg?v=f0d5abcfae",
+        "crestSmallPng": "/branding/crest-small-256.png?v=f0d5abcfae",
+        "favicon": "/branding/favicon.ico?v=f0d5abcfae"
+      },
+      "showPoweredBy": true
+    }
   },
   "timeStamp": "2026-10-12T12:00:00.000Z"
 }
