@@ -48,6 +48,22 @@ const resolveVariant = (value: string | undefined): AppVariant =>
 const variant = resolveVariant(process.env.APP_VARIANT);
 const variantConfig = VARIANTS[variant];
 
+// Release builds must point at a real server: without a URL the app would fall
+// back to the cleartext localhost dev URL and every request would fail on
+// devices. EAS sets EAS_BUILD_PROFILE during builds; local dev is unaffected.
+const buildProfile = process.env.EAS_BUILD_PROFILE ?? '';
+const isReleaseBuild =
+	buildProfile.startsWith('preview') || buildProfile.startsWith('production');
+if (
+	isReleaseBuild &&
+	!variantConfig.apiUrl &&
+	!process.env.EXPO_PUBLIC_API_URL
+) {
+	throw new Error(
+		`Build profile "${buildProfile}" (variant "${variant}") has no API URL. Set EXPO_PUBLIC_API_URL in eas.json or the variant apiUrl in app.config.ts.`,
+	);
+}
+
 const config: ExpoConfig = {
 	name: variantConfig.name,
 	// Same slug for every variant: both builds belong to one EAS project, which
