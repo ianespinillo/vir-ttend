@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import {
 	type WeekdayKey,
@@ -74,6 +74,16 @@ export const useAttendanceDate = ({
 	);
 
 	const [date, setDate] = useState(() => resolveInitialDate(dateParam, rules));
+
+	// A `date` param is accepted against the rules known at first render; the
+	// subject schedule and the year start may load later, so re-check it then
+	// and fall back to today when it turns out not to be selectable.
+	useEffect(() => {
+		if (!dateParam || date === today) return;
+		if (checkDate(date, rules) === null) return;
+		setDate(today);
+		onDateChanged();
+	}, [rules]);
 
 	const previousDate = useMemo(() => stepDate(date, -1, rules), [date, rules]);
 	const nextDate = useMemo(() => stepDate(date, 1, rules), [date, rules]);

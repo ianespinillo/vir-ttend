@@ -26,7 +26,7 @@ describe('JustifyAttendanceHandler', () => {
 		status: ATTENDANCE_STATUS.ABSENT,
 		editedBy: 'user-id',
 		editedAt: new Date(),
-		createdAt: new Date(),
+		createdAt: new Date('2026-05-10T12:00:00Z'),
 	});
 
 	beforeEach(() => {
@@ -79,7 +79,7 @@ describe('JustifyAttendanceHandler', () => {
 			status: ATTENDANCE_STATUS.LATE,
 			editedBy: 'user-id',
 			editedAt: new Date(),
-			createdAt: new Date(),
+			createdAt: new Date('2026-05-10T12:00:00Z'),
 		});
 		attendanceRepo.findById.mockResolvedValue(lateRecord);
 		academicYearPort.findActiveByTenant.mockResolvedValue(
@@ -134,7 +134,7 @@ describe('JustifyAttendanceHandler', () => {
 			status: ATTENDANCE_STATUS.PRESENT,
 			editedBy: 'user-id',
 			editedAt: new Date(),
-			createdAt: new Date(),
+			createdAt: new Date('2026-05-10T12:00:00Z'),
 		});
 		attendanceRepo.findById.mockResolvedValue(presentRecord);
 
