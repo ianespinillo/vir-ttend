@@ -20,6 +20,7 @@ import type {
 	OutboxItem,
 	SubjectOutboxItem,
 } from './outbox-types';
+import { useServerReachabilityMonitor } from './use-server-reachability';
 
 export interface OutboxContextValue extends OutboxState {
 	/** Pending or syncing items. */
@@ -74,6 +75,12 @@ export function OutboxProvider({ children }: { children: React.ReactNode }) {
 			isOnline: () => onlineManager.isOnline(),
 		});
 	}, [queryClient, scope]);
+
+	// The server answering again is a reason to send what is queued right away
+	// instead of waiting for the next backoff timer.
+	useServerReachabilityMonitor(() => {
+		void service?.flush({ force: true });
+	});
 
 	useEffect(() => {
 		if (!service) return;

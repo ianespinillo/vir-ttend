@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config/app-config';
+import { serverReachability } from '../features/offline/server-reachability';
 import {
 	REFRESH_TOKEN_KEY,
 	TENANT_KEY,
@@ -95,8 +96,11 @@ const requestNewAccessToken = async (): Promise<string> => {
 			throw new Error('Refresh response did not include an access token');
 		}
 		await saveTokens(newAccessToken, payload.refreshToken);
+		serverReachability.reportSuccess();
 		return newAccessToken;
 	} catch (error) {
+		// Bare call: the interceptors below never see it, so report it here.
+		serverReachability.reportFailure(error);
 		if (axios.isAxiosError(error) && error.response?.status === 401) {
 			await expireSession();
 		}
@@ -184,8 +188,12 @@ export const refreshAccessToken = (): Promise<string> => {
 };
 
 api.interceptors.response.use(
-	(response) => response,
+	(response) => {
+		serverReachability.reportSuccess();
+		return response;
+	},
 	async (error: AxiosError) => {
+		serverReachability.reportFailure(error);
 		if (!shouldAttemptRefresh(error)) {
 			return Promise.reject(error);
 		}

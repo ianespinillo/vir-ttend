@@ -46,6 +46,7 @@ import {
 } from '../../../../src/features/attendance/use-attendance-date';
 import { useIsOnline } from '../../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../../src/features/offline/use-outbox';
+import { useServerReachability } from '../../../../src/features/offline/use-server-reachability';
 
 const NO_STUDENTS: StudentItem[] = [];
 
@@ -136,6 +137,7 @@ function SubjectSheet({
 	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueSubject, getItemForSubject } = useOutbox();
+	const serverStatus = useServerReachability();
 
 	// Day shown by this sheet (`YYYY-MM-DD`, device local time).
 	const dateStr = nav.date;
@@ -368,9 +370,11 @@ function SubjectSheet({
 						>
 							{outboxItem.error?.isPermanent
 								? 'Error al sincronizar'
-								: outboxItem.status === 'syncing'
-									? 'Sincronizando cambios…'
-									: 'Cambios pendientes de sincronizar'}
+								: serverStatus === 'unreachable'
+									? 'No se puede conectar con el servidor · reintentando'
+									: outboxItem.status === 'syncing'
+										? 'Sincronizando cambios…'
+										: 'Cambios pendientes de sincronizar'}
 						</Text>
 					</View>
 					{outboxItem.error?.message ? (

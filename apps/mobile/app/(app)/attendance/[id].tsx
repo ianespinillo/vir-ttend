@@ -54,6 +54,7 @@ import {
 import { useJustifyAttendance } from '../../../src/features/attendance/use-justify-attendance';
 import { useIsOnline } from '../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../src/features/offline/use-outbox';
+import { useServerReachability } from '../../../src/features/offline/use-server-reachability';
 
 const NO_STUDENTS: StudentItem[] = [];
 
@@ -126,6 +127,7 @@ function DailySheet({
 	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueDaily, getItemForCourse } = useOutbox();
+	const serverStatus = useServerReachability();
 	const { user } = useAuth();
 	const isPreceptor = isPreceptorRole(user?.role);
 
@@ -455,9 +457,11 @@ function DailySheet({
 						>
 							{outboxItem.error?.isPermanent
 								? 'Error al sincronizar'
-								: outboxItem.status === 'syncing'
-									? 'Sincronizando cambios…'
-									: 'Cambios pendientes de sincronizar'}
+								: serverStatus === 'unreachable'
+									? 'No se puede conectar con el servidor · reintentando'
+									: outboxItem.status === 'syncing'
+										? 'Sincronizando cambios…'
+										: 'Cambios pendientes de sincronizar'}
 						</Text>
 					</View>
 					{outboxItem.error?.message ? (
