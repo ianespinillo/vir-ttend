@@ -39,7 +39,7 @@ export interface DemoContextValue {
 	store: DemoStore;
 	/** Enter the demo as one of the seeded profiles (sets + persists session). */
 	enterAs: (profileId: string) => void;
-	/** Clear the demo session (back to the landing). */
+	/** Clear the demo session (back to the role picker). */
 	exitSession: () => void;
 	/** Re-seed the canonical state (wipes localStorage + fresh seed). */
 	resetDemo: () => void;
