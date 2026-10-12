@@ -24,9 +24,9 @@ Make branding instance data rather than code. Multi instances always show Vir-tt
 - [x] Task 3 — monorepo wiring (`8450a1c`; uses an EAS `postinstall` script instead of `eas-build-post-install`, because `app.config.ts` is evaluated at prebuild. Both Docker images build. Committed with `--no-verify` after an own-file format fix.)
 - [x] Task 4 — API branding (`6fd1c65`; commits `deploy/branding/**`; lazy load so dev static assets register before `listen()`; api jest 79 suites / 445 tests pass. Gap: `apps/api/.env.example` is not editable by agents, so `BRANDING_DIR` still needs to be added there.)
 - [x] Task 5 — infra (`844f548`; Caddy validate passes and serves `/branding/*` with immutable cache; compose mounts `deploy/branding/${BRANDING_SLUG:-_none}`. Gap: `.env.production.example` is not editable by agents, so `BRANDING_SLUG` still needs to be added there. Note: check `apps/demo` once `@repo/ui` imports `@repo/branding`.)
-- [ ] Task 6 — `@repo/ui` `tokens.css` single source + drift test
-- [ ] Task 7 — `@repo/ui` / `@repo/hooks` brand components + logo replacement
-- [ ] Task 8 — client mounts `BrandProvider`
+- [x] Task 6 — `tokens.css` (`0b535dc`; no `@layer base` wrapper so the client can import it standalone; drift test passes)
+- [x] Task 7 — brand components (`250eaca`; ui vitest 83 pass)
+- [x] Task 8 — client `BrandProvider` + `icon.svg` (`8f26418`; client and demo builds pass. Manual browser checks pending on the user.)
 - [ ] Task 9 — mobile theming plumbing + `vars()` spike (needs a manual device check by the user)
 - [ ] Task 10 — mobile: migrate the 13 indigo files + logo + "con vir-ttend"
 - [ ] Task 11 — mobile variants with assets + fallback branding
@@ -37,6 +37,7 @@ Make branding instance data rather than code. Multi instances always show Vir-tt
 |------|-------|------------------|
 | 1+2 | delegated direct (one writer, two commits) | new package, 15+ files |
 | 3–5 | delegated direct (one writer, three commits) | 5 package.json + Dockerfiles + API module/tests + infra/docs |
+| 6–8 | delegated direct (one writer, three commits) | ui tokens/components/tests + hooks + client |
 
 ## Progress / evidence
 - Assets present in the working tree (uncommitted, added with the spec): `apps/mobile/assets/{brand,variants}/`, `deploy/branding/{eest3,virttend,_none}/`.
@@ -44,5 +45,11 @@ Make branding instance data rather than code. Multi instances always show Vir-tt
 - Review of the Tasks 1–2 slice (with the earlier build-variant fix and docs): medium, 1830 lines → granted → approved and acknowledged, lineage `review-93cdb1230947581f`, boundary `c0b61a6`. The first capture was refused (reviewer cited an out-of-repo path), then re-offered and approved. The untracked assets were stashed during review and restored.
 - Deviation: `deploy/branding/**` is committed in Task 4, not Task 5, because the Task 1 schema test already reads `deploy/branding/eest3/branding.json` (R3-001).
 
+- Tasks 3–5 review: approved (`review-568823cea640f8e1`). Advisory fixes in `de0bcb7`: Caddy caches only `?v=` assets as immutable; the API spec is isolated from the ambient `BRANDING_DIR`.
+- Tasks 6–8 review: high → approved (`review-441aeb5f1354b88a`, boundary `8f26418`). Advisory fixes in the next commit:
+  - The crest `onError` falls back to the seal.
+  - `document.title` is only replaced when it is the default or the title the provider set last.
+  - The spec env cleanup moved into try/finally.
+
 ## Next step
-- Review the Tasks 3–5 slice, then Tasks 6–8 (web).
+- Tasks 9–11 (mobile). Task 9 needs a manual device spike by the user.
