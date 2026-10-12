@@ -27,7 +27,7 @@ Make branding instance data rather than code. Multi instances always show Vir-tt
 - [x] Task 6 — `tokens.css` (`0b535dc`; no `@layer base` wrapper so the client can import it standalone; drift test passes)
 - [x] Task 7 — brand components (`250eaca`; ui vitest 83 pass)
 - [x] Task 8 — client `BrandProvider` + `icon.svg` (`8f26418`; client and demo builds pass. Manual browser checks pending on the user.)
-- [ ] Task 9 — mobile theming plumbing + `vars()` spike (needs a manual device check by the user)
+- [x] Task 9 — mobile theming plumbing (`7754a82`; Android export bundles and `brand-on-primary` is in the bundle). **Device spike result pending confirmation from the user.** The local API was run in single mode with the existing demo tenant and eest3 branding through an uncommitted compose override.
 - [ ] Task 10 — mobile: migrate the 13 indigo files + logo + "con vir-ttend"
 - [ ] Task 11 — mobile variants with assets + fallback branding
 - [ ] Task 12 — end-to-end verification + docs close
@@ -52,4 +52,5 @@ Make branding instance data rather than code. Multi instances always show Vir-tt
   - The spec env cleanup moved into try/finally.
 
 ## Next step
-- Tasks 9–11 (mobile). Task 9 needs a manual device spike by the user.
+- Confirm the device spike: the login button should turn `#023064` under the eest3 branding. If it does, run Tasks 10–11; if not, switch to plan B.
+- Then Task 12.
