@@ -34,12 +34,12 @@ Ship two mobile apps from the same codebase. The general multi-tenant app target
 - Branch `feat/mobile-build-variants` (from `feat/mobile-app`). Forecast ~500 authored lines. Strategy `ask-on-risk`; PR target `dev` after the mobile-app chain.
 
 ## Tasks
-- [ ] **V1 — Build variants.**
+- [x] **V1 — Build variants.** (commit `4aad206`)
   - Convert `app.json` to `app.config.ts`, driven by `APP_VARIANT` (`general` | `eest3`, default `general`), with per-variant name, slug, scheme, `ios.bundleIdentifier` / `android.package`, icon and `extra.apiUrl`.
   - Add `eas.json` with development, preview and production profiles per variant, setting `APP_VARIANT` and `EXPO_PUBLIC_API_URL`.
   - Resolve the API URL in this order: `EXPO_PUBLIC_API_URL`, then the variant `extra.apiUrl`, then the localhost dev fallback.
   - Docs in `apps/mobile/README.md`.
-- [ ] **V2 — Server-driven tenancy.**
+- [x] **V2 — Server-driven tenancy.** (commit `f96f056`)
   - Fetch and cache `GET /config/public` (AsyncStorage, per server URL) on startup and before login.
   - The auth flow uses the server `tenancyMode`/`tenantId`, falling back to the cached value, then to membership auto-select.
   - Remove `saveTenancyMode` and app-name editing.
@@ -54,5 +54,20 @@ Ship two mobile apps from the same codebase. The general multi-tenant app target
 ## Progress / evidence
 - Exploration done: `GET /config/public` exists (`public-config.controller.ts`); the web uses it; the deploy is one VM per school with `TENANCY_MODE: single` in `compose.prod.yml`.
 
+- **Checks:** ts:check, biome and turbo ts:check pass; `expo config` verified for both variants; expo-doctor shows no new failures.
+- **Review:** high, 1041 lines → granted → approved and acknowledged, lineage `review-bf2ba29dbba6ddd5`, boundary `f96f056`.
+- **Advisory fixes in `2cc23e7`:**
+  - (R4-001) Release EAS profiles without an API URL now fail at config time instead of shipping a localhost build. Verified: `production-general` throws and `production-eest3` resolves its URL.
+  - (R3-003) The date-param fallback picks the closest selectable day up to today.
+- **Follow-ups:**
+  - (R2-001) The variant union is duplicated in `app.config.ts` and `app-config.ts`.
+  - (R3-001) No tests for tenant selection.
+  - (R3-002) Without a fresh or cached config, login falls back to membership selection; the server still enforces the mode.
+  - `.env.example` / `.env.local` may still list obsolete `EXPO_PUBLIC_TENANCY_MODE`, `EXPO_PUBLIC_APP_NAME` and `EXPO_PUBLIC_DEFAULT_TENANT_*` (now ignored).
+  - EAS projectId missing (`eas init`).
+  - The general server domain is pending.
+  - The EEST3 logo is missing.
+
 ## Next step
-- V1 + V2 (delegated writer).
+- Deploy the shared multi-tenant server when its domain is decided; then set the `*-general` profile URL.
+- `eas init` plus first preview APK of the eest3 variant.
