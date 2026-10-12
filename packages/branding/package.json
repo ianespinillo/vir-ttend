@@ -1,0 +1,44 @@
+{
+	"name": "@repo/branding",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "dist/index.cjs",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"test": "vitest run",
+		"ts:check": "tsc --noEmit"
+	},
+	"exports": {
+		".": {
+			"require": "./dist/index.cjs",
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./web": {
+			"require": "./dist/web/index.cjs",
+			"import": "./dist/web/index.js",
+			"types": "./dist/web/index.d.ts"
+		},
+		"./native": {
+			"require": "./dist/native/index.cjs",
+			"import": "./dist/native/index.js",
+			"types": "./dist/native/index.d.ts"
+		},
+		"./marks": {
+			"require": "./dist/marks/index.cjs",
+			"import": "./dist/marks/index.js",
+			"types": "./dist/marks/index.d.ts"
+		}
+	},
+	"dependencies": {
+		"zod": "^3.25.0"
+	},
+	"devDependencies": {
+		"tsup": "^8.3.0",
+		"typescript": "^5.6.3",
+		"vitest": "^2.1.9"
+	}
+}
