@@ -52,9 +52,10 @@ export function AttendanceRow({
 			.toUpperCase();
 	};
 
-	// The API only justifies absences (late arrivals get a 400).
+	// Absences and late arrivals can be justified (same rule as the API).
 	const canJustify =
-		currentStatus === ATTENDANCE_STATUS.ABSENT &&
+		(currentStatus === ATTENDANCE_STATUS.ABSENT ||
+			currentStatus === ATTENDANCE_STATUS.LATE) &&
 		student.attendanceRecord?.id &&
 		onJustify;
 

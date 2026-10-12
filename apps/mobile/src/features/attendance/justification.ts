@@ -83,8 +83,8 @@ export const getJustifyBlockHint = (input: {
 };
 
 /**
- * "Justificar" is offered on rows the server stores as absent and the user has
- * not edited locally. Rows without a record id are offered but disabled.
+ * "Justificar" is offered on rows the server stores as absent or late and the
+ * user has not edited locally. Rows without a record id are offered but disabled.
  */
 export const getJustifyRowState = (input: {
 	isPreceptor: boolean;
@@ -93,10 +93,10 @@ export const getJustifyRowState = (input: {
 	recordId: string | undefined;
 	blockHint: string | null;
 }): { visible: boolean; enabled: boolean } => {
+	const justifiable =
+		input.savedStatus === 'absent' || input.savedStatus === 'late';
 	const visible =
-		input.isPreceptor &&
-		input.savedStatus === 'absent' &&
-		input.localStatus === 'absent';
+		input.isPreceptor && justifiable && input.localStatus === input.savedStatus;
 	return {
 		visible,
 		enabled: visible && Boolean(input.recordId) && input.blockHint === null,

@@ -132,7 +132,7 @@ describe('AttendanceGrid', () => {
 		expect(onJustify).toHaveBeenCalledWith(secondRecord);
 	});
 
-	it('does not offer justification for late records', () => {
+	it('offers justification for late records', () => {
 		const lateStudents: StudentRowItem[] = [
 			{
 				id: 's-3',
@@ -155,7 +155,7 @@ describe('AttendanceGrid', () => {
 		);
 
 		expect(
-			screen.queryByRole('button', { name: /justificar/i }),
-		).not.toBeInTheDocument();
+			screen.getByRole('button', { name: /justificar/i }),
+		).toBeInTheDocument();
 	});
 });

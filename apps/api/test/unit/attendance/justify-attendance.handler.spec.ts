@@ -69,6 +69,43 @@ describe('JustifyAttendanceHandler', () => {
 		expect(saved.status).toBe(ATTENDANCE_STATUS.JUSTIFIED);
 	});
 
+	it('should justify late record', async () => {
+		const lateRecord = AttendanceRecord.reconstitute({
+			id: 'record-id',
+			tenantId: 'tenant-id',
+			studentId: 'student-1',
+			courseId: 'course-id',
+			date: new Date('2025-03-10'),
+			status: ATTENDANCE_STATUS.LATE,
+			editedBy: 'user-id',
+			editedAt: new Date(),
+			createdAt: new Date(),
+		});
+		attendanceRepo.findById.mockResolvedValue(lateRecord);
+		academicYearPort.findActiveByTenant.mockResolvedValue(
+			AcademicYear.reconstitute(
+				'ay-1',
+				75,
+				15,
+				new Date('2026-03-01'),
+				new Date('2026-12-31'),
+			),
+		);
+
+		await handler.execute(
+			new JustifyAttendanceCommand(
+				'record-id',
+				'Problema de transporte',
+				'user-id',
+				undefined,
+			),
+		);
+
+		expect(justificationRepo.save).toHaveBeenCalledTimes(1);
+		const saved = attendanceRepo.save.mock.calls[0][0];
+		expect(saved.status).toBe(ATTENDANCE_STATUS.JUSTIFIED);
+	});
+
 	it('should throw when record does not exist', async () => {
 		attendanceRepo.findById.mockResolvedValue(null);
 
@@ -86,7 +123,7 @@ describe('JustifyAttendanceHandler', () => {
 		expect(justificationRepo.save).not.toHaveBeenCalled();
 	});
 
-	it('should throw when record is not absent', async () => {
+	it('should throw when record is neither absent nor late', async () => {
 		const presentRecord = AttendanceRecord.reconstitute({
 			...mockRecord,
 			id: 'record-id',
