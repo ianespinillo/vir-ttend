@@ -34,7 +34,7 @@ flowchart TD
 ```
 
 ### Principio Fundamental: Codebase Único
-Ambos modos ejecutan exactamente las mismas migraciones de base de datos, los mismos esquemas de Prisma y la misma lógica de dominio. Ninguna columna ni clave foránea (`tenantId`) se elimina o altera; la diferencia radica exclusivamente en cómo se resuelve y restringe el contexto del tenant en tiempo de ejecución.
+Ambos modos ejecutan exactamente las mismas migraciones de base de datos, las mismas entidades de MikroORM y la misma lógica de dominio. Ninguna columna ni clave foránea (`tenantId`) se elimina o altera; la diferencia radica exclusivamente en cómo se resuelve y restringe el contexto del tenant en tiempo de ejecución.
 
 ---
 
@@ -131,8 +131,14 @@ NEXT_PUBLIC_APP_DOMAIN=vir-ttend.app
 ```
 
 ### Paso 2: Ejecutar migraciones de base de datos
+Las migraciones son de MikroORM y se ejecutan de forma explícita, antes de levantar la aplicación (ver [`ci-cd.md`](./ci-cd.md)):
 ```bash
-pnpm --filter api prisma migrate deploy
+# Producción (mismo comando que el pipeline de CD)
+docker compose -f compose.prod.yml -f compose.ci.yml run --rm --no-deps api \
+  sh -c "cd apps/api && node node_modules/@mikro-orm/cli/cli.js migration:up"
+
+# Desarrollo local
+cd apps/api && pnpm mikro-orm migration:up
 ```
 
 ### Paso 3: Inicializar la plataforma y operar
@@ -183,9 +189,12 @@ NEXT_PUBLIC_API_URL=/api
 ```
 
 ### Paso 3: Ejecutar migraciones de base de datos
+Mismo procedimiento que en el modo multi (migraciones de MikroORM, explícitas y previas al arranque):
 ```bash
-pnpm --filter api prisma migrate deploy
+docker compose -f compose.prod.yml -f compose.ci.yml run --rm --no-deps api \
+  sh -c "cd apps/api && node node_modules/@mikro-orm/cli/cli.js migration:up"
 ```
+En despliegues por CD este paso lo ejecuta el pipeline automáticamente.
 
 ### Paso 4: Despliegue con Docker Compose
 
@@ -222,25 +231,32 @@ Al iniciar, NestJS ejecuta `TenancyBootstrapService`:
 ## 6. Verificación y Validación Post-Despliegue
 
 ### 6.1 Verificar Configuración Pública
-Ejecutar un `GET` a `/config/public`:
+La instancia sirve web y API desde un único dominio: Caddy envía `/api/*` a la API (sin prefijo de versión). Ejecutar un `GET` a `/api/config/public`:
 ```bash
-curl -X GET https://api-sanmartin.vir-ttend.app/api/v1/config/public
+curl -X GET https://sanmartin.vir-ttend.app/api/config/public
 ```
 
-Respuesta esperada en modo single:
+Respuesta esperada en modo single (todas las respuestas de la API vienen envueltas en `{ success, data, timeStamp }`):
 ```json
 {
-  "tenancyMode": "single",
-  "tenantId": "e2b83490-6c92-4217-a065-98782d46e121",
-  "tenantSlug": "colegio-san-martin",
-  "tenantName": "Colegio San Martín"
+  "success": true,
+  "data": {
+    "tenancyMode": "single",
+    "tenantId": "e2b83490-6c92-4217-a065-98782d46e121",
+    "tenantSlug": "colegio-san-martin",
+    "tenantName": "Colegio San Martín",
+    "allowSuperadmin": false
+  },
+  "timeStamp": "2026-10-12T12:00:00.000Z"
 }
 ```
+
+Este endpoint es público y no expone secretos: lo consumen la web y la app móvil para conocer el modo del despliegue.
 
 ### 6.2 Probar Inicio de Sesión
 Hacer un `POST` a `/auth/login` con las credenciales creadas:
 ```bash
-curl -X POST https://api-sanmartin.vir-ttend.app/api/v1/auth/login \
+curl -X POST https://sanmartin.vir-ttend.app/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@sanmartin.edu.ar","password":"SanMartin2026!"}'
 ```
