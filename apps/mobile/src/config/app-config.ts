@@ -3,13 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 export type TenancyMode = 'single' | 'multi';
 
-export interface MobileAppConfig {
-	appName: string;
-	tenancyMode: TenancyMode;
-	defaultTenantId: string | null;
-	defaultTenantName: string | null;
-	apiUrl: string;
-}
+export type AppVariant = 'general' | 'eest3';
 
 export const DEFAULT_API_URL = 'http://localhost:3001';
 
@@ -30,6 +24,10 @@ export const resolveApiUrl = (
 	return stripTrailingSlashes(chosen);
 };
 
+/** Host (and port) of a URL, for display. Pure. */
+export const getUrlHost = (url: string): string =>
+	url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').split(/[/?#]/)[0];
+
 /**
  * Single source of truth for the API base URL.
  *
@@ -44,43 +42,51 @@ export const API_URL: string = resolveApiUrl(
 	Constants.expoConfig?.extra?.apiUrl,
 );
 
-export type AppVariant = 'general' | 'eest3';
-
 /** Build variant of this binary (`APP_VARIANT` at build time). */
 export const APP_VARIANT: AppVariant =
 	Constants.expoConfig?.extra?.appVariant === 'eest3' ? 'eest3' : 'general';
 
-const STORAGE_KEY_CUSTOM_APP_NAME = 'virttend_custom_app_name';
-const STORAGE_KEY_TENANCY_MODE = 'virttend_tenancy_mode';
+/** Version shown in Settings (`version` in `app.config.ts`). */
+export const APP_VERSION: string = Constants.expoConfig?.version ?? '0.0.0';
 
-export const getAppConfig = async (): Promise<MobileAppConfig> => {
-	const customName = await SecureStore.getItemAsync(STORAGE_KEY_CUSTOM_APP_NAME);
-	const customMode = (await SecureStore.getItemAsync(
-		STORAGE_KEY_TENANCY_MODE,
-	)) as TenancyMode | null;
+/** Facts fixed when the app is built, as opposed to the server config. */
+export interface StaticAppInfo {
+	appName: string;
+	/** School the build is made for (school variants only). */
+	variantSchoolName: string | null;
+	apiUrl: string;
+	variant: AppVariant;
+}
 
-	const envMode = (process.env.EXPO_PUBLIC_TENANCY_MODE ||
-		'multi') as TenancyMode;
-	const envAppName = process.env.EXPO_PUBLIC_APP_NAME || 'Vir-ttend';
+const variantSchoolName: unknown =
+	Constants.expoConfig?.extra?.schoolDisplayName;
 
-	return {
-		appName: customName || envAppName,
-		tenancyMode: customMode || envMode,
-		defaultTenantId: process.env.EXPO_PUBLIC_DEFAULT_TENANT_ID || null,
-		defaultTenantName:
-			process.env.EXPO_PUBLIC_DEFAULT_TENANT_NAME || 'Colegio Institucional',
-		apiUrl: API_URL,
-	};
+export const STATIC_APP_INFO: StaticAppInfo = {
+	appName: Constants.expoConfig?.name ?? 'Vir-ttend',
+	variantSchoolName:
+		typeof variantSchoolName === 'string' && variantSchoolName.trim()
+			? variantSchoolName.trim()
+			: null,
+	apiUrl: API_URL,
+	variant: APP_VARIANT,
 };
 
-export const saveCustomAppName = async (name: string): Promise<void> => {
-	if (!name.trim()) {
-		await SecureStore.deleteItemAsync(STORAGE_KEY_CUSTOM_APP_NAME);
-	} else {
-		await SecureStore.setItemAsync(STORAGE_KEY_CUSTOM_APP_NAME, name.trim());
-	}
-};
+// Tenancy mode and app name used to be user settings stored on the device. The
+// server owns them now, so any leftover value is removed.
+const LEGACY_SECURE_STORE_KEYS = [
+	'virttend_tenancy_mode',
+	'virttend_custom_app_name',
+];
 
-export const saveTenancyMode = async (mode: TenancyMode): Promise<void> => {
-	await SecureStore.setItemAsync(STORAGE_KEY_TENANCY_MODE, mode);
+/** Best effort: removes the retired settings so they cannot be mistaken for config. */
+export const clearLegacyConfigKeys = async (): Promise<void> => {
+	await Promise.all(
+		LEGACY_SECURE_STORE_KEYS.map(async (key) => {
+			try {
+				await SecureStore.deleteItemAsync(key);
+			} catch (error) {
+				console.warn(`Could not delete legacy setting ${key}`, error);
+			}
+		}),
+	);
 };

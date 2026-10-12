@@ -1,13 +1,18 @@
 import * as SecureStore from 'expo-secure-store';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+	createContext,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from 'react';
+import { STATIC_APP_INFO, clearLegacyConfigKeys } from '../config/app-config';
 import {
-	API_URL,
 	type MobileAppConfig,
-	type TenancyMode,
-	getAppConfig,
-	saveCustomAppName,
-	saveTenancyMode,
-} from '../config/app-config';
+	buildMobileConfig,
+} from '../features/config/mobile-config';
+import { decideTenantSelection } from '../features/config/tenant-selection';
+import { useServerConfig } from '../features/config/use-server-config';
 import { clearAllOfflineCaches } from '../features/offline/clear-offline-cache';
 import { api, revokeSessionOnServer } from '../services/api';
 import {
@@ -52,8 +57,6 @@ interface AuthContextType {
 	) => Promise<{ requiresTenantSelection: boolean }>;
 	selectTenant: (tenantId: string) => Promise<void>;
 	logout: () => Promise<void>;
-	updateAppName: (name: string) => Promise<void>;
-	updateTenancyMode: (mode: TenancyMode) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,19 +70,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 	const [availableTenants, setAvailableTenants] = useState<TenantOption[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [config, setConfig] = useState<MobileAppConfig>({
-		appName: 'Vir-ttend',
-		tenancyMode: 'multi',
-		defaultTenantId: null,
-		defaultTenantName: null,
-		apiUrl: API_URL,
-	});
+	const serverConfig = useServerConfig();
+	const config = useMemo<MobileAppConfig>(
+		() =>
+			buildMobileConfig(STATIC_APP_INFO, serverConfig.config, serverConfig.status),
+		[serverConfig.config, serverConfig.status],
+	);
 
 	useEffect(() => {
 		const loadInitialState = async () => {
 			try {
-				const appCfg = await getAppConfig();
-				setConfig(appCfg);
+				await clearLegacyConfigKeys();
 
 				const savedToken = await SecureStore.getItemAsync(TOKEN_KEY);
 				const savedTenant = await SecureStore.getItemAsync(TENANT_KEY);
@@ -142,21 +143,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				);
 			}
 
-			// Single-tenant mode check:
-			if (config.tenancyMode === 'single') {
-				// If a default tenant is configured in environment, find it or default to the first valid tenant
-				const chosenTenant = config.defaultTenantId
-					? validTenants.find((t) => t.tenantId === config.defaultTenantId) ||
-						validTenants[0]
-					: validTenants[0];
+			// The server owns the tenancy mode. Read it fresh when this run has not
+			// yet (login needs the server anyway); fall back to the cached copy.
+			const serverTenancy =
+				serverConfig.status === 'fresh'
+					? serverConfig.config
+					: ((await serverConfig.refresh()) ?? serverConfig.config);
 
-				await selectTenantDirect(userId, chosenTenant.tenantId);
-				return { requiresTenantSelection: false };
+			const selection = decideTenantSelection(
+				serverTenancy,
+				validTenants.map((t) => t.tenantId),
+			);
+
+			if (selection.kind === 'denied') {
+				throw new Error(selection.message);
 			}
 
-			// Multi-tenant mode:
-			if (validTenants.length === 1) {
-				await selectTenantDirect(userId, validTenants[0].tenantId);
+			if (selection.kind === 'direct') {
+				await selectTenantDirect(userId, selection.tenantId);
 				return { requiresTenantSelection: false };
 			}
 
@@ -249,18 +253,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		void revokeSessionOnServer(credentials);
 	};
 
-	const updateAppName = async (name: string) => {
-		await saveCustomAppName(name);
-		const refreshed = await getAppConfig();
-		setConfig(refreshed);
-	};
-
-	const updateTenancyMode = async (mode: TenancyMode) => {
-		await saveTenancyMode(mode);
-		const refreshed = await getAppConfig();
-		setConfig(refreshed);
-	};
-
 	return (
 		<AuthContext.Provider
 			value={{
@@ -274,8 +266,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				login,
 				selectTenant,
 				logout,
-				updateAppName,
-				updateTenancyMode,
 			}}
 		>
 			{children}
