@@ -17,6 +17,8 @@ export interface AcademicYear {
 	id: string;
 	year: number;
 	isActive: boolean;
+	/** ISO date-time of the first day of the school year (UTC midnight). */
+	startDate?: string;
 }
 
 /** One course of `GET /dashboard`. */

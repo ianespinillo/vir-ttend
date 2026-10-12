@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
 	ArrowLeft,
-	Calendar,
 	Check,
 	CheckCheck,
 	Clock,
@@ -13,7 +12,13 @@ import {
 	Users,
 	X,
 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+	type RefObject,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import {
 	ActivityIndicator,
 	Alert,
@@ -24,6 +29,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/context/auth-context';
+import { AttendanceDateBar } from '../../../src/features/attendance/attendance-date-bar';
+import { resolveDayDataState } from '../../../src/features/attendance/date-nav';
 import {
 	getJustifyBlockHint,
 	getJustifyRowState,
@@ -40,10 +47,13 @@ import type {
 	RecordedAttendanceStatus,
 	StudentItem,
 } from '../../../src/features/attendance/types';
+import {
+	type AttendanceDateNav,
+	useAttendanceDate,
+} from '../../../src/features/attendance/use-attendance-date';
 import { useJustifyAttendance } from '../../../src/features/attendance/use-justify-attendance';
 import { useIsOnline } from '../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../src/features/offline/use-outbox';
-import { toLocalDateString } from '../../../src/lib/date';
 
 const NO_STUDENTS: StudentItem[] = [];
 
@@ -72,18 +82,56 @@ const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'late'];
 
 export default function AttendanceSheetScreen() {
 	const params = useLocalSearchParams();
+
+	const courseId = typeof params.id === 'string' ? params.id : '';
+	const courseName = typeof params.name === 'string' ? params.name : 'Curso';
+
+	// Set by the sheet once the user edits; read here to confirm before the
+	// selected day changes (the sheet below remounts per day).
+	const hasUserEdits = useRef(false);
+	const nav = useAttendanceDate({
+		dateParam: typeof params.date === 'string' ? params.date : undefined,
+		classDays: null,
+		hasUnsavedChanges: () => hasUserEdits.current,
+		onDateChanged: () => {
+			hasUserEdits.current = false;
+		},
+	});
+
+	// `key` gives every day a fresh sheet: no edits or selections carry over.
+	return (
+		<DailySheet
+			key={nav.date}
+			courseId={courseId}
+			courseName={courseName}
+			nav={nav}
+			hasUserEdits={hasUserEdits}
+		/>
+	);
+}
+
+interface DailySheetProps {
+	courseId: string;
+	courseName: string;
+	nav: AttendanceDateNav;
+	hasUserEdits: RefObject<boolean>;
+}
+
+function DailySheet({
+	courseId,
+	courseName,
+	nav,
+	hasUserEdits,
+}: DailySheetProps) {
 	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueDaily, getItemForCourse } = useOutbox();
 	const { user } = useAuth();
 	const isPreceptor = isPreceptorRole(user?.role);
 
-	const courseId = typeof params.id === 'string' ? params.id : '';
-	const courseName = typeof params.name === 'string' ? params.name : 'Curso';
-
-	// Today in YYYY-MM-DD format (device local time)
-	const todayStr = useMemo(() => toLocalDateString(), []);
-	const outboxItem = getItemForCourse(courseId, todayStr);
+	// Day shown by this sheet (`YYYY-MM-DD`, device local time).
+	const dateStr = nav.date;
+	const outboxItem = getItemForCourse(courseId, dateStr);
 
 	// State for attendance map: studentId -> status (`justified` is read from the
 	// server and never written back by this screen).
@@ -98,8 +146,7 @@ export default function AttendanceSheetScreen() {
 	const [isMonthOpen, setIsMonthOpen] = useState(false);
 	const justify = useJustifyAttendance();
 	const [isSaving, setIsSaving] = useState(false);
-	// Once the user edits, server data must not overwrite their changes.
-	const hasUserEdits = useRef(false);
+	// `hasUserEdits`: once the user edits, server data must not overwrite them.
 
 	// Students of the course: shared key, filled by the offline preload.
 	const {
@@ -112,10 +159,24 @@ export default function AttendanceSheetScreen() {
 		enabled: !!courseId,
 	});
 
-	// Today's existing attendance (full roster, `status` unset when not taken).
-	const { data: existingAttendance } = useQuery({
-		...attendanceQueries.dailyAttendance(courseId, todayStr),
+	// The day's existing attendance (full roster, `status` unset when not taken).
+	const {
+		data: existingAttendance,
+		isLoading: isLoadingDay,
+		fetchStatus: dayFetchStatus,
+		isError: isDayError,
+		refetch: refetchDay,
+	} = useQuery({
+		...attendanceQueries.dailyAttendance(courseId, dateStr),
 		enabled: !!courseId,
+	});
+	const dayState = resolveDayDataState({
+		isToday: nav.isToday,
+		hasData: existingAttendance !== undefined,
+		hasOutboxItem: Boolean(outboxItem),
+		isLoading: isLoadingDay,
+		isPaused: dayFetchStatus === 'paused',
+		isError: isDayError,
 	});
 
 	const students = studentsData ?? NO_STUDENTS;
@@ -245,7 +306,7 @@ export default function AttendanceSheetScreen() {
 		if (!justifyTarget) return;
 		const { studentId, recordId } = justifyTarget;
 		justify.mutate(
-			{ recordId, courseId, date: todayStr, ...payload },
+			{ recordId, courseId, date: dateStr, ...payload },
 			{
 				onSuccess: () => {
 					// Keep the local state in step so saving never sends the stale
@@ -287,15 +348,15 @@ export default function AttendanceSheetScreen() {
 			await enqueueDaily({
 				courseId,
 				courseName,
-				date: todayStr,
+				date: dateStr,
 				records,
 			});
 
 			Alert.alert(
 				'¡Asistencia Guardada!',
 				online
-					? `Se registraron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas.`
-					: `Se guardaron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas localmente. Se sincronizarán automáticamente al recuperar conexión.`,
+					? `Se registraron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas para el ${nav.label}.`
+					: `Se guardaron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas para el ${nav.label} localmente. Se sincronizarán automáticamente al recuperar conexión.`,
 				[{ text: 'Aceptar', onPress: () => router.back() }],
 			);
 		} catch (error: unknown) {
@@ -315,12 +376,6 @@ export default function AttendanceSheetScreen() {
 				<View className="flex-row items-center justify-between">
 					<View className="flex-1">
 						<Text className="text-xl font-bold text-slate-900">{courseName}</Text>
-						<View className="mt-1 flex-row items-center space-x-2">
-							<Calendar size={13} color="#64748B" />
-							<Text className="ml-1 text-xs text-slate-500 font-medium">
-								Fecha: {todayStr}
-							</Text>
-						</View>
 					</View>
 
 					<TouchableOpacity
@@ -333,6 +388,8 @@ export default function AttendanceSheetScreen() {
 						</Text>
 					</TouchableOpacity>
 				</View>
+
+				<AttendanceDateBar nav={nav} />
 
 				{isPreceptor ? (
 					<TouchableOpacity
@@ -450,6 +507,33 @@ export default function AttendanceSheetScreen() {
 						Curso sin alumnos registrados
 					</Text>
 				</View>
+			) : dayState === 'loading' ? (
+				<View className="flex-1 items-center justify-center">
+					<ActivityIndicator size="large" color="#4F46E5" />
+					<Text className="mt-3 text-sm text-slate-500">
+						Cargando asistencia del {nav.label}...
+					</Text>
+				</View>
+			) : dayState === 'offline-empty' ? (
+				<View className="flex-1 items-center justify-center px-6">
+					<CloudOff size={36} color="#94A3B8" />
+					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+						Sin conexión: no hay datos guardados para esta fecha.
+					</Text>
+				</View>
+			) : dayState === 'error' ? (
+				<View className="flex-1 items-center justify-center px-6">
+					<AlertCircle size={36} color="#EF4444" />
+					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+						No se pudo cargar la asistencia de esta fecha.
+					</Text>
+					<TouchableOpacity
+						onPress={() => refetchDay()}
+						className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 active:bg-indigo-100"
+					>
+						<Text className="text-xs font-bold text-indigo-700">Reintentar</Text>
+					</TouchableOpacity>
+				</View>
 			) : (
 				<ScrollView className="flex-1 px-4 py-3">
 					{hasJustifiableRows && justifyBlockHint ? (
@@ -554,7 +638,7 @@ export default function AttendanceSheetScreen() {
 			)}
 
 			{/* Sticky Bottom Confirmation Bar */}
-			{students.length > 0 && (
+			{students.length > 0 && dayState === 'ready' && (
 				<View className="border-t border-slate-200 bg-white px-5 py-4 shadow-lg">
 					<TouchableOpacity
 						onPress={handleSave}
@@ -587,7 +671,7 @@ export default function AttendanceSheetScreen() {
 					onClose={() => setIsMonthOpen(false)}
 					courseId={courseId}
 					courseName={courseName}
-					date={todayStr}
+					date={dateStr}
 				/>
 			) : null}
 		</SafeAreaView>
