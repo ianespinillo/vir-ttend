@@ -1,5 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+	ApiOperation,
+	ApiProperty,
+	ApiResponse,
+	ApiTags,
+} from '@nestjs/swagger';
+import type { PublicBranding } from '@repo/branding';
+import { BrandingService } from '../branding/branding.service';
 import { getTenancyConfig } from '../config/tenancy.config';
 
 export class PublicConfigDto {
@@ -8,11 +15,15 @@ export class PublicConfigDto {
 	tenantSlug!: string | null;
 	tenantId!: string | null;
 	allowSuperadmin!: boolean;
+	@ApiProperty({ type: Object })
+	branding!: PublicBranding;
 }
 
 @Controller('config')
 @ApiTags('App')
 export class PublicConfigController {
+	constructor(private readonly branding: BrandingService) {}
+
 	@Get('public')
 	@ApiOperation({
 		summary: 'Obtener configuración pública de tenancy de la instancia',
@@ -32,6 +43,7 @@ export class PublicConfigController {
 			tenantSlug: config.TENANT_SLUG,
 			tenantId: config.TENANT_ID,
 			allowSuperadmin: config.ALLOW_SUPERADMIN,
+			branding: this.branding.getPublicBranding(),
 		};
 	}
 }

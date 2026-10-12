@@ -1,0 +1,16 @@
+{
+	"version": 1,
+	"displayName": "Escuela de Educación Secundaria Técnica N.º 3 «Eva Perón»",
+	"shortName": "EEST N.º 3",
+	"colors": {
+		"primary": "#023064",
+		"accent": "#0195EF",
+		"highlight": "#F9D648"
+	},
+	"assets": {
+		"crest": "crest.png",
+		"crestSmall": "crest-small.svg",
+		"crestSmallPng": "crest-small-256.png",
+		"favicon": "favicon.ico"
+	}
+}
