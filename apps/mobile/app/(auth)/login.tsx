@@ -149,14 +149,14 @@ export default function LoginScreen() {
 
 						{/* Submit button */}
 						<TouchableOpacity
-							className="items-center justify-center rounded-xl bg-indigo-600 py-3.5 shadow-sm active:bg-indigo-700 disabled:opacity-50"
+							className="items-center justify-center rounded-xl bg-primary py-3.5 shadow-sm active:bg-primary-700 disabled:opacity-50"
 							onPress={handleLogin}
 							disabled={isSubmitting}
 						>
 							{isSubmitting ? (
 								<ActivityIndicator size="small" color="#FFFFFF" />
 							) : (
-								<Text className="text-base font-semibold text-white">
+								<Text className="text-base font-semibold text-primary-foreground">
 									Ingresar al Sistema
 								</Text>
 							)}

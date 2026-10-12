@@ -1,3 +1,4 @@
+import { type PublicBranding, VIRTTEND_BRANDING } from '@repo/branding';
 import type {
 	AppVariant,
 	StaticAppInfo,
@@ -18,6 +19,8 @@ export interface MobileAppConfig {
 	tenancyMode: TenancyMode | null;
 	tenantId: string | null;
 	apiUrl: string;
+	/** Server branding, else the build's, else Vir-ttend. */
+	branding: PublicBranding;
 	variant: AppVariant;
 	configStatus: ServerConfigStatus;
 }
@@ -43,6 +46,7 @@ export const buildMobileConfig = (
 		tenancyMode: server?.tenancyMode ?? null,
 		tenantId: server?.tenantId ?? null,
 		apiUrl: app.apiUrl,
+		branding: server?.branding ?? app.variantBranding ?? VIRTTEND_BRANDING,
 		variant: app.variant,
 		configStatus,
 	};

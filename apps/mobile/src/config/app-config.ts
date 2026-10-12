@@ -1,3 +1,4 @@
+import { type PublicBranding, publicBrandingSchema } from '@repo/branding';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 
@@ -54,6 +55,8 @@ export interface StaticAppInfo {
 	appName: string;
 	/** School the build is made for (school variants only). */
 	variantSchoolName: string | null;
+	/** Branding baked into the build (`extra.branding`), for the first launch offline. */
+	variantBranding: PublicBranding | null;
 	apiUrl: string;
 	variant: AppVariant;
 }
@@ -61,12 +64,19 @@ export interface StaticAppInfo {
 const variantSchoolName: unknown =
 	Constants.expoConfig?.extra?.schoolDisplayName;
 
+const parsedVariantBranding = publicBrandingSchema.safeParse(
+	Constants.expoConfig?.extra?.branding,
+);
+
 export const STATIC_APP_INFO: StaticAppInfo = {
 	appName: Constants.expoConfig?.name ?? 'Vir-ttend',
 	variantSchoolName:
 		typeof variantSchoolName === 'string' && variantSchoolName.trim()
 			? variantSchoolName.trim()
 			: null,
+	variantBranding: parsedVariantBranding.success
+		? parsedVariantBranding.data
+		: null,
 	apiUrl: API_URL,
 	variant: APP_VARIANT,
 };
