@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os';
 import { ForbiddenException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import type { Request, Response } from 'express';
@@ -347,6 +348,9 @@ describe('Single-Tenant Tenancy Mode', () => {
 			process.env.TENANT_ID = '00000000-0000-0000-0000-000000000001';
 			process.env.TENANT_SLUG = 'colegio-nacional';
 			process.env.TENANT_NAME = 'Colegio Nacional de Buenos Aires';
+			// Point at a directory that does not exist so the result does not depend
+			// on the ambient /app/branding default of the host running the tests.
+			process.env.BRANDING_DIR = `${tmpdir()}/vt-no-branding-${process.pid}`;
 
 			const branding = new BrandingService();
 			const controller = new PublicConfigController(branding);
@@ -356,7 +360,11 @@ describe('Single-Tenant Tenancy Mode', () => {
 			expect(config.tenantName).toBe('Colegio Nacional de Buenos Aires');
 			expect(config.tenantSlug).toBe('colegio-nacional');
 			expect(config.tenantId).toBe('00000000-0000-0000-0000-000000000001');
-			expect(config.branding).toBe(branding.getPublicBranding());
+			// Single mode without branding.json falls back to the Vir-ttend default.
+			expect(config.branding.source).toBe('virttend');
+			expect(config.branding.showPoweredBy).toBe(false);
+			// Assigning undefined to process.env stores the string "undefined".
+			Reflect.deleteProperty(process.env, 'BRANDING_DIR');
 		});
 	});
 });

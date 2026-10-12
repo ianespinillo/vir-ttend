@@ -11,11 +11,16 @@
     handle_path /api/* {
         reverse_proxy api:3001
     }
-    # Assets de marca de la instancia (deploy/branding/<BRANDING_SLUG>), versionados
-    # por hash en la URL (?v=...), por eso se cachean como inmutables.
+    # Assets de marca de la instancia (deploy/branding/<BRANDING_SLUG>). Solo las
+    # URLs versionadas por hash (?v=...) se cachean como inmutables; las pedidas
+    # sin versión (p. ej. el favicon que pide el navegador) usan una caché corta
+    # para que un asset reemplazado llegue a los clientes.
     handle_path /branding/* {
         root * /srv/branding
-        header Cache-Control "public, max-age=31536000, immutable"
+        @versioned query v=*
+        header @versioned Cache-Control "public, max-age=31536000, immutable"
+        @unversioned not query v=*
+        header @unversioned Cache-Control "public, max-age=300"
         file_server
     }
     reverse_proxy client:3000
