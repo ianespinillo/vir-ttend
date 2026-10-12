@@ -19,6 +19,7 @@ import {
 	createContext,
 	useContext,
 	useMemo,
+	useRef,
 	useState,
 } from 'react';
 import { useIsomorphicLayoutEffect } from '../../hooks/use-isomorphic-layout-effect';
@@ -103,9 +104,19 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 	);
 	const value = useMemo(() => ({ branding, tokens }), [branding, tokens]);
 
+	// Only replaces the static default title (or the one this provider set last),
+	// so route-level titles set by Next metadata are not overwritten.
+	const appliedTitle = useRef<string | null>(null);
+
 	useIsomorphicLayoutEffect(() => {
 		syncBrandStyle(branding, tokens);
-		document.title = branding.shortName;
+		if (
+			document.title === VIRTTEND_BRANDING.shortName ||
+			document.title === appliedTitle.current
+		) {
+			document.title = branding.shortName;
+			appliedTitle.current = branding.shortName;
+		}
 		if (branding.assets.favicon) {
 			const href = resolveAssetUrl(
 				branding.assets.favicon,
