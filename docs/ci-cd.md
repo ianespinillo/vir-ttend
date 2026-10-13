@@ -162,3 +162,40 @@ Rollback preferido: disparar `cd` por `workflow_dispatch` con el `sha` del últi
 - [ ] VM can be reached from GitHub Actions (public IP / security group allows SSH from the runner; agent-based hopping is not supported by the current pipeline)
 - [ ] VM has the repo checked out at `/home/ubuntu/vir-ttend` on `main` (el pipeline hace `checkout --detach` del sha a desplegar) and `compose.ci.yml` present
 - [ ] First deploy: `docker compose -f compose.prod.yml -f compose.ci.yml ps` shows `api`/`client` healthy and Caddy serving HTTPS
+## Mobile release (`mobile-release.yaml`)
+
+A third workflow, `.github/workflows/mobile-release.yaml`, ships the Android
+APKs. It is independent of CD: the APK is not deployed to the VM.
+
+| Topic | Decision |
+|-------|----------|
+| Triggers | `mobile-v*` tag push (always), push to `main` touching `apps/mobile`, `packages/branding`, `packages/common`, `pnpm-lock.yaml` or the workflow, and `workflow_dispatch` |
+| Build | `eas build --profile preview-<variant> --platform android --non-interactive --wait` on EAS cloud; one matrix job per variant (today only `eest3`) |
+| Versioning | `appVersionSource: remote` + `autoIncrement` in the `preview-*` profiles: every build gets a higher `versionCode`, so the APK installs over the previous one |
+| Publication | One GitHub Release per run with assets `virttend-<variant>.apk`. Tag = the pushed `mobile-v*` tag, or `mobile-build-<run number>` |
+| Site link | `https://github.com/ianespinillo/vir-ttend/releases/latest/download/virttend-<variant>.apk` (`apps/site/src/config/mobile-apps.ts`). It always serves the newest release, so the site is not redeployed per build |
+| Prereleases | Manual runs from a branch other than `main` are published as prereleases, so they never become "latest" |
+
+`releases/latest` resolves to the newest non-prerelease release of the whole
+repo. If other components start publishing GitHub Releases, publish them as
+prereleases or move the site links to explicit tags.
+
+### One-time setup (before the first run)
+
+1. `cd apps/mobile && npx eas-cli@latest login && npx eas-cli@latest init`.
+   With a dynamic config, `init` prints the `extra.eas.projectId` to add to
+   `app.config.ts`; commit it.
+2. Run the first build interactively so EAS creates and stores the Android
+   keystore (non-interactive builds cannot generate it):
+   `npx eas-cli@latest build --profile preview-eest3 --platform android`.
+   Losing that keystore means the app can no longer be updated in place.
+3. Create an Expo access token (expo.dev → Account settings → Access tokens)
+   and add it as the repository secret `EXPO_TOKEN`.
+4. Trigger the workflow (`Run workflow` on `main`, or push a `mobile-v1.0.0`
+   tag) and check that the release has `virttend-eest3.apk`.
+
+### Adding a variant
+
+Add it to `strategy.matrix.variant` in the workflow (it needs a
+`preview-<variant>` profile and a release API URL) and set its `apkUrl` with
+`latestApkUrl('<variant>')` in the site config.

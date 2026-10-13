@@ -51,7 +51,16 @@ const NOT_PUBLISHED: AppDownloads = {
 	ios: { appStoreUrl: null, testFlightUrl: null },
 };
 
+/**
+ * Stable link to the APK of the latest mobile release. The asset is published
+ * by `.github/workflows/mobile-release.yaml` as `virttend-<variant>.apk`.
+ */
+const latestApkUrl = (variant: string): string =>
+	`https://github.com/ianespinillo/vir-ttend/releases/latest/download/virttend-${variant}.apk`;
+
 export const mobileApps: MobileApps = {
+	// No APK yet: the general variant has no release API URL until the shared
+	// server is deployed, so the release workflow does not build it.
 	general: NOT_PUBLISHED,
 	schools: [
 		{
@@ -60,7 +69,10 @@ export const mobileApps: MobileApps = {
 			name: 'Escuela de Educación Secundaria Técnica N.º 3 «Eva Perón»',
 			shortName: 'EEST N.º 3 Eva Perón',
 			crest: '/schools/eest3/crest.png',
-			downloads: NOT_PUBLISHED,
+			downloads: {
+				...NOT_PUBLISHED,
+				android: { playStoreUrl: null, apkUrl: latestApkUrl('eest3') },
+			},
 		},
 	],
 };

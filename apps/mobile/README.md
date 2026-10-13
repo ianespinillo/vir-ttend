@@ -89,10 +89,20 @@ npx eas-cli@latest build --profile production-eest3
 `development` builds a development client (only needed for native modules
 outside Expo Go).
 
+### Releases
+
+`.github/workflows/mobile-release.yaml` builds the `preview-*` APKs on EAS and
+publishes them to a GitHub Release as `virttend-<variant>.apk` on every push to
+`main` that touches the app, on `mobile-v*` tags and on manual runs. The site
+download pages link to the latest release. Setup and details:
+[docs/ci-cd.md](../../docs/ci-cd.md#mobile-release-mobile-releaseyaml).
+
 ### Pending
 
 - EAS project: run `npx eas-cli@latest init` to create the project and add
-  `extra.eas.projectId` to `app.config.ts` (none exists yet).
+  `extra.eas.projectId` to `app.config.ts` (none exists yet). Then run the
+  first build interactively (Android keystore) and add the `EXPO_TOKEN`
+  repository secret so the release workflow can run.
 - General variant API URL: set `apiUrl` for `general` in `app.config.ts` and
   `EXPO_PUBLIC_API_URL` in the `*-general` profiles once the shared server is
   deployed.
