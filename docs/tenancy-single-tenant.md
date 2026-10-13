@@ -92,6 +92,7 @@ Al arrancar en modo `single` (antes de aceptar tráfico, después de las migraci
 - `.env.production.example` por instancia con todas las variables comentadas y marcando cuáles deben ser únicas.
 - Script de backup (`pg_dump` diario con rotación y copia externa) y script de actualización con backup previo y rollback a la imagen anterior.
 - Documentar el alta de una escuela nueva en pasos numerados.
+- La marca de la escuela (nombre, escudo y colores) es un dato de la instancia: ver [Marca de la instancia](deployment-configuration.md#paso-6-marca-de-la-instancia-opcional).
 
 ## 8. Tests
 

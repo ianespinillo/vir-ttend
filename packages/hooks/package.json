@@ -17,6 +17,7 @@
 		"ts:check": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@repo/branding": "workspace:*",
 		"@repo/common": "workspace:*",
 		"@tanstack/react-query": "^5.59.0",
 		"@tanstack/react-query-devtools": "^5.74.3",

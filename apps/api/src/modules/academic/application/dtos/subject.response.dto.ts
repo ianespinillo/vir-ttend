@@ -40,8 +40,16 @@ export class SubjectResponseDto implements ISubjectResponse {
 	})
 	teacherId: string;
 
+	@ApiProperty({
+		type: String,
+		description: 'ID del curso al que pertenece la materia.',
+		example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+	})
+	courseId: string;
+
 	constructor(subject: Subject) {
 		this.id = subject.id.getRaw();
+		this.courseId = subject.courseId;
 		this.name = subject.name;
 		this.area = subject.area;
 		this.weeklyHours = subject.weeklyHours;

@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	transpilePackages: ['@repo/ui', '@repo/common', '@repo/hooks'],
+	transpilePackages: [
+		'@repo/ui',
+		'@repo/common',
+		'@repo/hooks',
+		'@repo/branding',
+	],
 	turbopack: {
 		root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'),
 	},

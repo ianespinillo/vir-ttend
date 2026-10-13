@@ -7,6 +7,7 @@ import {
 	IAttendanceRecordRepository,
 	RawCourseMetrics,
 } from '../../../domain/repositories/attendance-record.repository.interface';
+import { AfterCommitQueue } from '../after-commit.queue';
 import { AttendanceRecordOrmEntity } from '../entities/attendance-record.orm-entity';
 import { AttendanceRecordMapper } from '../mappers/attendance-record.mapper';
 
@@ -17,8 +18,30 @@ export class AttendanceRecordRepository
 	constructor(
 		em: EntityManager,
 		@Inject(REDIS_CLIENT) private readonly redis: Redis,
+		private readonly afterCommit: AfterCommitQueue,
 	) {
 		super(em, AttendanceRecordOrmEntity);
+	}
+
+	/**
+	 * Drops the cached course summaries affected by `records`. Inside a unit of
+	 * work it waits for the commit, so a concurrent reader can never re-cache the
+	 * pre-commit state; a rolled-back transaction leaves the cache untouched.
+	 */
+	private invalidateSummaryCache(records: AttendanceRecord[]): Promise<void> {
+		return this.afterCommit.defer(async () => {
+			const cacheKeys = new Set(
+				records.map(
+					(r) =>
+						`attendance:summary:${r.courseId}:${new Date(r.date)
+							.toISOString()
+							.slice(0, 10)}`,
+				),
+			);
+			for (const key of cacheKeys) {
+				await this.redis.del(key);
+			}
+		});
 	}
 	async findBySubjectAndDateRange(
 		subjectId: string,
@@ -81,21 +104,7 @@ export class AttendanceRecordRepository
 		}
 		await this.em.flush();
 
-		try {
-			const cacheKeys = new Set(
-				records.map(
-					(r) =>
-						`attendance:summary:${r.courseId}:${new Date(r.date)
-							.toISOString()
-							.slice(0, 10)}`,
-				),
-			);
-			for (const key of cacheKeys) {
-				await this.redis.del(key);
-			}
-		} catch {
-			// ignore cache error
-		}
+		await this.invalidateSummaryCache(records);
 	}
 
 	async findByCourseAndDate(
@@ -112,6 +121,18 @@ export class AttendanceRecordRepository
 			date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
 		});
 		if (!orms) return [];
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async findDailyByCourseAndDate(
+		courseId: string,
+		date: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			courseId,
+			subjectId: null,
+			date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+		});
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
 	}
 
@@ -195,16 +216,7 @@ export class AttendanceRecordRepository
 		}
 		await this.em.flush();
 
-		try {
-			const cacheKey = `attendance:summary:${record.courseId}:${new Date(
-				record.date,
-			)
-				.toISOString()
-				.slice(0, 10)}`;
-			await this.redis.del(cacheKey);
-		} catch {
-			// ignore cache error
-		}
+		await this.invalidateSummaryCache([record]);
 	}
 	async getCourseSummaryForDate(
 		courseId: string,

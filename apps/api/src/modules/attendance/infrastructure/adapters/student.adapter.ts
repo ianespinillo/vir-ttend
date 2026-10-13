@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { STUDENTSTATUS } from '@repo/common';
 import { IStudentRepository } from '../../../academic/domain/repositories/student.repository.interface';
 import { Student } from '../../domain/entities/student.entity';
 import { IStudentPort } from '../../domain/ports/student.port.interface';
@@ -12,6 +13,12 @@ export class StudentAdapter implements IStudentPort {
 	async getByCourseId(courseId: string): Promise<Student[]> {
 		const students = await this.studentRepository.findByCourse(courseId);
 		return students.map((s) => Student.reconstitute(s.id, s.fullName));
+	}
+	async getActiveByCourseId(courseId: string): Promise<Student[]> {
+		const students = await this.studentRepository.findByCourse(courseId);
+		return students
+			.filter((s) => s.status === STUDENTSTATUS.ACTIVE)
+			.map((s) => Student.reconstitute(s.id, s.fullName));
 	}
 	async findById(id: string): Promise<Student | null> {
 		const student = await this.studentRepository.findById(id);

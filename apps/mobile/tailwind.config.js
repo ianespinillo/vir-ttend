@@ -1,3 +1,5 @@
+const { nativewindPrimaryColors } = require('@repo/branding/native');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
 	content: [
@@ -9,15 +11,8 @@ module.exports = {
 	theme: {
 		extend: {
 			colors: {
-				primary: {
-					DEFAULT: '#4F46E5',
-					foreground: '#FFFFFF',
-					50: '#EEF2FF',
-					100: '#E0E7FF',
-					500: '#6366F1',
-					600: '#4F46E5',
-					700: '#4338CA',
-				},
+				// Brand colors read CSS variables set by `BrandProvider` (see global.css).
+				...nativewindPrimaryColors,
 				background: '#F8FAFC',
 				card: '#FFFFFF',
 				foreground: '#0F172A',

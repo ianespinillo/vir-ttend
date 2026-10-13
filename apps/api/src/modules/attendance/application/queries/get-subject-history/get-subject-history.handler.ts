@@ -14,6 +14,7 @@ import {
 	StudentSubjectRecordDto,
 	SubjectHistoryResponseDto,
 } from '../../dtos/subject-history.response.dto';
+import { assertCanReadSubjectAttendance } from '../../services/subject-access.policy';
 import { GetSubjectHistoryQuery } from './get-subject-history.query';
 
 @Injectable()
@@ -34,6 +35,11 @@ export class GetSubjectHistoryQueryHandler {
 			throw new NotFoundException('Subject not found', {
 				description: `Subject with id: ${query.subjectId} not founded in database`,
 			});
+		assertCanReadSubjectAttendance(subject, {
+			userId: query.userId,
+			role: query.userRole,
+			tenantId: query.tenantId,
+		});
 		const records = await this.attendanceRepo.findBySubjectAndDateRange(
 			query.subjectId,
 			query.from,

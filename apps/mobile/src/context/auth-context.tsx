@@ -1,13 +1,29 @@
 import * as SecureStore from 'expo-secure-store';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+	createContext,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from 'react';
+import { STATIC_APP_INFO, clearLegacyConfigKeys } from '../config/app-config';
 import {
 	type MobileAppConfig,
-	type TenancyMode,
-	getAppConfig,
-	saveCustomAppName,
-	saveTenancyMode,
-} from '../config/app-config';
-import { api } from '../services/api';
+	buildMobileConfig,
+} from '../features/config/mobile-config';
+import { decideTenantSelection } from '../features/config/tenant-selection';
+import { useServerConfig } from '../features/config/use-server-config';
+import { clearAllOfflineCaches } from '../features/offline/clear-offline-cache';
+import { api, revokeSessionOnServer } from '../services/api';
+import {
+	REFRESH_TOKEN_KEY,
+	TENANT_KEY,
+	TOKEN_KEY,
+	USER_KEY,
+	clearStoredSession,
+	onSessionExpired,
+	saveTokens,
+} from '../services/session-storage';
 
 export const ALLOWED_MOBILE_ROLES = ['preceptor', 'teacher'];
 
@@ -41,15 +57,9 @@ interface AuthContextType {
 	) => Promise<{ requiresTenantSelection: boolean }>;
 	selectTenant: (tenantId: string) => Promise<void>;
 	logout: () => Promise<void>;
-	updateAppName: (name: string) => Promise<void>;
-	updateTenancyMode: (mode: TenancyMode) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const TOKEN_KEY = 'virttend_access_token';
-const TENANT_KEY = 'virttend_tenant_id';
-const USER_KEY = 'virttend_user';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
@@ -60,19 +70,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 	const [availableTenants, setAvailableTenants] = useState<TenantOption[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [config, setConfig] = useState<MobileAppConfig>({
-		appName: 'Vir-ttend',
-		tenancyMode: 'multi',
-		defaultTenantId: null,
-		defaultTenantName: null,
-		apiUrl: 'http://localhost:3001',
-	});
+	const serverConfig = useServerConfig();
+	const config = useMemo<MobileAppConfig>(
+		() =>
+			buildMobileConfig(STATIC_APP_INFO, serverConfig.config, serverConfig.status),
+		[serverConfig.config, serverConfig.status],
+	);
 
 	useEffect(() => {
 		const loadInitialState = async () => {
 			try {
-				const appCfg = await getAppConfig();
-				setConfig(appCfg);
+				await clearLegacyConfigKeys();
 
 				const savedToken = await SecureStore.getItemAsync(TOKEN_KEY);
 				const savedTenant = await SecureStore.getItemAsync(TENANT_KEY);
@@ -87,9 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 						setUser(parsedUser);
 					} else {
 						// Invalid role in storage
-						await SecureStore.deleteItemAsync(TOKEN_KEY);
-						await SecureStore.deleteItemAsync(TENANT_KEY);
-						await SecureStore.deleteItemAsync(USER_KEY);
+						await clearStoredSession();
 					}
 				}
 			} catch (error) {
@@ -100,6 +106,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		};
 
 		loadInitialState();
+	}, []);
+
+	// The API client clears storage and notifies us when the refresh token is
+	// rejected; here we only need to reset the in-memory state.
+	useEffect(() => {
+		return onSessionExpired(() => {
+			resetSessionState();
+		});
 	}, []);
 
 	const login = async (email: string, password: string) => {
@@ -129,21 +143,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				);
 			}
 
-			// Single-tenant mode check:
-			if (config.tenancyMode === 'single') {
-				// If a default tenant is configured in environment, find it or default to the first valid tenant
-				const chosenTenant = config.defaultTenantId
-					? validTenants.find((t) => t.tenantId === config.defaultTenantId) ||
-						validTenants[0]
-					: validTenants[0];
+			// The server owns the tenancy mode. Read it fresh when this run has not
+			// yet (login needs the server anyway); fall back to the cached copy.
+			const serverTenancy =
+				serverConfig.status === 'fresh'
+					? serverConfig.config
+					: ((await serverConfig.refresh()) ?? serverConfig.config);
 
-				await selectTenantDirect(userId, chosenTenant.tenantId);
-				return { requiresTenantSelection: false };
+			const selection = decideTenantSelection(
+				serverTenancy,
+				validTenants.map((t) => t.tenantId),
+			);
+
+			if (selection.kind === 'denied') {
+				throw new Error(selection.message);
 			}
 
-			// Multi-tenant mode:
-			if (validTenants.length === 1) {
-				await selectTenantDirect(userId, validTenants[0].tenantId);
+			if (selection.kind === 'direct') {
+				await selectTenantDirect(userId, selection.tenantId);
 				return { requiresTenantSelection: false };
 			}
 
@@ -174,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 
 		if (accessToken) {
-			await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+			await saveTokens(accessToken, authData.refreshToken);
 			setToken(accessToken);
 		}
 
@@ -201,32 +218,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	};
 
+	const resetSessionState = () => {
+		setToken(null);
+		setTenantId(null);
+		setUser(null);
+		setPendingUserId(null);
+		setAvailableTenants([]);
+	};
+
 	const logout = async () => {
+		// Capture the credentials first: local sign-out must be immediate and the
+		// server-side revocation (fire-and-forget) needs them after storage is cleared.
+		let credentials: { accessToken: string | null; refreshToken: string | null } =
+			{ accessToken: null, refreshToken: null };
 		try {
-			await SecureStore.deleteItemAsync(TOKEN_KEY);
-			await SecureStore.deleteItemAsync(TENANT_KEY);
-			await SecureStore.deleteItemAsync(USER_KEY);
+			credentials = {
+				accessToken: await SecureStore.getItemAsync(TOKEN_KEY),
+				refreshToken: await SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+			};
+		} catch (error) {
+			console.warn('Error reading tokens from SecureStore', error);
+		}
+
+		try {
+			await clearStoredSession();
 		} catch (error) {
 			console.warn('Error clearing SecureStore', error);
-		} finally {
-			setToken(null);
-			setTenantId(null);
-			setUser(null);
-			setPendingUserId(null);
-			setAvailableTenants([]);
 		}
-	};
+		// The previous user's offline data must be gone before the next sign-in.
+		await clearAllOfflineCaches();
+		resetSessionState();
 
-	const updateAppName = async (name: string) => {
-		await saveCustomAppName(name);
-		const refreshed = await getAppConfig();
-		setConfig(refreshed);
-	};
-
-	const updateTenancyMode = async (mode: TenancyMode) => {
-		await saveTenancyMode(mode);
-		const refreshed = await getAppConfig();
-		setConfig(refreshed);
+		// A network failure must not delay or prevent the local sign-out.
+		void revokeSessionOnServer(credentials);
 	};
 
 	return (
@@ -242,8 +266,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				login,
 				selectTenant,
 				logout,
-				updateAppName,
-				updateTenancyMode,
 			}}
 		>
 			{children}

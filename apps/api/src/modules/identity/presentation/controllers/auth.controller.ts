@@ -28,10 +28,47 @@ import { SelectTenantHandler } from '../../application/commands/select-tenant/se
 import { AuthResponseDto } from '../../application/dto/auth.response.dto';
 import { LoginRequestDto } from '../../application/dto/login.request.dto';
 import { LoginResponseDto } from '../../application/dto/login.response.dto';
+import { RefreshTokenRequestDto } from '../../application/dto/refresh-token.request.dto';
 import { SelectTenantRequestDto } from '../../application/dto/select-tenant.request.dto';
 import { TokenService } from '../../domain/services/token.service';
 
 // auth.controller.ts
+
+/**
+ * Define si las cookies de sesión llevan el flag `Secure`.
+ * Sobre HTTP (desarrollo local: Docker + LAN, Expo Go, adb reverse) `Secure`
+ * hace que Android/navegadores rechacen la cookie, por lo que el flag se
+ * controla explícitamente con COOKIES_SECURE (true|false). Sin override se
+ * conserva el comportamiento anterior (production => Secure).
+ */
+function cookiesAreSecure(): boolean {
+	if (process.env.COOKIES_SECURE !== undefined) {
+		return process.env.COOKIES_SECURE === 'true';
+	}
+	return process.env.NODE_ENV === 'production';
+}
+
+interface ResolvedRefreshToken {
+	token: string;
+	source: 'cookie' | 'body';
+}
+
+/**
+ * Resuelve el refresh token de la request e indica su origen. La cookie
+ * httpOnly (clientes web) tiene prioridad; si no existe se acepta el token
+ * enviado en el body (clientes móviles/nativos, que no manejan cookies
+ * httpOnly).
+ */
+function resolveRefreshToken(
+	req: Request,
+	dto?: RefreshTokenRequestDto,
+): ResolvedRefreshToken {
+	const cookieToken = req.cookies?.refresh_token;
+	if (cookieToken) return { token: cookieToken, source: 'cookie' };
+	if (dto?.refreshToken) return { token: dto.refreshToken, source: 'body' };
+	throw new UnauthorizedException();
+}
+
 @Controller('auth')
 @ApiTags('Auth')
 export class AuthController {
@@ -96,10 +133,10 @@ export class AuthController {
 		}
 
 		// cookie temporal con userId — httpOnly, dura solo 10 minutos
-		const isProd = process.env.NODE_ENV === 'production';
+		const secureCookies = cookiesAreSecure();
 		res.cookie('pending_user_id', result.userId, {
 			httpOnly: true,
-			secure: isProd,
+			secure: secureCookies,
 			sameSite: 'strict',
 			maxAge: 10 * 60 * 1000,
 		});
@@ -215,10 +252,10 @@ export class AuthController {
 		accessToken: string,
 		refreshToken: string,
 	) {
-		const isProd = process.env.NODE_ENV === 'production';
+		const secureCookies = cookiesAreSecure();
 		res.cookie('access_token', accessToken, {
 			httpOnly: true,
-			secure: isProd,
+			secure: secureCookies,
 			sameSite: 'strict',
 			maxAge: 15 * 60 * 1000,
 			path: '/',
@@ -226,7 +263,7 @@ export class AuthController {
 
 		res.cookie('refresh_token', refreshToken, {
 			httpOnly: true,
-			secure: isProd,
+			secure: secureCookies,
 			sameSite: 'strict',
 			maxAge: 7 * 24 * 60 * 60 * 1000,
 			// Opción A: path '/' para que el navegador envíe la cookie a /auth/logout
@@ -243,7 +280,7 @@ export class AuthController {
 	@ApiOperation({
 		summary: 'Cerrar sesión',
 		description:
-			'Paso final del flujo. Requiere estar autenticado con la cookie access_token y tener la cookie httpOnly refresh_token. Revoca el refresh token en el backend y limpia las cookies access_token y refresh_token. La respuesta no devuelve datos (data es null). URL: POST /auth/logout. Roles permitidos: cualquier usuario autenticado.',
+			'Paso final del flujo. Requiere estar autenticado (cookie access_token o header Authorization: Bearer) y enviar el refresh token, ya sea en la cookie httpOnly refresh_token (web) o en el body como { "refreshToken": "..." } (clientes móviles/nativos; la cookie tiene prioridad). Revoca el refresh token en el backend y limpia las cookies access_token y refresh_token. La respuesta no devuelve datos (data es null). URL: POST /auth/logout. Roles permitidos: cualquier usuario autenticado.',
 	})
 	@ApiResponse({
 		status: 200,
@@ -252,13 +289,17 @@ export class AuthController {
 	})
 	@ApiResponse({
 		status: 401,
-		description: 'No autenticado (cookie access_token o refresh_token ausente)',
+		description:
+			'No autenticado (access token ausente, o refresh token ausente tanto en la cookie como en el body)',
 	})
-	async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-		const refreshToken = req.cookies?.refresh_token;
-		if (!refreshToken) throw new UnauthorizedException();
+	async logout(
+		@Body() dto: RefreshTokenRequestDto,
+		@Req() req: Request,
+		@Res({ passthrough: true }) res: Response,
+	) {
+		const { token } = resolveRefreshToken(req, dto);
 
-		await this.logoutHandler.execute(new LogoutCommand(refreshToken));
+		await this.logoutHandler.execute(new LogoutCommand(token));
 
 		res.clearCookie('access_token');
 		res.clearCookie('refresh_token');
@@ -268,31 +309,46 @@ export class AuthController {
 	@ApiOperation({
 		summary: 'Renovar access token',
 		description:
-			'Renueva el access token usando la cookie httpOnly refresh_token. Es público (sin guard) y setea un nuevo access_token en cookie (15 minutos, path /). La respuesta no devuelve datos (data es null). Roles permitidos: ninguno (público, requiere cookie refresh_token).',
+			'Renueva el access token. El refresh token se toma de la cookie httpOnly refresh_token (web) o, si no hay cookie, del body como { "refreshToken": "..." } (clientes móviles/nativos). Es público (sin guard), setea un nuevo access_token en cookie (15 minutos, path /) y devuelve { accessToken } en el body; { accessToken, refreshToken } solo cuando el refresh token se envió en el body (clientes móviles), nunca cuando vino de la cookie httpOnly. El refresh token no se rota: se devuelve el mismo que se envió. Roles permitidos: ninguno (público, requiere refresh token).',
 	})
 	@ApiResponse({
 		status: 200,
 		description:
-			'Nuevo access_token seteado en cookie. La respuesta no devuelve datos (data es null).',
+			'Access token renovado. Cookie access_token seteada. El body devuelve { accessToken }, más refreshToken solo si el cliente lo envió en el body (móvil).',
 	})
 	@ApiResponse({
 		status: 401,
-		description: 'Cookie refresh_token ausente, inválida o expirada',
+		description:
+			'Refresh token ausente (cookie y body), inválido, revocado o expirado',
 	})
-	async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-		const refreshToken = req.cookies?.refresh_token;
-		if (!refreshToken) throw new UnauthorizedException();
+	async refresh(
+		@Body() dto: RefreshTokenRequestDto,
+		@Req() req: Request,
+		@Res({ passthrough: true }) res: Response,
+	) {
+		const { token, source } = resolveRefreshToken(req, dto);
 
 		const result = await this.refreshTokenHandler.execute(
-			new RefreshTokenCommand(refreshToken),
+			new RefreshTokenCommand(token),
 		);
 
 		res.cookie('access_token', result.accessToken, {
 			httpOnly: true,
-			secure: true,
+			secure: cookiesAreSecure(),
 			sameSite: 'strict',
 			maxAge: 15 * 60 * 1000,
 			path: '/',
 		});
+
+		// El refresh token solo se devuelve en el body a quien lo envió en el body
+		// (clientes móviles). Los clientes web lo tienen en una cookie httpOnly y
+		// no debe quedar legible desde JavaScript (XSS).
+		if (source === 'body') {
+			return {
+				accessToken: result.accessToken,
+				refreshToken: result.refreshToken,
+			};
+		}
+		return { accessToken: result.accessToken };
 	}
 }

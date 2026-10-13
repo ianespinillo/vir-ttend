@@ -1,6 +1,7 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Module } from '@nestjs/common';
+import { AfterCommitQueue } from './after-commit.queue';
 import { AttendanceAlertOrmEntity } from './entities/attendance-alert.orm-entity';
 import { AttendanceRecordOrmEntity } from './entities/attendance-record.orm-entity';
 import { JustificationOrmEntity } from './entities/justification.orm-entity';
@@ -17,6 +18,7 @@ import { JustificationRepository } from './repository/justification.repository';
 		]),
 	],
 	providers: [
+		AfterCommitQueue,
 		AttendanceRecordRepository,
 		{
 			provide: AttendanceAlertRepository,
@@ -43,6 +45,7 @@ import { JustificationRepository } from './repository/justification.repository';
 		},
 	],
 	exports: [
+		AfterCommitQueue,
 		JustificationRepository,
 		AttendanceRecordRepository,
 		AttendanceAlertRepository,

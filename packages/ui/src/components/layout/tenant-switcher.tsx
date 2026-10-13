@@ -16,6 +16,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from '../../ui/sidebar';
+import { BrandMark, useBrand } from '../brand';
 
 export interface TenantSwitcherProps {
 	tenants?: Tenant[];
@@ -32,7 +33,7 @@ export interface TenantSwitcherProps {
 export function TenantSwitcher({
 	tenants = [],
 	currentTenantId,
-	brandName = 'Vir-ttend',
+	brandName,
 	isSuperAdmin = false,
 	isImpersonating = false,
 	tenancyMode = 'multi',
@@ -41,6 +42,8 @@ export function TenantSwitcher({
 	onManageTenants,
 }: TenantSwitcherProps) {
 	const { isMobile } = useSidebar();
+	const { branding } = useBrand();
+	const resolvedBrandName = brandName ?? branding.shortName;
 	const canSwitch = Boolean(
 		tenancyMode !== 'single' &&
 			(isSuperAdmin || isImpersonating) &&
@@ -51,12 +54,10 @@ export function TenantSwitcher({
 	if (!canSwitch) {
 		return (
 			<div className="flex items-center gap-3 font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
-				<div className="flex size-8 shrink-0 aspect-square items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-					<School className="h-4 w-4" />
-				</div>
+				<BrandMark size="sm" />
 				<div className="flex flex-col group-data-[collapsible=icon]:hidden min-w-0">
 					<span className="truncate text-base font-bold leading-tight tracking-tight">
-						{brandName}
+						{resolvedBrandName}
 					</span>
 					<span className="truncate text-xs text-muted-foreground font-normal">
 						Gestión Escolar
@@ -75,11 +76,11 @@ export function TenantSwitcher({
 							size="lg"
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
-							<div className="flex size-8 shrink-0 aspect-square items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-								<School className="h-4 w-4" />
-							</div>
+							<BrandMark size="sm" />
 							<div className="flex flex-col min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-								<span className="truncate text-sm font-semibold">{brandName}</span>
+								<span className="truncate text-sm font-semibold">
+									{resolvedBrandName}
+								</span>
 								<span className="truncate text-xs text-muted-foreground">
 									{isImpersonating ? 'Modo Institución' : 'Vista Global'}
 								</span>

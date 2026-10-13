@@ -15,6 +15,12 @@ export interface IAttendanceRecordRepository {
 
 	findByCourseAndDate(courseId: string, date: Date): Promise<AttendanceRecord[]>;
 
+	/** Daily records only (no subject) of a course for a calendar day. */
+	findDailyByCourseAndDate(
+		courseId: string,
+		date: Date,
+	): Promise<AttendanceRecord[]>;
+
 	findByStudentAndCourseAndDate(
 		courseId: string,
 		studentId: string,

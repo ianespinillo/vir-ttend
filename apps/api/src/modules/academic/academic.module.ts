@@ -22,10 +22,12 @@ import { GetActiveAcademicYearHandler } from './application/queries/get-active-a
 import { GetCourseHandler } from './application/queries/get-course/get-course.handler';
 import { GetCoursesByPreceptorHandler } from './application/queries/get-courses-by-preceptor/get-courses-by-preceptor.handler';
 import { GetCoursesHandler } from './application/queries/get-courses/get-courses.handler';
+import { GetMySubjectsHandler } from './application/queries/get-my-subjects/get-my-subjects.handler';
 import { GetScheduleHandler } from './application/queries/get-schedule/get-schedule.handler';
 import { GetStudentHandler } from './application/queries/get-student/get-student.handler';
 import { GetStudentsByCourseHandler } from './application/queries/get-students-by-course/get-students-by-course.handler';
 import { GetStudentsByGradeHandler } from './application/queries/get-students-by-grade/get-students-by-grade.handler';
+import { GetSubjectStudentsHandler } from './application/queries/get-subject-students/get-subject-students.handler';
 import { GetSubjectsByCourseHandler } from './application/queries/get-subjects-by-course/get-subjects-by-course.handler';
 import { GetTeacherSubjectsQueryHandler } from './application/queries/get-teacher-subjects/get-teacher-subjects.handler';
 import { SearchStudentsHandler } from './application/queries/search-students/search-students.handler';
@@ -72,6 +74,8 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 		GetCourseHandler,
 		GetCoursesHandler,
 		GetCoursesByPreceptorHandler,
+		GetMySubjectsHandler,
+		GetSubjectStudentsHandler,
 		GetSubjectsByCourseHandler,
 		GetScheduleHandler,
 		GetStudentHandler,

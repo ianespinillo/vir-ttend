@@ -7,8 +7,9 @@ import {
 	ApiResponse,
 	ApiTags,
 } from '@nestjs/swagger';
-import { ROLES } from '@repo/common';
+import { JwtPayload, ROLES } from '@repo/common';
 // attendance-query.controller.ts
+import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { RolesDecorator } from '../../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { RolesGuard } from '../../../../common/guard/roles.guard';
@@ -212,7 +213,7 @@ export class AttendanceQueryController {
 	@ApiOperation({
 		summary: 'Obtener la asistencia de una materia en una fecha',
 		description:
-			'Devuelve los registros de asistencia de una materia para una fecha, junto con las métricas calculadas de la clase. Roles permitidos: teacher, preceptor, admin. URL de ejemplo: GET /attendance/subject?subjectId=7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f&date=2026-03-10. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }.',
+			'Devuelve la asistencia de una materia para una fecha como planilla completa: todos los estudiantes activos del curso, con su estado o sin estado (vacío) si aún no se registró, junto con las métricas calculadas de la clase. Un docente solo puede consultar sus propias materias. Roles permitidos: teacher (solo materias propias), preceptor, admin. URL de ejemplo: GET /attendance/subject?subjectId=7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f&date=2026-03-10. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }.',
 	})
 	@ApiQuery({
 		name: 'subjectId',
@@ -244,9 +245,16 @@ export class AttendanceQueryController {
 	async getSubjectAttendance(
 		@Query('subjectId') subjectId: string,
 		@Query('date') date: string,
+		@CurrentUser() user: JwtPayload,
 	) {
 		return this.getSubjectAttendanceHandler.execute(
-			new GetSubjectAttendanceQuery(subjectId, new Date(date)),
+			new GetSubjectAttendanceQuery(
+				subjectId,
+				new Date(date),
+				user.sub,
+				user.role,
+				user.tenantId,
+			),
 		);
 	}
 
@@ -292,9 +300,17 @@ export class AttendanceQueryController {
 		@Param('subjectId') subjectId: string,
 		@Query('from') from: string,
 		@Query('to') to: string,
+		@CurrentUser() user: JwtPayload,
 	) {
 		return this.getSubjectHistoryHandler.execute(
-			new GetSubjectHistoryQuery(subjectId, new Date(from), new Date(to)),
+			new GetSubjectHistoryQuery(
+				subjectId,
+				new Date(from),
+				new Date(to),
+				user.sub,
+				user.role,
+				user.tenantId,
+			),
 		);
 	}
 }

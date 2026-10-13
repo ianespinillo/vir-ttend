@@ -1,8 +1,10 @@
 import { AuthProvider } from '@/lib/auth/provider';
 import { TanstackProvider } from '@repo/hooks';
+import { BrandProvider } from '@repo/ui';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Toaster } from 'sonner';
+import '@repo/ui/tokens.css';
 import './globals.css';
 
 const geistSans = localFont({
@@ -30,10 +32,12 @@ export default function RootLayout({
 		<html lang="es">
 			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
 				<TanstackProvider>
-					<AuthProvider>
-						{children}
-						<Toaster richColors position="top-right" />
-					</AuthProvider>
+					<BrandProvider>
+						<AuthProvider>
+							{children}
+							<Toaster richColors position="top-right" />
+						</AuthProvider>
+					</BrandProvider>
 				</TanstackProvider>
 			</body>
 		</html>

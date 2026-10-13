@@ -1,5 +1,6 @@
 'use client';
 
+import type { PublicBranding } from '@repo/branding';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/axios-client';
 
@@ -9,6 +10,8 @@ export interface PublicConfig {
 	tenantSlug: string | null;
 	tenantId: string | null;
 	allowSuperadmin: boolean;
+	/** Absent on APIs older than the branding rollout. */
+	branding?: PublicBranding;
 }
 
 export function usePublicConfig() {
