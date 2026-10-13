@@ -16,9 +16,13 @@ User request (2026-10-13), eest3 instance live. Decision (option A, accepted "to
 - Out of scope: owner/bootstrap flag, SUPERADMIN behavior, multi-tenant rules.
 
 ## Checklist
-- [ ] T1: API rules + guards + unit tests (create-user, change-role, deactivate if present).
-- [ ] T2: UI role selectors in single mode.
-- [ ] T3: commit on main; push = user's call.
+- [x] T1: API rules + guards + unit tests (create-user, change-role, deactivate-membership, toggle-user-status).
+- [x] T2: UI role selectors in single mode (`canAssignAdmin` from `usePublicConfig().tenancyMode`).
+- [x] T3: commit on main `41b69a2`; native review (medium, slice budget reached) granted → approved, acknowledged (lineage `review-b510d9560975ed8b`, authority burned); pushed to main.
+
+## Follow-ups (advisory review findings, non-blocking)
+- R3-last-admin-toctou: `admin-safeguard.ts` counts then saves; two admins demoting each other concurrently could both pass. Low likelihood; fix would be a transactional/locked count.
+- R3-weak-multi-mode-assertion: `change-membership-role.handler.spec.ts:123-128` multi-mode case asserts weakly.
 
 ## Route
 - T1–T2 delegated to one writer (trigger: 2+ non-trivial files across api and ui).
@@ -33,4 +37,8 @@ User request (2026-10-13), eest3 instance live. Decision (option A, accepted "to
 - UI shows ADMIN in the role selector for admins only in single mode.
 
 ## Progress / evidence
-- (pending)
+- Rules live in `AuthorizationService.canCreateRole` / `canManageRole(actor, target, mode)`; handlers read `getTenancyConfig().TENANCY_MODE`.
+- Guards (single mode only, `ForbiddenException`): self role change, self deactivation, last active ADMIN (`admin-safeguard.ts`, port `countActiveByTenantAndRole`).
+- Writer: `pnpm --filter api test` 81 suites / 463 tests passed; `pnpm ts:check` 9/9; `pnpm lint:check` only the 5 known warnings.
+- Parent spot check: `pnpm --filter api test -- identity` 21 suites / 142 tests passed.
+- Kept as-is (writer decision, multi mode unchanged): guards are single-mode only; pre-existing plain `Error('Unhautorized role managment')` paths untouched; own-row change-role action not hidden (API rejects, toast shows message).
