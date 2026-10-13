@@ -1,0 +1,126 @@
+name: mobile-release
+
+# Builds the Android APK of every mobile variant on EAS and publishes them to a
+# GitHub Release. Asset names are fixed (virttend-<variant>.apk) so the site can
+# link to releases/latest/download/<asset> without being redeployed.
+#
+# One-time setup (see docs/ci-cd.md "Mobile release"): `eas init` committed
+# and the EXPO_TOKEN repository secret.
+
+on:
+  push:
+    branches:
+      - main
+    # Path filters are ignored for tag pushes, so mobile-v* tags always build.
+    paths:
+      - apps/mobile/**
+      - packages/branding/**
+      - packages/common/**
+      - pnpm-lock.yaml
+      - .github/workflows/mobile-release.yaml
+    tags:
+      - mobile-v*
+  workflow_dispatch:
+
+# EAS increments the remote versionCode per build; serialize runs so two
+# releases never race for the same "latest".
+concurrency:
+  group: mobile-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  # A pushed mobile-v* tag names its own release; everything else gets a
+  # build-numbered tag.
+  RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || format('mobile-build-{0}', github.run_number) }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    strategy:
+      matrix:
+        # Variants with a release API URL. `general` joins once the shared
+        # server is deployed (app.config.ts refuses release builds without one).
+        variant:
+          - eest3
+
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.16.0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.8.0
+
+      # eas-cli evaluates app.config.ts, which needs the mobile dependencies.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter mobile...
+
+      - name: Build APK on EAS
+        run: |
+          npx eas-cli@latest build \
+            --profile "preview-${{ matrix.variant }}" \
+            --platform android \
+            --non-interactive \
+            --wait \
+            --json > build.json
+
+      - name: Download APK
+        run: |
+          url="$(jq -r '.[0].artifacts.buildUrl // empty' build.json)"
+          if [ -z "$url" ]; then
+            echo "EAS returned no artifact URL" >&2
+            cat build.json >&2
+            exit 1
+          fi
+          curl -fsSL -o "virttend-${{ matrix.variant }}.apk" "$url"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.variant }}
+          path: apps/mobile/virttend-${{ matrix.variant }}.apk
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: apk-*
+          path: apks
+          merge-multiple: true
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Only main and mobile-v* tags may become "latest", which is what the
+          # site links to. Manual runs from other branches are prereleases.
+          prerelease=""
+          if [ "$GITHUB_REF" != "refs/heads/main" ] && [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            prerelease="--prerelease"
+          fi
+
+          gh release create "$RELEASE_TAG" apks/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Mobile $RELEASE_TAG" \
+            --notes "Android APKs built from $GITHUB_SHA." \
+            $prerelease
