@@ -32,6 +32,7 @@ import { CourseAdapter } from './infrastructure/adapters/course.adapter';
 import { ScheduleAdapter } from './infrastructure/adapters/schedule.adapter';
 import { StudentAdapter } from './infrastructure/adapters/student.adapter';
 import { SubjectAdapter } from './infrastructure/adapters/subject.adapter';
+import { MikroOrmUnitOfWorkAdapter } from './infrastructure/adapters/unit-of-work.adapter';
 import { AttendancePersistenceModule } from './infrastructure/persistence/attendance.persistence.module';
 import { AlertsController } from './presentation/controllers/alerts.controller';
 import { AttendanceCommandController } from './presentation/controllers/attendance.command.controller';
@@ -64,6 +65,10 @@ import { DashboardController } from './presentation/controllers/dashboard.contro
 		{
 			provide: 'ISubjectPort',
 			useClass: SubjectAdapter,
+		},
+		{
+			provide: 'IUnitOfWorkPort',
+			useClass: MikroOrmUnitOfWorkAdapter,
 		},
 		//commands
 		RegisterDailyAttendanceHandler,

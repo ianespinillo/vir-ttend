@@ -1,9 +1,10 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { DAYOFWEEK } from '@repo/common';
+import { AttendanceStatus, DAYOFWEEK } from '@repo/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
 import { ISchedulePort } from '../../../domain/ports/schedule.port.interface';
+import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { RegisterSubjectAttendanceCommand } from './register-subject-attendance.command';
 
@@ -14,6 +15,8 @@ export class RegisterSubjectAttendanceHandler {
 		private readonly attendanceRecordRepo: IAttendanceRecordRepository,
 		@Inject('ISchedulePort')
 		private readonly schedulePort: ISchedulePort,
+		@Inject('IUnitOfWorkPort')
+		private readonly unitOfWork: IUnitOfWorkPort,
 		private readonly em: EventEmitter2,
 	) {}
 	async execute(command: RegisterSubjectAttendanceCommand): Promise<void> {
@@ -23,37 +26,45 @@ export class RegisterSubjectAttendanceHandler {
 		);
 		if (validDays.length === 0)
 			throw new BadRequestException('Invalid class day for this subject');
-		const existingRecords = await this.attendanceRecordRepo.findBySubjectAndDate(
-			command.subjectId,
-			command.date,
-		);
-		const mappedRecords = new Map(existingRecords.map((r) => [r.studentId, r]));
-		const finalRecords: AttendanceRecord[] = [];
-		for (const record of command.records) {
-			const exist = mappedRecords.get(record.studentId);
-			if (exist) {
-				exist.updateStatus(record.status, command.userId);
-				finalRecords.push(exist);
-			}
-			finalRecords.push(
-				AttendanceRecord.create({
-					tenantId: command.tenantId,
-					courseId: command.courseId,
-					studentId: record.studentId,
-					subjectId: command.subjectId,
-					date: command.date,
-					status: record.status,
-					editedBy: command.userId,
-				}),
+		// Idempotent: replaying the same payload saves nothing and emits no event.
+		const changedRecords = await this.unitOfWork.run(async () => {
+			const existingRecords = await this.attendanceRecordRepo.findBySubjectAndDate(
+				command.subjectId,
+				command.date,
 			);
-		}
-		if (finalRecords.length > 0) {
-			await this.attendanceRecordRepo.bulkSave(finalRecords);
-			finalRecords.forEach((recordedRecord) =>
-				this.em.emit(
-					'attendance.registered',
-					new AttendanceRegisteredEvent(new Date(), recordedRecord),
-				),
+			const mappedRecords = new Map(existingRecords.map((r) => [r.studentId, r]));
+			// Last entry wins when a student appears more than once in the payload.
+			const requestedStatus = new Map<string, AttendanceStatus>(
+				command.records.map((record) => [record.studentId, record.status]),
+			);
+			const changed: AttendanceRecord[] = [];
+			for (const [studentId, status] of requestedStatus) {
+				const exist = mappedRecords.get(studentId);
+				if (!exist) {
+					changed.push(
+						AttendanceRecord.create({
+							tenantId: command.tenantId,
+							courseId: command.courseId,
+							studentId,
+							subjectId: command.subjectId,
+							date: command.date,
+							status,
+							editedBy: command.userId,
+						}),
+					);
+					continue;
+				}
+				if (exist.status === status) continue;
+				exist.updateStatus(status, command.userId);
+				changed.push(exist);
+			}
+			if (changed.length > 0) await this.attendanceRecordRepo.bulkSave(changed);
+			return changed;
+		});
+		for (const recordedRecord of changedRecords) {
+			this.em.emit(
+				'attendance.registered',
+				new AttendanceRegisteredEvent(new Date(), recordedRecord),
 			);
 		}
 	}

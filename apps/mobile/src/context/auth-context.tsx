@@ -8,7 +8,7 @@ import {
 	saveCustomAppName,
 	saveTenancyMode,
 } from '../config/app-config';
-import { api } from '../services/api';
+import { api, revokeSessionOnServer } from '../services/api';
 import {
 	REFRESH_TOKEN_KEY,
 	TENANT_KEY,
@@ -222,15 +222,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	};
 
 	const logout = async () => {
+		// Capture the credentials first: local sign-out must be immediate and the
+		// server-side revocation (fire-and-forget) needs them after storage is cleared.
+		let credentials: { accessToken: string | null; refreshToken: string | null } =
+			{ accessToken: null, refreshToken: null };
 		try {
-			// Best effort: revoke the refresh token server side. A network failure
-			// must not prevent the user from signing out locally.
-			const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-			if (refreshToken) {
-				await api.post('/auth/logout', { refreshToken }, { timeout: 5000 });
-			}
+			credentials = {
+				accessToken: await SecureStore.getItemAsync(TOKEN_KEY),
+				refreshToken: await SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+			};
 		} catch (error) {
-			console.warn('Could not revoke the session on the server', error);
+			console.warn('Error reading tokens from SecureStore', error);
 		}
 
 		try {
@@ -240,6 +242,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		} finally {
 			resetSessionState();
 		}
+
+		// A network failure must not delay or prevent the local sign-out.
+		void revokeSessionOnServer(credentials);
 	};
 
 	const updateAppName = async (name: string) => {

@@ -51,7 +51,7 @@ describe('AuthController (refresh / logout)', () => {
 			);
 		});
 
-		it('uses the cookie token, sets the access cookie and returns tokens in the body', async () => {
+		it('uses the cookie token, sets the access cookie and does not expose the refresh token in the body', async () => {
 			const result = await controller.refresh(
 				bodyWith(),
 				reqWith({ refresh_token: 'cookie-token' }),
@@ -66,13 +66,11 @@ describe('AuthController (refresh / logout)', () => {
 				'new-access',
 				expect.objectContaining({ httpOnly: true, path: '/' }),
 			);
-			expect(result).toEqual({
-				accessToken: 'new-access',
-				refreshToken: 'cookie-token',
-			});
+			expect(result).toEqual({ accessToken: 'new-access' });
+			expect(result).not.toHaveProperty('refreshToken');
 		});
 
-		it('falls back to the body token when there is no cookie', async () => {
+		it('falls back to the body token when there is no cookie and returns it in the body', async () => {
 			const result = await controller.refresh(
 				bodyWith('body-token'),
 				reqWith(undefined),
@@ -88,8 +86,8 @@ describe('AuthController (refresh / logout)', () => {
 			});
 		});
 
-		it('prefers the cookie over the body token', async () => {
-			await controller.refresh(
+		it('prefers the cookie over the body token and does not leak the refresh token', async () => {
+			const result = await controller.refresh(
 				bodyWith('body-token'),
 				reqWith({ refresh_token: 'cookie-token' }),
 				res,
@@ -98,6 +96,7 @@ describe('AuthController (refresh / logout)', () => {
 			expect(refreshTokenHandler.execute).toHaveBeenCalledWith(
 				new RefreshTokenCommand('cookie-token'),
 			);
+			expect(result).toEqual({ accessToken: 'new-access' });
 		});
 
 		it('throws Unauthorized when neither cookie nor body carry a token', async () => {

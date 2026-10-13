@@ -1,4 +1,5 @@
 // refresh-token.handler.spec.ts
+import { UnauthorizedException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { RefreshTokenCommand } from '../../../src/modules/identity/application/commands/refresh-token/refresh-token.command';
@@ -86,6 +87,15 @@ describe('RefreshTokenHandler', () => {
 		).rejects.toThrow('Invalid token');
 	});
 
+	it('should throw UnauthorizedException when token does not exist', async () => {
+		tokenService.hashToken.mockReturnValue('hashed-token');
+		refreshTokenRepo.findByHash.mockResolvedValue(null);
+
+		await expect(
+			handler.execute(new RefreshTokenCommand('raw-token')),
+		).rejects.toBeInstanceOf(UnauthorizedException);
+	});
+
 	it('should throw when token is revoked', async () => {
 		const revokedToken = RefreshToken.reconstitute({
 			id: 'token-id',
@@ -102,6 +112,9 @@ describe('RefreshTokenHandler', () => {
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
 		).rejects.toThrow('Invalid token');
+		await expect(
+			handler.execute(new RefreshTokenCommand('raw-token')),
+		).rejects.toBeInstanceOf(UnauthorizedException);
 	});
 
 	it('should throw when token is expired', async () => {
@@ -120,6 +133,21 @@ describe('RefreshTokenHandler', () => {
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
 		).rejects.toThrow('Invalid token');
+		await expect(
+			handler.execute(new RefreshTokenCommand('raw-token')),
+		).rejects.toBeInstanceOf(UnauthorizedException);
+	});
+
+	it('should throw when the user belongs to other tenants but not the token tenant', async () => {
+		tokenService.hashToken.mockReturnValue('hashed-token');
+		refreshTokenRepo.findByHash.mockResolvedValue(mockRefreshToken);
+		userRepo.findById.mockResolvedValue(mockUser);
+		membershipRepo.findByUserAndTenant.mockResolvedValue(null);
+		membershipRepo.findByUserId.mockResolvedValue([mockMembership]);
+
+		const promise = handler.execute(new RefreshTokenCommand('raw-token'));
+		await expect(promise).rejects.toBeInstanceOf(UnauthorizedException);
+		await expect(promise).rejects.toThrow("User doesn't belong to tenant");
 	});
 
 	it('should throw when membership is inactive', async () => {

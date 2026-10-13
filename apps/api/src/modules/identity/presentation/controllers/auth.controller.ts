@@ -48,18 +48,25 @@ function cookiesAreSecure(): boolean {
 	return process.env.NODE_ENV === 'production';
 }
 
+interface ResolvedRefreshToken {
+	token: string;
+	source: 'cookie' | 'body';
+}
+
 /**
- * Resuelve el refresh token de la request. La cookie httpOnly (clientes web)
- * tiene prioridad; si no existe se acepta el token enviado en el body
- * (clientes móviles/nativos, que no manejan cookies httpOnly).
+ * Resuelve el refresh token de la request e indica su origen. La cookie
+ * httpOnly (clientes web) tiene prioridad; si no existe se acepta el token
+ * enviado en el body (clientes móviles/nativos, que no manejan cookies
+ * httpOnly).
  */
 function resolveRefreshToken(
 	req: Request,
 	dto?: RefreshTokenRequestDto,
-): string {
-	const refreshToken = req.cookies?.refresh_token ?? dto?.refreshToken;
-	if (!refreshToken) throw new UnauthorizedException();
-	return refreshToken;
+): ResolvedRefreshToken {
+	const cookieToken = req.cookies?.refresh_token;
+	if (cookieToken) return { token: cookieToken, source: 'cookie' };
+	if (dto?.refreshToken) return { token: dto.refreshToken, source: 'body' };
+	throw new UnauthorizedException();
 }
 
 @Controller('auth')
@@ -290,9 +297,9 @@ export class AuthController {
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		const refreshToken = resolveRefreshToken(req, dto);
+		const { token } = resolveRefreshToken(req, dto);
 
-		await this.logoutHandler.execute(new LogoutCommand(refreshToken));
+		await this.logoutHandler.execute(new LogoutCommand(token));
 
 		res.clearCookie('access_token');
 		res.clearCookie('refresh_token');
@@ -302,12 +309,12 @@ export class AuthController {
 	@ApiOperation({
 		summary: 'Renovar access token',
 		description:
-			'Renueva el access token. El refresh token se toma de la cookie httpOnly refresh_token (web) o, si no hay cookie, del body como { "refreshToken": "..." } (clientes móviles/nativos). Es público (sin guard), setea un nuevo access_token en cookie (15 minutos, path /) y devuelve { accessToken, refreshToken } en el body. El refresh token no se rota: se devuelve el mismo que se envió. Roles permitidos: ninguno (público, requiere refresh token).',
+			'Renueva el access token. El refresh token se toma de la cookie httpOnly refresh_token (web) o, si no hay cookie, del body como { "refreshToken": "..." } (clientes móviles/nativos). Es público (sin guard), setea un nuevo access_token en cookie (15 minutos, path /) y devuelve { accessToken } en el body; { accessToken, refreshToken } solo cuando el refresh token se envió en el body (clientes móviles), nunca cuando vino de la cookie httpOnly. El refresh token no se rota: se devuelve el mismo que se envió. Roles permitidos: ninguno (público, requiere refresh token).',
 	})
 	@ApiResponse({
 		status: 200,
 		description:
-			'Access token renovado. Cookie access_token seteada y { accessToken, refreshToken } devueltos en el body.',
+			'Access token renovado. Cookie access_token seteada. El body devuelve { accessToken }, más refreshToken solo si el cliente lo envió en el body (móvil).',
 	})
 	@ApiResponse({
 		status: 401,
@@ -319,10 +326,10 @@ export class AuthController {
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		const refreshToken = resolveRefreshToken(req, dto);
+		const { token, source } = resolveRefreshToken(req, dto);
 
 		const result = await this.refreshTokenHandler.execute(
-			new RefreshTokenCommand(refreshToken),
+			new RefreshTokenCommand(token),
 		);
 
 		res.cookie('access_token', result.accessToken, {
@@ -333,9 +340,15 @@ export class AuthController {
 			path: '/',
 		});
 
-		return {
-			accessToken: result.accessToken,
-			refreshToken: result.refreshToken,
-		};
+		// El refresh token solo se devuelve en el body a quien lo envió en el body
+		// (clientes móviles). Los clientes web lo tienen en una cookie httpOnly y
+		// no debe quedar legible desde JavaScript (XSS).
+		if (source === 'body') {
+			return {
+				accessToken: result.accessToken,
+				refreshToken: result.refreshToken,
+			};
+		}
+		return { accessToken: result.accessToken };
 	}
 }

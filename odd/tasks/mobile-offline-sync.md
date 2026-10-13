@@ -46,9 +46,19 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 - [x] **T3 — Mobile token refresh.** (commit `ed0076c`; mobile ts:check pass; `session-storage.ts` + single-flight interceptor in `api.ts`; network/5xx on refresh never signs out. Manual device check pending. Known gaps: refresh token now also readable by web JS via body; role-rejected select-tenant session not revoked; login/select-tenant still throw plain `Error` → 500.) Persist `refreshToken` in SecureStore at select-tenant; axios 401 interceptor with single-flight refresh and request retry; sign out on refresh failure; logout revokes and clears.
   - Check: `ts:check`; manual: expired access token renews transparently.
   - T2+T3 review: high_risk → granted → approved and acknowledged, lineage `review-1851e0e2fe5f6465`, reviewed boundary `ed0076c`.
-- [ ] **T3b — Fix review advisories on T2/T3 (regression we introduced).** Reason: the R1 warning says `/auth/refresh` now returns the refresh token in the body even for cookie-authenticated web clients, so XSS can read it. Fixes: (1) return the refresh token in the body only when it was supplied in the body (mobile); cookie clients get the access token only. (2) Mobile logout clears the local session immediately and revokes server-side best-effort without the 401 refresh chain (no ~20 s stall, no session-expired event during logout). (3) Add handler-level tests asserting `UnauthorizedException` from `RefreshTokenHandler` and `LogoutHandler`. Also fix the typo in the client-facing refresh handler message.
+- [x] **T3b — Fix review advisories on T2/T3 (regression we introduced).** (commit `f8d0cb2`; the refresh token goes in the body only for body-token clients, and the web client never read the body; logout clears locally first, then revokes fire-and-forget via bare axios; handler 401 tests added. Follow-up: `select-tenant` still returns the refresh token in the body to web.) Reason: the R1 warning says `/auth/refresh` now returns the refresh token in the body even for cookie-authenticated web clients, so XSS can read it. Fixes: (1) return the refresh token in the body only when it was supplied in the body (mobile); cookie clients get the access token only. (2) Mobile logout clears the local session immediately and revokes server-side best-effort without the 401 refresh chain (no ~20 s stall, no session-expired event during logout). (3) Add handler-level tests asserting `UnauthorizedException` from `RefreshTokenHandler` and `LogoutHandler`. Also fix the typo in the client-facing refresh handler message.
   - Check: api tests, api and mobile ts:check, biome.
-- [ ] **T4 — API idempotent daily attendance.** Wrap the save in a transaction; migration making the attendance unique key treat NULL `subjectId` as equal (Postgres 16 `NULLS NOT DISTINCT`), handling existing duplicates; avoid re-emitting `attendance.registered` for unchanged records.
+- [x] **T4 — API idempotent attendance (daily AND subject).** (commit `6f3a8f0`; user clarified attendance is daily OR per-subject in the same table.)
+  - **Mechanism:** new `IUnitOfWorkPort` + `MikroOrmUnitOfWorkAdapter` (`em.transactional`, one retry on unique violation). Partial unique index `attendanceRecord_daily_unique (course_id, student_id, date) WHERE subject_id IS NULL`; subject rows keep the existing 4-column unique.
+  - **Migration:** `Migration20261010120000_attendance_daily_unique` dedups daily rows only and moves justifications. It was applied to the docker DB with `pnpm mikro-orm migration:up --only ...`.
+  - **Handler behaviour:** the daily lookup filters `subjectId: null`. The no-op replay skips the save and the event, and the event is emitted after commit.
+  - **Subject handlers:** fixed a duplicate-create bug in `RegisterSubjectAttendanceHandler` and `BulkUpdateSubjectStatusHandler`.
+  - **Checks:** api tests 71 suites / 360 pass, ts:check pass, biome pass.
+  - **Follow-ups (not in scope):**
+    - `POST /attendance/bulk` can still overwrite subject records.
+    - `AttendanceRecord.isDaily/isSubject` compare `=== undefined` while the DB gives `null`.
+    - Redis cache invalidation runs before commit.
+    - Unrelated pending migration `Migration20261009120000_alter_courses_division_and_preceptor` on the dev DB. Wrap the save in a transaction; migration making the attendance unique key treat NULL `subjectId` as equal (Postgres 16 `NULLS NOT DISTINCT`), handling existing duplicates; avoid re-emitting `attendance.registered` for unchanged records.
   - Check: jest tests for replay (same payload twice → no duplicates, no extra events); migration runs on the docker DB.
 - [ ] **T5 — Offline preload.** Install AsyncStorage, NetInfo and the React Query persister; persisted `QueryClient` with a long `gcTime`; preload service: active academic year → courses by preceptor → students and today's daily attendance per course; triggered after login, on app foreground and on reconnect; fix the home `/courses` fallback that omits `academicYearId`.
   - Check: `ts:check`; manual: airplane mode shows courses and students.
@@ -66,4 +76,4 @@ Preceptors take attendance in classrooms with unreliable connectivity. Data must
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
 
 ## Next step
-T3b + T4 (one delegated writer, one commit per task).
+Review T3b+T4 slice (assess: high_risk, 1085 lines, base `ed0076c`). Open scope question: should T5/T6 also cover subject attendance for teachers? Then T5.

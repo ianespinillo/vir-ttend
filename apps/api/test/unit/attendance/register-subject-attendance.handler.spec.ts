@@ -1,26 +1,62 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { DAYOFWEEK } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { RegisterSubjectAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.command';
 import { RegisterSubjectAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.handler';
+import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { ScheduleSlot } from '../../../src/modules/attendance/domain/entities/schedule-slot.entity';
 import { ISchedulePort } from '../../../src/modules/attendance/domain/ports/schedule.port.interface';
+import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 
 describe('RegisterSubjectAttendanceHandler', () => {
 	let handler: RegisterSubjectAttendanceHandler;
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let schedulePort: MockProxy<ISchedulePort>;
+	let unitOfWork: MockProxy<IUnitOfWorkPort>;
 	let eventEmitter: MockProxy<EventEmitter2>;
+
+	const mondayDate = new Date('2026-07-06T12:00:00Z');
+	const buildCommand = (
+		records: { studentId: string; status: 'present' | 'absent' | 'late' }[],
+	) =>
+		new RegisterSubjectAttendanceCommand(
+			'tenant-1',
+			'user-1',
+			'sub-1',
+			'course-1',
+			mondayDate,
+			records,
+		);
+	const buildExisting = (studentId: string, status: 'present' | 'absent') =>
+		AttendanceRecord.reconstitute({
+			id: `record-${studentId}`,
+			tenantId: 'tenant-1',
+			studentId,
+			courseId: 'course-1',
+			subjectId: 'sub-1',
+			date: mondayDate,
+			status,
+			editedBy: 'user-1',
+			editedAt: new Date('2026-07-06T08:00:00Z'),
+			createdAt: new Date('2026-07-06T08:00:00Z'),
+		});
+
 	beforeEach(() => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		schedulePort = mock<ISchedulePort>();
+		unitOfWork = mock<IUnitOfWorkPort>();
+		unitOfWork.run.mockImplementation(async (work) => work());
 		eventEmitter = mock<EventEmitter2>();
 		handler = new RegisterSubjectAttendanceHandler(
 			attendanceRepo,
 			schedulePort,
+			unitOfWork,
 			eventEmitter,
 		);
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '09:00'),
+		]);
 	});
 
 	it('debe lanzar error si la fecha no es un día de clase para la materia', async () => {
@@ -45,5 +81,60 @@ describe('RegisterSubjectAttendanceHandler', () => {
 			'Invalid class day for this subject',
 		);
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+	});
+
+	it('should create subject records scoped to the subject when none exist', async () => {
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+
+		await handler.execute(
+			buildCommand([
+				{ studentId: 'student-1', status: ATTENDANCE_STATUS.PRESENT },
+			]),
+		);
+
+		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
+		expect(saved).toHaveLength(1);
+		expect(saved[0].subjectId).toBe('sub-1');
+		expect(eventEmitter.emit).toHaveBeenCalledTimes(1);
+	});
+
+	it('should update (and not duplicate) an existing record whose status changed', async () => {
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([
+			buildExisting('student-1', ATTENDANCE_STATUS.PRESENT),
+		]);
+
+		await handler.execute(
+			buildCommand([{ studentId: 'student-1', status: ATTENDANCE_STATUS.ABSENT }]),
+		);
+
+		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
+		expect(saved).toHaveLength(1);
+		expect(saved[0].id).toBe('record-student-1');
+		expect(saved[0].status).toBe(ATTENDANCE_STATUS.ABSENT);
+		expect(eventEmitter.emit).toHaveBeenCalledTimes(1);
+	});
+
+	it('should save nothing and emit nothing when replaying the same payload', async () => {
+		const stored = new Map<string, AttendanceRecord>();
+		attendanceRepo.findBySubjectAndDate.mockImplementation(async () => [
+			...stored.values(),
+		]);
+		attendanceRepo.bulkSave.mockImplementation(async (records) => {
+			for (const record of records) stored.set(record.studentId, record);
+		});
+		const command = buildCommand([
+			{ studentId: 'student-1', status: ATTENDANCE_STATUS.PRESENT },
+			{ studentId: 'student-2', status: ATTENDANCE_STATUS.ABSENT },
+		]);
+
+		await handler.execute(command);
+		attendanceRepo.bulkSave.mockClear();
+		eventEmitter.emit.mockClear();
+
+		await handler.execute(command);
+
+		expect(stored.size).toBe(2);
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+		expect(eventEmitter.emit).not.toHaveBeenCalled();
 	});
 });

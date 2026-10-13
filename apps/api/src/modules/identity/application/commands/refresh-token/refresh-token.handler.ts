@@ -39,7 +39,7 @@ export class RefreshTokenHandler {
 		} else {
 			const memberships = await this.membersRepo.findByUserId(user.id);
 			if (memberships.length > 0)
-				throw new UnauthorizedException("User doen't belongs to tenant");
+				throw new UnauthorizedException("User doesn't belong to tenant");
 			if (entity.tenantId) {
 				role = ROLES.ADMIN;
 				isImpersonating = true;
