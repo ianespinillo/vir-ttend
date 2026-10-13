@@ -59,6 +59,13 @@ services:
       INSTANCE_ID: ${TENANT_SLUG}
       # Marca de la instancia (ver docs/deployment-configuration.md)
       BRANDING_DIR: /app/branding
+      # Email (SMTP). Con EMAIL_ENABLED=true la API exige SMTP_HOST y SMTP_FROM.
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     volumes:
       - ./deploy/branding/${BRANDING_SLUG:-_none}:/app/branding:ro
     depends_on:
