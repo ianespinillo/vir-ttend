@@ -157,6 +157,12 @@ BOOTSTRAP_ADMIN_LAST_NAME=<apellido>
 BOOTSTRAP_ADMIN_PASSWORD=<GENERAR: openssl rand -base64 32>
 ALLOW_SUPERADMIN=false
 
+# === Marca de la instancia ===
+# Carpeta de deploy/branding/ que se monta en la API y en Caddy (ej. eest3).
+# Sin este valor se monta _none y la instancia muestra la marca Vir-ttend.
+# Ver docs/deployment-configuration.md, "Paso 6: Marca de la instancia".
+BRANDING_SLUG=<slug de la carpeta de marca>
+
 # === Client (build de Next.js) ===
 NEXT_PUBLIC_API_URL=/api
 
