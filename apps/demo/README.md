@@ -69,7 +69,7 @@ Pasos:
 1. En Vercel: **Add New > Project** e importá el repositorio (un proyecto distinto al del sitio).
 2. **Root Directory**: `apps/demo`, con **Include source files outside of the Root Directory in the Build Step** activo (valor por defecto).
 3. **Framework Preset**: Next.js. No sobrescribas los comandos de instalación y build: salen de `vercel.json`.
-4. Variable de entorno opcional: `NEXT_PUBLIC_SITE_URL` con la URL pública del sitio (destino de «Conocé Vir-ttend»; por defecto el placeholder `https://vir-ttend.vercel.app`). Se lee en el build: al cambiarla hay que redesplegar.
+4. Variable de entorno opcional: `NEXT_PUBLIC_SITE_URL` con la URL pública del sitio (destino de «Conocé Vir-ttend»; por defecto `https://virttend.app`). Se lee en el build: al cambiarla hay que redesplegar.
 5. **Deploy**, y cargá la URL resultante como `NEXT_PUBLIC_DEMO_URL` en el proyecto del sitio.
 
 ---

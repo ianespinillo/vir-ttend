@@ -24,7 +24,7 @@ Todas son opcionales y se leen en tiempo de build (`NEXT_PUBLIC_*`): al cambiarl
 | Variable | Default | Uso |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `VERCEL_PROJECT_PRODUCTION_URL` en Vercel; sin valor en local | URL pública del sitio: `metadataBase`, sitemap, robots, Open Graph y el QR de `/descargar/[slug]`. Sin URL, el QR no se genera. |
-| `NEXT_PUBLIC_DEMO_URL` | `https://vir-ttend-demo.vercel.app` (**placeholder**) | Destino de «Probar la demo» (el despliegue de `apps/demo`). |
+| `NEXT_PUBLIC_DEMO_URL` | `https://demo.virttend.app` | Destino de «Probar la demo» (el despliegue de `apps/demo`). |
 | `NEXT_PUBLIC_APP_URL` | sin valor | Destino de «Ingresar» (instancia compartida). Sin valor, el botón se oculta. |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | `contacto@vir-ttend.app` (**placeholder**, hay que reemplazarlo por un correo real) | Dirección de los enlaces `mailto:`. |
 
@@ -48,7 +48,7 @@ El filtro `site...` incluye `site` y todas sus dependencias del workspace; Turbo
 ### Dominio propio (más adelante)
 
 1. **Settings > Domains**: agregá el dominio (por ejemplo `vir-ttend.app`) y creá en tu DNS los registros que indique Vercel.
-2. Definí `NEXT_PUBLIC_SITE_URL=https://vir-ttend.app` y redesplegá, para que el sitemap, Open Graph y el QR usen el dominio definitivo.
+2. Definí `NEXT_PUBLIC_SITE_URL=https://virttend.app` y redesplegá, para que el sitemap, Open Graph y el QR usen el dominio definitivo.
 3. Mapa de dominios previsto: la landing en la raíz, `app.` para la instancia compartida y un dominio por escuela para las instancias dedicadas. Cuando exista la instancia compartida, cargá su URL en `NEXT_PUBLIC_APP_URL`.
 
 ## Descargas de la app móvil
