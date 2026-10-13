@@ -16,10 +16,17 @@ const clean = (value: string | undefined): string | null => {
 
 const stripTrailingSlash = (url: string) => url.replace(/\/+$/, '');
 
+/**
+ * Accepts a bare domain (`vir-ttend.app`) as well as a full URL, so a value
+ * pasted without a scheme does not crash `new URL()` in the metadata base.
+ */
+const withScheme = (url: string) =>
+	/^https?:\/\//i.test(url) ? url : `https://${url}`;
+
 /** Explicit site URL, or the Vercel production domain when deployed there. */
 const resolveSiteUrl = (): string | null => {
 	const explicit = clean(process.env.NEXT_PUBLIC_SITE_URL);
-	if (explicit) return stripTrailingSlash(explicit);
+	if (explicit) return stripTrailingSlash(withScheme(explicit));
 	const vercelHost = clean(process.env.VERCEL_PROJECT_PRODUCTION_URL);
 	return vercelHost ? `https://${vercelHost}` : null;
 };
@@ -35,7 +42,7 @@ export const siteConfig = {
 	/** Base for URLs that must be absolute even without configuration. */
 	siteUrlOrLocal: siteUrl ?? LOCAL_SITE_URL,
 	demoUrl: stripTrailingSlash(
-		clean(process.env.NEXT_PUBLIC_DEMO_URL) ?? DEFAULT_DEMO_URL,
+		withScheme(clean(process.env.NEXT_PUBLIC_DEMO_URL) ?? DEFAULT_DEMO_URL),
 	),
 	/** Login entry of the shared instance. The "Ingresar" button hides when null. */
 	appUrl: clean(process.env.NEXT_PUBLIC_APP_URL),
