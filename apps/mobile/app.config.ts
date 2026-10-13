@@ -70,6 +70,7 @@ const config: ExpoConfig = {
 	// is identified by a single slug. The variants differ by name, scheme and
 	// application id instead (https://docs.expo.dev/tutorial/eas/multiple-app-variants/).
 	slug: 'vir-ttend',
+	owner: 'ianespi',
 	scheme: variantConfig.scheme,
 	version: '1.0.0',
 	orientation: 'portrait',
@@ -101,6 +102,10 @@ const config: ExpoConfig = {
 		appVariant: variant,
 		apiUrl: variantConfig.apiUrl,
 		schoolDisplayName: variantConfig.schoolDisplayName,
+		// EAS project @ianespi/vir-ttend, shared by every variant.
+		eas: {
+			projectId: '190d6beb-651c-4d77-bb67-8297c92c5a77',
+		},
 	},
 };
 
