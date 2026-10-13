@@ -27,7 +27,8 @@ Pedido del usuario (2026-10-12): "se puede automatizar todo en un pipeline" → 
 - [x] T2: verificación (parse YAML, ts:check del site, lint) + commit (ver Entrega)
 - [x] T3: entrega — PR #51 → dev.
 - [x] T4: setup EAS (2026-10-13) — proyecto `@ianespi/vir-ttend` (`190d6beb-…`), `owner` + `extra.eas.projectId` en `app.config.ts` (commit `588831d`); `EXPO_TOKEN` como secret de **repo** (el usuario lo había puesto en el environment `eest3`, donde el workflow no lo ve). El keystore se generó en la nube durante un build `--non-interactive` → se corrigió la doc que exigía un primer build interactivo.
-- [ ] T5: primer APK — build EAS `9f20619a-…` (lanzado a mano); después, run real del workflow.
+- [x] T5: primer APK — el build `9f20619a-…` falló en Gradle (`assertWorkletsVersionTask`: worklets 0.13.0, transitivo, vs reanimated 4.5.1). Se fijó `react-native-worklets@0.10.1` (versión de SDK 57, commit `1a8f125`). El build `34b622bc-…` (versionCode 3) terminó **FINISHED**. CI del PR #51 en verde.
+- [ ] T6: run real del workflow al llegar a `main` (primer GitHub Release); verificar el botón de `/descargar/eest3`.
 
 ## Ruta
 - Inline: un solo archivo no trivial (workflow); el resto son ediciones mecánicas.
