@@ -42,6 +42,8 @@ services:
     environment:
       PORT: 3001
       NODE_ENV: production
+      # dev/http: cookies sin flag Secure (Android rechaza Secure sobre http)
+      COOKIES_SECURE: ${COOKIES_SECURE:-false}
       DATABASE_URL: postgresql://virttend:2026virttend@postgres:5432/vir_ttend
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-vir_ttend_super_secret_jwt_key_2026}

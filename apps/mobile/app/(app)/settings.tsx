@@ -117,11 +117,15 @@ export default function SettingsScreen() {
 					{/* Single Tenant Option */}
 					<TouchableOpacity
 						onPress={() => setSelectedMode('single')}
-						className={`mb-3 flex-row items-center justify-between rounded-xl border p-4 ${
+						className="mb-3 flex-row items-center justify-between rounded-xl border p-4"
+						style={
 							selectedMode === 'single'
-								? 'border-indigo-600 bg-indigo-50/50'
-								: 'border-slate-200 bg-white'
-						}`}
+								? {
+										borderColor: '#4F46E5',
+										backgroundColor: 'rgba(238, 242, 255, 0.5)',
+									} // indigo-600 / indigo-50/50
+								: { borderColor: '#E2E8F0', backgroundColor: '#FFFFFF' } // slate-200 / white
+						}
 					>
 						<View className="flex-row items-center space-x-3">
 							<Building
@@ -143,11 +147,15 @@ export default function SettingsScreen() {
 					{/* Multi Tenant Option */}
 					<TouchableOpacity
 						onPress={() => setSelectedMode('multi')}
-						className={`flex-row items-center justify-between rounded-xl border p-4 ${
+						className="flex-row items-center justify-between rounded-xl border p-4"
+						style={
 							selectedMode === 'multi'
-								? 'border-indigo-600 bg-indigo-50/50'
-								: 'border-slate-200 bg-white'
-						}`}
+								? {
+										borderColor: '#4F46E5',
+										backgroundColor: 'rgba(238, 242, 255, 0.5)',
+									} // indigo-600 / indigo-50/50
+								: { borderColor: '#E2E8F0', backgroundColor: '#FFFFFF' } // slate-200 / white
+						}
 					>
 						<View className="flex-row items-center space-x-3">
 							<Globe

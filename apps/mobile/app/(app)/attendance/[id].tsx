@@ -31,6 +31,29 @@ interface StudentItem {
 	documentNumber?: string;
 }
 
+// NativeWind crash workaround: className must stay STATIC per render.
+// Dynamic visual state goes through inline `style` so css-interop never
+// adds CSS variables after the initial render (which triggers its upgrade
+// warning path and crashes with "Couldn't find a navigation context").
+const statusButtonActiveStyle = {
+	shadowColor: '#000',
+	shadowOffset: { width: 0, height: 1 },
+	shadowOpacity: 0.05,
+	shadowRadius: 2,
+	elevation: 2,
+} as const;
+
+const statusStyles: Record<
+	AttendanceStatus,
+	{ activeBackground: string; activeText: string }
+> = {
+	present: { activeBackground: '#059669', activeText: '#FFFFFF' }, // emerald-600
+	absent: { activeBackground: '#DC2626', activeText: '#FFFFFF' }, // red-600
+	late: { activeBackground: '#F59E0B', activeText: '#FFFFFF' }, // amber-500
+};
+
+const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'late'];
+
 export default function AttendanceSheetScreen() {
 	const params = useLocalSearchParams();
 	const router = useRouter();
@@ -274,59 +297,37 @@ export default function AttendanceSheetScreen() {
 
 								{/* Segmented Controls: P | A | T */}
 								<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
-									{/* Present button */}
-									<TouchableOpacity
-										onPress={() => handleStatusChange(student.id, 'present')}
-										className={`h-9 w-9 items-center justify-center rounded-md ${
-											currentStatus === 'present'
-												? 'bg-emerald-600 shadow-sm'
-												: 'bg-transparent'
-										}`}
-									>
-										<Text
-											className={`text-sm font-bold ${
-												currentStatus === 'present' ? 'text-white' : 'text-slate-600'
-											}`}
-										>
-											P
-										</Text>
-									</TouchableOpacity>
-
-									{/* Absent button */}
-									<TouchableOpacity
-										onPress={() => handleStatusChange(student.id, 'absent')}
-										className={`ml-1 h-9 w-9 items-center justify-center rounded-md ${
-											currentStatus === 'absent'
-												? 'bg-red-600 shadow-sm'
-												: 'bg-transparent'
-										}`}
-									>
-										<Text
-											className={`text-sm font-bold ${
-												currentStatus === 'absent' ? 'text-white' : 'text-slate-600'
-											}`}
-										>
-											A
-										</Text>
-									</TouchableOpacity>
-
-									{/* Late button */}
-									<TouchableOpacity
-										onPress={() => handleStatusChange(student.id, 'late')}
-										className={`ml-1 h-9 w-9 items-center justify-center rounded-md ${
-											currentStatus === 'late'
-												? 'bg-amber-500 shadow-sm'
-												: 'bg-transparent'
-										}`}
-									>
-										<Text
-											className={`text-sm font-bold ${
-												currentStatus === 'late' ? 'text-white' : 'text-slate-600'
-											}`}
-										>
-											T
-										</Text>
-									</TouchableOpacity>
+									{STATUS_ORDER.map((status, i) => {
+										const isActive = currentStatus === status;
+										const label = status[0].toUpperCase();
+										const colors = statusStyles[status];
+										return (
+											<TouchableOpacity
+												key={status}
+												onPress={() => handleStatusChange(student.id, status)}
+												className={`h-9 w-9 items-center justify-center rounded-md ${
+													i > 0 ? 'ml-1' : ''
+												}`}
+												style={
+													isActive
+														? {
+																backgroundColor: colors.activeBackground,
+																...statusButtonActiveStyle,
+															}
+														: undefined
+												}
+											>
+												<Text
+													className="text-sm font-bold"
+													style={{
+														color: isActive ? colors.activeText : '#475569', // slate-600
+													}}
+												>
+													{label}
+												</Text>
+											</TouchableOpacity>
+										);
+									})}
 								</View>
 							</View>
 						);

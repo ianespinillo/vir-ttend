@@ -10,6 +10,18 @@ export interface MobileAppConfig {
 	apiUrl: string;
 }
 
+/**
+ * Single source of truth for the API base URL.
+ *
+ * Defaults to `http://localhost:3001` on every platform. On a physical Android
+ * device (or emulator) `localhost` reaches the host machine through
+ * `adb reverse` (see `pnpm --filter mobile android:reverse`). Set
+ * `EXPO_PUBLIC_API_URL` to point at a different API.
+ */
+export const DEFAULT_API_URL = 'http://localhost:3001';
+export const API_URL: string =
+	process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
+
 const STORAGE_KEY_CUSTOM_APP_NAME = 'virttend_custom_app_name';
 const STORAGE_KEY_TENANCY_MODE = 'virttend_tenancy_mode';
 
@@ -29,7 +41,7 @@ export const getAppConfig = async (): Promise<MobileAppConfig> => {
 		defaultTenantId: process.env.EXPO_PUBLIC_DEFAULT_TENANT_ID || null,
 		defaultTenantName:
 			process.env.EXPO_PUBLIC_DEFAULT_TENANT_NAME || 'Colegio Institucional',
-		apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001',
+		apiUrl: API_URL,
 	};
 };
 
