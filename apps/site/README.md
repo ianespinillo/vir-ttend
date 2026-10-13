@@ -26,7 +26,7 @@ Todas son opcionales y se leen en tiempo de build (`NEXT_PUBLIC_*`): al cambiarl
 | `NEXT_PUBLIC_SITE_URL` | `VERCEL_PROJECT_PRODUCTION_URL` en Vercel; sin valor en local | URL pública del sitio: `metadataBase`, sitemap, robots, Open Graph y el QR de `/descargar/[slug]`. Sin URL, el QR no se genera. |
 | `NEXT_PUBLIC_DEMO_URL` | `https://demo.virttend.app` | Destino de «Probar la demo» (el despliegue de `apps/demo`). |
 | `NEXT_PUBLIC_APP_URL` | sin valor | Destino de «Ingresar» (instancia compartida). Sin valor, el botón se oculta. |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | `contacto@vir-ttend.app` (**placeholder**, hay que reemplazarlo por un correo real) | Dirección de los enlaces `mailto:`. |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | `espinilloian@hotmail.com` | Dirección de los enlaces `mailto:`. |
 
 ## Despliegue en Vercel
 
