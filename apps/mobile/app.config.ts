@@ -43,7 +43,7 @@ const VARIANTS: Record<AppVariant, VariantConfig> = {
 		appId: 'com.virttend.eest3',
 		assetsDir: './assets/variants/eest3',
 		schoolDisplayName: 'Escuela de Educación Secundaria Técnica Nº3 "Eva Perón"',
-		apiUrl: 'https://eest3-virttend.duckdns.org/api',
+		apiUrl: 'https://eest3.virttend.app/api',
 	},
 };
 

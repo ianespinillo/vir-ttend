@@ -371,7 +371,7 @@ La pantalla de **Ajustes** es solo informativa: muestra colegio, servidor, modo 
 | Variante (`APP_VARIANT`) | Nombre | Identificador | Servidor | Modo esperado |
 |---|---|---|---|---|
 | `general` | Vir-ttend | `com.virttend.app` | Servidor compartido multi-tenant (**dominio pendiente**) | `multi` |
-| `eest3` | EEST Nº3 Eva Perón | `com.virttend.eest3` | `https://eest3-virttend.duckdns.org/api` | `single` |
+| `eest3` | EEST Nº3 Eva Perón | `com.virttend.eest3` | `https://eest3.virttend.app/api` | `single` |
 
 Ambas variantes pertenecen al mismo proyecto de EAS (mismo `slug`) y pueden instalarse a la vez en un dispositivo porque sus identificadores son distintos.
 
