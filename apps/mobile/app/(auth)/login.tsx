@@ -78,11 +78,11 @@ export default function LoginScreen() {
 							{config.appName}
 						</Text>
 
-						{config.tenancyMode === 'single' ? (
+						{config.schoolName ? (
 							<View className="mt-2 flex-row items-center rounded-full bg-indigo-50 px-3 py-1 border border-indigo-100">
 								<School size={14} color="#4F46E5" />
 								<Text className="ml-1.5 text-xs font-semibold text-indigo-700">
-									{config.defaultTenantName || 'Instancia Institucional'}
+									{config.schoolName}
 								</Text>
 							</View>
 						) : (
@@ -163,13 +163,14 @@ export default function LoginScreen() {
 						</TouchableOpacity>
 					</View>
 
-					{/* Tenancy Mode Badge */}
+					{/* Server config status */}
 					<View className="mt-8 items-center">
 						<Text className="text-xs text-slate-400">
-							Modo:{' '}
-							{config.tenancyMode === 'single'
-								? 'Institución Única (Single-Tenant)'
-								: 'Multi-Tenant (Múltiples Escuelas)'}
+							{config.tenancyMode === 'single' && 'Modo: Una escuela'}
+							{config.tenancyMode === 'multi' && 'Modo: Varias escuelas'}
+							{config.tenancyMode === null &&
+								config.configStatus === 'unavailable' &&
+								'No se pudo leer la configuración del servidor.'}
 						</Text>
 					</View>
 				</ScrollView>

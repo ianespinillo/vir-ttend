@@ -33,8 +33,12 @@ export default function AppLayout() {
 									<View className="h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
 										<Text className="text-sm font-bold text-white">V</Text>
 									</View>
-									<Text className="ml-2 text-lg font-bold text-slate-900">
-										{config.appName}
+									<Text
+										className="ml-2 text-lg font-bold text-slate-900"
+										numberOfLines={1}
+										style={{ maxWidth: 190 }}
+									>
+										{config.displayName}
 									</Text>
 								</View>
 							),
@@ -68,7 +72,7 @@ export default function AppLayout() {
 					<Stack.Screen
 						name="settings"
 						options={{
-							title: 'Configuración & Entorno',
+							title: 'Configuración',
 							headerBackTitle: 'Atrás',
 						}}
 					/>

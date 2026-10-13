@@ -34,7 +34,7 @@ flowchart TD
 ```
 
 ### Principio Fundamental: Codebase Único
-Ambos modos ejecutan exactamente las mismas migraciones de base de datos, los mismos esquemas de Prisma y la misma lógica de dominio. Ninguna columna ni clave foránea (`tenantId`) se elimina o altera; la diferencia radica exclusivamente en cómo se resuelve y restringe el contexto del tenant en tiempo de ejecución.
+Ambos modos ejecutan exactamente las mismas migraciones de base de datos, las mismas entidades de MikroORM y la misma lógica de dominio. Ninguna columna ni clave foránea (`tenantId`) se elimina o altera; la diferencia radica exclusivamente en cómo se resuelve y restringe el contexto del tenant en tiempo de ejecución.
 
 ---
 
@@ -50,6 +50,7 @@ Ambos modos ejecutan exactamente las mismas migraciones de base de datos, los mi
 | **Superadmin Global** | Habilitado para gestión de la plataforma | Deshabilitado por defecto (`ALLOW_SUPERADMIN=false`) |
 | **Interfaz de Usuario** | Muestra selector de colegios y gestión `/tenants` | Oculta selector de colegios y restringe acceso a `/tenants` |
 | **Arranque Inicial** | Colegios creados mediante panel o API administrativa | Auto-bootstrap idempotente crea el Tenant y usuario ADMIN |
+| **App móvil** | App general (variante `general`); el usuario elige colegio tras el login si pertenece a varios | App propia del colegio (una variante por colegio); entra directo al colegio configurado |
 
 ---
 
@@ -82,7 +83,7 @@ Ambos modos ejecutan exactamente las mismas migraciones de base de datos, los mi
 | `TENANCY_MODE` | No (default `multi`) | **Sí** | Debe establecerse en `single`. |
 | `TENANT_ID` | No | **Sí** | UUID v4 que identifica a la institución en la base de datos. |
 | `TENANT_SLUG` | No | **Sí** | Identificador en formato slug (e.g. `colegio-nacional`). |
-| `TENANT_NAME` | No | Opcional | Nombre institucional legible para reportes y logs. |
+| `TENANT_NAME` | No | Opcional (recomendada) | Nombre institucional legible para reportes y logs. La app móvil lo muestra como nombre del colegio (vía `/config/public`). |
 | `ALLOW_SUPERADMIN` | No (default `true`) | Opcional (default `false`) | Si es `false`, ningún usuario con rol `SUPERADMIN` puede autenticarse. |
 | `INSTANCE_ID` | No | Opcional | Identificador de instancia para prefijar claves en Redis compartidos. |
 
@@ -130,8 +131,14 @@ NEXT_PUBLIC_APP_DOMAIN=vir-ttend.app
 ```
 
 ### Paso 2: Ejecutar migraciones de base de datos
+Las migraciones son de MikroORM y se ejecutan de forma explícita, antes de levantar la aplicación (ver [`ci-cd.md`](./ci-cd.md)):
 ```bash
-pnpm --filter api prisma migrate deploy
+# Producción (mismo comando que el pipeline de CD)
+docker compose -f compose.prod.yml -f compose.ci.yml run --rm --no-deps api \
+  sh -c "cd apps/api && node node_modules/@mikro-orm/cli/cli.js migration:up"
+
+# Desarrollo local
+cd apps/api && pnpm mikro-orm migration:up
 ```
 
 ### Paso 3: Inicializar la plataforma y operar
@@ -182,9 +189,12 @@ NEXT_PUBLIC_API_URL=/api
 ```
 
 ### Paso 3: Ejecutar migraciones de base de datos
+Mismo procedimiento que en el modo multi (migraciones de MikroORM, explícitas y previas al arranque):
 ```bash
-pnpm --filter api prisma migrate deploy
+docker compose -f compose.prod.yml -f compose.ci.yml run --rm --no-deps api \
+  sh -c "cd apps/api && node node_modules/@mikro-orm/cli/cli.js migration:up"
 ```
+En despliegues por CD este paso lo ejecuta el pipeline automáticamente.
 
 ### Paso 4: Despliegue con Docker Compose
 
@@ -221,25 +231,32 @@ Al iniciar, NestJS ejecuta `TenancyBootstrapService`:
 ## 6. Verificación y Validación Post-Despliegue
 
 ### 6.1 Verificar Configuración Pública
-Ejecutar un `GET` a `/config/public`:
+La instancia sirve web y API desde un único dominio: Caddy envía `/api/*` a la API (sin prefijo de versión). Ejecutar un `GET` a `/api/config/public`:
 ```bash
-curl -X GET https://api-sanmartin.vir-ttend.app/api/v1/config/public
+curl -X GET https://sanmartin.vir-ttend.app/api/config/public
 ```
 
-Respuesta esperada en modo single:
+Respuesta esperada en modo single (todas las respuestas de la API vienen envueltas en `{ success, data, timeStamp }`):
 ```json
 {
-  "tenancyMode": "single",
-  "tenantId": "e2b83490-6c92-4217-a065-98782d46e121",
-  "tenantSlug": "colegio-san-martin",
-  "tenantName": "Colegio San Martín"
+  "success": true,
+  "data": {
+    "tenancyMode": "single",
+    "tenantId": "e2b83490-6c92-4217-a065-98782d46e121",
+    "tenantSlug": "colegio-san-martin",
+    "tenantName": "Colegio San Martín",
+    "allowSuperadmin": false
+  },
+  "timeStamp": "2026-10-12T12:00:00.000Z"
 }
 ```
+
+Este endpoint es público y no expone secretos: lo consumen la web y la app móvil para conocer el modo del despliegue.
 
 ### 6.2 Probar Inicio de Sesión
 Hacer un `POST` a `/auth/login` con las credenciales creadas:
 ```bash
-curl -X POST https://api-sanmartin.vir-ttend.app/api/v1/auth/login \
+curl -X POST https://sanmartin.vir-ttend.app/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@sanmartin.edu.ar","password":"SanMartin2026!"}'
 ```
@@ -256,7 +273,85 @@ En modo `single`, la respuesta retornará directamente las cookies de sesión (`
 
 ---
 
-## 7. Resolución de Problemas (Troubleshooting)
+## 7. Aplicación Móvil (Expo)
+
+La app móvil (`apps/mobile`) se compila desde el mismo código para cada servidor. El **modo de tenancy nunca lo decide el usuario ni la app**: lo define el despliegue (`TENANCY_MODE` en el `.env` de la instancia) y la app lo lee del servidor.
+
+### 7.1 Qué se define al compilar y qué viene del servidor
+
+| Dato | Origen | Dónde se configura |
+|---|---|---|
+| Nombre, ícono e identificador de la app | Al compilar (variante) | `apps/mobile/app.config.ts` (`VARIANTS`) |
+| URL de la API | Al compilar (variante o perfil EAS) | `extra.apiUrl` de la variante o `EXPO_PUBLIC_API_URL` en `apps/mobile/eas.json` |
+| Modo `single` / `multi`, `tenantId`, nombre del colegio | Servidor, en tiempo de ejecución | `GET /config/public` (variables `TENANCY_MODE`, `TENANT_ID`, `TENANT_NAME` de la API) |
+
+La URL de la API se resuelve con esta prioridad:
+1. `EXPO_PUBLIC_API_URL` (perfil de EAS o `.env.local` en desarrollo).
+2. `extra.apiUrl` de la variante.
+3. `http://localhost:3001` (solo desarrollo).
+
+> [!IMPORTANT]
+> Los builds de `preview` y `production` **fallan al compilar** si la variante no tiene URL de API (ni `extra.apiUrl` ni `EXPO_PUBLIC_API_URL`). Así se evita publicar una app que apunte a `localhost`. En producción la URL debe ser `https`: Android bloquea `http` en builds de release.
+
+### 7.2 Comportamiento según el modo del servidor
+
+Al iniciar (y antes del login) la app consulta `GET /config/public` y guarda la respuesta en el dispositivo, asociada a la URL del servidor, para poder funcionar sin conexión. Esa copia no se borra al cerrar sesión.
+
+| Modo del servidor | Comportamiento en la app |
+|---|---|
+| `single` | Tras el login entra directamente al colegio `tenantId`. Si el usuario no tiene rol de preceptor o docente en ese colegio, se muestra "Acceso restringido". |
+| `multi` | Si el usuario pertenece a un solo colegio, entra directo; si pertenece a varios, elige el colegio tras el login. |
+| Sin configuración (primer arranque sin red) | Se aplica la regla por membresías del modo `multi`. El servidor igualmente impone su modo real en el login. |
+
+La pantalla de **Ajustes** es solo informativa: muestra colegio, servidor, modo ("Configurado por el servidor") y versión.
+
+### 7.3 Variantes actuales
+
+| Variante (`APP_VARIANT`) | Nombre | Identificador | Servidor | Modo esperado |
+|---|---|---|---|---|
+| `general` | Vir-ttend | `com.virttend.app` | Servidor compartido multi-tenant (**dominio pendiente**) | `multi` |
+| `eest3` | EEST Nº3 Eva Perón | `com.virttend.eest3` | `https://eest3-virttend.duckdns.org/api` | `single` |
+
+Ambas variantes pertenecen al mismo proyecto de EAS (mismo `slug`) y pueden instalarse a la vez en un dispositivo porque sus identificadores son distintos.
+
+### 7.4 Agregar un colegio con servidor propio
+
+1. **Desplegar la instancia** siguiendo la [sección 5](#5-configuración-paso-a-paso-modo-single-tenant-colegio-aislado), con `TENANCY_MODE=single`, `TENANT_ID`, `TENANT_SLUG` y `TENANT_NAME`.
+2. **Verificar** que `https://<dominio>/api/config/public` responda con `tenancyMode: "single"`.
+3. **Agregar la variante** en `apps/mobile/app.config.ts` (`VARIANTS`): nombre corto, `scheme`, `appId` (ej. `com.virttend.<slug>`), ícono y `apiUrl: 'https://<dominio>/api'`.
+4. **Agregar los perfiles** `preview-<slug>` y `production-<slug>` en `apps/mobile/eas.json` con `APP_VARIANT=<slug>` y `EXPO_PUBLIC_API_URL`.
+5. **Agregar los recursos gráficos** del colegio (ícono, splash) si los provee.
+6. **Compilar** con EAS (ver 7.5).
+
+No hace falta modificar la lógica de la app: el modo y el colegio se leen del servidor.
+
+### 7.5 Compilar con EAS
+
+Requisito previo (una sola vez): `npx eas-cli@latest init` dentro de `apps/mobile` para crear el proyecto de EAS y registrar su `projectId` en `app.config.ts`.
+
+```bash
+cd apps/mobile
+
+# APK de prueba (distribución interna)
+npx eas-cli@latest build --profile preview-eest3 --platform android
+
+# Build de tienda
+npx eas-cli@latest build --profile production-eest3 --platform android
+```
+
+Los perfiles `*-general` no compilarán hasta definir la URL del servidor compartido.
+
+### 7.6 Desarrollo local
+
+- La app corre en Expo Go sobre un dispositivo Android conectado por USB: `pnpm --filter mobile android:usb` crea los túneles `adb reverse` (3001 para la API, 8081 para Metro) e inicia Expo.
+- Si se desconecta el cable o se reinicia `adb`, los túneles se pierden: `pnpm --filter mobile android:reverse` los restaura.
+- Para probar una variante: `APP_VARIANT=eest3 npx expo start` (dentro de `apps/mobile`). Si `.env.local` define `EXPO_PUBLIC_API_URL`, esa URL tiene prioridad sobre la de la variante.
+- Las variables `EXPO_PUBLIC_TENANCY_MODE`, `EXPO_PUBLIC_APP_NAME` y `EXPO_PUBLIC_DEFAULT_TENANT_*` ya no se usan y pueden eliminarse.
+- El contenedor de la API debe reconstruirse tras cambios de backend (`docker compose up -d --build api`); de lo contrario la app consume una versión anterior de la API.
+
+---
+
+## 8. Resolución de Problemas (Troubleshooting)
 
 ### Error: `JWT_SECRET and JWT_REFRESH_SECRET must not be identical`
 - **Causa:** En modo producción, se configuró el mismo valor para el token de acceso y de refresco.
@@ -273,3 +368,16 @@ En modo `single`, la respuesta retornará directamente las cookies de sesión (`
 
 ### Olvido de contraseña del Administrador inicial
 - En modo single, si se necesita reiniciar el acceso del administrador inicial y la base de datos ya contiene registros, un operador de base de datos puede actualizar el hash o invocar el comando correspondiente vía CLI institucional.
+
+### App móvil: "No se puede conectar con el servidor"
+- **Causa común 1 (desarrollo):** se perdió el túnel `adb reverse tcp:3001 tcp:3001`. Verificar con `adb reverse --list` y restaurar con `pnpm --filter mobile android:reverse`.
+- **Causa común 2:** la API no está levantada o la URL de la variante es incorrecta. Verificar `https://<dominio>/api/health`.
+- La app reintenta automáticamente y sincroniza los cambios pendientes cuando el servidor vuelve a responder.
+
+### App móvil: error de build `has no API URL`
+- **Causa:** se compiló un perfil `preview` o `production` cuya variante no tiene URL de API.
+- **Solución:** definir `apiUrl` en la variante (`app.config.ts`) o `EXPO_PUBLIC_API_URL` en el perfil de `eas.json`.
+
+### App móvil: entra en un modo o colegio inesperado
+- **Causa:** el modo lo define el servidor, no la app.
+- **Solución:** revisar `TENANCY_MODE`, `TENANT_ID` y `TENANT_NAME` en el `.env` de la instancia y confirmar la respuesta de `GET /config/public`. La app actualiza su copia guardada la próxima vez que tiene conexión.

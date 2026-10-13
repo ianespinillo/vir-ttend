@@ -77,11 +77,17 @@ export const useAttendanceDate = ({
 
 	// A `date` param is accepted against the rules known at first render; the
 	// subject schedule and the year start may load later, so re-check it then
-	// and fall back to today when it turns out not to be selectable.
+	// and fall back to the closest selectable day up to today when it turns out
+	// not to be selectable (today itself may have no class for a subject).
 	useEffect(() => {
 		if (!dateParam || date === today) return;
 		if (checkDate(date, rules) === null) return;
-		setDate(today);
+		const fallback =
+			checkDate(today, rules) === null
+				? today
+				: (stepDate(today, -1, rules) ?? today);
+		if (fallback === date) return;
+		setDate(fallback);
 		onDateChanged();
 	}, [rules]);
 

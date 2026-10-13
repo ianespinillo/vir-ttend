@@ -1,59 +1,79 @@
 import { useRouter } from 'expo-router';
 import {
-	Building,
-	Check,
-	Globe,
-	Info,
 	LogOut,
-	Save,
+	type LucideIcon,
 	School,
+	Server,
 	ShieldAlert,
 	Sliders,
+	Smartphone,
 	User,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
-import {
-	Alert,
-	ScrollView,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+import React from 'react';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { TenancyMode } from '../../src/config/app-config';
+import { APP_VERSION, getUrlHost } from '../../src/config/app-config';
 import { useAuth } from '../../src/context/auth-context';
+import type { MobileAppConfig } from '../../src/features/config/mobile-config';
+
+interface InfoRowProps {
+	icon: LucideIcon;
+	label: string;
+	value: string;
+	caption?: string;
+	isLast?: boolean;
+}
+
+function InfoRow({ icon: Icon, label, value, caption, isLast }: InfoRowProps) {
+	return (
+		<View
+			className="flex-row items-start py-3"
+			style={isLast ? undefined : { borderBottomWidth: 1, borderColor: '#F1F5F9' }}
+		>
+			<Icon size={18} color="#4F46E5" />
+			<View className="ml-3 flex-1">
+				<Text className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+					{label}
+				</Text>
+				<Text className="mt-0.5 text-sm font-bold text-slate-900">{value}</Text>
+				{caption ? (
+					<Text className="mt-0.5 text-xs text-slate-500">{caption}</Text>
+				) : null}
+			</View>
+		</View>
+	);
+}
+
+const describeMode = (
+	config: MobileAppConfig,
+): { value: string; caption: string } => {
+	if (config.tenancyMode === null) {
+		return {
+			value: 'Sin datos',
+			caption: 'No se pudo leer la configuración del servidor.',
+		};
+	}
+	const value =
+		config.tenancyMode === 'single' ? 'Una escuela' : 'Varias escuelas';
+	return {
+		value,
+		caption:
+			config.configStatus === 'fresh'
+				? 'Configurado por el servidor'
+				: 'Configurado por el servidor (última lectura guardada)',
+	};
+};
 
 export default function SettingsScreen() {
-	const { user, config, updateAppName, updateTenancyMode, logout } = useAuth();
+	const { user, config, logout } = useAuth();
 	const router = useRouter();
-
-	const [customNameInput, setCustomNameInput] = useState(config.appName);
-	const [selectedMode, setSelectedMode] = useState<TenancyMode>(
-		config.tenancyMode,
-	);
-	const [isSaving, setIsSaving] = useState(false);
-
-	const handleSaveConfig = async () => {
-		setIsSaving(true);
-		try {
-			await updateAppName(customNameInput);
-			await updateTenancyMode(selectedMode);
-			Alert.alert(
-				'Configuración guardada',
-				'Los cambios de entorno y nombre fueron actualizados correctamente.',
-			);
-		} catch (error) {
-			Alert.alert('Error', 'No se pudieron guardar las preferencias.');
-		} finally {
-			setIsSaving(false);
-		}
-	};
 
 	const handleLogout = async () => {
 		await logout();
 		router.replace('/(auth)/login');
 	};
+
+	const mode = describeMode(config);
 
 	return (
 		<SafeAreaView edges={['bottom']} className="flex-1 bg-slate-50">
@@ -80,111 +100,35 @@ export default function SettingsScreen() {
 					</View>
 				</View>
 
-				{/* Custom App & School Name */}
-				<View className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-					<View className="mb-3 flex-row items-center space-x-2">
-						<School size={18} color="#4F46E5" />
-						<Text className="ml-2 text-base font-bold text-slate-800">
-							Personalizar Nombre
-						</Text>
-					</View>
-					<Text className="mb-3 text-xs text-slate-500">
-						Podés cambiar el nombre que se muestra en la cabecera y el login (ej.
-						nombre de tu colegio o proyecto).
-					</Text>
-
-					<TextInput
-						className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3 text-base text-slate-900 focus:border-indigo-600"
-						placeholder="Nombre de la App / Institución"
-						value={customNameInput}
-						onChangeText={setCustomNameInput}
+				{/* Read-only deployment info */}
+				<View className="mb-5 rounded-2xl border border-slate-200 bg-white px-5 py-2 shadow-sm">
+					<InfoRow
+						icon={School}
+						label="Escuela"
+						value={config.schoolName ?? 'Según tu cuenta'}
+						caption={
+							config.schoolName
+								? undefined
+								: 'Se elige al iniciar sesión si tenés más de una.'
+						}
 					/>
-				</View>
-
-				{/* Tenancy Mode Selector */}
-				<View className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-					<View className="mb-3 flex-row items-center space-x-2">
-						<Sliders size={18} color="#4F46E5" />
-						<Text className="ml-2 text-base font-bold text-slate-800">
-							Modo de Tenancy (Entorno)
-						</Text>
-					</View>
-					<Text className="mb-4 text-xs text-slate-500">
-						Configurá si la app opera ligada a una única institución educativa o
-						permite conmutar entre múltiples colegios.
-					</Text>
-
-					{/* Single Tenant Option */}
-					<TouchableOpacity
-						onPress={() => setSelectedMode('single')}
-						className="mb-3 flex-row items-center justify-between rounded-xl border p-4"
-						style={
-							selectedMode === 'single'
-								? {
-										borderColor: '#4F46E5',
-										backgroundColor: 'rgba(238, 242, 255, 0.5)',
-									} // indigo-600 / indigo-50/50
-								: { borderColor: '#E2E8F0', backgroundColor: '#FFFFFF' } // slate-200 / white
-						}
-					>
-						<View className="flex-row items-center space-x-3">
-							<Building
-								size={20}
-								color={selectedMode === 'single' ? '#4F46E5' : '#64748B'}
-							/>
-							<View className="ml-3">
-								<Text className="text-sm font-bold text-slate-900">
-									Single-Tenant (Institución Única)
-								</Text>
-								<Text className="text-xs text-slate-500">
-									Login directo, sin selector de escuelas
-								</Text>
-							</View>
-						</View>
-						{selectedMode === 'single' && <Check size={18} color="#4F46E5" />}
-					</TouchableOpacity>
-
-					{/* Multi Tenant Option */}
-					<TouchableOpacity
-						onPress={() => setSelectedMode('multi')}
-						className="flex-row items-center justify-between rounded-xl border p-4"
-						style={
-							selectedMode === 'multi'
-								? {
-										borderColor: '#4F46E5',
-										backgroundColor: 'rgba(238, 242, 255, 0.5)',
-									} // indigo-600 / indigo-50/50
-								: { borderColor: '#E2E8F0', backgroundColor: '#FFFFFF' } // slate-200 / white
-						}
-					>
-						<View className="flex-row items-center space-x-3">
-							<Globe
-								size={20}
-								color={selectedMode === 'multi' ? '#4F46E5' : '#64748B'}
-							/>
-							<View className="ml-3">
-								<Text className="text-sm font-bold text-slate-900">
-									Multi-Tenant (Múltiples Instituciones)
-								</Text>
-								<Text className="text-xs text-slate-500">
-									Permite seleccionar y conmutar escuelas
-								</Text>
-							</View>
-						</View>
-						{selectedMode === 'multi' && <Check size={18} color="#4F46E5" />}
-					</TouchableOpacity>
-
-					{/* Save button */}
-					<TouchableOpacity
-						onPress={handleSaveConfig}
-						disabled={isSaving}
-						className="mt-5 flex-row items-center justify-center rounded-xl bg-indigo-600 py-3.5 active:bg-indigo-700"
-					>
-						<Save size={18} color="#FFFFFF" />
-						<Text className="ml-2 text-sm font-bold text-white">
-							Guardar Preferencias
-						</Text>
-					</TouchableOpacity>
+					<InfoRow
+						icon={Server}
+						label="Servidor"
+						value={getUrlHost(config.apiUrl)}
+					/>
+					<InfoRow
+						icon={Sliders}
+						label="Modo"
+						value={mode.value}
+						caption={mode.caption}
+					/>
+					<InfoRow
+						icon={Smartphone}
+						label="Versión"
+						value={`${APP_VERSION} (${config.variant})`}
+						isLast
+					/>
 				</View>
 
 				{/* Role Policy Notice */}
