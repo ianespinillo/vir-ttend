@@ -144,6 +144,7 @@ export class UsersController {
 				user.tenantId,
 				dto.newRole,
 				user.role,
+				user.sub,
 			),
 		);
 	}
@@ -176,7 +177,7 @@ export class UsersController {
 		@CurrentUser() user: JwtPayload,
 	) {
 		return this.deactivateMembershipHandler.execute(
-			new DeactivateMembershipCommand(userId, user.tenantId, user.role),
+			new DeactivateMembershipCommand(userId, user.tenantId, user.role, user.sub),
 		);
 	}
 
@@ -198,7 +199,13 @@ export class UsersController {
 				: user.tenantId;
 
 		return this.toggleUserStatusHandler.execute(
-			new ToggleUserStatusCommand(userId, targetTenantId, user.role, isActive),
+			new ToggleUserStatusCommand(
+				userId,
+				targetTenantId,
+				user.role,
+				isActive,
+				user.sub,
+			),
 		);
 	}
 

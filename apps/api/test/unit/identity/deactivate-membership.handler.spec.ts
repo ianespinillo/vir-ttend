@@ -1,5 +1,5 @@
 // deactivate-membership.handler.spec.ts
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { DeactivateMembershipCommand } from '../../../src/modules/identity/application/commands/deactivate-membership/deactivate-membership.command';
@@ -49,7 +49,12 @@ describe('DeactivateMembershipHandler', () => {
 		membershipRepository.findByUserAndTenant.mockResolvedValue(mockMembership);
 
 		await handler.execute(
-			new DeactivateMembershipCommand('user-id', 'tenant-id', ROLES.ADMIN),
+			new DeactivateMembershipCommand(
+				'user-id',
+				'tenant-id',
+				ROLES.ADMIN,
+				'actor-id',
+			),
 		);
 
 		expect(membershipRepository.save).toHaveBeenCalledTimes(1);
@@ -57,10 +62,74 @@ describe('DeactivateMembershipHandler', () => {
 		expect(saved.isActive).toBe(false);
 	});
 
+	describe('single-tenant admin protections', () => {
+		const originalEnv = { ...process.env };
+
+		const adminMembership = () =>
+			UserTenantMembership.reconstitute({
+				id: 'membership-admin-2',
+				userId: 'admin-2',
+				tenantId: 'tenant-id',
+				role: ROLES.ADMIN,
+				isActive: true,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			});
+
+		const deactivate = (actorUserId: string) =>
+			handler.execute(
+				new DeactivateMembershipCommand(
+					'admin-2',
+					'tenant-id',
+					ROLES.ADMIN,
+					actorUserId,
+				),
+			);
+
+		beforeEach(() => {
+			process.env.TENANCY_MODE = 'single';
+			process.env.TENANT_ID = 'tenant-id';
+			process.env.TENANT_SLUG = 'school';
+			membershipRepository.findByUserAndTenant.mockResolvedValue(
+				adminMembership(),
+			);
+			membershipRepository.findByUserId.mockResolvedValue([adminMembership()]);
+		});
+
+		afterEach(() => {
+			process.env = { ...originalEnv };
+		});
+
+		it('deactivates another admin when at least two admins are active', async () => {
+			membershipRepository.countActiveByTenantAndRole.mockResolvedValue(2);
+
+			await deactivate('actor-id');
+
+			expect(membershipRepository.save).toHaveBeenCalled();
+		});
+
+		it('rejects deactivating the last active admin', async () => {
+			membershipRepository.countActiveByTenantAndRole.mockResolvedValue(1);
+
+			await expect(deactivate('actor-id')).rejects.toThrow(ForbiddenException);
+			expect(membershipRepository.save).not.toHaveBeenCalled();
+		});
+
+		it('rejects self-deactivation', async () => {
+			await expect(deactivate('admin-2')).rejects.toThrow(ForbiddenException);
+			expect(membershipRepository.save).not.toHaveBeenCalled();
+		});
+	});
+
 	it('should throw when actor lacks permission', async () => {
 		await expect(
 			handler.execute(
-				new DeactivateMembershipCommand('user-id', 'tenant-id', ROLES.PRECEPTOR),
+				new DeactivateMembershipCommand(
+					'user-id',
+					'tenant-id',
+					ROLES.PRECEPTOR,
+					'actor-id',
+				),
 			),
 		).rejects.toThrow();
 
@@ -72,7 +141,12 @@ describe('DeactivateMembershipHandler', () => {
 
 		await expect(
 			handler.execute(
-				new DeactivateMembershipCommand('user-id', 'tenant-id', ROLES.ADMIN),
+				new DeactivateMembershipCommand(
+					'user-id',
+					'tenant-id',
+					ROLES.ADMIN,
+					'actor-id',
+				),
 			),
 		).rejects.toThrow();
 
@@ -95,7 +169,12 @@ describe('DeactivateMembershipHandler', () => {
 
 		await expect(
 			handler.execute(
-				new DeactivateMembershipCommand('user-id', 'tenant-id', ROLES.ADMIN),
+				new DeactivateMembershipCommand(
+					'user-id',
+					'tenant-id',
+					ROLES.ADMIN,
+					'actor-id',
+				),
 			),
 		).rejects.toThrow();
 
@@ -120,6 +199,7 @@ describe('DeactivateMembershipHandler', () => {
 				'',
 				'tenant-id',
 				ROLES.ADMIN,
+				'actor-id',
 				'member@tenant.com',
 			),
 		);
@@ -143,6 +223,7 @@ describe('DeactivateMembershipHandler', () => {
 					'',
 					'tenant-id',
 					ROLES.ADMIN,
+					'actor-id',
 					'unknown@tenant.com',
 				),
 			),

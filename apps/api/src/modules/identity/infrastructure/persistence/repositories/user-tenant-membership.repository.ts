@@ -1,5 +1,6 @@
 import { EntityRepository, type FilterQuery, raw } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
+import type { Roles } from '@repo/common';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
 import {
 	FindOptions,
@@ -25,6 +26,12 @@ export class UserTenantMembershipRepository
 			tenantId: row.tenant_id,
 			count: Number(row.count),
 		}));
+	}
+	async countActiveByTenantAndRole(
+		tenantId: string,
+		role: Roles,
+	): Promise<number> {
+		return this.count({ tenantId, role, isActive: true });
 	}
 	async findByTenant(
 		tenantId: string,

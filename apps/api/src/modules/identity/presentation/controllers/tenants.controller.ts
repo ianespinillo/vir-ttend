@@ -208,7 +208,13 @@ export class TenantsController {
 		@Body() dto: DeactivateMembershipRequestDto,
 	) {
 		return this.deactivateMembershipHandler.execute(
-			new DeactivateMembershipCommand('', user.tenantId, user.role, dto.email),
+			new DeactivateMembershipCommand(
+				'',
+				user.tenantId,
+				user.role,
+				user.sub,
+				dto.email,
+			),
 		);
 	}
 	@RolesDecorator(ROLES.SUPERADMIN, ROLES.ADMIN)

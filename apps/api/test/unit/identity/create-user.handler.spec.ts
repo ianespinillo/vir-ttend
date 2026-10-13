@@ -1,4 +1,5 @@
 // create-user.handler.spec.ts
+import { ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
@@ -37,6 +38,48 @@ describe('CreateUserHandler', () => {
 			eventEmitter,
 			tenantRepo,
 		);
+	});
+
+	describe('admin creation by tenancy mode', () => {
+		const originalEnv = { ...process.env };
+
+		afterEach(() => {
+			process.env = { ...originalEnv };
+		});
+
+		const createAdminCommand = () =>
+			new CreateUserCommand(
+				'admin2@test.com',
+				'Ada',
+				'Admin',
+				ROLES.ADMIN,
+				ROLES.ADMIN,
+				'tenant-id',
+			);
+
+		it('allows an ADMIN to create an ADMIN in single mode', async () => {
+			process.env.TENANCY_MODE = 'single';
+			process.env.TENANT_ID = 'tenant-id';
+			process.env.TENANT_SLUG = 'school';
+			userRepo.findByEmail.mockResolvedValue(null);
+			passwordService.hashPassword.mockResolvedValue(
+				PasswordHashed.fromHash('hashed123'),
+			);
+
+			const result = await handler.execute(createAdminCommand());
+
+			expect(result.role).toBe(ROLES.ADMIN);
+			expect(membershipRepo.save).toHaveBeenCalledTimes(1);
+		});
+
+		it('forbids an ADMIN from creating an ADMIN in multi mode', async () => {
+			process.env.TENANCY_MODE = 'multi';
+
+			await expect(handler.execute(createAdminCommand())).rejects.toThrow(
+				ForbiddenException,
+			);
+			expect(userRepo.save).not.toHaveBeenCalled();
+		});
 	});
 
 	it('should create a new user and membership when email does not exist', async () => {

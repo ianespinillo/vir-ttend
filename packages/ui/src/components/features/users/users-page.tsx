@@ -10,6 +10,7 @@ import {
 import {
 	useChangeRole,
 	useCreateUser,
+	usePublicConfig,
 	useResetUserPassword,
 	useTenants,
 	useToggleUserStatus,
@@ -127,6 +128,9 @@ export function UsersPage({
 		page,
 		limit: 15,
 	});
+
+	const { data: publicConfig } = usePublicConfig();
+	const canAssignAdmin = publicConfig?.tenancyMode === 'single';
 
 	const createUser = useCreateUser();
 	const updateUser = useUpdateUser();
@@ -361,6 +365,7 @@ export function UsersPage({
 					<UserForm
 						mode="create"
 						isSuperAdmin={isSuperAdmin}
+						canAssignAdmin={canAssignAdmin}
 						tenants={tenants ?? []}
 						selectedTenantId={tenantId !== 'all' ? tenantId : undefined}
 						onCancel={() => setCreateOpen(false)}
@@ -446,6 +451,7 @@ export function UsersPage({
 			<ChangeRoleDialog
 				user={changeRoleTarget}
 				isSuperAdmin={isSuperAdmin}
+				canAssignAdmin={canAssignAdmin}
 				open={Boolean(changeRoleTarget)}
 				onOpenChange={(open) => !open && setChangeRoleTarget(null)}
 				onConfirm={handleConfirmChangeRole}

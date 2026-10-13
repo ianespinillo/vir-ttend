@@ -6,5 +6,6 @@ export class ToggleUserStatusCommand {
 		readonly tenantId: string | undefined,
 		readonly actorRole: Roles,
 		readonly isActive: boolean,
+		readonly actorUserId: string,
 	) {}
 }

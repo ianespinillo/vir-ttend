@@ -6,5 +6,6 @@ export class ChangeMembershipRoleCommand {
 		readonly tenantId: string,
 		readonly newRole: Roles,
 		readonly actorRole: Roles,
+		readonly actorUserId: string,
 	) {}
 }
