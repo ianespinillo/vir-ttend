@@ -2,13 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { QueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { api } from '../../services/api';
+import { mergeOptimisticRecords } from '../attendance/optimistic-records';
 import { queryKeys } from '../attendance/query-keys';
-import type {
-	AttendanceRecordItem,
-	CourseSnapshot,
-	DailyAttendance,
-	SubjectAttendance,
-} from '../attendance/types';
+import type { DailyAttendance, SubjectAttendance } from '../attendance/types';
 import { outboxStorageKey } from './cache-keys';
 import type {
 	DailyOutboxItem,
@@ -98,6 +94,11 @@ export const classifyError = (
 export const getBackoffDelay = (retryCount: number): number =>
 	Math.min(1000 * 2 ** Math.max(0, Math.min(retryCount - 1, 6)), 60000);
 
+/**
+ * Mirrors a queued daily save into the day's cached records. The dashboard
+ * cache is intentionally left alone: its snapshots are year-to-date aggregates,
+ * so writing today-only numbers there would be reverted by the next refetch.
+ */
 export const applyOptimisticDailyAttendance = (
 	queryClient: QueryClient,
 	courseId: string,
@@ -106,50 +107,11 @@ export const applyOptimisticDailyAttendance = (
 ): void => {
 	queryClient.setQueryData<DailyAttendance>(
 		queryKeys.dailyAttendance(courseId, date),
-		(prev) => {
-			const existingMap = new Map(
-				(prev?.records ?? []).map((r) => [r.studentId, r]),
-			);
-			const updatedRecords: AttendanceRecordItem[] = records.map((r) => {
-				const existing = existingMap.get(r.studentId);
-				return {
-					id: existing?.id,
-					studentId: r.studentId,
-					studentName: existing?.studentName,
-					status: r.status,
-				};
-			});
-			return {
-				courseId,
-				date,
-				records: updatedRecords,
-			};
-		},
-	);
-
-	queryClient.setQueryData<CourseSnapshot[]>(
-		queryKeys.preceptorDashboard(date),
-		(prev) => {
-			if (!prev) return prev;
-			const present = records.filter((r) => r.status === 'present').length;
-			const absent = records.filter((r) => r.status === 'absent').length;
-			const late = records.filter((r) => r.status === 'late').length;
-			return prev.map((course) => {
-				if (course.courseId !== courseId) return course;
-				const total = course.totalStudents ?? records.length;
-				const notRecorded = Math.max(0, total - (present + absent + late));
-				const attendancePercent =
-					total > 0 ? Math.round((present / total) * 100) : 0;
-				return {
-					...course,
-					present,
-					absent,
-					late,
-					notRecorded,
-					attendancePercent,
-				};
-			});
-		},
+		(prev) => ({
+			courseId,
+			date,
+			records: mergeOptimisticRecords(prev?.records ?? [], records),
+		}),
 	);
 };
 
@@ -163,27 +125,13 @@ export const applyOptimisticSubjectAttendance = (
 ): void => {
 	queryClient.setQueryData<SubjectAttendance>(
 		queryKeys.subjectAttendance(subjectId, date),
-		(prev) => {
-			const existingMap = new Map(
-				(prev?.records ?? []).map((r) => [r.studentId, r]),
-			);
-			const updatedRecords: AttendanceRecordItem[] = records.map((r) => {
-				const existing = existingMap.get(r.studentId);
-				return {
-					id: existing?.id,
-					studentId: r.studentId,
-					studentName: existing?.studentName,
-					status: r.status,
-				};
-			});
-			return {
-				subjectId,
-				subjectName: subjectName ?? prev?.subjectName ?? '',
-				courseId,
-				date,
-				records: updatedRecords,
-			};
-		},
+		(prev) => ({
+			subjectId,
+			subjectName: subjectName ?? prev?.subjectName ?? '',
+			courseId,
+			date,
+			records: mergeOptimisticRecords(prev?.records ?? [], records),
+		}),
 	);
 };
 
@@ -212,6 +160,8 @@ export interface OutboxService {
 	enqueueSubject: (input: EnqueueSubjectInput) => Promise<void>;
 	flush: (options?: { force?: boolean }) => Promise<void>;
 	removeItem: (id: string) => Promise<void>;
+	/** Re-queues a failed item as pending and forces a flush. */
+	retryItem: (id: string) => Promise<void>;
 	getItem: (id: string) => OutboxItem | undefined;
 	getItemForCourse: (
 		courseId: string,
@@ -222,6 +172,7 @@ export interface OutboxService {
 		date: string,
 	) => SubjectOutboxItem | undefined;
 	getPendingCount: () => number;
+	getRetryingCount: () => number;
 	getErrorCount: () => number;
 	dispose: () => void;
 }
@@ -252,11 +203,8 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 	const saveItems =
 		deps.saveItems ??
 		(async (scope: string, items: OutboxItem[]): Promise<void> => {
-			try {
-				await AsyncStorage.setItem(outboxStorageKey(scope), JSON.stringify(items));
-			} catch (error) {
-				console.warn('Failed to persist attendance outbox to storage', error);
-			}
+			// Rejects on failure: enqueue must not report "saved locally" otherwise.
+			await AsyncStorage.setItem(outboxStorageKey(scope), JSON.stringify(items));
 		});
 
 	const sendDaily =
@@ -335,23 +283,91 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		}
 	};
 
+	/** Best effort: flush bookkeeping keeps going when storage is failing. */
 	const persistStateItems = async (items: OutboxItem[]): Promise<void> => {
 		state = { ...state, items };
 		notify();
-		await saveItems(deps.scope, items);
+		try {
+			await saveItems(deps.scope, items);
+		} catch (error) {
+			console.warn('Failed to persist attendance outbox to storage', error);
+		}
 	};
 
-	const init = async (): Promise<void> => {
-		if (state.initialized || disposed) return;
-		const items = await loadItems(deps.scope);
-		if (disposed) return;
-		state = {
-			...state,
-			items,
-			initialized: true,
-		};
+	/**
+	 * Strict: applies `items` in memory, then persists. When storage rejects the
+	 * in-memory change is rolled back (see `rollback`) and the error is rethrown,
+	 * so callers can tell the user the change was NOT saved.
+	 */
+	const persistStrict = async (
+		items: OutboxItem[],
+		rollback: (current: OutboxItem[]) => OutboxItem[],
+	): Promise<void> => {
+		state = { ...state, items };
 		notify();
-		scheduleNextRetryIfNeeded();
+		try {
+			await saveItems(deps.scope, items);
+		} catch (error) {
+			console.warn('Failed to persist attendance outbox to storage', error);
+			state = { ...state, items: rollback(state.items) };
+			notify();
+			throw new Error('No se pudo guardar en el dispositivo', { cause: error });
+		}
+	};
+
+	/** Puts `previous` back in place of whatever currently holds its id. */
+	const restoreItem = (
+		current: OutboxItem[],
+		id: string,
+		previous: OutboxItem | undefined,
+	): OutboxItem[] => {
+		if (!previous) return current.filter((i) => i.id !== id);
+		return current.some((i) => i.id === id)
+			? current.map((i) => (i.id === id ? previous : i))
+			: [...current, previous];
+	};
+
+	/** Refetches what an item touched so the cache returns to server truth. */
+	const invalidateItemQueries = (item: OutboxItem): void => {
+		if (item.type === 'daily') {
+			deps.queryClient.invalidateQueries({
+				queryKey: queryKeys.dailyAttendance(item.courseId, item.date),
+			});
+			// Year-to-date snapshots change once the day is stored.
+			deps.queryClient.invalidateQueries({
+				queryKey: queryKeys.preceptorDashboard(item.date),
+			});
+		} else {
+			deps.queryClient.invalidateQueries({
+				queryKey: queryKeys.subjectAttendance(item.subjectId, item.date),
+			});
+		}
+	};
+
+	let initPromise: Promise<void> | null = null;
+
+	const init = (): Promise<void> => {
+		if (state.initialized || disposed) return Promise.resolve();
+		// Concurrent callers share one load: a second, later load must never
+		// overwrite items enqueued after the first one finished.
+		if (!initPromise) {
+			initPromise = (async () => {
+				const loaded = await loadItems(deps.scope);
+				if (disposed || state.initialized) return;
+				// Anything already in memory is newer than what storage returned.
+				const inMemoryIds = new Set(state.items.map((i) => i.id));
+				state = {
+					...state,
+					items: [...loaded.filter((i) => !inMemoryIds.has(i.id)), ...state.items],
+					initialized: true,
+				};
+				notify();
+				scheduleNextRetryIfNeeded();
+			})().finally(() => {
+				initPromise = null;
+			});
+		}
+		return initPromise;
 	};
 
 	const flush = async (options?: { force?: boolean }): Promise<void> => {
@@ -416,25 +432,11 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 					try {
 						if (currentItem.type === 'daily') {
 							await sendDaily(currentItem);
-							// Invalidate queries so fresh server records load
-							deps.queryClient.invalidateQueries({
-								queryKey: queryKeys.dailyAttendance(
-									currentItem.courseId,
-									currentItem.date,
-								),
-							});
-							deps.queryClient.invalidateQueries({
-								queryKey: queryKeys.preceptorDashboard(currentItem.date),
-							});
 						} else {
 							await sendSubject(currentItem);
-							deps.queryClient.invalidateQueries({
-								queryKey: queryKeys.subjectAttendance(
-									currentItem.subjectId,
-									currentItem.date,
-								),
-							});
 						}
+						// Invalidate queries so fresh server records load
+						invalidateItemQueries(currentItem);
 
 						// Remove the synced item only if it was not re-enqueued while
 						// the request was in flight; a newer revision stays pending.
@@ -541,15 +543,19 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 			nextItems = [...state.items, newItem];
 		}
 
-		// Optimistic React Query cache update
+		const previousItem =
+			existingIndex >= 0 ? state.items[existingIndex] : undefined;
+		await persistStrict(nextItems, (current) =>
+			restoreItem(current, id, previousItem),
+		);
+
+		// Optimistic React Query cache update (only once the save is durable)
 		applyOptimisticDailyAttendance(
 			deps.queryClient,
 			input.courseId,
 			input.date,
 			input.records,
 		);
-
-		await persistStateItems(nextItems);
 
 		// Trigger background flush if online
 		if (deps.isOnline()) {
@@ -601,7 +607,13 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 			nextItems = [...state.items, newItem];
 		}
 
-		// Optimistic React Query cache update
+		const previousItem =
+			existingIndex >= 0 ? state.items[existingIndex] : undefined;
+		await persistStrict(nextItems, (current) =>
+			restoreItem(current, id, previousItem),
+		);
+
+		// Optimistic React Query cache update (only once the save is durable)
 		applyOptimisticSubjectAttendance(
 			deps.queryClient,
 			input.subjectId,
@@ -611,8 +623,6 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 			input.records,
 		);
 
-		await persistStateItems(nextItems);
-
 		// Trigger background flush if online
 		if (deps.isOnline()) {
 			flush().catch(() => undefined);
@@ -621,8 +631,34 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 
 	const removeItem = async (id: string): Promise<void> => {
 		if (!state.initialized) await init();
-		const remaining = state.items.filter((i) => i.id !== id);
-		await persistStateItems(remaining);
+		const removed = state.items.find((i) => i.id === id);
+		if (!removed) return;
+		await persistStrict(
+			state.items.filter((i) => i.id !== id),
+			(current) => restoreItem(current, id, removed),
+		);
+		// A discarded save leaves optimistic data in the cache: reload the server's.
+		invalidateItemQueries(removed);
+	};
+
+	const retryItem = async (id: string): Promise<void> => {
+		if (!state.initialized) await init();
+		const failed = state.items.find((i) => i.id === id);
+		if (!failed) return;
+		const requeued: OutboxItem = {
+			...failed,
+			status: 'pending',
+			error: undefined,
+			retryCount: 0,
+			lastAttemptAt: undefined,
+		};
+		await persistStrict(
+			state.items.map((i) => (i.id === id ? requeued : i)),
+			(current) => restoreItem(current, id, failed),
+		);
+		if (deps.isOnline()) {
+			await flush({ force: true });
+		}
 	};
 
 	const getItem = (id: string): OutboxItem | undefined =>
@@ -650,6 +686,11 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		state.items.filter((i) => i.status === 'pending' || i.status === 'syncing')
 			.length;
 
+	/** Failed transiently: still queued and retried automatically. */
+	const getRetryingCount = (): number =>
+		state.items.filter((i) => i.status === 'failed' && !i.error?.isPermanent)
+			.length;
+
 	const getErrorCount = (): number =>
 		state.items.filter((i) => i.status === 'failed' && i.error?.isPermanent)
 			.length;
@@ -673,10 +714,12 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		enqueueSubject,
 		flush,
 		removeItem,
+		retryItem,
 		getItem,
 		getItemForCourse,
 		getItemForSubject,
 		getPendingCount,
+		getRetryingCount,
 		getErrorCount,
 		dispose,
 	};

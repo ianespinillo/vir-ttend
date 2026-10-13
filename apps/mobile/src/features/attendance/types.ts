@@ -54,11 +54,21 @@ export interface StudentItem {
 	status?: string;
 }
 
+/** Justification attached by the API to a `justified` record. */
+export interface AttendanceJustification {
+	id: string;
+	reason: string;
+	notes?: string;
+	createdBy?: string;
+	createdAt?: string;
+}
+
 export interface AttendanceRecordItem {
 	id?: string;
 	studentId: string;
 	studentName?: string;
 	status?: RecordedAttendanceStatus;
+	justification?: AttendanceJustification;
 }
 
 /** `GET /attendance/daily` (full roster, `status` unset when not recorded). */

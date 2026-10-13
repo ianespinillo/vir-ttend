@@ -15,6 +15,8 @@ export const describeSyncStatus = (input: {
 	status: PreloadStatus;
 	lastSyncedAt: number | null;
 	outboxPendingCount?: number;
+	/** Items that failed transiently and are queued for another attempt. */
+	outboxRetryingCount?: number;
 	outboxErrorCount?: number;
 	isOutboxSyncing?: boolean;
 }): SyncDescription => {
@@ -23,18 +25,22 @@ export const describeSyncStatus = (input: {
 		status,
 		lastSyncedAt,
 		outboxPendingCount = 0,
+		outboxRetryingCount = 0,
 		outboxErrorCount = 0,
 		isOutboxSyncing = false,
 	} = input;
 	const syncedLabel =
 		lastSyncedAt === null ? null : formatDayMonthTime(lastSyncedAt);
 
+	// Retrying items are not synced yet either: they count as unsent changes.
+	const unsentCount = outboxPendingCount + outboxRetryingCount;
+
 	if (!online) {
-		if (outboxPendingCount > 0) {
+		if (unsentCount > 0) {
 			const label =
-				outboxPendingCount === 1
+				unsentCount === 1
 					? '1 cambio pendiente'
-					: `${outboxPendingCount} cambios pendientes`;
+					: `${unsentCount} cambios pendientes`;
 			return {
 				tone: 'offline',
 				text: `Sin conexión · ${label}`,
@@ -66,14 +72,14 @@ export const describeSyncStatus = (input: {
 		};
 	}
 
-	if (outboxPendingCount > 0) {
+	if (unsentCount > 0) {
 		const label =
-			outboxPendingCount === 1
+			unsentCount === 1
 				? '1 cambio pendiente de sincronizar'
-				: `${outboxPendingCount} cambios pendientes de sincronizar`;
+				: `${unsentCount} cambios pendientes de sincronizar`;
 		return {
 			tone: 'syncing',
-			text: label,
+			text: outboxRetryingCount > 0 ? `${label} · reintentando` : label,
 		};
 	}
 

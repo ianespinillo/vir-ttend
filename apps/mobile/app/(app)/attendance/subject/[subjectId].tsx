@@ -189,7 +189,10 @@ export default function SubjectAttendanceScreen() {
 				[{ text: 'Aceptar', onPress: () => router.back() }],
 			);
 		} catch (error: unknown) {
-			Alert.alert('Error', 'No se pudo guardar la asistencia localmente.');
+			Alert.alert(
+				'Error',
+				'No se pudo guardar la asistencia en el dispositivo. Intentá nuevamente.',
+			);
 		} finally {
 			setIsSaving(false);
 		}
