@@ -104,26 +104,67 @@ const requestNewAccessToken = async (): Promise<string> => {
 	}
 };
 
+const isUnauthorized = (error: unknown): boolean =>
+	axios.isAxiosError(error) && error.response?.status === 401;
+
+const postLogout = (accessToken: string, refreshToken: string) =>
+	axios.post(
+		`${API_URL}/auth/logout`,
+		{ refreshToken },
+		{
+			headers: { Authorization: `Bearer ${accessToken}` },
+			timeout: LOGOUT_REVOKE_TIMEOUT_MS,
+		},
+	);
+
 /**
- * Revokes the refresh token server side, best effort. Uses a bare axios call
+ * Gets an access token just to authorize the logout call, without touching
+ * stored credentials (the local session is already gone at this point).
+ */
+const requestAccessTokenForLogout = async (
+	refreshToken: string,
+): Promise<string> => {
+	const res = await axios.post(
+		`${API_URL}/auth/refresh`,
+		{ refreshToken },
+		{ timeout: LOGOUT_REVOKE_TIMEOUT_MS },
+	);
+	const accessToken: string | undefined = (res.data?.data ?? res.data)
+		?.accessToken;
+	if (!accessToken) {
+		throw new Error('Refresh response did not include an access token');
+	}
+	return accessToken;
+};
+
+/**
+ * Revokes the refresh token server side, best effort. Uses bare axios calls
  * with credentials captured by the caller, so it works after local storage was
  * cleared and bypasses the interceptors of `api`: a 401 here can never trigger
  * the refresh/retry chain or `notifySessionExpired`. Never rejects.
+ *
+ * `/auth/logout` needs a valid access token plus the refresh token. When the
+ * access token is missing or expired (401), it is renewed once from the refresh
+ * token and the logout is retried once.
  */
 export const revokeSessionOnServer = async (credentials: {
 	accessToken: string | null;
 	refreshToken: string | null;
 }): Promise<void> => {
 	const { accessToken, refreshToken } = credentials;
-	if (!accessToken || !refreshToken) return;
+	if (!refreshToken) return;
 	try {
-		await axios.post(
-			`${API_URL}/auth/logout`,
-			{ refreshToken },
-			{
-				headers: { Authorization: `Bearer ${accessToken}` },
-				timeout: LOGOUT_REVOKE_TIMEOUT_MS,
-			},
+		if (accessToken) {
+			try {
+				await postLogout(accessToken, refreshToken);
+				return;
+			} catch (error) {
+				if (!isUnauthorized(error)) throw error;
+			}
+		}
+		await postLogout(
+			await requestAccessTokenForLogout(refreshToken),
+			refreshToken,
 		);
 	} catch (error) {
 		console.warn('Could not revoke the session on the server', error);

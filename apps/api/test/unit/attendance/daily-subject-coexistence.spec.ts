@@ -1,5 +1,5 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { RegisterDailyAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-daily-attendance/register-daily-attendance.command';
 import { RegisterDailyAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-daily-attendance/register-daily-attendance.handler';
@@ -7,7 +7,9 @@ import { RegisterSubjectAttendanceCommand } from '../../../src/modules/attendanc
 import { RegisterSubjectAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.handler';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { ScheduleSlot } from '../../../src/modules/attendance/domain/entities/schedule-slot.entity';
+import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
 import { ISchedulePort } from '../../../src/modules/attendance/domain/ports/schedule.port.interface';
+import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 
@@ -44,6 +46,10 @@ describe('daily and subject attendance coexistence', () => {
 		repo.bulkSave.mockImplementation(async (records) => upsert(records));
 		const unitOfWork = mock<IUnitOfWorkPort>();
 		unitOfWork.run.mockImplementation(async (work) => work());
+		const subjectPort = mock<ISubjectPort>();
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'teacher-1'),
+		);
 		const schedulePort = mock<ISchedulePort>();
 		schedulePort.findBySubject.mockResolvedValue([
 			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '09:00'),
@@ -57,6 +63,7 @@ describe('daily and subject attendance coexistence', () => {
 		subjectHandler = new RegisterSubjectAttendanceHandler(
 			repo,
 			schedulePort,
+			subjectPort,
 			unitOfWork,
 			eventEmitter,
 		);
@@ -77,6 +84,7 @@ describe('daily and subject attendance coexistence', () => {
 			new RegisterSubjectAttendanceCommand(
 				'tenant-1',
 				'teacher-1',
+				ROLES.TEACHER,
 				'sub-1',
 				'course-1',
 				date,

@@ -4,8 +4,10 @@ import { AttendanceStatus, DAYOFWEEK } from '@repo/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
 import { ISchedulePort } from '../../../domain/ports/schedule.port.interface';
+import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
+import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
 import { RegisterSubjectAttendanceCommand } from './register-subject-attendance.command';
 
 @Injectable()
@@ -15,11 +17,19 @@ export class RegisterSubjectAttendanceHandler {
 		private readonly attendanceRecordRepo: IAttendanceRecordRepository,
 		@Inject('ISchedulePort')
 		private readonly schedulePort: ISchedulePort,
+		@Inject('ISubjectPort')
+		private readonly subjectPort: ISubjectPort,
 		@Inject('IUnitOfWorkPort')
 		private readonly unitOfWork: IUnitOfWorkPort,
 		private readonly em: EventEmitter2,
 	) {}
 	async execute(command: RegisterSubjectAttendanceCommand): Promise<void> {
+		const subject = await this.subjectPort.getSubjectById(command.subjectId);
+		if (!subject) throw new BadRequestException('Invalid subject id');
+		assertCanWriteSubjectAttendance(subject, {
+			userId: command.userId,
+			role: command.userRole,
+		});
 		const slots = await this.schedulePort.findBySubject(command.subjectId);
 		const validDays = slots.filter(
 			(s) => s.dayOfWeek === this.getDayOfWeek(command.date),
@@ -68,6 +78,11 @@ export class RegisterSubjectAttendanceHandler {
 			);
 		}
 	}
+	/**
+	 * Class dates travel as `YYYY-MM-DD`, which `new Date()` parses as UTC
+	 * midnight, so the weekday must be read in UTC. `getDay()` would shift it by
+	 * the server timezone and reject valid class days.
+	 */
 	private getDayOfWeek(date: Date): DAYOFWEEK {
 		const days: Record<number, DAYOFWEEK> = {
 			1: DAYOFWEEK.MONDAY,
@@ -76,6 +91,6 @@ export class RegisterSubjectAttendanceHandler {
 			4: DAYOFWEEK.THURSDAY,
 			5: DAYOFWEEK.FRIDAY,
 		};
-		return days[date.getDay()];
+		return days[date.getUTCDay()];
 	}
 }

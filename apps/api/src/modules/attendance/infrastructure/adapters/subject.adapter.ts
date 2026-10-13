@@ -18,6 +18,7 @@ export class SubjectAdapter implements ISubjectPort {
 			subject.id.getRaw(),
 			subject.courseId,
 			subject.name,
+			subject.teacherId,
 		);
 	}
 	async getByTeacherAndCourses(
@@ -29,7 +30,7 @@ export class SubjectAdapter implements ISubjectPort {
 			courses,
 		);
 		return subject.map((s) =>
-			Subject.reconstitute(s.id.getRaw(), s.courseId, s.name),
+			Subject.reconstitute(s.id.getRaw(), s.courseId, s.name, s.teacherId),
 		);
 	}
 }
