@@ -11,7 +11,6 @@ import { UserTenantLinkedEmailListener } from './infrastructure/events/user-tena
 			provide: TemplateRenderer,
 			useFactory: () => new TemplateRenderer(),
 		},
-		TemplateRenderer,
 		{
 			provide: EMAIL_SENDER,
 			useClass: MailerService,
