@@ -182,17 +182,21 @@ prereleases or move the site links to explicit tags.
 
 ### One-time setup (before the first run)
 
+Done for the current project (`@ianespi/vir-ttend`); kept as reference.
+
 1. `cd apps/mobile && npx eas-cli@latest login && npx eas-cli@latest init`.
    With a dynamic config, `init` prints the `extra.eas.projectId` to add to
    `app.config.ts`; commit it.
-2. Run the first build interactively so EAS creates and stores the Android
-   keystore (non-interactive builds cannot generate it):
-   `npx eas-cli@latest build --profile preview-eest3 --platform android`.
-   Losing that keystore means the app can no longer be updated in place.
-3. Create an Expo access token (expo.dev → Account settings → Access tokens)
-   and add it as the repository secret `EXPO_TOKEN`.
-4. Trigger the workflow (`Run workflow` on `main`, or push a `mobile-v1.0.0`
+2. Create an Expo access token (expo.dev → Account settings → Access tokens)
+   and add it as the **repository** secret `EXPO_TOKEN`. An environment secret
+   is not visible to this workflow, which declares no `environment:`.
+3. Trigger the workflow (`Run workflow` on `main`, or push a `mobile-v1.0.0`
    tag) and check that the release has `virttend-eest3.apk`.
+
+The first build generates the Android keystore in the cloud (also in
+`--non-interactive` mode) and EAS keeps it under the project credentials.
+Losing that keystore means the app can no longer be updated in place: back it
+up with `npx eas-cli@latest credentials -p android`.
 
 ### Adding a variant
 

@@ -4,9 +4,8 @@ name: mobile-release
 # GitHub Release. Asset names are fixed (virttend-<variant>.apk) so the site can
 # link to releases/latest/download/<asset> without being redeployed.
 #
-# One-time setup (see docs/ci-cd.md "Mobile release"): `eas init` committed,
-# first build run interactively to create the Android keystore, and the
-# EXPO_TOKEN repository secret.
+# One-time setup (see docs/ci-cd.md "Mobile release"): `eas init` committed
+# and the EXPO_TOKEN repository secret.
 
 on:
   push:

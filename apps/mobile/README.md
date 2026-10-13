@@ -99,9 +99,6 @@ download pages link to the latest release. Setup and details:
 
 ### Pending
 
-- First Android build: the EAS project (`@ianespi/vir-ttend`) and the
-  `EXPO_TOKEN` repository secret exist; run the first build interactively so
-  EAS creates the Android keystore before the release workflow runs.
 - General variant API URL: set `apiUrl` for `general` in `app.config.ts` and
   `EXPO_PUBLIC_API_URL` in the `*-general` profiles once the shared server is
   deployed.

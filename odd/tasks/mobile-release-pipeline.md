@@ -25,7 +25,9 @@ Pedido del usuario (2026-10-12): "se puede automatizar todo en un pipeline" → 
 - [x] T0: feature doc + mirror Engram
 - [x] T1: workflow + eas.json + site + docs
 - [x] T2: verificación (parse YAML, ts:check del site, lint) + commit (ver Entrega)
-- [ ] T3: entrega — push/PR pendiente de aprobación; setup manual único pendiente del usuario (eas init + projectId, primer build interactivo, secret `EXPO_TOKEN`)
+- [x] T3: entrega — PR #51 → dev.
+- [x] T4: setup EAS (2026-10-13) — proyecto `@ianespi/vir-ttend` (`190d6beb-…`), `owner` + `extra.eas.projectId` en `app.config.ts` (commit `588831d`); `EXPO_TOKEN` como secret de **repo** (el usuario lo había puesto en el environment `eest3`, donde el workflow no lo ve). El keystore se generó en la nube durante un build `--non-interactive` → se corrigió la doc que exigía un primer build interactivo.
+- [ ] T5: primer APK — build EAS `9f20619a-…` (lanzado a mano); después, run real del workflow.
 
 ## Ruta
 - Inline: un solo archivo no trivial (workflow); el resto son ediciones mecánicas.
