@@ -265,7 +265,7 @@ En modo `single` la instancia puede mostrar la identidad de la escuela (nombre, 
 1. Crear `deploy/branding/<slug>/` con `branding.json` y los assets.
 2. Validar: `pnpm --filter api test -- branding`. Un `branding.json` con un color inválido o un asset faltante hace fallar el arranque de la API con un mensaje que nombra el campo o el archivo.
 3. Commitear la carpeta. La VM hace checkout del sha exacto, así que compose monta solo la carpeta de **su** escuela.
-4. Definir `BRANDING_SLUG=<slug>` en el `.env` de la VM y volver a desplegar (`docker compose -f compose.prod.yml up -d`).
+4. Definir `BRANDING_SLUG=<slug>` en el `.env` de la VM y recrear `api` y `caddy`, que montan la carpeta: `IMAGE_TAG=latest docker compose -f compose.prod.yml -f compose.ci.yml up -d --wait api caddy`. Incluir siempre `compose.ci.yml`: sin ese override, compose intenta construir las imágenes en la VM en lugar de usar las de GHCR. Para fijar una versión, usar `IMAGE_TAG=sha-<sha completo>` en lugar de `latest`.
 5. Verificar `GET /api/config/public`: `branding.source` debe ser `instance` y `branding.colors.primary` el de la escuela. Los assets se sirven desde `https://<dominio>/branding/<archivo>`.
 
 **Cómo se sirven los assets:** en producción, Caddy atiende `/branding/*` desde la carpeta montada (`/srv/branding`). En desarrollo, sin Caddy, la API sirve `BRANDING_DIR` en `/branding` (solo si `NODE_ENV` no es `production`).
