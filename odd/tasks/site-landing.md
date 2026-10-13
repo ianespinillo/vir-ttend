@@ -33,13 +33,26 @@ Split marketing from the product demo. A new `apps/site` (Next.js) holds the pub
 - Commit only (no push requested).
 
 ## Tasks
-- [ ] **S1 — `apps/site` landing**, Vercel-ready.
-- [ ] **S2 — `apps/demo` without landing** (root = role picker, links to the site).
+- [x] **S1 — `apps/site` landing** (`edc9b42`). Includes the per-app download config (`src/config/mobile-apps.ts`, `/descargar`, `/descargar/[slug]` with a QR). Site build passes with 9 static pages and the Vercel build was simulated from a clean `dist`. Follow-up fix: URLs without a scheme are accepted.
+- [x] **S2 — `apps/demo` without landing** (`55d36a9`; the root is the role picker; demo now uses `@repo/ui/tokens.css`, which turns it Vir-ttend navy; `standalone` removed; vitest 138 pass).
 
 ## Route log
 | Task | Route | Trigger evidence |
 |------|-------|------------------|
 | S1+S2 | delegated direct (one writer, two commits) | new app (10+ files) + demo pages/config |
 
+## Review
+- The combined slice (Task 9 + site + demo, 3663 lines) exceeded the lens budget. It was split into 3 reviews by checking out each cut point, with `apps/site/` temporarily excluded via `.git/info/exclude`:
+  - Task 9: `review-6681c021cbfca424`.
+  - Site: `review-0fe19bd357f09121`.
+  - Demo: `review-ce1dc6fb9ddeb709`.
+- All three were approved and acknowledged.
+- **Follow-ups:**
+  - `@types/react` ^18 vs React 19 is a repo-wide pattern across client, demo and site.
+  - The placeholder contact email must be set through `NEXT_PUBLIC_CONTACT_EMAIL`.
+  - The store buttons are text, not the official badges.
+  - The privacy draft needs legal review.
+- The user pre-approved all future review consents.
+
 ## Next step
-- S1 + S2 (delegated writer).
+- The user deploys `apps/site` (and optionally `apps/demo`) to Vercel.
