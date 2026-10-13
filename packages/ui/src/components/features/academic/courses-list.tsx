@@ -8,6 +8,7 @@ import {
 } from '@repo/common';
 import { Filter, Plus, Search, X } from 'lucide-react';
 import { useState } from 'react';
+import { localizeCourseName } from '../../../lib/shift';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import {
@@ -53,7 +54,9 @@ export function CoursesList({
 	const filteredCourses = courses.filter((c) => {
 		const matchesSearch =
 			!search ||
-			c.fullName.toLowerCase().includes(search.toLowerCase()) ||
+			localizeCourseName(c.fullName)
+				.toLowerCase()
+				.includes(search.toLowerCase()) ||
 			c.division.toLowerCase().includes(search.toLowerCase()) ||
 			c.preceptorName?.toLowerCase().includes(search.toLowerCase());
 

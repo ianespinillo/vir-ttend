@@ -22,6 +22,7 @@ import {
 	DailyAttendancePage,
 	ReviewJustificationsModal,
 	type StudentRowItem,
+	localizeCourseName,
 } from '@repo/ui';
 import { endOfMonth, format, parseISO, startOfMonth, subDays } from 'date-fns';
 import { Copy, FileCheck } from 'lucide-react';
@@ -393,7 +394,7 @@ export default function AttendanceDailyPage() {
 			<ReviewJustificationsModal
 				open={isReviewJustificationsOpen}
 				onClose={() => setIsReviewJustificationsOpen(false)}
-				courseName={selectedCourse?.fullName}
+				courseName={localizeCourseName(selectedCourse?.fullName)}
 				selectedDate={selectedDate}
 				justifiedRecords={justifiedRecords}
 				isLoading={isLoadingHistory}

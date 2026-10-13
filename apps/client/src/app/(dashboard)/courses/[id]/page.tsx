@@ -31,9 +31,11 @@ import {
 	LoadingSpinner,
 	PageHeader,
 	SubjectForm,
+	localizeCourseName,
 } from '@repo/ui';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function CourseDetailPage() {
 	const params = useParams();
@@ -72,40 +74,84 @@ export default function CourseDetailPage() {
 	};
 
 	const handleUpdateCourse = async (values: CreateCourseFormValues) => {
-		await updateCourseMutation.mutateAsync({
-			id: courseId,
-			data: values,
-		});
-		setIsEditingCourse(false);
-		router.replace(`/courses/${courseId}`);
+		try {
+			await updateCourseMutation.mutateAsync({
+				id: courseId,
+				data: values,
+			});
+			toast.success('Curso actualizado exitosamente');
+			setIsEditingCourse(false);
+			router.replace(`/courses/${courseId}`);
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					'Error al actualizar el curso',
+			);
+		}
 	};
 
 	const handleDeleteCourse = async () => {
 		if (
 			course &&
 			window.confirm(
-				`¿Está seguro de que desea eliminar el curso ${course.fullName}?`,
+				`¿Está seguro de que desea eliminar el curso ${localizeCourseName(course.fullName)}?`,
 			)
 		) {
-			await deleteCourseMutation.mutateAsync(courseId);
-			router.push('/courses');
+			try {
+				await deleteCourseMutation.mutateAsync(courseId);
+				toast.success('Curso eliminado exitosamente');
+				router.push('/courses');
+			} catch (err: unknown) {
+				const errorObj = err as {
+					response?: { data?: { message?: string } };
+					message?: string;
+				};
+				toast.error(
+					errorObj?.response?.data?.message ||
+						errorObj?.message ||
+						'Error al eliminar el curso',
+				);
+			}
 		}
 	};
 
 	const handleSaveSubject = async (values: CreateSubjectFormValues) => {
-		if (subjectModalState.subject) {
-			await updateSubjectMutation.mutateAsync({
-				id: subjectModalState.subject.id,
-				courseId,
-				data: values,
-			});
-		} else {
-			await createSubjectMutation.mutateAsync({
-				...values,
-				courseId,
-			});
+		const isEditing = Boolean(subjectModalState.subject);
+		try {
+			if (subjectModalState.subject) {
+				await updateSubjectMutation.mutateAsync({
+					id: subjectModalState.subject.id,
+					courseId,
+					data: values,
+				});
+			} else {
+				await createSubjectMutation.mutateAsync({
+					...values,
+					courseId,
+				});
+			}
+			toast.success(
+				isEditing
+					? 'Materia actualizada exitosamente'
+					: 'Materia agregada exitosamente',
+			);
+			setSubjectModalState({ open: false, subject: null });
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					'Error al guardar la materia',
+			);
 		}
-		setSubjectModalState({ open: false, subject: null });
 	};
 
 	const handleDeleteSubject = async (subject: ISubjectResponse) => {
@@ -114,18 +160,44 @@ export default function CourseDetailPage() {
 				`¿Está seguro de que desea eliminar la materia ${subject.name}?`,
 			)
 		) {
-			await deleteSubjectMutation.mutateAsync({
-				id: subject.id,
-				courseId,
-			});
+			try {
+				await deleteSubjectMutation.mutateAsync({
+					id: subject.id,
+					courseId,
+				});
+				toast.success('Materia eliminada exitosamente');
+			} catch (err: unknown) {
+				const errorObj = err as {
+					response?: { data?: { message?: string } };
+					message?: string;
+				};
+				toast.error(
+					errorObj?.response?.data?.message ||
+						errorObj?.message ||
+						'Error al eliminar la materia',
+				);
+			}
 		}
 	};
 
 	const handleSaveSchedule = async (slots: ScheduleSlotFormValues[]) => {
-		await setScheduleMutation.mutateAsync({
-			courseId,
-			slots,
-		});
+		try {
+			await setScheduleMutation.mutateAsync({
+				courseId,
+				slots,
+			});
+			toast.success('Horarios guardados exitosamente');
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					'Error al guardar los horarios',
+			);
+		}
 	};
 
 	if (isLoading) {
@@ -152,7 +224,7 @@ export default function CourseDetailPage() {
 		return (
 			<div className="space-y-6">
 				<PageHeader
-					title={`Editar: ${course.fullName}`}
+					title={`Editar: ${localizeCourseName(course.fullName)}`}
 					description="Modifique la información del curso o la asignación de preceptor"
 				/>
 

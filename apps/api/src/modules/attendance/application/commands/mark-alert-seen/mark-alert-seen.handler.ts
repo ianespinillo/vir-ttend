@@ -11,6 +11,9 @@ export class MarkAlertSeenHandler {
 		const alert = await this.alertAttendanceRepo.findById(command.alertId);
 		if (!alert)
 			throw new NotFoundException(`No alert found with id ${command.alertId}`);
+		if (alert.seenAt || alert.seenBy) {
+			return;
+		}
 		alert.markAsSeen(command.seenBy);
 		await this.alertAttendanceRepo.save(alert);
 	}

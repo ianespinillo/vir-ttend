@@ -3,6 +3,7 @@ export interface IAcademicYearResponse {
 	year: number;
 	startDate: Date;
 	endDate: Date;
+	nonWorkingDays: Date[];
 	absenceThresholdPercent: number;
 	lateCountAbscenseAfterMinutes: number;
 	isActive: boolean;

@@ -1,0 +1,43 @@
+{
+	"cli": {
+		"version": ">= 16.0.0",
+		"appVersionSource": "remote"
+	},
+	"build": {
+		"development": {
+			"developmentClient": true,
+			"distribution": "internal",
+			"env": {
+				"APP_VARIANT": "general"
+			}
+		},
+		"preview-general": {
+			"distribution": "internal",
+			"android": { "buildType": "apk" },
+			"env": {
+				"APP_VARIANT": "general"
+			}
+		},
+		"production-general": {
+			"autoIncrement": true,
+			"env": {
+				"APP_VARIANT": "general"
+			}
+		},
+		"preview-eest3": {
+			"distribution": "internal",
+			"android": { "buildType": "apk" },
+			"env": {
+				"APP_VARIANT": "eest3",
+				"EXPO_PUBLIC_API_URL": "https://eest3-virttend.duckdns.org/api"
+			}
+		},
+		"production-eest3": {
+			"autoIncrement": true,
+			"env": {
+				"APP_VARIANT": "eest3",
+				"EXPO_PUBLIC_API_URL": "https://eest3-virttend.duckdns.org/api"
+			}
+		}
+	}
+}

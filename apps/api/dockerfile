@@ -14,14 +14,16 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/common/package.json ./packages/common/
+COPY packages/branding/package.json ./packages/branding/
 
 RUN pnpm install --frozen-lockfile
 
 # Código fuente del monorepo
 COPY . .
 
-# Se construye @repo/common primero (es dependencia runtime de la API)
+# Se construyen @repo/common y @repo/branding primero (dependencias runtime de la API)
 RUN pnpm --filter @repo/common build
+RUN pnpm --filter @repo/branding build
 RUN pnpm --filter api build
 
 # Stage 2: runner
@@ -37,6 +39,7 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/packages/common ./packages/common
+COPY --from=builder /app/packages/branding ./packages/branding
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 # The MikroORM CLI config and the migration files are TypeScript sources

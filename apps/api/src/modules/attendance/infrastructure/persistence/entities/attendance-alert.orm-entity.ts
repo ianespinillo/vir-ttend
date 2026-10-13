@@ -42,7 +42,7 @@ export class AttendanceAlertOrmEntity {
 	})
 	seenBy: string | null = null;
 	@Property({
-		type: 'date',
+		type: 'datetime',
 		nullable: true,
 	})
 	seenAt: Date | null = null;

@@ -21,8 +21,20 @@ export class UserRepository
 		return UserMapper.toDomain(orm);
 	}
 	async save(user: User): Promise<void> {
-		const orm = UserMapper.toOrm(user);
-		this.em.persist(orm);
+		const existing = await this.findOne({ id: user.id });
+		if (existing) {
+			existing.email = user.email;
+			existing.passwordHash = user.password.getRaw();
+			existing.firstName = user.firstName;
+			existing.lastName = user.lastName;
+			existing.isActive = user.isActive;
+			existing.mustChangePassword = user.mustChangePassword;
+			existing.createdAt = user.createdAt;
+			existing.updatedAt = user.updatedAt;
+		} else {
+			const orm = UserMapper.toOrm(user);
+			this.em.persist(orm);
+		}
 		await this.em.flush();
 	}
 	async exists(email: string): Promise<boolean> {

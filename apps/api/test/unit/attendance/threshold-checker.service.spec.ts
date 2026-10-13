@@ -90,11 +90,10 @@ describe('ThresholdCheckerService', () => {
 			expect(result).toBeNull();
 		});
 
-		it('permite crear alerta si la existente fue vista (seenAt definido)', () => {
+		it('no permite crear otra alerta si la existente ya fue vista', () => {
 			const seen = makeAlert(AlertType.warning(), new Date());
 			const result = ThresholdCheckerService.check(60, [seen]);
-			expect(result).not.toBeNull();
-			expect(result?.status).toBe('warning');
+			expect(result).toBeNull();
 		});
 
 		it('permite escalar de warning a critical aunque exista una warning activa', () => {

@@ -119,6 +119,7 @@ export class User {
 
 	changePassword(newPassword: PasswordHashed): void {
 		this._password = newPassword;
+		this._mustChangePassword = false;
 		this._updatedAt = new Date();
 	}
 	resetTemporaryPassword(newPassword: PasswordHashed): void {

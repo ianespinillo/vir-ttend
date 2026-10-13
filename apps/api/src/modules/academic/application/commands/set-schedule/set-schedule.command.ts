@@ -1,6 +1,7 @@
 import { DAYOFWEEK } from '@repo/common';
 
-interface Slot {
+export interface Slot {
+	subjectId?: string;
 	dayOfWeek: DAYOFWEEK;
 	startTime: string;
 	endTime: string;
@@ -8,7 +9,8 @@ interface Slot {
 
 export class SetScheduleCommand {
 	constructor(
-		readonly subjectId: string,
+		readonly subjectId: string | undefined,
 		readonly slots: Slot[],
+		readonly courseId?: string,
 	) {}
 }

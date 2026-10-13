@@ -1,7 +1,9 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
+import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceCopyService } from '../../services/attendance-copy.service';
+import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
 import { CopyAttendanceCommand } from './copy-attendance.command';
 
 @Injectable()
@@ -10,8 +12,17 @@ export class CopyAttendanceHandler {
 		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		private readonly copyAttendanceService: AttendanceCopyService,
+		@Inject('ISubjectPort')
+		private readonly subjectPort: ISubjectPort,
 	) {}
 	async execute(command: CopyAttendanceCommand): Promise<void> {
+		const subject = await this.subjectPort.getSubjectById(command.subjectId);
+		if (!subject) throw new BadRequestException('Invalid subject id');
+		assertCanWriteSubjectAttendance(subject, {
+			userId: command.userId,
+			role: command.userRole,
+			tenantId: command.tenantId,
+		});
 		const sourceRecords = await this.copyAttendanceService.getLastClassRecords(
 			command.subjectId,
 			command.sourceDate ?? command.targetDate,
@@ -30,7 +41,7 @@ export class CopyAttendanceHandler {
 			if (!existingsIds.has(record.studentId)) {
 				result.push(
 					AttendanceRecord.create({
-						tenantId: record.tenantId,
+						tenantId: command.tenantId,
 						courseId: record.courseId,
 						studentId: record.studentId,
 						subjectId: command.subjectId,

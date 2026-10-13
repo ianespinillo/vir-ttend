@@ -45,9 +45,16 @@ describe('student.schema', () => {
 		expect(transferSchema.safeParse({ targetCourseId: validUUID }).success).toBe(
 			true,
 		);
+		expect(transferSchema.safeParse({ newCourseId: validUUID }).success).toBe(
+			true,
+		);
 		expect(
 			transferSchema.safeParse({ targetCourseId: 'invalid-uuid' }).success,
 		).toBe(false);
+		expect(
+			transferSchema.safeParse({ newCourseId: 'invalid-uuid' }).success,
+		).toBe(false);
+		expect(transferSchema.safeParse({}).success).toBe(false);
 	});
 
 	it('permite campos opcionales en updateStudentSchema', () => {

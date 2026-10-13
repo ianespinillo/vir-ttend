@@ -12,6 +12,7 @@ export class CourseMapper {
 
 		ormEntity.preceptorId = entity.preceptorId;
 
+		ormEntity.academicYearId = entity.academicYearId;
 		ormEntity.academicYear = em.getReference(
 			AcademicYearOrmEntity,
 			entity.academicYearId,

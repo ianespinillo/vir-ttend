@@ -37,8 +37,34 @@ export class AcademicYearRepository
 		return AcademicYearMapper.toDomain(orm);
 	}
 	async save(entity: AcademicYear): Promise<void> {
-		const orm = AcademicYearMapper.toOrm(entity);
-		this.em.persist(orm);
+		if (entity.isActive) {
+			const activeYears = await this.find({
+				schoolId: entity.tenantId,
+				isActive: true,
+				id: { $ne: entity.id.getRaw() },
+			});
+			for (const ay of activeYears) {
+				ay.isActive = false;
+				ay.updatedAt = new Date();
+			}
+		}
+		const existing = await this.findOne({ id: entity.id.getRaw() });
+		if (existing) {
+			existing.schoolId = entity.tenantId;
+			existing.year = entity.year;
+			existing.startDate = entity.startDate;
+			existing.endDate = entity.endDate;
+			existing.isActive = entity.isActive;
+			existing.nonWorkingDays = entity.nonWorkingDays;
+			existing.absenceThresholdPercent = entity.absenceThresholdPercent;
+			existing.lateCountAbscenseAfterMinutes =
+				entity.lateCountAbscenseAfterMinutes;
+			existing.createdAt = entity.createdAt;
+			existing.updatedAt = entity.updatedAt;
+		} else {
+			const orm = AcademicYearMapper.toOrm(entity);
+			this.em.persist(orm);
+		}
 		await this.em.flush();
 	}
 }

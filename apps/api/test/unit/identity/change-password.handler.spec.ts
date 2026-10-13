@@ -62,6 +62,7 @@ describe('ChangePasswordHandler', () => {
 		expect(userRepository.save).toHaveBeenCalledTimes(1);
 		expect(userRepository.save).toHaveBeenCalledWith(user);
 		expect(user.password.getRaw()).toBe('newhashed');
+		expect(user.mustChangePassword).toBe(false);
 	});
 
 	it('should throw BadRequestException when the old password does not match', async () => {

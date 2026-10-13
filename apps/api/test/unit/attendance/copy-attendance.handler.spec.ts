@@ -1,20 +1,32 @@
-import { ATTENDANCE_STATUS } from '@repo/common';
+import { ForbiddenException } from '@nestjs/common';
+import { ATTENDANCE_STATUS, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { CopyAttendanceCommand } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.command';
 import { CopyAttendanceHandler } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.handler';
 import { AttendanceCopyService } from '../../../src/modules/attendance/application/services/attendance-copy.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
+import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 
 describe('CopyAttendanceHandler', () => {
 	let handler: CopyAttendanceHandler;
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let copyAttendanceService: MockProxy<AttendanceCopyService>;
+	let subjectPort: MockProxy<ISubjectPort>;
 
 	beforeEach(() => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		copyAttendanceService = mock<AttendanceCopyService>();
-		handler = new CopyAttendanceHandler(attendanceRepo, copyAttendanceService);
+		subjectPort = mock<ISubjectPort>();
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1', 'tenant-1'),
+		);
+		handler = new CopyAttendanceHandler(
+			attendanceRepo,
+			copyAttendanceService,
+			subjectPort,
+		);
 	});
 
 	it('debe lanzar error si no hay registros en la fecha origen', async () => {
@@ -22,6 +34,8 @@ describe('CopyAttendanceHandler', () => {
 
 		const command = new CopyAttendanceCommand(
 			'user-1',
+			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			new Date(),
 			undefined,
@@ -42,6 +56,8 @@ describe('CopyAttendanceHandler', () => {
 		const targetDate = new Date('2026-07-10');
 		const command = new CopyAttendanceCommand(
 			'user-1',
+			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			targetDate,
 			undefined,
@@ -59,6 +75,8 @@ describe('CopyAttendanceHandler', () => {
 		const targetDate = new Date();
 		const command = new CopyAttendanceCommand(
 			'user-1',
+			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			targetDate,
 			undefined,
@@ -108,6 +126,8 @@ describe('CopyAttendanceHandler', () => {
 		const targetDate = new Date('2026-07-10');
 		const command = new CopyAttendanceCommand(
 			'user-1',
+			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			targetDate,
 			sourceDate,
@@ -119,5 +139,66 @@ describe('CopyAttendanceHandler', () => {
 			'sub-1',
 			sourceDate,
 		);
+	});
+
+	it('should reject a teacher who does not teach the subject', async () => {
+		const command = new CopyAttendanceCommand(
+			'other-teacher',
+			ROLES.TEACHER,
+			'tenant-1',
+			'sub-1',
+			new Date('2026-07-10'),
+			undefined,
+		);
+
+		await expect(handler.execute(command)).rejects.toThrow(ForbiddenException);
+		expect(copyAttendanceService.getLastClassRecords).not.toHaveBeenCalled();
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+	});
+
+	it('should reject when subject belongs to another tenant', async () => {
+		const command = new CopyAttendanceCommand(
+			'user-1',
+			ROLES.TEACHER,
+			'other-tenant',
+			'sub-1',
+			new Date('2026-07-10'),
+			undefined,
+		);
+
+		await expect(handler.execute(command)).rejects.toThrow(ForbiddenException);
+	});
+
+	it('should allow an admin on a subject taught by someone else', async () => {
+		copyAttendanceService.getLastClassRecords.mockResolvedValue([
+			mock<AttendanceRecord>({ studentId: 'student-1' }),
+		]);
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+		const command = new CopyAttendanceCommand(
+			'admin-1',
+			ROLES.ADMIN,
+			'tenant-1',
+			'sub-1',
+			new Date('2026-07-10'),
+			undefined,
+		);
+
+		await handler.execute(command);
+
+		expect(attendanceRepo.bulkSave).toHaveBeenCalledTimes(1);
+	});
+
+	it('should fail with a bad request when the subject does not exist', async () => {
+		subjectPort.getSubjectById.mockResolvedValue(null);
+		const command = new CopyAttendanceCommand(
+			'user-1',
+			ROLES.TEACHER,
+			'tenant-1',
+			'missing',
+			new Date('2026-07-10'),
+			undefined,
+		);
+
+		await expect(handler.execute(command)).rejects.toThrow('Invalid subject id');
 	});
 });

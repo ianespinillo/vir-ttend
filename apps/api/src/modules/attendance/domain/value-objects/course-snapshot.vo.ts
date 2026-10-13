@@ -9,7 +9,6 @@ export class CourseSnapshot {
 	private readonly _late: number;
 	private readonly _justified: number;
 	private readonly _notRecorded: number;
-	private readonly _expectedClasses: number;
 
 	constructor(
 		courseId: string,
@@ -28,21 +27,25 @@ export class CourseSnapshot {
 		this._absents = absents;
 		this._late = late;
 		this._justified = justified;
-		this._expectedClasses = expectedClasses;
 		this._notRecorded =
 			expectedClasses * totalStudents - (presents + late + absents + justified);
 	}
 
-	private get totalSlots(): number {
-		return this._expectedClasses * this._totalStudents;
+	/**
+	 * Registros efectivamente cargados (con asistencia tomada).
+	 * Las clases programadas sin asistencia tomada NO cuentan en los
+	 * porcentajes: de lo contrario diluyen el resultado hacia abajo.
+	 */
+	private get recordedSlots(): number {
+		return this._presents + this._absents + this._late + this._justified;
 	}
 	public get absencePercent(): number {
-		const slots = this.totalSlots;
+		const slots = this.recordedSlots;
 		if (slots === 0) return 0;
 		return ((this._absents + this._late) / slots) * 100;
 	}
 	public get presentsPercent(): number {
-		const slots = this.totalSlots;
+		const slots = this.recordedSlots;
 		if (slots === 0) return 0;
 		return ((this._presents + this._late) / slots) * 100;
 	}

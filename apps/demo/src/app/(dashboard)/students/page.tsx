@@ -91,8 +91,22 @@ export default function StudentsListPage() {
 		store.enrollStudent(studentId, targetCourseId);
 	};
 
-	const handleTransferSubmit = (studentId: string, targetCourseId: string) => {
-		store.transferStudent(studentId, targetCourseId);
+	const handleChangeCourseSubmit = (
+		studentId: string,
+		targetCourseId: string,
+	) => {
+		// Changing course keeps the student active; the demo store treats it as an enroll.
+		store.enrollStudent(studentId, targetCourseId);
+	};
+
+	const handleTransferSubmit = (student: IStudentResponse) => {
+		if (
+			window.confirm(
+				`¿Confirma el traslado de ${student.fullName} a otra escuela? El alumno quedará marcado como Transferido.`,
+			)
+		) {
+			store.transferStudent(student.id, student.courseId);
+		}
 	};
 
 	const handleDeactivate = (student: IStudentResponse) => {
@@ -118,6 +132,7 @@ export default function StudentsListPage() {
 			onCreate={handleCreate}
 			onEdit={handleEdit}
 			onEnrollSubmit={handleEnrollSubmit}
+			onChangeCourseSubmit={handleChangeCourseSubmit}
 			onTransferSubmit={handleTransferSubmit}
 			onDeactivate={handleDeactivate}
 			isAdmin={isAdmin}

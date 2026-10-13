@@ -187,8 +187,13 @@ export class Student {
 		if (tutorName || tutorPhone || tutorEmail) this._updatedAt = new Date();
 	}
 
-	transfer(newCourseId: string): void {
-		this._courseId = newCourseId;
+	enrollInCourse(courseId: string): void {
+		this._courseId = courseId;
+		this._status = STUDENTSTATUS.ACTIVE;
+		this._updatedAt = new Date();
+	}
+
+	transferAway(): void {
 		this._status = STUDENTSTATUS.TRANSFERRED;
 		this._updatedAt = new Date();
 	}

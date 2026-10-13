@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import { TokenService } from '../../../domain/services/token.service';
 import { LogoutCommand } from './logout.command';
@@ -15,7 +15,7 @@ export class LogoutHandler {
 		const entity = await this.refreshTokenRepository.findByHash(
 			this.tokenService.hashToken(refreshToken),
 		);
-		if (!entity) throw new Error('Invalid refresh token');
+		if (!entity) throw new UnauthorizedException('Invalid refresh token');
 		entity.revoke();
 		await this.refreshTokenRepository.save(entity);
 	}

@@ -40,7 +40,7 @@ export default function StudentDetailPage() {
 
 	const [modalState, setModalState] = useState<{
 		open: boolean;
-		mode: 'enroll' | 'transfer';
+		mode: 'enroll' | 'change';
 	}>({ open: false, mode: 'enroll' });
 
 	const user = session.user;
@@ -65,10 +65,17 @@ export default function StudentDetailPage() {
 	}
 
 	const handleModalSubmit = (targetCourseId: string) => {
-		if (modalState.mode === 'enroll') {
-			store.enrollStudent(student.id, targetCourseId);
-		} else {
-			store.transferStudent(student.id, targetCourseId);
+		// Both 'enroll' and 'change' assign a course and keep the student active.
+		store.enrollStudent(student.id, targetCourseId);
+	};
+
+	const handleTransfer = () => {
+		if (
+			window.confirm(
+				`¿Confirma el traslado de ${student.fullName} a otra escuela? El alumno quedará marcado como Transferido.`,
+			)
+		) {
+			store.transferStudent(student.id, student.courseId);
 		}
 	};
 
@@ -88,7 +95,8 @@ export default function StudentDetailPage() {
 				onBack={handleBack}
 				onEdit={() => router.push(DEMO_STUDENT_ROUTES.edit(student.id))}
 				onEnroll={() => setModalState({ open: true, mode: 'enroll' })}
-				onTransfer={() => setModalState({ open: true, mode: 'transfer' })}
+				onChangeCourse={() => setModalState({ open: true, mode: 'change' })}
+				onTransfer={handleTransfer}
 				onDeactivate={handleDeactivate}
 				isAdmin={isAdmin}
 				isPreceptor={isPreceptor}

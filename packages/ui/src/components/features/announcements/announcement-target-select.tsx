@@ -2,6 +2,7 @@
 
 import { LevelTargetOption, levelTargets } from '@repo/common';
 import type { AnnouncementTargetType, ICourseResponse } from '@repo/common';
+import { localizeCourseName } from '../../../lib/shift';
 import { Label } from '../../../ui/label';
 import { RadioGroup, RadioGroupItem } from '../../../ui/radio-group';
 
@@ -76,7 +77,7 @@ export function AnnouncementTargetSelect({
 					<option value="">Seleccioná un curso...</option>
 					{courses.map((course) => (
 						<option key={course.id} value={course.id}>
-							{course.fullName}
+							{localizeCourseName(course.fullName)}
 						</option>
 					))}
 				</select>

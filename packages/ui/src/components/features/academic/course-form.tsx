@@ -9,6 +9,7 @@ import {
 	SHIFT,
 	createCourseSchema,
 } from '@repo/common';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
@@ -63,9 +64,46 @@ export function CourseForm({
 		},
 	});
 
+	useEffect(() => {
+		if (defaultValues?.schoolId) {
+			form.setValue('schoolId', defaultValues.schoolId);
+		}
+		if (defaultValues?.academicYearId) {
+			form.setValue('academicYearId', defaultValues.academicYearId);
+		} else if (activeAY?.id && !form.getValues('academicYearId')) {
+			form.setValue('academicYearId', activeAY.id);
+		}
+		if (defaultValues?.level) {
+			form.setValue('level', defaultValues.level);
+		}
+		if (defaultValues?.shift) {
+			form.setValue('shift', defaultValues.shift);
+		}
+		if (defaultValues?.yearNumber) {
+			form.setValue('yearNumber', defaultValues.yearNumber);
+		}
+		if (defaultValues?.division) {
+			form.setValue('division', defaultValues.division);
+		}
+		if (defaultValues?.preceptorId !== undefined) {
+			form.setValue('preceptorId', defaultValues.preceptorId || '');
+		}
+	}, [defaultValues, activeAY, form]);
+
+	const handleFormSubmit = (data: CreateCourseFormValues) => {
+		const cleanData: CreateCourseFormValues = {
+			...data,
+			preceptorId: data.preceptorId === 'NONE' ? '' : data.preceptorId,
+		};
+		return onSubmit(cleanData);
+	};
+
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+			<form
+				onSubmit={form.handleSubmit(handleFormSubmit)}
+				className="space-y-6 max-w-2xl"
+			>
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">
@@ -148,7 +186,7 @@ export function CourseForm({
 										<SelectContent>
 											<SelectItem value={SHIFT.MORNING}>Mañana</SelectItem>
 											<SelectItem value={SHIFT.AFTERNOON}>Tarde</SelectItem>
-											<SelectItem value={SHIFT.EVENING}>Noche / Vespertino</SelectItem>
+											<SelectItem value={SHIFT.EVENING}>Noche</SelectItem>
 										</SelectContent>
 									</Select>
 									<FormMessage />

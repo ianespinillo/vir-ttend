@@ -3,6 +3,7 @@
 import type { Alert } from '@repo/common';
 import { format } from 'date-fns';
 import { Eye, User } from 'lucide-react';
+import { localizeCourseName } from '../../../lib/shift';
 import { Button } from '../../../ui/button';
 import { AlertTypeBadge } from './alert-type-badge';
 
@@ -27,7 +28,7 @@ export function AlertItem({
 				isSeen ? 'opacity-60' : ''
 			}`}
 		>
-			{!isSeen && <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />}
+			{!isSeen && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
 
 			<div className="flex items-center gap-2 min-w-0 shrink-0">
 				<div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -38,7 +39,7 @@ export function AlertItem({
 						{alert.studentName}
 					</p>
 					<p className="text-xs text-muted-foreground truncate">
-						{alert.courseName}
+						{localizeCourseName(alert.courseName)}
 					</p>
 				</div>
 			</div>

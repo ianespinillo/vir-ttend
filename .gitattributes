@@ -1,0 +1,4 @@
+# Repo-wide LF: the index already stores LF for every text file and biome's
+# formatter expects LF. Without this, `core.autocrlf=true` checks files out as
+# CRLF on Windows and `pnpm lint:check` (pre-commit) fails on every fresh clone.
+* text=auto eol=lf

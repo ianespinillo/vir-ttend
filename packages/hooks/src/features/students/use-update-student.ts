@@ -24,9 +24,25 @@ export function useUpdateStudent() {
 		UpdateStudentParams
 	>({
 		mutationFn: async ({ id, data }: UpdateStudentParams) => {
+			const body: {
+				firstName?: string;
+				lastName?: string;
+				birthDate?: string;
+				tutorName?: string;
+				tutorPhone?: string;
+				tutorEmail?: string;
+			} = {};
+			if (data.firstName !== undefined) body.firstName = data.firstName;
+			if (data.lastName !== undefined) body.lastName = data.lastName;
+			if (data.birthDate !== undefined) body.birthDate = data.birthDate;
+			if (data.tutorName !== undefined) body.tutorName = data.tutorName;
+			if (data.tutorPhone !== undefined) body.tutorPhone = data.tutorPhone;
+			// Omit empty/whitespace values so the API's @IsEmail validator passes.
+			const tutorEmail = data.tutorEmail?.trim();
+			if (tutorEmail) body.tutorEmail = tutorEmail;
 			const res = await apiClient.put<ApiResponse<IStudentDetailResponse>>(
 				STUDENT_ROUTES.student(id),
-				data,
+				body,
 			);
 			return res.data.data;
 		},

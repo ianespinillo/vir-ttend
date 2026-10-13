@@ -29,8 +29,9 @@ export class CourseOrmEntity extends BaseEntity {
 
 	@Property({
 		type: 'uuid',
+		nullable: true,
 	})
-	preceptorId!: string;
+	preceptorId?: string;
 
 	@Property({
 		type: 'string',
@@ -46,7 +47,7 @@ export class CourseOrmEntity extends BaseEntity {
 	yearNumber!: number;
 
 	@Property({
-		type: 'number',
+		type: 'string',
 	})
 	division!: string;
 

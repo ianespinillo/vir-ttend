@@ -9,6 +9,7 @@ export interface CreateProps {
 	nonWorkingDays: Date[];
 	absenceThresholdPercent?: number;
 	lateCountAbscenseAfterMinutes?: number;
+	isActive?: boolean;
 }
 
 interface ConstructorProps {
@@ -76,7 +77,7 @@ export class AcademicYear {
 			nonWorkingDays: props.nonWorkingDays ?? [],
 			absenceThresholdPercent: props.absenceThresholdPercent ?? 75,
 			lateCountAbscenseAfterMinutes: props.lateCountAbscenseAfterMinutes ?? 15,
-			isActive: true,
+			isActive: props.isActive ?? true,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		});
@@ -126,19 +127,19 @@ export class AcademicYear {
 
 	// Métodos de mutación
 	changeYear(year: number): void {
-		if (year < new Date().getFullYear()) {
-			throw new Error('Year must be greater than or equal to current year');
+		if (year < 2020) {
+			throw new Error('Year must be greater than or equal to 2020');
 		}
 		this._year = year;
 		this._updatedAt = new Date();
 	}
 
 	changeYearLapse(startDate: Date, endDate: Date): void {
-		if (startDate >= endDate) {
+		if (new Date(startDate).getTime() >= new Date(endDate).getTime()) {
 			throw new Error('Start date must be before end date');
 		}
-		this._startDate = startDate;
-		this._endDate = endDate;
+		this._startDate = new Date(startDate);
+		this._endDate = new Date(endDate);
 		this._updatedAt = new Date();
 	}
 

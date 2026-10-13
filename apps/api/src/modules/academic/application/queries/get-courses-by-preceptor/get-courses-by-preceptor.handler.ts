@@ -19,7 +19,11 @@ export class GetCoursesByPreceptorHandler {
 			query.academicYearId,
 			{ ...query },
 		);
-		const preceptor = await this.userRepo.findById(query.preceptorId);
-		return courses.map((c) => new CourseResponseDto(c, preceptor.fullName));
+		const preceptor = query.preceptorId
+			? await this.userRepo.findById(query.preceptorId)
+			: null;
+		return courses.map(
+			(c) => new CourseResponseDto(c, preceptor?.fullName ?? 'Sin asignar'),
+		);
 	}
 }

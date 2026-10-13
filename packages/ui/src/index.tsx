@@ -8,6 +8,9 @@ export * from './components/shared/page-header';
 export * from './components/shared/data-table';
 export * from './components/shared/forbidden-state';
 
+// Brand
+export * from './components/brand';
+
 // Layout
 export * from './components/layout';
 
@@ -30,6 +33,7 @@ export * from './components/features/profile';
 export * from './lib/utils';
 export * from './lib/format';
 export * from './lib/report-format';
+export * from './lib/shift';
 
 // Shadcn primitives
 export * from './ui/alert';

@@ -15,7 +15,7 @@ export const createCourseSchema = z.object({
 		errorMap: () => ({ message: 'Seleccione un turno válido' }),
 	}),
 	preceptorId: z.string().optional().or(z.literal('')),
-	schoolId: z.string().uuid('La escuela es obligatoria'),
+	schoolId: z.string().optional().or(z.literal('')),
 });
 
 export const updateCourseSchema = createCourseSchema.partial();

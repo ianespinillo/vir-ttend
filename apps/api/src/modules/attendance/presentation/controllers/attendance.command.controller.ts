@@ -190,6 +190,7 @@ export class AttendanceCommandController {
 			new RegisterSubjectAttendanceCommand(
 				user.tenantId,
 				user.sub,
+				user.role,
 				dto.subjectId,
 				dto.courseId,
 				new Date(dto.date),
@@ -227,6 +228,7 @@ export class AttendanceCommandController {
 		return this.bulkUpdateSubjectStatusHandler.execute(
 			new BulkUpdateSubjectStatusCommand(
 				user.sub,
+				user.role,
 				user.tenantId,
 				dto.subjectId,
 				new Date(dto.date),
@@ -264,6 +266,8 @@ export class AttendanceCommandController {
 		return this.copyAttendanceHandler.execute(
 			new CopyAttendanceCommand(
 				user.sub,
+				user.role,
+				user.tenantId,
 				dto.subjectId,
 				new Date(dto.targetDate),
 				dto.sourceDate ? new Date(dto.sourceDate) : undefined,

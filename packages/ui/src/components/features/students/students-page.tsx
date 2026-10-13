@@ -23,10 +23,11 @@ export interface StudentsPageProps {
 	onCreate: () => void;
 	onEdit: (id: string) => void;
 	onEnrollSubmit?: (studentId: string, courseId: string) => Promise<void> | void;
-	onTransferSubmit?: (
+	onChangeCourseSubmit?: (
 		studentId: string,
 		courseId: string,
 	) => Promise<void> | void;
+	onTransferSubmit?: (student: IStudentResponse) => Promise<void> | void;
 	onDeactivate?: (student: IStudentResponse) => Promise<void> | void;
 	isAdmin?: boolean;
 	isPreceptor?: boolean;
@@ -46,6 +47,7 @@ export function StudentsPage({
 	onCreate,
 	onEdit,
 	onEnrollSubmit,
+	onChangeCourseSubmit,
 	onTransferSubmit,
 	onDeactivate,
 	isAdmin = false,
@@ -54,7 +56,7 @@ export function StudentsPage({
 	const [modalState, setModalState] = useState<{
 		open: boolean;
 		student: IStudentResponse | null;
-		mode: 'enroll' | 'transfer';
+		mode: 'enroll' | 'change';
 	}>({
 		open: false,
 		student: null,
@@ -67,18 +69,26 @@ export function StudentsPage({
 		setModalState({ open: true, student, mode: 'enroll' });
 	};
 
-	const handleOpenTransfer = (student: IStudentResponse) => {
-		setModalState({ open: true, student, mode: 'transfer' });
+	const handleOpenChangeCourse = (student: IStudentResponse) => {
+		setModalState({ open: true, student, mode: 'change' });
 	};
 
-	const handleModalSubmit = async (targetCourseId: string) => {
+	const handleTransfer = (student: IStudentResponse) => {
+		void onTransferSubmit?.(student);
+	};
+
+	const handleModalOpenChange = (open: boolean) => {
+		setModalState((prev) => ({ ...prev, open }));
+	};
+
+	const handleModalSubmit = async (courseId: string) => {
 		if (!modalState.student) return;
 		setIsSubmittingModal(true);
 		try {
-			if (modalState.mode === 'enroll' && onEnrollSubmit) {
-				await onEnrollSubmit(modalState.student.id, targetCourseId);
-			} else if (modalState.mode === 'transfer' && onTransferSubmit) {
-				await onTransferSubmit(modalState.student.id, targetCourseId);
+			if (modalState.mode === 'enroll') {
+				await onEnrollSubmit?.(modalState.student.id, courseId);
+			} else {
+				await onChangeCourseSubmit?.(modalState.student.id, courseId);
 			}
 			setModalState((prev) => ({ ...prev, open: false }));
 		} finally {
@@ -114,7 +124,8 @@ export function StudentsPage({
 				onView={onView}
 				onEdit={onEdit}
 				onEnroll={handleOpenEnroll}
-				onTransfer={handleOpenTransfer}
+				onChangeCourse={handleOpenChangeCourse}
+				onTransfer={handleTransfer}
 				onDeactivate={onDeactivate}
 				isAdmin={isAdmin}
 				isPreceptor={isPreceptor}
@@ -152,7 +163,7 @@ export function StudentsPage({
 			{modalState.student && (
 				<EnrollmentModal
 					open={modalState.open}
-					onOpenChange={(open) => setModalState((prev) => ({ ...prev, open }))}
+					onOpenChange={handleModalOpenChange}
 					studentName={modalState.student.fullName}
 					currentCourseId={modalState.student.courseId}
 					mode={modalState.mode}

@@ -4,13 +4,15 @@ import { DAYOFWEEK as DayOfWeek } from '@repo/common';
 
 interface CreateProps {
 	subjectId: string;
+	courseId: string;
 	dayOfWeek: DayOfWeek;
 	startTime: string; // HH:mm
 	endTime: string; // HH:mm
 }
 
-interface ConstructorProps extends CreateProps {
+interface ConstructorProps extends Omit<CreateProps, 'courseId'> {
 	id: string;
+	courseId?: string;
 	createdAt: Date;
 }
 
@@ -19,6 +21,7 @@ export interface ReconstituteProps extends ConstructorProps {}
 export class ScheduleSlot {
 	private readonly _id: string;
 	private readonly _subjectId: string;
+	private readonly _courseId: string;
 	private readonly _dayOfWeek: DayOfWeek;
 	private readonly _startTime: string;
 	private readonly _endTime: string;
@@ -27,6 +30,7 @@ export class ScheduleSlot {
 	private constructor(props: ConstructorProps) {
 		this._id = props.id;
 		this._subjectId = props.subjectId;
+		this._courseId = props.courseId;
 		this._dayOfWeek = props.dayOfWeek;
 		this._startTime = props.startTime;
 		this._endTime = props.endTime;
@@ -53,6 +57,9 @@ export class ScheduleSlot {
 	}
 	get subjectId(): string {
 		return this._subjectId;
+	}
+	get courseId(): string {
+		return this._courseId;
 	}
 	get dayOfWeek(): DayOfWeek {
 		return this._dayOfWeek;

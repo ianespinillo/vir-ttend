@@ -378,13 +378,16 @@ export function UsersPage({
 									});
 									toast.success('Usuario registrado exitosamente');
 								},
-								onError: (err) => {
+								onError: (err: any) => {
+									const resMsg = err?.response?.data?.message;
+									const detail = Array.isArray(resMsg) ? resMsg.join(', ') : resMsg;
 									const message =
-										err.message?.includes('409') ||
-										err.message?.includes('duplicate') ||
-										err.message?.includes('belongs to tenant')
+										detail?.includes('409') ||
+										detail?.includes('duplicate') ||
+										detail?.includes('belongs to tenant') ||
+										err.message?.includes('409')
 											? 'El usuario ya pertenece a esta institución'
-											: (err.message ?? 'Error al crear el usuario');
+											: (detail ?? err.message ?? 'Error al crear el usuario');
 									toast.error(message);
 								},
 							});

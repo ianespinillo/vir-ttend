@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { getStandardNationalHolidays } from '@repo/common';
 import { AcademicYear } from '../../../domain/entities/academic-year.entity';
 import { IAcademicYearRepository } from '../../../domain/repositories/academic-year.repository.interface';
 import { AcademicYearCreatedEvent } from '../../../events/academic-year-created.event';
@@ -19,8 +20,15 @@ export class CreateAcademicYearHandler {
 		const { schoolId, year } = command;
 		const exists = await this.aYRepo.findBySchoolAndYear(schoolId, year);
 		if (exists) throw new Error('Existent academic period with this config');
+
+		const nonWorkingDays =
+			command.nonWorkingDays && command.nonWorkingDays.length > 0
+				? command.nonWorkingDays
+				: getStandardNationalHolidays(year).map((d) => new Date(d));
+
 		const period = AcademicYear.create({
 			...command,
+			nonWorkingDays,
 			tenantId: schoolId,
 		});
 		await this.aYRepo.save(period);

@@ -12,9 +12,14 @@ import {
 	usePublishAnnouncement,
 	useReadAnnouncements,
 } from '@repo/hooks';
-import { AnnouncementDetail, LoadingSpinner } from '@repo/ui';
+import {
+	AnnouncementDetail,
+	LoadingSpinner,
+	localizeCourseName,
+} from '@repo/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 export default function AnnouncementDetailPage() {
 	const params = useParams();
@@ -59,7 +64,7 @@ export default function AnnouncementDetailPage() {
 	);
 	const courseList = role === 'preceptor' ? preceptorCourses : adminCourses;
 	const courseNames = Object.fromEntries(
-		(courseList ?? []).map((c) => [c.id, c.fullName]),
+		(courseList ?? []).map((c) => [c.id, localizeCourseName(c.fullName)]),
 	);
 
 	const isLoading = isManager && Boolean(id) && apiDetail.isLoading && !cached;
@@ -80,14 +85,38 @@ export default function AnnouncementDetailPage() {
 				canDelete={isAdmin}
 				targetLabel={courseNames[announcement?.targetId ?? ''] ?? undefined}
 				onBack={() => router.push('/announcements')}
-				onPublish={() => publishMutation.mutateAsync(id).catch(() => {})}
+				onPublish={async () => {
+					try {
+						await publishMutation.mutateAsync(id);
+						toast.success('Comunicado publicado exitosamente');
+					} catch (err: unknown) {
+						const errorObj = err as {
+							response?: { data?: { message?: string } };
+							message?: string;
+						};
+						toast.error(
+							errorObj?.response?.data?.message ||
+								errorObj?.message ||
+								'Error al publicar el comunicado',
+						);
+					}
+				}}
 				onEdit={() => router.push(`/announcements/${id}/edit`)}
 				onDelete={async () => {
 					try {
 						await deleteMutation.mutateAsync(id);
+						toast.success('Comunicado eliminado exitosamente');
 						router.push('/announcements');
-					} catch {
-						// queda en detalle si falla
+					} catch (err: unknown) {
+						const errorObj = err as {
+							response?: { data?: { message?: string } };
+							message?: string;
+						};
+						toast.error(
+							errorObj?.response?.data?.message ||
+								errorObj?.message ||
+								'Error al eliminar el comunicado',
+						);
 					}
 				}}
 			/>

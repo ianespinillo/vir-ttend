@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Subject } from '../../../domain/entities/subject.entity';
 import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
@@ -29,7 +29,7 @@ export class CreateSubjectHandler {
 		const subjects = await this.subjectRepo.findByCourse(command.courseId);
 		const newSubject = Subject.create({ ...command });
 		const exist = subjects.some((s) => newSubject.equals(s));
-		if (exist) throw new Error('Subject already exists');
+		if (exist) throw new BadRequestException('Subject already exists');
 		await this.subjectRepo.save(newSubject);
 		this.em.emit(
 			'subject.created',

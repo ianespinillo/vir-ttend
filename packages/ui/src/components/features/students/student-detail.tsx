@@ -3,16 +3,19 @@
 import type { ICourseResponse, IStudentDetailResponse } from '@repo/common';
 import {
 	ArrowLeft,
+	BookOpenCheck,
 	Calendar,
 	CheckCircle2,
 	Edit,
 	FileBadge,
 	GraduationCap,
+	LogOut,
 	User,
 	UserMinus,
 	UserPlus,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { localizeCourseName } from '../../../lib/shift';
 import { cn } from '../../../lib/utils';
 import { Avatar, AvatarFallback } from '../../../ui/avatar';
 import { Badge } from '../../../ui/badge';
@@ -27,6 +30,7 @@ export interface StudentDetailProps {
 	onBack?: () => void;
 	onEdit?: () => void;
 	onEnroll?: () => void;
+	onChangeCourse?: () => void;
 	onTransfer?: () => void;
 	onDeactivate?: () => void;
 	isAdmin?: boolean;
@@ -41,6 +45,7 @@ export function StudentDetail({
 	onBack,
 	onEdit,
 	onEnroll,
+	onChangeCourse,
 	onTransfer,
 	onDeactivate,
 	isAdmin = false,
@@ -53,10 +58,9 @@ export function StudentDetail({
 
 	const course = courses.find((c) => c.id === student.courseId);
 	const courseDisplayName =
-		student.courseName ||
+		localizeCourseName(student.courseName || course?.fullName) ||
 		(course
-			? course.fullName ||
-				`${course.yearNumber}° ${course.division} (${course.level})`
+			? `${course.yearNumber}° ${course.division} (${course.level})`
 			: student.courseId);
 
 	const formattedBirthDate = student.birthDate
@@ -137,6 +141,17 @@ export function StudentDetail({
 											Matricular
 										</Button>
 									)}
+									{onChangeCourse && (
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={onChangeCourse}
+											className="gap-1.5"
+										>
+											<BookOpenCheck className="h-4 w-4" />
+											Cambiar de curso
+										</Button>
+									)}
 									{onTransfer && (
 										<Button
 											variant="outline"
@@ -144,8 +159,8 @@ export function StudentDetail({
 											onClick={onTransfer}
 											className="gap-1.5"
 										>
-											<UserPlus className="h-4 w-4" />
-											Transferir
+											<LogOut className="h-4 w-4" />
+											Traslado
 										</Button>
 									)}
 									{onDeactivate && student.status === 'ACTIVE' && (

@@ -1,13 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 // transfer-student.request.dto.ts
+// Traslado: pase a otra escuela. No requiere curso de destino; el courseId
+// actual se conserva como referencia histórica.
 export class TransferStudentRequestDto {
-	@IsUUID()
-	@ApiProperty({
+	@IsOptional()
+	@IsString()
+	@MaxLength(255)
+	@ApiPropertyOptional({
 		type: String,
-		description: 'ID del curso de destino del traslado.',
-		example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+		description: 'Motivo u observación del traslado (opcional).',
+		example: 'Pase a la Escuela Nº 12',
 	})
-	newCourseId!: string;
+	reason?: string;
 }

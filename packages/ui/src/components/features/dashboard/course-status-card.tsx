@@ -2,6 +2,7 @@
 
 import type { CourseSnapshot } from '@repo/common';
 import { AlertTriangle } from 'lucide-react';
+import { localizeCourseName } from '../../../lib/shift';
 import { Card, CardContent } from '../../../ui/card';
 import { StatusIndicator } from './status-indicator';
 
@@ -27,7 +28,7 @@ export function CourseStatusCard({
 						<StatusIndicator status={course.statusColor} size="lg" />
 						<div className="min-w-0">
 							<h3 className="font-semibold text-sm text-foreground truncate">
-								{course.courseName}
+								{localizeCourseName(course.courseName)}
 							</h3>
 							<p className="text-xs text-muted-foreground">
 								{course.totalStudents} alumnos

@@ -19,8 +19,12 @@ export class GetCoursesHandler {
 		);
 		const extendedCourses: CourseResponseDto[] = [];
 		for (const course of courses) {
-			const preceptor = await this.userRepo.findById(course.preceptorId);
-			extendedCourses.push(new CourseResponseDto(course, preceptor.fullName));
+			const preceptor = course.preceptorId
+				? await this.userRepo.findById(course.preceptorId)
+				: null;
+			extendedCourses.push(
+				new CourseResponseDto(course, preceptor?.fullName ?? 'Sin asignar'),
+			);
 		}
 		return extendedCourses;
 	}

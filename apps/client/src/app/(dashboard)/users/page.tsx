@@ -1,9 +1,5 @@
-import { PageHeader } from '@repo/ui';
+import { redirect } from 'next/navigation';
 
 export default function UsersPage() {
-	return (
-		<div className="space-y-6">
-			<PageHeader title="Usuarios" description="Gestión de usuarios del sistema" />
-		</div>
-	);
+	redirect('/settings/users');
 }

@@ -1,0 +1,14 @@
+{
+	"version": 1,
+	"displayName": "Vir-ttend",
+	"shortName": "Vir-ttend",
+	"colors": {
+		"primary": "#14213D",
+		"accent": "#C6F432"
+	},
+	"assets": {
+		"mark": "mark.svg",
+		"lockup": "lockup.svg",
+		"favicon": "favicon.ico"
+	}
+}

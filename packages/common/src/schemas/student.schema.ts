@@ -21,9 +21,20 @@ export const enrollSchema = z.object({
 	courseId: z.string().uuid('Debe seleccionar un curso válido'),
 });
 
-export const transferSchema = z.object({
-	targetCourseId: z.string().uuid('Debe seleccionar un curso de destino válido'),
-});
+export const transferSchema = z
+	.object({
+		newCourseId: z
+			.string()
+			.uuid('Debe seleccionar un curso de destino válido')
+			.optional(),
+		targetCourseId: z
+			.string()
+			.uuid('Debe seleccionar un curso de destino válido')
+			.optional(),
+	})
+	.refine((data) => Boolean(data.newCourseId || data.targetCourseId), {
+		message: 'Debe seleccionar un curso de destino válido',
+	});
 
 export type CreateStudentFormValues = z.infer<typeof createStudentSchema>;
 export type UpdateStudentFormValues = z.infer<typeof updateStudentSchema>;

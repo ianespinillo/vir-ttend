@@ -3,12 +3,15 @@
 import type { ICourseResponse, IStudentResponse } from '@repo/common';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
+	BookOpenCheck,
 	Eye,
+	LogOut,
 	MoreHorizontal,
 	UserCheck,
 	UserMinus,
 	UserPlus,
 } from 'lucide-react';
+import { localizeCourseName } from '../../../lib/shift';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import {
@@ -28,6 +31,7 @@ export interface StudentsTableProps {
 	onView?: (id: string) => void;
 	onEdit?: (id: string) => void;
 	onEnroll?: (student: IStudentResponse) => void;
+	onChangeCourse?: (student: IStudentResponse) => void;
 	onTransfer?: (student: IStudentResponse) => void;
 	onDeactivate?: (student: IStudentResponse) => void;
 	isAdmin?: boolean;
@@ -41,6 +45,7 @@ export function StudentsTable({
 	onView,
 	onEdit,
 	onEnroll,
+	onChangeCourse,
 	onTransfer,
 	onDeactivate,
 	isAdmin = false,
@@ -75,11 +80,11 @@ export function StudentsTable({
 			header: 'Curso',
 			cell: ({ row }) => {
 				const student = row.original;
-				if (student.courseName) return student.courseName;
+				if (student.courseName) return localizeCourseName(student.courseName);
 				const course = courseMap.get(student.courseId);
 				if (course) {
 					return (
-						course.fullName ||
+						localizeCourseName(course.fullName) ||
 						`${course.yearNumber}° ${course.division} (${course.level})`
 					);
 				}
@@ -160,10 +165,16 @@ export function StudentsTable({
 											Matricular
 										</DropdownMenuItem>
 									)}
+									{onChangeCourse && (
+										<DropdownMenuItem onClick={() => onChangeCourse(student)}>
+											<BookOpenCheck className="mr-2 h-4 w-4" />
+											Cambiar de curso
+										</DropdownMenuItem>
+									)}
 									{onTransfer && (
 										<DropdownMenuItem onClick={() => onTransfer(student)}>
-											<UserPlus className="mr-2 h-4 w-4" />
-											Transferir
+											<LogOut className="mr-2 h-4 w-4" />
+											Traslado
 										</DropdownMenuItem>
 									)}
 									{onDeactivate && student.status === 'ACTIVE' && (

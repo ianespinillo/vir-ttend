@@ -1,14 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-	type ICourseResponse,
-	enrollSchema,
-	transferSchema,
-} from '@repo/common';
+import { type ICourseResponse, enrollSchema } from '@repo/common';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { localizeCourseName } from '../../../lib/shift';
 import { Button } from '../../../ui/button';
 import {
 	Dialog,
@@ -39,9 +35,10 @@ export interface EnrollmentModalProps {
 	onOpenChange: (open: boolean) => void;
 	studentName: string;
 	currentCourseId?: string;
-	mode: 'enroll' | 'transfer';
+	/** 'enroll' = asignar curso a un alumno sin curso; 'change' = cambiar de curso (el alumno permanece activo). */
+	mode: 'enroll' | 'change';
 	courses: ICourseResponse[];
-	onSubmit: (targetCourseId: string) => Promise<void> | void;
+	onSubmit: (courseId: string) => void;
 	isLoading?: boolean;
 }
 
@@ -55,41 +52,28 @@ export function EnrollmentModal({
 	onSubmit,
 	isLoading = false,
 }: EnrollmentModalProps) {
-	const schema = mode === 'enroll' ? enrollSchema : transferSchema;
-
-	const form = useForm<{ courseId?: string; targetCourseId?: string }>({
-		resolver: zodResolver(schema),
-		defaultValues: {
-			courseId: mode === 'enroll' ? currentCourseId || '' : undefined,
-			targetCourseId: mode === 'transfer' ? '' : undefined,
-		},
+	const form = useForm({
+		resolver: zodResolver(enrollSchema),
+		defaultValues: { courseId: '' },
 	});
 
 	useEffect(() => {
 		if (open) {
-			form.reset({
-				courseId: mode === 'enroll' ? currentCourseId || '' : undefined,
-				targetCourseId: mode === 'transfer' ? '' : undefined,
-			});
+			form.reset({ courseId: '' });
 		}
-	}, [open, mode, currentCourseId, form]);
+	}, [open, form]);
 
-	const handleSubmit = async (values: Record<string, string>) => {
-		const targetId = values.targetCourseId || values.courseId || '';
-		if (targetId) {
-			await onSubmit(targetId);
-			onOpenChange(false);
-		}
+	const handleSubmit = (values: { courseId: string }) => {
+		onSubmit(values.courseId);
 	};
 
-	const title =
-		mode === 'enroll' ? 'Matricular Estudiante' : 'Transferir Estudiante';
-	const description =
-		mode === 'enroll'
-			? `Selecciona el curso al que deseas matricular a ${studentName}.`
-			: `Selecciona el nuevo curso al que deseas transferir a ${studentName}.`;
+	const isChange = mode === 'change';
+	const title = isChange ? 'Cambiar de Curso' : 'Matricular Estudiante';
+	const description = isChange
+		? `Selecciona el nuevo curso para ${studentName}. El alumno permanecerá activo.`
+		: `Selecciona el curso al que deseas matricular a ${studentName}.`;
+	const submitLabel = isChange ? 'Cambiar de curso' : 'Matricular';
 
-	const fieldName = mode === 'enroll' ? 'courseId' : 'targetCourseId';
 	const availableCourses = courses.filter((c) => c.id !== currentCourseId);
 
 	return (
@@ -107,7 +91,7 @@ export function EnrollmentModal({
 					>
 						<FormField
 							control={form.control}
-							name={fieldName as 'courseId' | 'targetCourseId'}
+							name="courseId"
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Curso de destino</FormLabel>
@@ -124,7 +108,7 @@ export function EnrollmentModal({
 										<SelectContent>
 											{availableCourses.map((course) => (
 												<SelectItem key={course.id} value={course.id}>
-													{course.fullName ||
+													{localizeCourseName(course.fullName) ||
 														`${course.yearNumber}° ${course.division} (${course.level})`}
 												</SelectItem>
 											))}
@@ -145,11 +129,7 @@ export function EnrollmentModal({
 								Cancelar
 							</Button>
 							<Button type="submit" disabled={isLoading}>
-								{isLoading
-									? 'Guardando...'
-									: mode === 'enroll'
-										? 'Matricular'
-										: 'Transferir'}
+								{isLoading ? 'Guardando...' : submitLabel}
 							</Button>
 						</DialogFooter>
 					</form>

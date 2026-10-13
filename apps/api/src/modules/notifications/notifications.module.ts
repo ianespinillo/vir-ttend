@@ -7,6 +7,10 @@ import { UserTenantLinkedEmailListener } from './infrastructure/events/user-tena
 
 @Module({
 	providers: [
+		{
+			provide: TemplateRenderer,
+			useFactory: () => new TemplateRenderer(),
+		},
 		TemplateRenderer,
 		{
 			provide: EMAIL_SENDER,

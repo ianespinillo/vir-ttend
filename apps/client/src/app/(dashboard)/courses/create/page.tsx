@@ -6,6 +6,7 @@ import { useAcademicYears, useCreateCourse, useUsersByRole } from '@repo/hooks';
 import { CourseForm, PageHeader } from '@repo/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function CreateCoursePage() {
 	const router = useRouter();
@@ -22,17 +23,19 @@ export default function CreateCoursePage() {
 		setErrorMsg(null);
 		try {
 			await createCourseMutation.mutateAsync(values);
+			toast.success('Curso creado exitosamente');
 			router.push('/courses');
 		} catch (err: unknown) {
 			const errorObj = err as {
 				response?: { data?: { message?: string } };
 				message?: string;
 			};
-			setErrorMsg(
+			const message =
 				errorObj?.response?.data?.message ||
-					errorObj?.message ||
-					'Ocurrió un error al crear el curso. Verifique los datos.',
-			);
+				errorObj?.message ||
+				'Ocurrió un error al crear el curso. Verifique los datos.';
+			setErrorMsg(message);
+			toast.error(message);
 		}
 	};
 

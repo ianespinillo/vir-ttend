@@ -34,6 +34,14 @@ export class AcademicYearResponseDto implements IAcademicYearResponse {
 	endDate: Date;
 
 	@ApiProperty({
+		type: 'array',
+		items: { type: 'string', format: 'date-time' },
+		description: 'Días no laborables y feriados asignados al ciclo lectivo.',
+		example: ['2026-07-09T00:00:00.000Z', '2026-12-25T00:00:00.000Z'],
+	})
+	nonWorkingDays: Date[];
+
+	@ApiProperty({
 		type: Number,
 		minimum: 0,
 		maximum: 100,
@@ -63,6 +71,7 @@ export class AcademicYearResponseDto implements IAcademicYearResponse {
 		this.year = academicYear.year;
 		this.startDate = academicYear.startDate;
 		this.endDate = academicYear.endDate;
+		this.nonWorkingDays = academicYear.nonWorkingDays;
 		this.absenceThresholdPercent = academicYear.absenceThresholdPercent;
 		this.lateCountAbscenseAfterMinutes =
 			academicYear.lateCountAbscenseAfterMinutes;

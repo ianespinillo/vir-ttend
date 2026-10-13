@@ -24,6 +24,7 @@ import {
 } from '@repo/ui';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../../../../lib/auth/provider';
 
 export default function AcademicSettingsPage() {
@@ -51,18 +52,19 @@ export default function AcademicSettingsPage() {
 		);
 	}
 
-	const handleSave = async (
-		values: CreateAcademicYearFormValues & { isActive?: boolean },
-	) => {
+	const handleSave = async (values: CreateAcademicYearFormValues) => {
 		setFormError(null);
+		const isEditing = Boolean(modalState.year);
 		try {
 			if (modalState.year) {
 				await updateMutation.mutateAsync({
 					id: modalState.year.id,
 					data: values,
 				});
+				toast.success('Ciclo lectivo actualizado exitosamente');
 			} else {
 				await createMutation.mutateAsync(values);
+				toast.success('Ciclo lectivo creado exitosamente');
 			}
 			setModalState({ open: false, year: null });
 		} catch (err: unknown) {
@@ -70,11 +72,14 @@ export default function AcademicSettingsPage() {
 				response?: { data?: { message?: string } };
 				message?: string;
 			};
-			setFormError(
+			const message =
 				errorObj?.response?.data?.message ||
-					errorObj?.message ||
-					'Ocurrió un error al guardar el ciclo lectivo.',
-			);
+				errorObj?.message ||
+				(isEditing
+					? 'Ocurrió un error al actualizar el ciclo lectivo.'
+					: 'Ocurrió un error al crear el ciclo lectivo.');
+			setFormError(message);
+			toast.error(message);
 		}
 	};
 

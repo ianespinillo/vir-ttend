@@ -19,7 +19,7 @@ export default function CreateUserInterceptedModal() {
 	const [open, setOpen] = useState(true);
 	const { data: currentUser } = useCurrentUser();
 	const isSuperAdmin = currentUser?.role === ROLES.SUPERADMIN;
-	const { data: tenants } = useTenants();
+	const { data: tenants } = useTenants({ enabled: isSuperAdmin });
 	const createUser = useCreateUser();
 
 	const [credentials, setCredentials] = useState<{
@@ -49,6 +49,7 @@ export default function CreateUserInterceptedModal() {
 						mode="create"
 						isSuperAdmin={isSuperAdmin}
 						tenants={tenants ?? []}
+						selectedTenantId={currentUser?.tenantId}
 						onCancel={() => handleOpenChange(false)}
 						onSubmit={(formData) => {
 							createUser.mutate(formData as CreateUserPayload, {
@@ -63,13 +64,16 @@ export default function CreateUserInterceptedModal() {
 									});
 									toast.success('Usuario creado correctamente');
 								},
-								onError: (err) => {
+								onError: (err: any) => {
+									const resMsg = err?.response?.data?.message;
+									const detail = Array.isArray(resMsg) ? resMsg.join(', ') : resMsg;
 									const message =
-										err.message?.includes('409') ||
-										err.message?.includes('duplicate') ||
-										err.message?.includes('belongs to tenant')
+										detail?.includes('409') ||
+										detail?.includes('duplicate') ||
+										detail?.includes('belongs to tenant') ||
+										err.message?.includes('409')
 											? 'El usuario ya pertenece a esta institución'
-											: (err.message ?? 'Error al crear el usuario');
+											: (detail ?? err.message ?? 'Error al crear el usuario');
 									toast.error(message);
 								},
 							});

@@ -8,6 +8,7 @@ import {
 	Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { DomainError } from '../errors/domain.error';
 
 interface ErrorResponse {
 	statusCode: number;
@@ -51,6 +52,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
 		message: string | string[];
 		error: string;
 	} {
+		if (exception instanceof DomainError) {
+			return {
+				statusCode: HttpStatus.BAD_REQUEST,
+				message: exception.message,
+				error: 'Bad Request',
+			};
+		}
+
 		if (exception instanceof HttpException) {
 			const status = exception.getStatus();
 			const exceptionResponse = exception.getResponse();

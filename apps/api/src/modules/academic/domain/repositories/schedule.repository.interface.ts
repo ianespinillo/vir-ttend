@@ -13,6 +13,7 @@ export interface IScheduleRepository {
 		day: DAYOFWEEK,
 	): Promise<ScheduleSlot | null>;
 	deleteBySubject(subjectId: string): Promise<void>;
+	deleteByCourse(courseId: string): Promise<void>;
 	save(scheduleSlot: ScheduleSlot): Promise<void>;
 	saveMany(slots: ScheduleSlot[]): Promise<void>;
 }

@@ -45,7 +45,10 @@ export class GenerateAlertHandler {
 		);
 		if (percent === 0) return;
 		const alerts = await this.alertRepo.findByStudentId(command.studentId);
-		const newAlert = ThresholdCheckerService.check(percent, alerts);
+		const currentYearAlerts = alerts.filter(
+			(alert) => alert.academicYearId === command.academicYearId,
+		);
+		const newAlert = ThresholdCheckerService.check(percent, currentYearAlerts);
 		if (!newAlert) return;
 		await this.alertRepo.save(
 			AttendanceAlert.create({

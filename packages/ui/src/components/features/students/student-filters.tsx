@@ -3,6 +3,7 @@
 import type { ICourseResponse } from '@repo/common';
 import { Filter, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { localizeCourseName } from '../../../lib/shift';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import {
@@ -93,7 +94,7 @@ export function StudentFilters({
 							<SelectItem value="ALL">Todos los cursos</SelectItem>
 							{courses.map((course) => (
 								<SelectItem key={course.id} value={course.id}>
-									{course.fullName ||
+									{localizeCourseName(course.fullName) ||
 										`${course.yearNumber}° ${course.division} (${course.level})`}
 								</SelectItem>
 							))}

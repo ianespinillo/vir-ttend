@@ -32,8 +32,14 @@ import { DeleteSubjectHandler } from '../../application/commands/delete-subject/
 import { UpdateSubjectCommand } from '../../application/commands/update-subject/update-subject.command';
 import { UpdateSubjectHandler } from '../../application/commands/update-subject/update-subject.handler';
 import { CreateSubjectRequestDto } from '../../application/dtos/create-subject.request.dto';
+import { MySubjectResponseDto } from '../../application/dtos/my-subject.response.dto';
+import { StudentResponseDto } from '../../application/dtos/student.response.dto';
 import { SubjectResponseDto } from '../../application/dtos/subject.response.dto';
 import { UpdateSubjectRequestDto } from '../../application/dtos/update-subject.request.dto';
+import { GetMySubjectsHandler } from '../../application/queries/get-my-subjects/get-my-subjects.handler';
+import { GetMySubjectsQuery } from '../../application/queries/get-my-subjects/get-my-subjects.query';
+import { GetSubjectStudentsHandler } from '../../application/queries/get-subject-students/get-subject-students.handler';
+import { GetSubjectStudentsQuery } from '../../application/queries/get-subject-students/get-subject-students.query';
 import { GetSubjectsByCourseHandler } from '../../application/queries/get-subjects-by-course/get-subjects-by-course.handler';
 import { GetSubjectsByCourseQuery } from '../../application/queries/get-subjects-by-course/get-subjects-by-course.query';
 import { GetTeacherSubjectsQueryHandler } from '../../application/queries/get-teacher-subjects/get-teacher-subjects.handler';
@@ -51,6 +57,8 @@ export class SubjectsController {
 		private readonly assignTeacherHandler: AssignTeacherHandler,
 		private readonly getSubjectsByCourseHandler: GetSubjectsByCourseHandler,
 		private readonly getTeacherSubjectsQueryHandler: GetTeacherSubjectsQueryHandler,
+		private readonly getMySubjectsHandler: GetMySubjectsHandler,
+		private readonly getSubjectStudentsHandler: GetSubjectStudentsHandler,
 	) {}
 
 	@Post()
@@ -130,6 +138,60 @@ export class SubjectsController {
 			);
 		}
 		return [];
+	}
+
+	// Declared before any `:id` route so `mine` is never captured as an id.
+	@Get('mine')
+	@RolesDecorator(ROLES.TEACHER, ROLES.ADMIN)
+	@ApiOperation({
+		summary: 'Listar mis materias',
+		description:
+			'Lista las materias que dicta el usuario autenticado en el año académico activo, con su curso y los bloques horarios de toda la semana (para filtrar por día y precargar sin conexión). Roles permitidos: teacher, admin. ' +
+			'URL de ejemplo: /subjects/mine. ' +
+			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Materias del docente en el año activo.',
+		type: [MySubjectResponseDto],
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	async mine(@CurrentUser() user: JwtPayload) {
+		return this.getMySubjectsHandler.execute(
+			new GetMySubjectsQuery(user.sub, user.tenantId),
+		);
+	}
+
+	@Get(':id/students')
+	@RolesDecorator(ROLES.TEACHER, ROLES.ADMIN, ROLES.PRECEPTOR)
+	@ApiOperation({
+		summary: 'Listar los estudiantes de una materia',
+		description:
+			'Devuelve los estudiantes activos del curso al que pertenece la materia. Un docente solo puede consultar sus propias materias. Roles permitidos: teacher (solo materias propias), admin, preceptor. ' +
+			'URL de ejemplo: /subjects/550e8400-e29b-41d4-a716-446655440000/students. ' +
+			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
+	})
+	@ApiParam({
+		name: 'id',
+		description: 'ID de la materia.',
+		example: '550e8400-e29b-41d4-a716-446655440000',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Estudiantes activos del curso de la materia.',
+		type: [StudentResponseDto],
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({
+		status: 403,
+		description: 'Rol no autorizado o materia de otro docente',
+	})
+	@ApiResponse({ status: 404, description: 'Materia no encontrada' })
+	async students(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+		return this.getSubjectStudentsHandler.execute(
+			new GetSubjectStudentsQuery(id, user.tenantId, user.sub, user.role),
+		);
 	}
 
 	@Put(':id')

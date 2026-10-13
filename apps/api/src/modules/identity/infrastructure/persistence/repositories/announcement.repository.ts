@@ -61,7 +61,22 @@ export class AnnouncementRepository
 	}
 
 	async save(announcement: Announcement): Promise<void> {
-		this.em.persist(AnnouncementMapper.toOrm(announcement));
+		const existing = await this.findOne({ id: announcement.id.getRaw() });
+		if (existing) {
+			existing.schoolId = announcement.schoolId;
+			existing.tenantId = announcement.tenantId;
+			existing.authorId = announcement.authorId;
+			existing.title = announcement.title;
+			existing.body = announcement.body;
+			existing.targetType = announcement.target.type;
+			existing.targetId = announcement.target.id || null;
+			existing.status = announcement.status;
+			existing.publishAt = announcement.publishAt;
+			existing.createdAt = announcement.createdAt;
+			existing.updatedAt = announcement.updatedAt;
+		} else {
+			this.em.persist(AnnouncementMapper.toOrm(announcement));
+		}
 		await this.em.flush();
 	}
 

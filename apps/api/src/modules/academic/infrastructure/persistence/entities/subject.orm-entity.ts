@@ -18,6 +18,8 @@ export class SubjectOrmEntity extends BaseEntity {
 	@Property() name!: string;
 	@Property() area!: string;
 	@Property() weeklyHours!: number;
+	@Property({ type: 'datetime', nullable: true })
+	deletedAt: Date | null = null;
 
 	@ManyToOne(() => CourseOrmEntity, { fieldName: 'courseId' })
 	course!: CourseOrmEntity;

@@ -4,6 +4,7 @@ import {
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
+import { STUDENTSTATUS } from '@repo/common';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { EnrollStudentCommand } from './enroll-student.command';
@@ -23,10 +24,14 @@ export class EnrollStudentHandler {
 		const course = await this.courseRepo.findById(command.courseId);
 		if (!course) throw new NotFoundException('Course not found');
 
+		if (student.status === STUDENTSTATUS.TRANSFERRED) {
+			throw new BadRequestException('Cannot enroll a transferred student');
+		}
+
 		if (student.courseId === command.courseId) {
 			throw new BadRequestException('Student is already enrolled in this course');
 		}
-		student.transfer(command.courseId);
+		student.enrollInCourse(command.courseId);
 		await this.studentRepo.save(student);
 	}
 }

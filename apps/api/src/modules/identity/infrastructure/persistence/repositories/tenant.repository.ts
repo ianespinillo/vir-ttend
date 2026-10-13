@@ -22,8 +22,18 @@ export class TenantRepository
 		return TenantMapper.toDomain(orm);
 	}
 	async save(tenant: Tenant): Promise<void> {
-		const orm = TenantMapper.toOrm(tenant);
-		this.em.persist(orm);
+		const existing = await this.findOne({ id: tenant.id });
+		if (existing) {
+			existing.name = tenant.name;
+			existing.subdomain = tenant.subdomain.getRaw();
+			existing.contactEmail = tenant.contatEmail.getValue();
+			existing.isActive = tenant.isActive;
+			existing.createdAt = tenant.createdAt;
+			existing.updatedAt = tenant.updatedAt;
+		} else {
+			const orm = TenantMapper.toOrm(tenant);
+			this.em.persist(orm);
+		}
 		await this.em.flush();
 	}
 	async list(props: Pagination): Promise<Tenant[]> {

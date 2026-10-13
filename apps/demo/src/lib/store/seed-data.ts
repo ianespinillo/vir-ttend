@@ -653,6 +653,7 @@ export function createSeedState(): DemoState {
 			absenceThresholdPercent: 15,
 			lateCountAbscenseAfterMinutes: 3,
 			isActive: true,
+			nonWorkingDays: [],
 		},
 	];
 

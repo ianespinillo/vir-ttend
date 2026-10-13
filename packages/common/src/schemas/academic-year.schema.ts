@@ -16,13 +16,10 @@ export const createAcademicYearSchema = z.object({
 		.number()
 		.min(0, 'Los minutos no pueden ser negativos'),
 	nonWorkingDays: z.array(z.string()).optional(),
+	isActive: z.boolean().default(true),
 });
 
-export const updateAcademicYearSchema = createAcademicYearSchema
-	.partial()
-	.extend({
-		isActive: z.boolean().optional(),
-	});
+export const updateAcademicYearSchema = createAcademicYearSchema.partial();
 
 export type CreateAcademicYearFormValues = z.infer<
 	typeof createAcademicYearSchema

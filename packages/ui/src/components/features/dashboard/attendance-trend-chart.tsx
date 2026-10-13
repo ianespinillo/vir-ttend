@@ -45,7 +45,7 @@ export function AttendanceTrendChart({
 
 	const data = trend.map((point) => ({
 		date: format(new Date(point.mondayWeek), 'dd/MM'),
-		percent: point.percent,
+		percent: point.percent.toFixed(2),
 	}));
 
 	return (

@@ -9,7 +9,7 @@ import {
 } from '@repo/hooks';
 import { CoursesList, PageHeader } from '@repo/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function CoursesPage() {
 	const router = useRouter();
@@ -26,6 +26,14 @@ export default function CoursesPage() {
 	const [selectedAYId, setSelectedAYId] = useState<string>(
 		searchParams.get('academicYearId') || activeAY?.id || 'ALL',
 	);
+
+	useEffect(() => {
+		const paramAy = searchParams.get('academicYearId');
+		if (!paramAy && activeAY?.id && selectedAYId === 'ALL') {
+			setSelectedAYId(activeAY.id);
+		}
+	}, [activeAY?.id, searchParams, selectedAYId]);
+
 	const [selectedLevel, setSelectedLevel] = useState<LevelType>(
 		(searchParams.get('level') as LevelType) || LEVEL.DEFAULT,
 	);
