@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/auth-context';
+import { useBrand } from '../../src/features/branding/brand-context';
 
 export default function SelectTenantScreen() {
+	const { tokens } = useBrand();
 	const { availableTenants, selectTenant, logout } = useAuth();
 	const router = useRouter();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -68,24 +70,24 @@ export default function SelectTenantScreen() {
 							key={t.tenantId}
 							onPress={() => handleSelect(t.tenantId)}
 							disabled={isSubmitting}
-							className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-indigo-400"
+							className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-primary-400"
 						>
 							<View className="flex-row items-center space-x-3.5">
-								<View className="h-12 w-12 items-center justify-center rounded-xl bg-indigo-50">
-									<Building size={22} color="#4F46E5" />
+								<View className="h-12 w-12 items-center justify-center rounded-xl bg-primary-50">
+									<Building size={22} color={tokens.primary} />
 								</View>
 								<View className="ml-3">
 									<Text className="text-base font-semibold text-slate-800">
 										{t.name || 'Institución Educativa'}
 									</Text>
-									<Text className="text-xs uppercase tracking-wide text-indigo-600">
+									<Text className="text-xs uppercase tracking-wide text-primary">
 										Rol: {t.role || 'Docente'}
 									</Text>
 								</View>
 							</View>
 
 							{isThisSelected ? (
-								<ActivityIndicator size="small" color="#4F46E5" />
+								<ActivityIndicator size="small" color={tokens.primary} />
 							) : (
 								<ArrowRight size={20} color="#94A3B8" />
 							)}

@@ -10,6 +10,7 @@ import {
 	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBrand } from '../branding/brand-context';
 import { useIsOnline } from '../offline/use-is-online';
 import {
 	formatRecordDate,
@@ -59,6 +60,7 @@ export function MonthlyJustificationsModal({
 	courseName,
 	date,
 }: Props) {
+	const { tokens } = useBrand();
 	const online = useIsOnline();
 	const { from, to } = useMemo(() => monthRangeOf(date), [date]);
 	const monthLabel = monthLabelOf(date);
@@ -82,7 +84,7 @@ export function MonthlyJustificationsModal({
 				<View className="flex-row items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
 					<View className="flex-1 pr-3">
 						<View className="flex-row items-center">
-							<FileCheck size={18} color="#4F46E5" />
+							<FileCheck size={18} color={tokens.primary} />
 							<Text className="ml-2 text-lg font-bold text-slate-900">
 								Justificaciones del mes
 							</Text>
@@ -111,7 +113,7 @@ export function MonthlyJustificationsModal({
 
 				{isLoading && !offlineWithoutData ? (
 					<View className="flex-1 items-center justify-center">
-						<ActivityIndicator size="large" color="#4F46E5" />
+						<ActivityIndicator size="large" color={tokens.primary} />
 						<Text className="mt-3 text-sm text-slate-500">
 							Cargando justificaciones del mes...
 						</Text>

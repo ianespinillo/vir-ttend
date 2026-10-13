@@ -176,7 +176,7 @@ export function JustifySheet({
 						<TouchableOpacity
 							onPress={() => payload && onConfirm(payload)}
 							disabled={!canConfirm}
-							className="ml-2 flex-1 items-center rounded-xl bg-indigo-600 py-3"
+							className="ml-2 flex-1 items-center rounded-xl bg-primary py-3"
 							style={{ opacity: canConfirm ? 1 : 0.5 }}
 						>
 							{isSubmitting ? (

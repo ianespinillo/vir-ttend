@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { ExpoConfig } from 'expo/config';
 
 /**
@@ -11,7 +13,11 @@ interface VariantConfig {
 	name: string;
 	scheme: string;
 	appId: string;
-	icon: string;
+	/**
+	 * Folder with the variant's launcher icon, adaptive icon layers, splash and
+	 * favicon. Every variant ships the same file names.
+	 */
+	assetsDir: string;
 	/** School shown to the user before the server config is known (offline first launch). */
 	schoolDisplayName: string | undefined;
 	/**
@@ -27,7 +33,7 @@ const VARIANTS: Record<AppVariant, VariantConfig> = {
 		name: 'Vir-ttend',
 		scheme: 'virttend',
 		appId: 'com.virttend.app',
-		icon: './assets/icon.png',
+		assetsDir: './assets/variants/general',
 		schoolDisplayName: undefined,
 		apiUrl: undefined,
 	},
@@ -35,8 +41,7 @@ const VARIANTS: Record<AppVariant, VariantConfig> = {
 		name: 'EEST Nº3 Eva Perón',
 		scheme: 'virttend-eest3',
 		appId: 'com.virttend.eest3',
-		// Placeholder until the school provides its logo.
-		icon: './assets/icon.png',
+		assetsDir: './assets/variants/eest3',
 		schoolDisplayName: 'Escuela de Educación Secundaria Técnica Nº3 "Eva Perón"',
 		apiUrl: 'https://eest3-virttend.duckdns.org/api',
 	},
@@ -47,6 +52,69 @@ const resolveVariant = (value: string | undefined): AppVariant =>
 
 const variant = resolveVariant(process.env.APP_VARIANT);
 const variantConfig = VARIANTS[variant];
+
+interface BrandingFileShape {
+	displayName: string;
+	shortName: string;
+	colors: { primary: string; accent?: string; highlight?: string };
+	assets?: {
+		crest?: string;
+		crestSmall?: string;
+		crestSmallPng?: string;
+		favicon?: string;
+	};
+}
+
+/**
+ * Branding baked into the build so the first launch (offline, or before
+ * `/config/public` answers) already shows the school identity. Same source as the
+ * server (`deploy/branding/<variant>/branding.json`) and same shape as
+ * `PublicBranding` (`@repo/branding`), which `app-config.ts` validates at runtime.
+ * Returns `undefined` when the variant has no branding file: the app then falls
+ * back to the Vir-ttend brand.
+ */
+const readVariantBranding = (name: AppVariant) => {
+	const file = join(
+		__dirname,
+		'..',
+		'..',
+		'deploy',
+		'branding',
+		name,
+		'branding.json',
+	);
+	if (!existsSync(file)) return undefined;
+	try {
+		const data = JSON.parse(readFileSync(file, 'utf8')) as BrandingFileShape;
+		const version = `baked-${name}`;
+		const url = (asset: string | undefined) =>
+			asset ? `/branding/${asset}?v=${version}` : null;
+		return {
+			source: 'instance',
+			version,
+			displayName: data.displayName,
+			shortName: data.shortName,
+			colors: {
+				primary: data.colors.primary,
+				accent: data.colors.accent ?? null,
+				highlight: data.colors.highlight ?? null,
+			},
+			assets: {
+				crest: url(data.assets?.crest),
+				crestSmall: url(data.assets?.crestSmall),
+				crestSmallPng: url(data.assets?.crestSmallPng),
+				favicon: url(data.assets?.favicon),
+			},
+			showPoweredBy: true,
+		};
+	} catch (error) {
+		console.warn(`Could not read branding for variant "${name}"`, error);
+		return undefined;
+	}
+};
+
+const variantBranding =
+	variant === 'general' ? undefined : readVariantBranding(variant);
 
 // Release builds must point at a real server: without a URL the app would fall
 // back to the cleartext localhost dev URL and every request would fail on
@@ -74,7 +142,7 @@ const config: ExpoConfig = {
 	scheme: variantConfig.scheme,
 	version: '1.0.0',
 	orientation: 'portrait',
-	icon: variantConfig.icon,
+	icon: `${variantConfig.assetsDir}/icon.png`,
 	userInterfaceStyle: 'light',
 	ios: {
 		supportsTablet: true,
@@ -83,25 +151,33 @@ const config: ExpoConfig = {
 	android: {
 		package: variantConfig.appId,
 		adaptiveIcon: {
-			backgroundColor: '#E6F4FE',
-			foregroundImage: './assets/android-icon-foreground.png',
-			backgroundImage: './assets/android-icon-background.png',
-			monochromeImage: './assets/android-icon-monochrome.png',
+			foregroundImage: `${variantConfig.assetsDir}/android-icon-foreground.png`,
+			backgroundImage: `${variantConfig.assetsDir}/android-icon-background.png`,
+			monochromeImage: `${variantConfig.assetsDir}/android-icon-monochrome.png`,
 		},
 		predictiveBackGestureEnabled: false,
 	},
 	web: {
-		favicon: './assets/favicon.png',
+		favicon: `${variantConfig.assetsDir}/favicon.png`,
 	},
 	plugins: [
 		'expo-router',
 		'expo-secure-store',
 		'@react-native-community/datetimepicker',
+		[
+			'expo-splash-screen',
+			{
+				image: `${variantConfig.assetsDir}/splash-icon.png`,
+				backgroundColor: '#FFFFFF',
+				imageWidth: 200,
+			},
+		],
 	],
 	extra: {
 		appVariant: variant,
 		apiUrl: variantConfig.apiUrl,
 		schoolDisplayName: variantConfig.schoolDisplayName,
+		branding: variantBranding,
 		// EAS project @ianespi/vir-ttend, shared by every variant.
 		eas: {
 			projectId: '190d6beb-651c-4d77-bb67-8297c92c5a77',

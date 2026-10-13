@@ -13,8 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/auth-context';
+import { useBrand } from '../../src/features/branding/brand-context';
+import { BrandMark } from '../../src/features/branding/brand-mark';
+import { PoweredBy } from '../../src/features/branding/powered-by';
 
 export default function LoginScreen() {
+	const { tokens, branding } = useBrand();
 	const { login, config } = useAuth();
 	const router = useRouter();
 
@@ -71,17 +75,17 @@ export default function LoginScreen() {
 				>
 					{/* Header & Logo */}
 					<View className="mb-8 items-center">
-						<View className="mb-3 h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 shadow-md">
-							<Text className="text-3xl font-extrabold text-white">V</Text>
+						<View className="mb-3">
+							<BrandMark size="lg" />
 						</View>
 						<Text className="text-2xl font-bold tracking-tight text-slate-900">
 							{config.appName}
 						</Text>
 
 						{config.schoolName ? (
-							<View className="mt-2 flex-row items-center rounded-full bg-indigo-50 px-3 py-1 border border-indigo-100">
-								<School size={14} color="#4F46E5" />
-								<Text className="ml-1.5 text-xs font-semibold text-indigo-700">
+							<View className="mt-2 flex-row items-center rounded-full bg-primary-50 px-3 py-1 border border-primary-100">
+								<School size={14} color={tokens.primary} />
+								<Text className="ml-1.5 text-xs font-semibold text-primary-700">
 									{config.schoolName}
 								</Text>
 							</View>
@@ -115,7 +119,7 @@ export default function LoginScreen() {
 							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
 								Correo Electrónico
 							</Text>
-							<View className="flex-row items-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3 focus:border-indigo-600">
+							<View className="flex-row items-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3 focus:border-primary">
 								<Mail size={18} color="#64748B" />
 								<TextInput
 									className="ml-2.5 flex-1 text-base text-slate-900"
@@ -134,7 +138,7 @@ export default function LoginScreen() {
 							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
 								Contraseña
 							</Text>
-							<View className="flex-row items-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3 focus:border-indigo-600">
+							<View className="flex-row items-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3 focus:border-primary">
 								<Lock size={18} color="#64748B" />
 								<TextInput
 									className="ml-2.5 flex-1 text-base text-slate-900"
@@ -173,6 +177,12 @@ export default function LoginScreen() {
 								'No se pudo leer la configuración del servidor.'}
 						</Text>
 					</View>
+
+					{branding.showPoweredBy && (
+						<View className="mt-4">
+							<PoweredBy />
+						</View>
+					)}
 				</ScrollView>
 			</KeyboardAvoidingView>
 		</SafeAreaView>

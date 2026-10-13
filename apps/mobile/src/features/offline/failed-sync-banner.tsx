@@ -109,7 +109,7 @@ export function FailedSyncBanner() {
 									className="mr-2 rounded-lg bg-white px-3 py-1.5 active:bg-red-100"
 									style={{ opacity: busyId === null ? 1 : 0.5 }}
 								>
-									<Text className="text-xs font-semibold text-indigo-700">
+									<Text className="text-xs font-semibold text-primary-700">
 										Reintentar
 									</Text>
 								</TouchableOpacity>
