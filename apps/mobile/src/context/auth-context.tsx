@@ -9,6 +9,15 @@ import {
 	saveTenancyMode,
 } from '../config/app-config';
 import { api } from '../services/api';
+import {
+	REFRESH_TOKEN_KEY,
+	TENANT_KEY,
+	TOKEN_KEY,
+	USER_KEY,
+	clearStoredSession,
+	onSessionExpired,
+	saveTokens,
+} from '../services/session-storage';
 
 export const ALLOWED_MOBILE_ROLES = ['preceptor', 'teacher'];
 
@@ -48,10 +57,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'virttend_access_token';
-const TENANT_KEY = 'virttend_tenant_id';
-const USER_KEY = 'virttend_user';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
 }) => {
@@ -88,9 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 						setUser(parsedUser);
 					} else {
 						// Invalid role in storage
-						await SecureStore.deleteItemAsync(TOKEN_KEY);
-						await SecureStore.deleteItemAsync(TENANT_KEY);
-						await SecureStore.deleteItemAsync(USER_KEY);
+						await clearStoredSession();
 					}
 				}
 			} catch (error) {
@@ -101,6 +104,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		};
 
 		loadInitialState();
+	}, []);
+
+	// The API client clears storage and notifies us when the refresh token is
+	// rejected; here we only need to reset the in-memory state.
+	useEffect(() => {
+		return onSessionExpired(() => {
+			resetSessionState();
+		});
 	}, []);
 
 	const login = async (email: string, password: string) => {
@@ -175,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 
 		if (accessToken) {
-			await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+			await saveTokens(accessToken, authData.refreshToken);
 			setToken(accessToken);
 		}
 
@@ -202,19 +213,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	};
 
+	const resetSessionState = () => {
+		setToken(null);
+		setTenantId(null);
+		setUser(null);
+		setPendingUserId(null);
+		setAvailableTenants([]);
+	};
+
 	const logout = async () => {
 		try {
-			await SecureStore.deleteItemAsync(TOKEN_KEY);
-			await SecureStore.deleteItemAsync(TENANT_KEY);
-			await SecureStore.deleteItemAsync(USER_KEY);
+			// Best effort: revoke the refresh token server side. A network failure
+			// must not prevent the user from signing out locally.
+			const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+			if (refreshToken) {
+				await api.post('/auth/logout', { refreshToken }, { timeout: 5000 });
+			}
+		} catch (error) {
+			console.warn('Could not revoke the session on the server', error);
+		}
+
+		try {
+			await clearStoredSession();
 		} catch (error) {
 			console.warn('Error clearing SecureStore', error);
 		} finally {
-			setToken(null);
-			setTenantId(null);
-			setUser(null);
-			setPendingUserId(null);
-			setAvailableTenants([]);
+			resetSessionState();
 		}
 	};
 

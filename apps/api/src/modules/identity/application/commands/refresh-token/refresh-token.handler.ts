@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ROLES, Roles } from '@repo/common';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
@@ -22,9 +22,9 @@ export class RefreshTokenHandler {
 		const { refreshToken } = command;
 		const tokenHash = this.tokenService.hashToken(refreshToken);
 		const entity = await this.refreshTokenRepository.findByHash(tokenHash);
-		if (!entity?.isActive()) throw new Error('Invalid token');
+		if (!entity?.isActive()) throw new UnauthorizedException('Invalid token');
 		const user = await this.userRepo.findById(entity.userId);
-		if (!user) throw new Error('User not found');
+		if (!user) throw new UnauthorizedException('User not found');
 		const member = await this.membersRepo.findByUserAndTenant(
 			user.id,
 			entity.tenantId,
@@ -33,11 +33,13 @@ export class RefreshTokenHandler {
 		let isImpersonating = false;
 
 		if (member) {
-			if (!member.isActive) throw new Error('User not active in tenant');
+			if (!member.isActive)
+				throw new UnauthorizedException('User not active in tenant');
 			role = member.role;
 		} else {
 			const memberships = await this.membersRepo.findByUserId(user.id);
-			if (memberships.length > 0) throw new Error("User doen't belongs to tenant");
+			if (memberships.length > 0)
+				throw new UnauthorizedException("User doen't belongs to tenant");
 			if (entity.tenantId) {
 				role = ROLES.ADMIN;
 				isImpersonating = true;
