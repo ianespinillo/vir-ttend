@@ -39,6 +39,7 @@ Pedido del usuario (2026-10-12): "se puede automatizar todo en un pipeline" → 
 - `eas.json` JSON.parse: OK.
 - `pnpm --filter site ts:check`: OK.
 - `biome check` sobre `mobile-apps.ts` y `eas.json`: sin issues.
+- RDD on: `review assess` → risk **high** (`shell_source`). La review nativa rechazó la declaración de untracked (`invalid_request`), así que se aplicó el camino RDD-off tier high con un verificador independiente → **PASS** (0 blocker). 1 MAJOR: si se mergea a main antes del setup manual, el primer run falla. MINOR: concurrency puede descartar un run de tag pendiente, `eas-cli@latest` sin pin, falta `cache: pnpm`. Ninguno se aplicó; quedan a decisión del usuario.
 - No verificable localmente: ejecución real del workflow (requiere `EXPO_TOKEN`, projectId y keystore).
 
 ## Riesgo conocido
