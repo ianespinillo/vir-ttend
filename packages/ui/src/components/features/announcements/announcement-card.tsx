@@ -35,7 +35,7 @@ export function AnnouncementCard({
 					{isUnread && (
 						<span
 							data-testid="unread-dot"
-							className="h-2 w-2 rounded-full bg-blue-500 shrink-0"
+							className="h-2 w-2 rounded-full bg-primary shrink-0"
 						/>
 					)}
 					<p className="truncate font-medium">{announcement.title}</p>

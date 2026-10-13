@@ -14,6 +14,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/client/package.json ./apps/client/
 COPY packages/common/package.json ./packages/common/
+COPY packages/branding/package.json ./packages/branding/
 COPY packages/hooks/package.json ./packages/hooks/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
@@ -30,6 +31,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Compilar paquetes dependientes y la aplicación cliente
 RUN pnpm --filter @repo/common build
+RUN pnpm --filter @repo/branding build
 RUN pnpm --filter @repo/hooks build
 RUN pnpm --filter client build
 

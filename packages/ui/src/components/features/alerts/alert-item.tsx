@@ -28,7 +28,7 @@ export function AlertItem({
 				isSeen ? 'opacity-60' : ''
 			}`}
 		>
-			{!isSeen && <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />}
+			{!isSeen && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
 
 			<div className="flex items-center gap-2 min-w-0 shrink-0">
 				<div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">

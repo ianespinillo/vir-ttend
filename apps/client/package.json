@@ -10,6 +10,7 @@
 		"ts:check": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@repo/branding": "workspace:*",
 		"@repo/common": "workspace:*",
 		"@repo/hooks": "workspace:*",
 		"@repo/ui": "workspace:*",

@@ -1,3 +1,4 @@
+import { type PublicBranding, publicBrandingSchema } from '@repo/branding';
 import type { TenancyMode } from '../../config/app-config';
 
 /**
@@ -9,6 +10,8 @@ export interface PublicConfig {
 	tenantId: string | null;
 	tenantName: string | null;
 	tenantSlug: string | null;
+	/** `null` when the server sent none (older API) or an invalid payload. */
+	branding: PublicBranding | null;
 }
 
 /**
@@ -43,11 +46,15 @@ export const parsePublicConfig = (raw: unknown): PublicConfig | null => {
 	const { tenancyMode } = payload;
 	if (tenancyMode !== 'single' && tenancyMode !== 'multi') return null;
 
+	// An invalid branding never discards the rest of the config.
+	const branding = publicBrandingSchema.safeParse(payload.branding);
+
 	return {
 		tenancyMode,
 		tenantId: nonEmptyString(payload.tenantId),
 		tenantName: nonEmptyString(payload.tenantName),
 		tenantSlug: nonEmptyString(payload.tenantSlug),
+		branding: branding.success ? branding.data : null,
 	};
 };
 

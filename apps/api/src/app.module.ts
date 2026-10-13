@@ -8,6 +8,7 @@ import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
+import { BrandingModule } from './modules/shared/branding/branding.module';
 import { CacheModule } from './modules/shared/cache/cache.module';
 import { getEnvs } from './modules/shared/config/app.config';
 import { TenantMiddleware } from './modules/shared/tenants/tenant.middleware';
@@ -35,6 +36,7 @@ import { TenantModule } from './modules/shared/tenants/tenant.module';
 		}),
 		EventEmitterModule.forRoot(),
 		CacheModule,
+		BrandingModule,
 		TenantModule,
 		IdentityModule,
 		NotificationsModule,

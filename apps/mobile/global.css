@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Default brand variables (Vir-ttend), space-separated "R G B" channels so
+ * `rgb(var(--x) / <alpha-value>)` works. `BrandProvider` overrides them at
+ * runtime with `vars()`. Generated from NATIVE_DEFAULT_VARS in @repo/branding.
+ */
+:root {
+	--brand-primary: 20 33 61;
+	--brand-on-primary: 255 255 255;
+	--brand-primary-50: 236 237 239;
+	--brand-primary-100: 217 219 224;
+	--brand-primary-200: 180 184 193;
+	--brand-primary-300: 138 144 158;
+	--brand-primary-400: 95 104 123;
+	--brand-primary-500: 53 64 88;
+	--brand-primary-600: 20 33 61;
+	--brand-primary-700: 17 28 52;
+	--brand-primary-800: 14 23 43;
+	--brand-primary-900: 11 18 34;
+	--brand-accent: 198 244 50;
+	--brand-on-accent: 20 33 61;
+}

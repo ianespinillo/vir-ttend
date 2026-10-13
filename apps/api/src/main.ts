@@ -1,15 +1,17 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LogginInterceptor } from './common/interceptors/loggin.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { BrandingService } from './modules/shared/branding/branding.service';
 import { getEnvs } from './modules/shared/config/app.config';
 
 async function bootstrap() {
-	const app = await NestFactory.create(AppModule);
+	const app = await NestFactory.create<NestExpressApplication>(AppModule);
 	app.enableCors({
 		origin: getEnvs().CORS_ORIGINS,
 		credentials: true,
@@ -64,6 +66,14 @@ async function bootstrap() {
 	SwaggerModule.setup('docs', app, document, {
 		swaggerOptions: { persistAuthorization: true },
 	});
+
+	// Solo desarrollo: en producción Caddy sirve /branding/* (ver Caddyfile).
+	if (process.env.NODE_ENV !== 'production') {
+		const assetsDir = app.get(BrandingService).getAssetsDir();
+		if (assetsDir) {
+			app.useStaticAssets(assetsDir, { prefix: '/branding/' });
+		}
+	}
 
 	await app.listen(process.env.PORT || 3000);
 }
