@@ -29,7 +29,11 @@ export class RegisterSubjectAttendanceHandler {
 		assertCanWriteSubjectAttendance(subject, {
 			userId: command.userId,
 			role: command.userRole,
+			tenantId: command.tenantId,
 		});
+		if (command.courseId && command.courseId !== subject.courseId) {
+			throw new BadRequestException('Course does not match subject');
+		}
 		const slots = await this.schedulePort.findBySubject(command.subjectId);
 		const validDays = slots.filter(
 			(s) => s.dayOfWeek === this.getDayOfWeek(command.date),
@@ -54,7 +58,7 @@ export class RegisterSubjectAttendanceHandler {
 					changed.push(
 						AttendanceRecord.create({
 							tenantId: command.tenantId,
-							courseId: command.courseId,
+							courseId: subject.courseId,
 							studentId,
 							subjectId: command.subjectId,
 							date: command.date,

@@ -21,6 +21,7 @@ export class CopyAttendanceHandler {
 		assertCanWriteSubjectAttendance(subject, {
 			userId: command.userId,
 			role: command.userRole,
+			tenantId: command.tenantId,
 		});
 		const sourceRecords = await this.copyAttendanceService.getLastClassRecords(
 			command.subjectId,
@@ -40,7 +41,7 @@ export class CopyAttendanceHandler {
 			if (!existingsIds.has(record.studentId)) {
 				result.push(
 					AttendanceRecord.create({
-						tenantId: record.tenantId,
+						tenantId: command.tenantId,
 						courseId: record.courseId,
 						studentId: record.studentId,
 						subjectId: command.subjectId,

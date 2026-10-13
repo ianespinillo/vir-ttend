@@ -32,6 +32,10 @@ export class GetSubjectStudentsHandler {
 		if (!subject || subject.deletedAt) {
 			throw new NotFoundException('Subject not found');
 		}
+		const course = await this.courseRepo.findById(subject.courseId);
+		if (!course || (query.tenantId && course.tenantId !== query.tenantId)) {
+			throw new ForbiddenException('Subject does not belong to your tenant');
+		}
 		if (
 			query.requesterRole === ROLES.TEACHER &&
 			subject.teacherId !== query.requesterId
@@ -49,7 +53,6 @@ export class GetSubjectStudentsHandler {
 					a.firstName.localeCompare(b.firstName),
 			);
 
-		const course = await this.courseRepo.findById(subject.courseId);
 		const courseName = course
 			? CourseService.calculateFulName(course)
 			: undefined;

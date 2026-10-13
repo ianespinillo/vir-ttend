@@ -253,6 +253,7 @@ export class AttendanceQueryController {
 				new Date(date),
 				user.sub,
 				user.role,
+				user.tenantId,
 			),
 		);
 	}
@@ -299,9 +300,17 @@ export class AttendanceQueryController {
 		@Param('subjectId') subjectId: string,
 		@Query('from') from: string,
 		@Query('to') to: string,
+		@CurrentUser() user: JwtPayload,
 	) {
 		return this.getSubjectHistoryHandler.execute(
-			new GetSubjectHistoryQuery(subjectId, new Date(from), new Date(to)),
+			new GetSubjectHistoryQuery(
+				subjectId,
+				new Date(from),
+				new Date(to),
+				user.sub,
+				user.role,
+				user.tenantId,
+			),
 		);
 	}
 }

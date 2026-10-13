@@ -58,7 +58,7 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 			eventEmitter,
 		);
 		subjectPort.getSubjectById.mockResolvedValue(
-			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1'),
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1', 'tenant-1'),
 		);
 		studentPort.getByCourseId.mockResolvedValue([
 			Student.reconstitute('student-1', 'Ana'),
@@ -125,5 +125,20 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 		await handler.execute(asAdmin);
 
 		expect(attendanceRepo.bulkSave).toHaveBeenCalledTimes(1);
+	});
+
+	it('should reject when subject belongs to another tenant', async () => {
+		const crossTenant = new BulkUpdateSubjectStatusCommand(
+			'user-1',
+			ROLES.TEACHER,
+			'other-tenant',
+			'sub-1',
+			date,
+			ATTENDANCE_STATUS.PRESENT,
+		);
+
+		await expect(handler.execute(crossTenant)).rejects.toThrow(
+			ForbiddenException,
+		);
 	});
 });

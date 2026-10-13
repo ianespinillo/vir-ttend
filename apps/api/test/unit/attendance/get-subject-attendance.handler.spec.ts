@@ -17,8 +17,11 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 	let studentPort: MockProxy<IStudentPort>;
 
 	const date = new Date('2026-07-06');
-	const buildQuery = (userId = 'teacher-1', role: Roles = ROLES.TEACHER) =>
-		new GetSubjectAttendanceQuery('sub-1', date, userId, role);
+	const buildQuery = (
+		userId = 'teacher-1',
+		role: Roles = ROLES.TEACHER,
+		tenantId = 'tenant-1',
+	) => new GetSubjectAttendanceQuery('sub-1', date, userId, role, tenantId);
 	const buildRecord = (studentId: string, status: 'present' | 'absent') =>
 		AttendanceRecord.reconstitute({
 			id: `record-${studentId}`,
@@ -43,7 +46,7 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 			studentPort,
 		);
 		subjectPort.getSubjectById.mockResolvedValue(
-			Subject.reconstitute('sub-1', 'course-1', 'Math', 'teacher-1'),
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'teacher-1', 'tenant-1'),
 		);
 		studentPort.getActiveByCourseId.mockResolvedValue([
 			Student.reconstitute('student-2', 'Perez, Zoe'),
@@ -124,6 +127,12 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 		).rejects.toThrow(ForbiddenException);
 		expect(attendanceRepo.findBySubjectAndDate).not.toHaveBeenCalled();
 		expect(studentPort.getActiveByCourseId).not.toHaveBeenCalled();
+	});
+
+	it('should reject when subject belongs to another tenant', async () => {
+		await expect(
+			handler.execute(buildQuery('teacher-1', ROLES.TEACHER, 'other-tenant')),
+		).rejects.toThrow(ForbiddenException);
 	});
 
 	it('should fail with a bad request when the subject does not exist', async () => {

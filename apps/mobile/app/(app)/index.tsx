@@ -1,6 +1,7 @@
 import { onlineManager, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
+	AlertCircle,
 	BookOpen,
 	Calendar,
 	CheckCircle,
@@ -29,6 +30,7 @@ import { preloadRoleOf } from '../../src/features/offline/preload';
 import { usePreload } from '../../src/features/offline/preload-provider';
 import { SyncIndicator } from '../../src/features/offline/sync-indicator';
 import { useIsOnline } from '../../src/features/offline/use-is-online';
+import { useOutbox } from '../../src/features/offline/use-outbox';
 import { toLocalDateString, weekdayOf } from '../../src/lib/date';
 
 export default function HomeScreen() {
@@ -36,6 +38,7 @@ export default function HomeScreen() {
 	const router = useRouter();
 	const online = useIsOnline();
 	const { preloadNow } = usePreload();
+	const { flush, getItemForCourse, getItemForSubject } = useOutbox();
 	const [refreshing, setRefreshing] = useState(false);
 
 	const isPreceptor = preloadRoleOf(user?.role) === 'preceptor';
@@ -72,7 +75,7 @@ export default function HomeScreen() {
 		if (!onlineManager.isOnline()) return;
 		setRefreshing(true);
 		try {
-			await preloadNow();
+			await Promise.all([preloadNow(), flush({ force: true })]);
 			if (isPreceptor) {
 				await preceptor.refetch();
 			} else {
@@ -218,6 +221,7 @@ export default function HomeScreen() {
 			) : isPreceptor ? (
 				<View className="space-y-3 pb-8">
 					{courses.map((course) => {
+						const outboxItem = getItemForCourse(course.courseId, todayStr);
 						const hasAttendanceTaken =
 							course.totalStudents !== undefined &&
 							course.notRecorded !== undefined &&
@@ -258,7 +262,25 @@ export default function HomeScreen() {
 									{/* Status badge for preceptors */}
 									{course.totalStudents !== undefined && (
 										<View className="mt-2 flex-row items-center">
-											{hasAttendanceTaken ? (
+											{outboxItem ? (
+												outboxItem.error?.isPermanent ? (
+													<View className="rounded-md bg-red-50 px-2 py-0.5 border border-red-200 flex-row items-center">
+														<AlertCircle size={11} color="#DC2626" />
+														<Text className="ml-1 text-[11px] font-semibold text-red-700">
+															Error de sincronización
+														</Text>
+													</View>
+												) : (
+													<View className="rounded-md bg-amber-50 px-2 py-0.5 border border-amber-200 flex-row items-center">
+														<Clock size={11} color="#D97706" />
+														<Text className="ml-1 text-[11px] font-semibold text-amber-700">
+															{outboxItem.status === 'syncing'
+																? 'Sincronizando…'
+																: 'Pendiente de sincronizar'}
+														</Text>
+													</View>
+												)
+											) : hasAttendanceTaken ? (
 												<View className="rounded-md bg-emerald-50 px-2 py-0.5 border border-emerald-200">
 													<Text className="text-[11px] font-semibold text-emerald-700">
 														✓ {course.present || 0}P • {course.absent || 0}A •{' '}
@@ -280,7 +302,7 @@ export default function HomeScreen() {
 								<View className="flex-row items-center">
 									<View className="rounded-lg bg-indigo-50 px-2.5 py-1.5">
 										<Text className="text-xs font-semibold text-indigo-700">
-											{hasAttendanceTaken ? 'Editar' : 'Pasar lista'}
+											{outboxItem || hasAttendanceTaken ? 'Editar' : 'Pasar lista'}
 										</Text>
 									</View>
 									<ChevronRight size={18} color="#94A3B8" className="ml-1" />
@@ -291,46 +313,74 @@ export default function HomeScreen() {
 				</View>
 			) : (
 				<View className="space-y-3 pb-8">
-					{todaysSubjects.map(({ subject, slots }) => (
-						<TouchableOpacity
-							key={subject.subjectId}
-							onPress={() =>
-								router.push({
-									pathname: '/(app)/attendance/subject/[subjectId]',
-									params: {
-										subjectId: subject.subjectId,
-										name: subject.name,
-										courseName: subject.courseName,
-									},
-								})
-							}
-							className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-indigo-400 active:bg-indigo-50/20"
-						>
-							<View className="flex-1 pr-3">
-								<Text className="text-base font-bold text-slate-800">
-									{subject.name}
-								</Text>
-								<Text className="mt-0.5 text-xs font-medium text-slate-500">
-									{subject.courseName}
-								</Text>
-								<View className="mt-1.5 flex-row items-center">
-									<Clock size={12} color="#64748B" />
-									<Text className="ml-1 text-xs text-slate-500">
-										{formatSlotRanges(slots)}
-									</Text>
-								</View>
-							</View>
+					{todaysSubjects.map(({ subject, slots }) => {
+						const outboxItem = getItemForSubject(subject.subjectId, todayStr);
 
-							<View className="flex-row items-center">
-								<View className="rounded-lg bg-indigo-50 px-2.5 py-1.5">
-									<Text className="text-xs font-semibold text-indigo-700">
-										Pasar lista
+						return (
+							<TouchableOpacity
+								key={subject.subjectId}
+								onPress={() =>
+									router.push({
+										pathname: '/(app)/attendance/subject/[subjectId]',
+										params: {
+											subjectId: subject.subjectId,
+											name: subject.name,
+											courseName: subject.courseName,
+											courseId: subject.courseId,
+										},
+									})
+								}
+								className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-indigo-400 active:bg-indigo-50/20"
+							>
+								<View className="flex-1 pr-3">
+									<Text className="text-base font-bold text-slate-800">
+										{subject.name}
 									</Text>
+									<Text className="mt-0.5 text-xs font-medium text-slate-500">
+										{subject.courseName}
+									</Text>
+									<View className="mt-1.5 flex-row items-center">
+										<Clock size={12} color="#64748B" />
+										<Text className="ml-1 text-xs text-slate-500">
+											{formatSlotRanges(slots)}
+										</Text>
+									</View>
+
+									{/* Status badge for teachers */}
+									{outboxItem && (
+										<View className="mt-2 flex-row items-center">
+											{outboxItem.error?.isPermanent ? (
+												<View className="rounded-md bg-red-50 px-2 py-0.5 border border-red-200 flex-row items-center">
+													<AlertCircle size={11} color="#DC2626" />
+													<Text className="ml-1 text-[11px] font-semibold text-red-700">
+														Error de sincronización
+													</Text>
+												</View>
+											) : (
+												<View className="rounded-md bg-amber-50 px-2 py-0.5 border border-amber-200 flex-row items-center">
+													<Clock size={11} color="#D97706" />
+													<Text className="ml-1 text-[11px] font-semibold text-amber-700">
+														{outboxItem.status === 'syncing'
+															? 'Sincronizando…'
+															: 'Pendiente de sincronizar'}
+													</Text>
+												</View>
+											)}
+										</View>
+									)}
 								</View>
-								<ChevronRight size={18} color="#94A3B8" className="ml-1" />
-							</View>
-						</TouchableOpacity>
-					))}
+
+								<View className="flex-row items-center">
+									<View className="rounded-lg bg-indigo-50 px-2.5 py-1.5">
+										<Text className="text-xs font-semibold text-indigo-700">
+											{outboxItem ? 'Editar' : 'Pasar lista'}
+										</Text>
+									</View>
+									<ChevronRight size={18} color="#94A3B8" className="ml-1" />
+								</View>
+							</TouchableOpacity>
+						);
+					})}
 				</View>
 			)}
 		</ScrollView>

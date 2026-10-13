@@ -14,12 +14,32 @@ export const describeSyncStatus = (input: {
 	online: boolean;
 	status: PreloadStatus;
 	lastSyncedAt: number | null;
+	outboxPendingCount?: number;
+	outboxErrorCount?: number;
+	isOutboxSyncing?: boolean;
 }): SyncDescription => {
-	const { online, status, lastSyncedAt } = input;
+	const {
+		online,
+		status,
+		lastSyncedAt,
+		outboxPendingCount = 0,
+		outboxErrorCount = 0,
+		isOutboxSyncing = false,
+	} = input;
 	const syncedLabel =
 		lastSyncedAt === null ? null : formatDayMonthTime(lastSyncedAt);
 
 	if (!online) {
+		if (outboxPendingCount > 0) {
+			const label =
+				outboxPendingCount === 1
+					? '1 cambio pendiente'
+					: `${outboxPendingCount} cambios pendientes`;
+			return {
+				tone: 'offline',
+				text: `Sin conexión · ${label}`,
+			};
+		}
 		return {
 			tone: 'offline',
 			text: syncedLabel
@@ -27,9 +47,36 @@ export const describeSyncStatus = (input: {
 				: 'Sin conexión · sin datos guardados',
 		};
 	}
-	if (status === 'running') {
-		return { tone: 'syncing', text: 'Sincronizando datos…' };
+
+	if (isOutboxSyncing || status === 'running') {
+		return {
+			tone: 'syncing',
+			text: isOutboxSyncing ? 'Sincronizando cambios…' : 'Sincronizando datos…',
+		};
 	}
+
+	if (outboxErrorCount > 0) {
+		const label =
+			outboxErrorCount === 1
+				? '1 cambio con error'
+				: `${outboxErrorCount} cambios con error`;
+		return {
+			tone: 'error',
+			text: `Error de sincronización · ${label}`,
+		};
+	}
+
+	if (outboxPendingCount > 0) {
+		const label =
+			outboxPendingCount === 1
+				? '1 cambio pendiente de sincronizar'
+				: `${outboxPendingCount} cambios pendientes de sincronizar`;
+		return {
+			tone: 'syncing',
+			text: label,
+		};
+	}
+
 	if (status === 'error') {
 		return {
 			tone: 'error',
@@ -38,8 +85,10 @@ export const describeSyncStatus = (input: {
 				: 'No se pudo sincronizar los datos',
 		};
 	}
+
 	if (syncedLabel) {
 		return { tone: 'ok', text: `Datos sincronizados · ${syncedLabel}` };
 	}
+
 	return { tone: 'idle', text: 'Datos sin sincronizar' };
 };

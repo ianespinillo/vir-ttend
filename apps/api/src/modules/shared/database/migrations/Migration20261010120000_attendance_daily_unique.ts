@@ -17,6 +17,10 @@ import { Migration } from '@mikro-orm/migrations';
  * copied into `attendance_record_dedup_backup` / `justification_dedup_backup`
  * with a `backed_up_at` timestamp. The backups copy columns only (no keys or
  * indexes) so they never conflict with the live tables.
+ *
+ * NOTE (dev database): The dev database ran an earlier version of this
+ * migration before backup tables were added (R2); backup tables ensure production
+ * retains an audit log.
  */
 export class Migration20261010120000_attendance_daily_unique extends Migration {
 	override async up(): Promise<void> {

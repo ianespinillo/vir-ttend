@@ -20,7 +20,7 @@ describe('CopyAttendanceHandler', () => {
 		copyAttendanceService = mock<AttendanceCopyService>();
 		subjectPort = mock<ISubjectPort>();
 		subjectPort.getSubjectById.mockResolvedValue(
-			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1'),
+			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1', 'tenant-1'),
 		);
 		handler = new CopyAttendanceHandler(
 			attendanceRepo,
@@ -35,6 +35,7 @@ describe('CopyAttendanceHandler', () => {
 		const command = new CopyAttendanceCommand(
 			'user-1',
 			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			new Date(),
 			undefined,
@@ -56,6 +57,7 @@ describe('CopyAttendanceHandler', () => {
 		const command = new CopyAttendanceCommand(
 			'user-1',
 			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			targetDate,
 			undefined,
@@ -74,6 +76,7 @@ describe('CopyAttendanceHandler', () => {
 		const command = new CopyAttendanceCommand(
 			'user-1',
 			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			targetDate,
 			undefined,
@@ -124,6 +127,7 @@ describe('CopyAttendanceHandler', () => {
 		const command = new CopyAttendanceCommand(
 			'user-1',
 			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			targetDate,
 			sourceDate,
@@ -141,6 +145,7 @@ describe('CopyAttendanceHandler', () => {
 		const command = new CopyAttendanceCommand(
 			'other-teacher',
 			ROLES.TEACHER,
+			'tenant-1',
 			'sub-1',
 			new Date('2026-07-10'),
 			undefined,
@@ -151,6 +156,19 @@ describe('CopyAttendanceHandler', () => {
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 	});
 
+	it('should reject when subject belongs to another tenant', async () => {
+		const command = new CopyAttendanceCommand(
+			'user-1',
+			ROLES.TEACHER,
+			'other-tenant',
+			'sub-1',
+			new Date('2026-07-10'),
+			undefined,
+		);
+
+		await expect(handler.execute(command)).rejects.toThrow(ForbiddenException);
+	});
+
 	it('should allow an admin on a subject taught by someone else', async () => {
 		copyAttendanceService.getLastClassRecords.mockResolvedValue([
 			mock<AttendanceRecord>({ studentId: 'student-1' }),
@@ -159,6 +177,7 @@ describe('CopyAttendanceHandler', () => {
 		const command = new CopyAttendanceCommand(
 			'admin-1',
 			ROLES.ADMIN,
+			'tenant-1',
 			'sub-1',
 			new Date('2026-07-10'),
 			undefined,
@@ -174,6 +193,7 @@ describe('CopyAttendanceHandler', () => {
 		const command = new CopyAttendanceCommand(
 			'user-1',
 			ROLES.TEACHER,
+			'tenant-1',
 			'missing',
 			new Date('2026-07-10'),
 			undefined,

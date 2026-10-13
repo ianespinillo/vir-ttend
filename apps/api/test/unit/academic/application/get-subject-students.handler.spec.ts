@@ -136,4 +136,18 @@ describe('GetSubjectStudentsHandler', () => {
 			),
 		).rejects.toThrow(NotFoundException);
 	});
+
+	it('should throw ForbiddenException when the subject course belongs to another tenant', async () => {
+		await expect(
+			handler.execute(
+				new GetSubjectStudentsQuery(
+					'sub-1',
+					'other-tenant',
+					'teacher-1',
+					ROLES.TEACHER,
+				),
+			),
+		).rejects.toThrow(ForbiddenException);
+		expect(studentRepo.findByCourse).not.toHaveBeenCalled();
+	});
 });
