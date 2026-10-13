@@ -1,28 +1,16 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../global.css';
 import { AuthProvider } from '../src/context/auth-context';
+import { AppQueryProvider } from '../src/features/offline/query-provider';
 
 export default function RootLayout() {
-	const [queryClient] = useState(
-		() =>
-			new QueryClient({
-				defaultOptions: {
-					queries: {
-						retry: 1,
-						staleTime: 1000 * 60 * 5, // 5 minutes
-					},
-				},
-			}),
-	);
-
 	return (
 		<SafeAreaProvider>
-			<QueryClientProvider client={queryClient}>
-				<AuthProvider>
+			<AuthProvider>
+				<AppQueryProvider>
 					<StatusBar style="dark" />
 					<Stack screenOptions={{ headerShown: false }}>
 						<Stack.Screen name="index" />
@@ -33,8 +21,8 @@ export default function RootLayout() {
 						/>
 						<Stack.Screen name="(app)" />
 					</Stack>
-				</AuthProvider>
-			</QueryClientProvider>
+				</AppQueryProvider>
+			</AuthProvider>
 		</SafeAreaProvider>
 	);
 }
