@@ -55,9 +55,28 @@ pnpm --filter demo build
 
 ---
 
+## Despliegue en Vercel
+
+La landing y las preguntas frecuentes viven en `apps/site`; la demo arranca directamente en el selector de rol (`/`). Como el sitio, la demo no usa backend ni `output: 'standalone'`.
+
+`apps/demo/vercel.json` instala desde la raíz del monorepo y compila las dependencias del workspace antes de la demo:
+
+- `installCommand`: `cd ../.. && pnpm install --frozen-lockfile`
+- `buildCommand`: `cd ../.. && pnpm turbo run build --filter=demo...`
+
+Pasos:
+
+1. En Vercel: **Add New > Project** e importá el repositorio (un proyecto distinto al del sitio).
+2. **Root Directory**: `apps/demo`, con **Include source files outside of the Root Directory in the Build Step** activo (valor por defecto).
+3. **Framework Preset**: Next.js. No sobrescribas los comandos de instalación y build: salen de `vercel.json`.
+4. Variable de entorno opcional: `NEXT_PUBLIC_SITE_URL` con la URL pública del sitio (destino de «Conocé Vir-ttend»; por defecto el placeholder `https://vir-ttend.vercel.app`). Se lee en el build: al cambiarla hay que redesplegar.
+5. **Deploy**, y cargá la URL resultante como `NEXT_PUBLIC_DEMO_URL` en el proyecto del sitio.
+
+---
+
 ## Módulos y rutas cubiertas
 
-- `/`: Landing de selección de rol ("Entrar como...")
+- `/`: Selector de rol ("Entrar como...") con enlace al sitio público
 - `/dashboard`: Panel de control adaptativo según rol (métricas, alertas, cursos)
 - `/students`: Listado de alumnos con filtros, detalle `/students/[id]`, alta y edición
 - `/courses`: Cursos académicos, creación `/courses/create` y detalle `/courses/[id]`

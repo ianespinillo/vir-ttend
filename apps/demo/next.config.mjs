@@ -7,7 +7,6 @@ const nextConfig = {
 	turbopack: {
 		root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'),
 	},
-	output: 'standalone',
 	devIndicators: false,
 	// The demo data layer (lib/store + lib/session) uses NodeNext-style
 	// extensioned relative imports ("./types.js" -> types.ts) so that vitest

@@ -1,3 +1,4 @@
+import '@repo/ui/tokens.css';
 import './globals.css';
 
 import { DemoProvider } from '@/lib/session/demo-provider';
@@ -6,7 +7,8 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
 	title: 'Vir-ttend · Demo',
-	description: 'Demo de ventas — gestión de asistencia escolar',
+	description:
+		'Demo interactiva de Vir-ttend con datos ficticios: asistencia escolar, alertas y reportes.',
 };
 
 export default function RootLayout({
