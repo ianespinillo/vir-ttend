@@ -1,5 +1,6 @@
 import { formatDayMonthTime } from '../../lib/date';
 import type { PreloadStatus } from './preload-service';
+import type { ServerReachability } from './server-reachability';
 
 export type SyncTone = 'offline' | 'syncing' | 'ok' | 'error' | 'idle';
 
@@ -19,6 +20,8 @@ export const describeSyncStatus = (input: {
 	outboxRetryingCount?: number;
 	outboxErrorCount?: number;
 	isOutboxSyncing?: boolean;
+	/** Whether the API answers; only matters while the device is online. */
+	serverStatus?: ServerReachability;
 }): SyncDescription => {
 	const {
 		online,
@@ -28,6 +31,7 @@ export const describeSyncStatus = (input: {
 		outboxRetryingCount = 0,
 		outboxErrorCount = 0,
 		isOutboxSyncing = false,
+		serverStatus = 'unknown',
 	} = input;
 	const syncedLabel =
 		lastSyncedAt === null ? null : formatDayMonthTime(lastSyncedAt);
@@ -52,6 +56,21 @@ export const describeSyncStatus = (input: {
 				? `Sin conexión · datos del ${syncedLabel}`
 				: 'Sin conexión · sin datos guardados',
 		};
+	}
+
+	// Online but the server does not answer: say so instead of an endless
+	// "Sincronizando…" (shares the amber tone of the offline state).
+	if (serverStatus === 'unreachable') {
+		const parts = ['No se puede conectar con el servidor'];
+		if (unsentCount > 0) {
+			parts.push(
+				unsentCount === 1
+					? '1 cambio pendiente'
+					: `${unsentCount} cambios pendientes`,
+			);
+		}
+		parts.push('reintentando');
+		return { tone: 'offline', text: parts.join(' · ') };
 	}
 
 	if (isOutboxSyncing || status === 'running') {

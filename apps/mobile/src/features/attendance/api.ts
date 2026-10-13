@@ -1,7 +1,9 @@
 import axios, { type AxiosResponse } from 'axios';
 import { api } from '../../services/api';
+import type { JustifyPayload } from './justification';
 import type {
 	AcademicYear,
+	AttendanceRecordItem,
 	CourseSnapshot,
 	DailyAttendance,
 	MySubject,
@@ -68,14 +70,41 @@ export const fetchDailyAttendance = async (
 	date: string,
 ): Promise<DailyAttendance> => {
 	try {
-		const payload = unwrap<Partial<DailyAttendance> | null>(
-			await api.get('/attendance/daily', { params: { courseId, date } }),
-		);
-		return { courseId, date, records: payload?.records ?? [] };
+		// `GET /attendance/daily` returns the roster as a bare array (the web hook
+		// reads it the same way). A `{ records }` object is tolerated defensively.
+		const payload = unwrap<
+			AttendanceRecordItem[] | Partial<DailyAttendance> | null
+		>(await api.get('/attendance/daily', { params: { courseId, date } }));
+		const records = Array.isArray(payload) ? payload : (payload?.records ?? []);
+		return { courseId, date, records };
 	} catch (error) {
 		if (isNotFound(error)) return { courseId, date, records: [] };
 		throw error;
 	}
+};
+
+/**
+ * Every record of a course between two dates, with the justification embedded
+ * on justified ones (same endpoint the web "review justifications" modal uses;
+ * preceptor/admin only).
+ */
+export const fetchCourseHistory = async (
+	courseId: string,
+	from: string,
+	to: string,
+): Promise<AttendanceRecordItem[]> =>
+	asArray<AttendanceRecordItem>(
+		unwrap(
+			await api.get('/attendance/history', { params: { courseId, from, to } }),
+		),
+	);
+
+/** Justifies an absent record. Not idempotent: never queue or retry blindly. */
+export const justifyAttendance = async (
+	recordId: string,
+	payload: JustifyPayload,
+): Promise<void> => {
+	await api.post(`/attendance/${recordId}/justify`, payload);
 };
 
 export const fetchMySubjects = async (): Promise<MySubject[]> =>

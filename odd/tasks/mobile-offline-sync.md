@@ -141,7 +141,16 @@ User: "the course is not updated to attendance already taken" and "the whole jus
     - (R4) transient failed items counted and visible.
     - (R4) permanent failures from past dates surfaced on home with retry and discard.
     - (R4) persistence failure surfaced instead of a false "saved locally" message.
-- [ ] **T8 — Justifications on mobile (parity with web).**
+- [x] **T8 — Justifications on mobile (parity with web).**
+  - **Commits:** `2e82a89` (API fail-closed tenant policy), `988997f` (web: justify ABSENT only), `a1b60bf` (mobile justify sheet, badge, monthly list, and the subject sheet keeps justified).
+  - **Checks:** api 77 suites / 431 tests pass; turbo ts:check 7/7 pass; biome pass; ui vitest attendance 7 pass.
+  - **Root-cause fix:** `fetchDailyAttendance` read `payload.records`, but `GET /attendance/daily` returns a bare array (verified at `get-daily-attendance.handler.ts:24-59`). The T5 change had broken it, so day records were always empty, which kept the T7 "taken" state reverting after sync.
+  - **Review:** medium, 1237 lines → granted → approved and acknowledged, lineage `review-4aefa16e53e3dc72`, reviewed boundary `a1b60bf`.
+  - **Follow-ups:**
+    - (R3-004) The daily sheet still shows P/A/T controls on justified rows, so changing one overwrites the justification. The subject sheet is read-only. Decided (user, option 3): confirm before changing a justified student; done in `60b76cf`, review approved (`review-c6b26289c49847d7`).
+    - (R3-001) Subjects without a tenant now get 403 everywhere. Verify there are no legacy rows.
+    - (R3-002) The pure helpers have no tests (no mobile test runner).
+    - The teacher subject view shows the justified badge without the reason, because the endpoint doesn't embed it.
   - **Who:** preceptor only (API roles PRECEPTOR/ADMIN). Teachers see the justified badge read-only.
   - **Justify action:** on ABSENT rows that have a record `id`. A bottom sheet offers the web's preset reasons (Certificado médico, Motivos personales / familiares, Trámite personal, Problema de transporte, Licencia escolar, Otro → free text) plus optional notes, and calls `POST /attendance/:id/justify`.
   - **Display:** justified badge with reason and notes on both sheets. Read-only "Justificaciones del mes" list per course, mirroring the web review modal.
@@ -156,6 +165,21 @@ User: "the course is not updated to attendance already taken" and "the whole jus
   - **Outcome:** the targeted validator approved; acknowledged, lineage `review-64a0b6a0e3ecd21b`, reviewed boundary `3792e62`.
   - **Tooling note:** the validator only ran with a clean worktree (`repository_context_unavailable` while the doc was modified).
   - **Branch-wide candidate:** `lens_context_budget_exceeded` again (322 files).
+
+## Scope change (2026-10-11, later) — user-approved additions
+- [x] **T8b — Justify late arrivals too** (user: "ausente o tarde se justifica").
+  - **Commit:** `3550c55`.
+  - **Changes:** `JustificationService.canJustify` accepts ABSENT or LATE; the web row and the mobile row offer "Justificar" for both.
+  - **Checks:** api justify tests 4/4 pass, ui vitest 7/7 pass, turbo ts:check pass.
+  - **Related:** today attendance rate on cards with at most 2 decimals, shipped in `3840fd8` (user: show the daily rate, not the cumulative one).
+- [x] **T9 — Date selection on attendance sheets (mobile).** (commit `e46e215`; follow-up fix `659d8ca` below)
+  - Preceptor daily sheet and teacher subject sheet can take or edit attendance for a past date within the active academic year, never a future date.
+  - Teacher: only dates where the subject has a slot (local weekday); other dates are blocked with a message.
+  - Past dates are fetched online, and offline the sheet shows cached data or a clear message. The outbox is already keyed by date.
+  - Home keeps showing today.
+- [x] **T10 — Server-unreachable indicator (mobile).** (commit `88068e7`; a `/health` probe runs every 15 s while unreachable)
+  - When NetInfo says online but API requests fail without a response (timeout or connection refused), show "No se puede conectar con el servidor" instead of an endless "sincronizando".
+  - Recover automatically on the next successful response.
 
 ## Route log
 | Task | Route | Trigger evidence |
@@ -176,6 +200,23 @@ User: "the course is not updated to attendance already taken" and "the whole jus
 - Exploration done (connectivity, endpoints, offline libs, write path). Docker API healthy; no app traffic in logs.
 - T1 to T6 completed, tested, and verified.
 
+## Delivery (2026-10-11)
+- Strategy: feature-branch-chain toward `dev`, chosen by the user (9 slices, one per reviewed slice).
+- Branches pushed:
+  - tracker `feat/mobile-app-tracker` (origin/dev + empty commit `0ce66a6`)
+  - 01 `feat/mobile-app` (`d04a895`)
+  - 02 `-02-usb-connectivity` (`c231ff5`)
+  - 03 `-03-refresh-token` (`36f49fc`)
+  - 04 `-04-idempotent-attendance` (`578a294`)
+  - 05 `-05-teacher-api` (`504465e`)
+  - 06 `-06-offline-preload` (`1a9cb77`)
+  - 07 `-07-outbox` (`3792e62`)
+  - 08 `-08-taken-state` (`16b0925`)
+  - 09 `-09-justifications` (HEAD)
+- Most slices exceed 400 lines, so `size:exception` is requested in each PR body.
+- PRs are not created yet: `gh` CLI is not installed. The bodies are generated by a scratchpad script.
+
+- T8b–T10 slice review: medium, 1243 lines → granted → approved and acknowledged, lineage `review-d45c8190b39ed38e`, boundary `88068e7`. The advisories R3-001 (wall-clock test date) and R3-002 (date param not re-validated after rules load) were fixed in the commit after it. Remaining follow-ups: holidays are not skipped, the iOS picker is untested, the daily API accepts future and out-of-year dates (mobile-only guard), and the new pure helpers have no tests.
+
 ## Next step
-- T8 (delegated writer).
-- Then manual verification on device with `pnpm --filter mobile android:usb`, and prepare the feature PR to `dev`.
+- Then create the PRs once gh is installed (bodies in scratchpad), and manual verification on device.

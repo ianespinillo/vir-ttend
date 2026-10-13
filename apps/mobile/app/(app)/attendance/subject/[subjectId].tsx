@@ -3,13 +3,18 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
 	BookOpen,
-	Calendar,
 	CheckCheck,
 	Clock,
 	CloudOff,
 	Users,
 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+	type RefObject,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import {
 	ActivityIndicator,
 	Alert,
@@ -19,14 +24,29 @@ import {
 	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AttendanceDateBar } from '../../../../src/features/attendance/attendance-date-bar';
+import {
+	classDaysOfSubject,
+	resolveDayDataState,
+} from '../../../../src/features/attendance/date-nav';
+import {
+	markAllPresentKeepingJustified,
+	toSavableRecords,
+} from '../../../../src/features/attendance/justification';
+import { JustificationBadge } from '../../../../src/features/attendance/justification-badge';
 import { attendanceQueries } from '../../../../src/features/attendance/queries';
 import type {
 	AttendanceStatus,
+	RecordedAttendanceStatus,
 	StudentItem,
 } from '../../../../src/features/attendance/types';
+import {
+	type AttendanceDateNav,
+	useAttendanceDate,
+} from '../../../../src/features/attendance/use-attendance-date';
 import { useIsOnline } from '../../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../../src/features/offline/use-outbox';
-import { toLocalDateString } from '../../../../src/lib/date';
+import { useServerReachability } from '../../../../src/features/offline/use-server-reachability';
 
 const NO_STUDENTS: StudentItem[] = [];
 
@@ -54,7 +74,6 @@ const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'late'];
 
 export default function SubjectAttendanceScreen() {
 	const params = useLocalSearchParams();
-	const router = useRouter();
 
 	const subjectId = typeof params.subjectId === 'string' ? params.subjectId : '';
 	const subjectName = typeof params.name === 'string' ? params.name : 'Materia';
@@ -63,19 +82,73 @@ export default function SubjectAttendanceScreen() {
 	const courseIdParam =
 		typeof params.courseId === 'string' ? params.courseId : '';
 
+	// The subject's weekly schedule (cached by the home screen / preload) says
+	// which days can be selected; unknown schedule falls back to any school day
+	// and the API still rejects a day without class.
+	const { data: mySubjects } = useQuery(attendanceQueries.mySubjects());
+	const classDays = useMemo(
+		() => classDaysOfSubject(mySubjects?.find((s) => s.subjectId === subjectId)),
+		[mySubjects, subjectId],
+	);
+
+	// Set by the sheet once the user edits; read here to confirm before the
+	// selected day changes (the sheet below remounts per day).
+	const hasUserEdits = useRef(false);
+	const nav = useAttendanceDate({
+		dateParam: typeof params.date === 'string' ? params.date : undefined,
+		classDays,
+		hasUnsavedChanges: () => hasUserEdits.current,
+		onDateChanged: () => {
+			hasUserEdits.current = false;
+		},
+	});
+
+	// `key` gives every day a fresh sheet: no edits carry over.
+	return (
+		<SubjectSheet
+			key={nav.date}
+			subjectId={subjectId}
+			subjectName={subjectName}
+			courseName={courseName}
+			courseIdParam={courseIdParam}
+			nav={nav}
+			hasUserEdits={hasUserEdits}
+		/>
+	);
+}
+
+interface SubjectSheetProps {
+	subjectId: string;
+	subjectName: string;
+	courseName: string;
+	courseIdParam: string;
+	nav: AttendanceDateNav;
+	hasUserEdits: RefObject<boolean>;
+}
+
+function SubjectSheet({
+	subjectId,
+	subjectName,
+	courseName,
+	courseIdParam,
+	nav,
+	hasUserEdits,
+}: SubjectSheetProps) {
+	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueSubject, getItemForSubject } = useOutbox();
+	const serverStatus = useServerReachability();
 
-	// Today in YYYY-MM-DD format (device local time)
-	const todayStr = useMemo(() => toLocalDateString(), []);
-	const outboxItem = getItemForSubject(subjectId, todayStr);
+	// Day shown by this sheet (`YYYY-MM-DD`, device local time).
+	const dateStr = nav.date;
+	const outboxItem = getItemForSubject(subjectId, dateStr);
 
-	// State for attendance map: studentId -> status
+	// State for attendance map: studentId -> status. `justified` rows come from
+	// the server (set by a preceptor): they are read-only here and never saved.
 	const [attendanceMap, setAttendanceMap] = useState<
-		Record<string, AttendanceStatus>
+		Record<string, RecordedAttendanceStatus>
 	>({});
 	const [isSaving, setIsSaving] = useState(false);
-	const hasUserEdits = useRef(false);
 
 	// Students of the subject: shared key, populated by the offline preload.
 	const {
@@ -88,10 +161,24 @@ export default function SubjectAttendanceScreen() {
 		enabled: !!subjectId,
 	});
 
-	// Today's existing attendance for the subject.
-	const { data: existingAttendance } = useQuery({
-		...attendanceQueries.subjectAttendance(subjectId, todayStr),
+	// The day's existing attendance for the subject.
+	const {
+		data: existingAttendance,
+		isLoading: isLoadingDay,
+		fetchStatus: dayFetchStatus,
+		isError: isDayError,
+		refetch: refetchDay,
+	} = useQuery({
+		...attendanceQueries.subjectAttendance(subjectId, dateStr),
 		enabled: !!subjectId,
+	});
+	const dayState = resolveDayDataState({
+		isToday: nav.isToday,
+		hasData: existingAttendance !== undefined,
+		hasOutboxItem: Boolean(outboxItem),
+		isLoading: isLoadingDay,
+		isPaused: dayFetchStatus === 'paused',
+		isError: isDayError,
 	});
 
 	const resolvedCourseId =
@@ -104,14 +191,14 @@ export default function SubjectAttendanceScreen() {
 	useEffect(() => {
 		if (!students.length || hasUserEdits.current) return;
 
-		const map: Record<string, AttendanceStatus> = {};
+		const map: Record<string, RecordedAttendanceStatus> = {};
 		const sourceRecords = outboxItem?.records?.length
 			? outboxItem.records
 			: (existingAttendance?.records ?? []);
 
 		for (const record of sourceRecords) {
-			if (record.studentId && record.status && record.status !== 'justified') {
-				map[record.studentId] = record.status as AttendanceStatus;
+			if (record.studentId && record.status) {
+				map[record.studentId] = record.status;
 			}
 		}
 
@@ -135,11 +222,12 @@ export default function SubjectAttendanceScreen() {
 
 	const markAllPresent = () => {
 		hasUserEdits.current = true;
-		const newMap: Record<string, AttendanceStatus> = {};
-		for (const s of students) {
-			newMap[s.id] = 'present';
-		}
-		setAttendanceMap(newMap);
+		setAttendanceMap((prev) =>
+			markAllPresentKeepingJustified(
+				students.map((s) => s.id),
+				prev,
+			),
+		);
 	};
 
 	// Counts
@@ -147,12 +235,14 @@ export default function SubjectAttendanceScreen() {
 		let present = 0;
 		let absent = 0;
 		let late = 0;
+		let justified = 0;
 		for (const status of Object.values(attendanceMap)) {
 			if (status === 'present') present++;
 			else if (status === 'absent') absent++;
 			else if (status === 'late') late++;
+			else if (status === 'justified') justified++;
 		}
-		return { present, absent, late, total: students.length };
+		return { present, absent, late, justified, total: students.length };
 	}, [attendanceMap, students]);
 
 	const handleSave = async () => {
@@ -167,25 +257,28 @@ export default function SubjectAttendanceScreen() {
 
 		setIsSaving(true);
 		try {
-			const records = Object.entries(attendanceMap).map(([studentId, status]) => ({
-				studentId,
-				status,
-			}));
+			// Justified students are left out: only preceptors can justify, and
+			// sending 'present' (or a stale 'justified') would overwrite it.
+			const records = toSavableRecords(attendanceMap);
+			if (records.length === 0) {
+				Alert.alert('Sin cambios', 'No hay asistencia para guardar.');
+				return;
+			}
 
 			await enqueueSubject({
 				subjectId,
 				subjectName,
 				courseId: resolvedCourseId,
 				courseName,
-				date: todayStr,
+				date: dateStr,
 				records,
 			});
 
 			Alert.alert(
 				'¡Asistencia Guardada!',
 				online
-					? `Se registraron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas para ${subjectName}.`
-					: `Se guardaron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas localmente para ${subjectName}. Se sincronizarán automáticamente al recuperar conexión.`,
+					? `Se registraron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas para ${subjectName} el ${nav.label}.`
+					: `Se guardaron ${counts.present} presentes, ${counts.absent} ausentes y ${counts.late} tardanzas localmente para ${subjectName} el ${nav.label}. Se sincronizarán automáticamente al recuperar conexión.`,
 				[{ text: 'Aceptar', onPress: () => router.back() }],
 			);
 		} catch (error: unknown) {
@@ -210,12 +303,6 @@ export default function SubjectAttendanceScreen() {
 								{courseName}
 							</Text>
 						) : null}
-						<View className="mt-1 flex-row items-center">
-							<Calendar size={13} color="#64748B" />
-							<Text className="ml-1 text-xs text-slate-500 font-medium">
-								Fecha: {todayStr}
-							</Text>
-						</View>
 					</View>
 
 					<TouchableOpacity
@@ -228,6 +315,8 @@ export default function SubjectAttendanceScreen() {
 						</Text>
 					</TouchableOpacity>
 				</View>
+
+				<AttendanceDateBar nav={nav} />
 
 				{/* Summary badges */}
 				<View className="mt-3.5 flex-row space-x-2">
@@ -242,6 +331,13 @@ export default function SubjectAttendanceScreen() {
 					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 py-1.5 border border-amber-100">
 						<Text className="text-xs font-bold text-amber-700">{counts.late} T</Text>
 					</View>
+					{counts.justified > 0 ? (
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-indigo-50 py-1.5 border border-indigo-100">
+							<Text className="text-xs font-bold text-indigo-700">
+								{counts.justified} J
+							</Text>
+						</View>
+					) : null}
 					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-slate-100 py-1.5">
 						<Text className="text-xs font-bold text-slate-600">
 							{counts.total} Total
@@ -274,9 +370,11 @@ export default function SubjectAttendanceScreen() {
 						>
 							{outboxItem.error?.isPermanent
 								? 'Error al sincronizar'
-								: outboxItem.status === 'syncing'
-									? 'Sincronizando cambios…'
-									: 'Cambios pendientes de sincronizar'}
+								: serverStatus === 'unreachable'
+									? 'No se puede conectar con el servidor · reintentando'
+									: outboxItem.status === 'syncing'
+										? 'Sincronizando cambios…'
+										: 'Cambios pendientes de sincronizar'}
 						</Text>
 					</View>
 					{outboxItem.error?.message ? (
@@ -326,6 +424,33 @@ export default function SubjectAttendanceScreen() {
 						Materia sin alumnos registrados
 					</Text>
 				</View>
+			) : dayState === 'loading' ? (
+				<View className="flex-1 items-center justify-center">
+					<ActivityIndicator size="large" color="#4F46E5" />
+					<Text className="mt-3 text-sm text-slate-500">
+						Cargando asistencia del {nav.label}...
+					</Text>
+				</View>
+			) : dayState === 'offline-empty' ? (
+				<View className="flex-1 items-center justify-center px-6">
+					<CloudOff size={36} color="#94A3B8" />
+					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+						Sin conexión: no hay datos guardados para esta fecha.
+					</Text>
+				</View>
+			) : dayState === 'error' ? (
+				<View className="flex-1 items-center justify-center px-6">
+					<AlertCircle size={36} color="#EF4444" />
+					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+						No se pudo cargar la asistencia de esta fecha.
+					</Text>
+					<TouchableOpacity
+						onPress={() => refetchDay()}
+						className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 active:bg-indigo-100"
+					>
+						<Text className="text-xs font-bold text-indigo-700">Reintentar</Text>
+					</TouchableOpacity>
+				</View>
 			) : (
 				<ScrollView className="flex-1 px-4 py-3">
 					{students.map((student, index) => {
@@ -355,40 +480,45 @@ export default function SubjectAttendanceScreen() {
 									)}
 								</View>
 
-								{/* Segmented Controls: P | A | T */}
-								<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
-									{STATUS_ORDER.map((status, i) => {
-										const isActive = currentStatus === status;
-										const label = status[0].toUpperCase();
-										const colors = statusStyles[status];
-										return (
-											<TouchableOpacity
-												key={status}
-												onPress={() => handleStatusChange(student.id, status)}
-												className={`h-9 w-9 items-center justify-center rounded-md ${
-													i > 0 ? 'ml-1' : ''
-												}`}
-												style={
-													isActive
-														? {
-																backgroundColor: colors.activeBackground,
-																...statusButtonActiveStyle,
-															}
-														: undefined
-												}
-											>
-												<Text
-													className="text-sm font-bold"
-													style={{
-														color: isActive ? colors.activeText : '#475569',
-													}}
+								{/* Justified by a preceptor: read-only for teachers */}
+								{currentStatus === 'justified' ? (
+									<JustificationBadge />
+								) : (
+									/* Segmented Controls: P | A | T */
+									<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
+										{STATUS_ORDER.map((status, i) => {
+											const isActive = currentStatus === status;
+											const label = status[0].toUpperCase();
+											const colors = statusStyles[status];
+											return (
+												<TouchableOpacity
+													key={status}
+													onPress={() => handleStatusChange(student.id, status)}
+													className={`h-9 w-9 items-center justify-center rounded-md ${
+														i > 0 ? 'ml-1' : ''
+													}`}
+													style={
+														isActive
+															? {
+																	backgroundColor: colors.activeBackground,
+																	...statusButtonActiveStyle,
+																}
+															: undefined
+													}
 												>
-													{label}
-												</Text>
-											</TouchableOpacity>
-										);
-									})}
-								</View>
+													<Text
+														className="text-sm font-bold"
+														style={{
+															color: isActive ? colors.activeText : '#475569',
+														}}
+													>
+														{label}
+													</Text>
+												</TouchableOpacity>
+											);
+										})}
+									</View>
+								)}
 							</View>
 						);
 					})}
@@ -397,7 +527,7 @@ export default function SubjectAttendanceScreen() {
 			)}
 
 			{/* Sticky Bottom Confirmation Bar */}
-			{students.length > 0 && (
+			{students.length > 0 && dayState === 'ready' && (
 				<View className="border-t border-slate-200 bg-white px-5 py-4 shadow-lg">
 					<TouchableOpacity
 						onPress={handleSave}

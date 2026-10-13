@@ -6,6 +6,6 @@ export class GetSubjectAttendanceQuery {
 		readonly date: Date,
 		readonly userId: string,
 		readonly userRole: Roles,
-		readonly tenantId = '',
+		readonly tenantId: string,
 	) {}
 }

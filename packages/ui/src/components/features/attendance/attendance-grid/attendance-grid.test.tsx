@@ -113,7 +113,7 @@ describe('AttendanceGrid', () => {
 		expect(pendingDot).not.toBeInTheDocument();
 	});
 
-	it('allows triggering justification modal for absent/late records', () => {
+	it('allows triggering justification modal for absent records', () => {
 		const onJustify = vi.fn();
 		render(
 			<AttendanceGrid
@@ -130,5 +130,32 @@ describe('AttendanceGrid', () => {
 		fireEvent.click(justifyBtn);
 		const secondRecord = mockStudents[1]?.attendanceRecord;
 		expect(onJustify).toHaveBeenCalledWith(secondRecord);
+	});
+
+	it('offers justification for late records', () => {
+		const lateStudents: StudentRowItem[] = [
+			{
+				id: 's-3',
+				name: 'Ana Lopez',
+				attendanceRecord: {
+					id: 'rec-3',
+					studentId: 's-3',
+					studentName: 'Ana Lopez',
+					status: ATTENDANCE_STATUS.LATE,
+				},
+				originalStatus: ATTENDANCE_STATUS.LATE,
+			},
+		];
+		render(
+			<AttendanceGrid
+				students={lateStudents}
+				onStatusChange={vi.fn()}
+				onJustify={vi.fn()}
+			/>,
+		);
+
+		expect(
+			screen.getByRole('button', { name: /justificar/i }),
+		).toBeInTheDocument();
 	});
 });
