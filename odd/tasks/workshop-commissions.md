@@ -54,6 +54,7 @@ Support the technical-school workshop (taller): each course is split into commis
 - Forecast well over 400 authored changed lines → chained PRs. chain_strategy: feature-branch-chain (same as student bulk import; the user wants these features on their own branch).
 - Tracker `feat/workshop-commissions` (draft, no-merge tracker PR into `main`). One child branch per task, each targeting the previous one: `feat/workshop-commissions-model` (T1) → tracker, then T2, T3, T4, T5 chained.
 - Push and PR creation: user's call.
+- Delivered 2026-10-14 (user: "armá la PR con todos los tests", chain, base `dev` per the delivery preference): #56 sync `main → dev` (dev was 12 commits behind main, fast-forwardable; user asked for a PR instead of a direct push), #57 draft tracker `feat/workshop-commissions → dev`, children #58 model → tracker, #59 management, #60 attendance, #61 weighted totals, #62 web, #63 mobile (each against its parent). Every child exceeds 400 lines (`size:exception`: cohesive units with their tests). Full suite on the tip before opening: api 667, common 65, hooks 33, ui 109, demo 139, ts 9/9, lint 5 known, client build OK. Merge plan: #56 first, then children in order with merge commits, deleting each merged branch so the next PR retargets to the tracker; tracker last, after running the migrations on a real Postgres.
 
 ## TDD
 - Off (no TDD configuration in the project). Checks: `pnpm --filter api test`, `pnpm ts:check`, `pnpm lint:check`; UI tasks also vitest (`packages/ui`, `packages/hooks`) and `pnpm --filter client build`.
