@@ -1,7 +1,7 @@
 # Feature: Workshop commissions — taller attendance in contraturno (technical schools)
 
 ## Status
-QUEUED (2026-10-13). In design discussion with the user; not started. Delivery: its own feature branch (not direct to main), per user 2026-10-13.
+IN PROGRESS (started 2026-10-14, after student bulk import). Delivery: its own feature branch (not direct to main), per user 2026-10-13.
 
 ## Objective
 Support the technical-school workshop (taller): each course is split into commissions that attend the workshop in the opposite shift, and a workshop preceptor takes attendance per commission, similar to daily attendance.
@@ -23,17 +23,27 @@ Support the technical-school workshop (taller): each course is split into commis
 - Daily attendance: one record per student/course/date (`subjectId = NULL`), taken by PRECEPTOR/ADMIN. Subject attendance: per subject/date, taken by the subject teacher.
 - One preceptor per course (`courses.preceptorId`), one shift per course (`courses.shift`). No contraturno, no session type, no technical-school flag.
 
-## Proposed design (draft, not agreed in full)
+## Design
 - D1: New entity `WorkshopCommission` under `Course`: code (e.g. 141), students, workshop preceptor. A course "has workshop" iff it has commissions — no school-type flag.
 - D2: Workshop attendance per commission per day, mirroring daily attendance, taken by the commission's preceptor.
+- D4: Students belong to at most one commission: nullable `workshopCommissionId` on the student (single membership enforced by the column). A course change clears it.
+- D5: Subject `kind`: `theory` (default) | `workshop`. Workshop sections (carpintería, electricidad…) are just workshop subjects with their teacher; no extra entity.
+- D6: Schedule slot gets nullable `commissionNumber` (1 | 2; null = both), allowed only on workshop subjects.
 - D3: The split is SUGGESTED alphabetically when commissions are created, then PERSISTED. Never recomputed live (a mid-year arrival would shift the cut and move students with their absence history). New students go to the smaller commission; admin can move students; explicit "regenerate split" action.
 
 ## Open questions (ask one at a time)
 - Q1: Confirm one preceptor per commission with the school. The model (preceptor per commission) also covers one person for both: assign the same user twice.
-- Q5: Workshop teachers/sections (carpintería, electricidad…): in scope or not?
 
-## Checklist (draft, forecast well over 400 authored lines → chained PRs; ask chain strategy before the first commit)
-- [ ] T1: Domain + persistence — subject type (theory | workshop); WorkshopCommission entity (course, number 1|2, preceptor, students) + migration; optional commission on schedule slots; schedule validation per commission (overlap + weeklyHours).
+## Delivery
+- Forecast well over 400 authored changed lines → chained PRs. chain_strategy: feature-branch-chain (same as student bulk import; the user wants these features on their own branch).
+- Tracker `feat/workshop-commissions` (draft, no-merge tracker PR into `main`). One child branch per task, each targeting the previous one: `feat/workshop-commissions-model` (T1) → tracker, then T2, T3, T4, T5 chained.
+- Push and PR creation: user's call.
+
+## TDD
+- Off (no TDD configuration in the project). Checks: `pnpm --filter api test`, `pnpm ts:check`, `pnpm lint:check`; UI tasks also vitest (`packages/ui`, `packages/hooks`) and `pnpm --filter client build`.
+
+## Checklist
+- [ ] T1 (route: delegated writer): Domain + persistence — subject type (theory | workshop); WorkshopCommission entity (course, number 1|2, preceptor, students) + migration; optional commission on schedule slots; schedule validation per commission (overlap + weeklyHours).
 - [ ] T2: Commission management — create the 2 commissions with an alphabetical 50/50 suggestion, persist; assign preceptor; move a student; explicit regenerate; new students join the smaller commission.
 - [ ] T3: Workshop attendance API — per commission per day, taken by the commission preceptor (access policy), weight 0.5 in absence totals; totals, thresholds and reports accept fractional values.
 - [ ] T4: Web UI — subject type in the subject form, commission selector on workshop slots, commissions screen in the course, workshop attendance screen for the preceptor.
