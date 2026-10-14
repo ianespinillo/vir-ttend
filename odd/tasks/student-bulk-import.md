@@ -37,8 +37,8 @@ User request (2026-10-13). A colleague proposed that the school fills a sheet an
 
 ## Checklist
 - [x] T1: API — template download endpoint + parse/validate (preview) endpoint + commit endpoint, with unit tests. Route: delegated writer (2+ non-trivial files). Commits: `d1685c4` (tutor-name fix found on the way), `0029a9a` (import API).
-- [ ] T2: UI — import entry point on the course/students screen, upload, preview table with per-row errors, confirm. Route: delegated writer.
-- [ ] T3: docs + commit.
+- [x] T2: UI — "Importar alumnos" in the course detail Estudiantes tab (ADMIN/SUPERADMIN always; PRECEPTOR only when `course.preceptorId === user.id`), template download, upload, preview with per-row errors, confirm. Route: delegated writer. Commit `e33b9df`.
+- [x] T3: feature doc updated with evidence; commits on the chain branches. Push / PRs: pending user decision.
 
 ## TDD
 - Off (no TDD configuration in the project). Checks: `pnpm --filter api test`, `pnpm ts:check`, `pnpm lint:check`.
@@ -52,7 +52,12 @@ User request (2026-10-13). A colleague proposed that the school fills a sheet an
 - Size: ~1,430 changed lines in PR 1 (about 600 are tests). One slicing pass: parser/validator vs handlers/controller would still leave both slices over 400 and split one behavior across PRs → recommend `size:exception` for PR 1.
 - Native review: medium, granted → approved, acknowledged (lineage `review-0b91673f0d202f62`).
 
+- T2 checks: `pnpm ts:check` 9/9; `pnpm lint:check` only the 5 known warnings; hooks vitest 21 tests and ui vitest 86 tests passed (writer); `pnpm --filter client build` compiled successfully (parent re-run). Size ~650 changed lines (~220 tests). Not verified: real browser run against the API.
+- Not done (decision gap): entry point on the students list page with a course picker.
+
 ## Follow-ups (advisory review findings, non-blocking)
+- R3-mime-allowlist-false-reject: a valid .xlsx sent with a generic MIME (e.g. application/octet-stream) may be rejected.
+- R3-multer-size-limit-status: the 1 MB multer limit may answer with a status other than the documented 400.
 - R3-concurrent-dni-race: two concurrent commits with the same DNI could both pass validation; the DB has no unique (tenantId, documentNumber) index to back it.
 - R3-uow-atomicity-unproved: `em.transactional` atomicity relies on MikroORM v6 transaction context propagation into repositories; no integration test proves the rollback.
 - R3-filter-details-untested, R3-tutor-split-untested: missing unit tests for the filter `details` pass-through and the tutor-name split.
