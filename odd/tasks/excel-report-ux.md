@@ -22,7 +22,13 @@ User request (2026-10-14). The attendance export was a bare table with no breakd
 - Off (no TDD configuration in the project). Checks: `pnpm --filter api test`, `pnpm ts:check`, `pnpm lint:check`.
 
 ## Delivery
-- Branch `feat/excel-report-ux` (branch point `553c1ba`). Forecast ~900 authored lines; delivery_strategy ask-on-risk. Push and PR creation: user's call.
+- Work branch `feat/excel-report-ux` (branch point `553c1ba`, local only). Forecast ~900 authored lines; delivery_strategy ask-on-risk; actual ~1200 lines vs `dev`.
+- User chose (2026-10-15) three independent PRs to `dev` (stacked-to-dev, no tracker), each cherry-picked onto `origin/dev`; commit hashes in the checklist refer to the work branch:
+  - #66 `fix/justify-attendance` — T3 (`58d4783`), 224 lines.
+  - #67 `feat/student-import-template-style` — T2 (`4cdba85`), 246 lines.
+  - #68 `feat/excel-report-export` — T0 + T1 + this document (`26a32de`, `5bfc086`, docs), ~730 lines, size:exception requested (one service rewritten with its spec).
+- Per-branch checks before push: attendance jest 31/275, academic jest 34/200, reporting jest 7/68; api tsc clean on each.
+- Last RDD stop-hook candidate (base `34b8a5a`, 289 files): user DECLINED (`declined_this_candidate`).
 
 ## Checklist
 - [x] T0 (route: inline, resumed interrupted work; commit `c7779e5`): attendance export redesign — title block, frozen header and name columns, autofilter, zebra rows, status-tinted percent, totals, weighting legend, landscape print; daily/workshop absence columns (empty for old stored reports).
@@ -50,4 +56,4 @@ User request (2026-10-14). The attendance export was a bare table with no breakd
 - T3 widens the feature beyond Excel at the user's request (2026-10-15): a mobile justification bug, kept on this branch.
 
 ## Next step
-RDD assess for T3 from base `9d24bc2`; then delivery (push/PR) when the user decides.
+Review and merge #66, #67, #68 (user's call). T3 assess from `9d24bc2`: medium, 235 lines, under_budget.
