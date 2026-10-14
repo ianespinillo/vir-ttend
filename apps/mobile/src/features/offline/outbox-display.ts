@@ -56,12 +56,18 @@ export const describeFailedItem = (item: OutboxItem): FailedItemInfo => {
 			? [item.subjectName ?? 'Materia', item.courseName]
 					.filter(Boolean)
 					.join(' · ')
-			: (item.courseName ?? 'Curso');
+			: item.type === 'workshop'
+				? (item.commissionLabel ?? 'Comisión de taller')
+				: (item.courseName ?? 'Curso');
+	const kinds: Record<OutboxItem['type'], string> = {
+		daily: 'Asistencia diaria',
+		subject: 'Asistencia por materia',
+		workshop: 'Asistencia de taller',
+	};
 	return {
 		id: item.id,
 		title,
-		kind:
-			item.type === 'subject' ? 'Asistencia por materia' : 'Asistencia diaria',
+		kind: kinds[item.type],
 		date: formatOutboxDate(item.date),
 		message: item.error?.message ?? 'Error desconocido',
 	};
