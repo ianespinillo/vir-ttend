@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { DAYOFWEEK, IScheduleSlotResponse } from '@repo/common';
+import {
+	COMMISSION_NUMBERS,
+	CommissionNumber,
+	DAYOFWEEK,
+	IScheduleSlotResponse,
+} from '@repo/common';
 import { ScheduleSlot } from '../../domain/entities/schedule-slot.entity';
 
 // schedule-slot.response.dto.ts
@@ -39,11 +44,22 @@ export class ScheduleSlotResponseDto implements IScheduleSlotResponse {
 	})
 	endTime: string;
 
+	@ApiProperty({
+		type: Number,
+		enum: COMMISSION_NUMBERS,
+		nullable: true,
+		description:
+			'Comisión de taller (1 o 2) a la que aplica el bloque; null si aplica a ambas.',
+		example: null,
+	})
+	commissionNumber: CommissionNumber | null;
+
 	constructor(slot: ScheduleSlot) {
 		this.id = slot.id;
 		this.subjectId = slot.subjectId;
 		this.dayOfWeek = slot.dayOfWeek;
 		this.startTime = slot.startTime;
 		this.endTime = slot.endTime;
+		this.commissionNumber = slot.commissionNumber;
 	}
 }

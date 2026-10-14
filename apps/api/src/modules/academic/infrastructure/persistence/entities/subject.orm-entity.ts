@@ -5,6 +5,7 @@ import {
 	OneToMany,
 	Property,
 } from '@mikro-orm/core';
+import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
 import { BaseEntity } from '../../../../shared/database/entities/base.entity';
 import { SubjectRepository } from '../repositories/subject.repository';
 import { CourseOrmEntity } from './courses.orm-entity';
@@ -18,6 +19,8 @@ export class SubjectOrmEntity extends BaseEntity {
 	@Property() name!: string;
 	@Property() area!: string;
 	@Property() weeklyHours!: number;
+	@Property({ type: 'string', default: SUBJECT_KIND.THEORY })
+	kind: SubjectKindType = SUBJECT_KIND.THEORY;
 	@Property({ type: 'datetime', nullable: true })
 	deletedAt: Date | null = null;
 

@@ -1,3 +1,5 @@
+import { SubjectKindType } from '@repo/common';
+
 export class UpdateSubjectCommand {
 	constructor(
 		readonly subjectId: string,
@@ -5,5 +7,6 @@ export class UpdateSubjectCommand {
 		readonly area?: string,
 		readonly name?: string,
 		readonly weeklyHours?: number,
+		readonly kind?: SubjectKindType,
 	) {}
 }

@@ -12,6 +12,7 @@ export class ScheduleSlotMapper {
 		ormEntity.startTime = entity.startTime;
 		ormEntity.endTime = entity.endTime;
 		ormEntity.dayOfWeek = entity.dayOfWeek;
+		ormEntity.commissionNumber = entity.commissionNumber;
 		return ormEntity;
 	}
 

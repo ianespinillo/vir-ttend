@@ -1,5 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import {
+	IsEnum,
+	IsNotEmpty,
+	IsNumber,
+	IsOptional,
+	IsString,
+	Min,
+} from 'class-validator';
 
 export class CreateSubjectRequestDto {
 	@IsNotEmpty()
@@ -48,4 +56,14 @@ export class CreateSubjectRequestDto {
 		example: 5,
 	})
 	weeklyHours!: number;
+
+	@IsOptional()
+	@IsEnum(SUBJECT_KIND)
+	@ApiPropertyOptional({
+		enum: SUBJECT_KIND,
+		default: SUBJECT_KIND.THEORY,
+		description: 'Tipo de materia: teórica (por defecto) o de taller.',
+		example: SUBJECT_KIND.WORKSHOP,
+	})
+	kind?: SubjectKindType;
 }

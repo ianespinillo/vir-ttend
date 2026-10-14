@@ -1,5 +1,6 @@
 // subject.entity.ts
 import { randomUUID } from 'node:crypto';
+import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
 import { SubjectId } from '../value-objects/subject-id.vo';
 
 interface CreateProps {
@@ -8,6 +9,7 @@ interface CreateProps {
 	name: string;
 	area: string;
 	weeklyHours: number;
+	kind?: SubjectKindType;
 }
 
 interface ConstructorProps {
@@ -17,6 +19,7 @@ interface ConstructorProps {
 	name: string;
 	area: string;
 	weeklyHours: number;
+	kind: SubjectKindType;
 	createdAt: Date;
 	updatedAt: Date;
 	deletedAt?: Date;
@@ -29,6 +32,7 @@ export interface ReconstituteProps {
 	name: string;
 	area: string;
 	weeklyHours: number;
+	kind?: SubjectKindType;
 	createdAt: Date;
 	updatedAt: Date;
 	deletedAt?: Date;
@@ -41,6 +45,7 @@ export class Subject {
 	private _name: string;
 	private _area: string;
 	private _weeklyHours: number;
+	private _kind: SubjectKindType;
 	private readonly _createdAt: Date;
 	private _updatedAt: Date;
 	private _deletedAt?: Date;
@@ -52,6 +57,7 @@ export class Subject {
 		this._name = props.name;
 		this._area = props.area;
 		this._weeklyHours = props.weeklyHours;
+		this._kind = props.kind;
 		this._createdAt = props.createdAt;
 		this._updatedAt = props.updatedAt;
 		this._deletedAt = props.deletedAt;
@@ -66,6 +72,7 @@ export class Subject {
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			...props,
+			kind: props.kind ?? SUBJECT_KIND.THEORY,
 			deletedAt: undefined,
 		});
 	}
@@ -73,6 +80,7 @@ export class Subject {
 	static reconstitute(props: ReconstituteProps): Subject {
 		return new Subject({
 			...props,
+			kind: props.kind ?? SUBJECT_KIND.THEORY,
 			id: new SubjectId(props.id),
 			deletedAt: props.deletedAt,
 		});
@@ -96,6 +104,12 @@ export class Subject {
 	get weeklyHours(): number {
 		return this._weeklyHours;
 	}
+	get kind(): SubjectKindType {
+		return this._kind;
+	}
+	get isWorkshop(): boolean {
+		return this._kind === SUBJECT_KIND.WORKSHOP;
+	}
 	get createdAt(): Date {
 		return this._createdAt;
 	}
@@ -111,8 +125,14 @@ export class Subject {
 		this._updatedAt = new Date();
 	}
 
-	updateDetails(name?: string, area?: string, weeklyHours?: number): void {
+	updateDetails(
+		name?: string,
+		area?: string,
+		weeklyHours?: number,
+		kind?: SubjectKindType,
+	): void {
 		if (name) this._name = name;
+		if (kind) this._kind = kind;
 		if (area) this._area = area;
 		if (weeklyHours !== undefined) {
 			if (weeklyHours < 1) throw new Error('Weekly hours must be at least 1');

@@ -17,6 +17,9 @@ export class StudentOrmEntity extends BaseEntity {
 	@Property() tutorPhone!: string;
 	@Property({ nullable: true }) tutorEmail?: string;
 	@Property({ type: 'string' }) status!: StudentStatus;
+	// FK to workshop_commissions (ON DELETE SET NULL) is declared in the migration.
+	@Property({ type: 'uuid', nullable: true })
+	workshopCommissionId: string | null = null;
 
 	@ManyToOne(() => CourseOrmEntity, { fieldName: 'courseId' })
 	course!: CourseOrmEntity;

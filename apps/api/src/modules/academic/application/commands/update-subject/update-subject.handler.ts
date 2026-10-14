@@ -12,7 +12,12 @@ export class UpdateSubjectHandler {
 		const subject = await this.subjectRepo.findById(command.subjectId);
 		if (!subject) throw new Error('Subject not found');
 		if (command.teacherId) subject.assignTeacher(command.teacherId);
-		subject.updateDetails(command.name, command.area, command.weeklyHours);
+		subject.updateDetails(
+			command.name,
+			command.area,
+			command.weeklyHours,
+			command.kind,
+		);
 		await this.subjectRepo.save(subject);
 	}
 }

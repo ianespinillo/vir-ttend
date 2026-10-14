@@ -28,6 +28,7 @@ export interface ReconstituteProps {
 	tutorPhone: string;
 	tutorEmail?: string;
 	status: StudentStatus;
+	workshopCommissionId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -42,6 +43,7 @@ interface ConstructorProps {
 	birthDate: Date;
 	tutor: Tutor;
 	status: StudentStatus;
+	workshopCommissionId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -58,6 +60,7 @@ export class Student {
 	private _tutorPhone: string;
 	private _tutorEmail?: string;
 	private _status: StudentStatus;
+	private _workshopCommissionId: string | null;
 	private readonly _createdAt: Date;
 	private _updatedAt: Date;
 
@@ -73,6 +76,7 @@ export class Student {
 		this._tutorPhone = props.tutor.phone;
 		this._tutorEmail = props.tutor.email?.getValue() ?? undefined;
 		this._status = props.status;
+		this._workshopCommissionId = props.workshopCommissionId ?? null;
 		this._createdAt = props.createdAt;
 		this._updatedAt = props.updatedAt;
 	}
@@ -144,6 +148,9 @@ export class Student {
 	get status(): StudentStatus {
 		return this._status;
 	}
+	get workshopCommissionId(): string | null {
+		return this._workshopCommissionId;
+	}
 	get createdAt(): Date {
 		return this._createdAt;
 	}
@@ -188,8 +195,20 @@ export class Student {
 	}
 
 	enrollInCourse(courseId: string): void {
+		// A workshop commission belongs to one course: changing course drops it.
+		if (courseId !== this._courseId) this._workshopCommissionId = null;
 		this._courseId = courseId;
 		this._status = STUDENTSTATUS.ACTIVE;
+		this._updatedAt = new Date();
+	}
+
+	assignWorkshopCommission(commissionId: string): void {
+		this._workshopCommissionId = commissionId;
+		this._updatedAt = new Date();
+	}
+
+	clearWorkshopCommission(): void {
+		this._workshopCommissionId = null;
 		this._updatedAt = new Date();
 	}
 
