@@ -56,6 +56,10 @@ export const queryKeys = {
 			['attendance', 'subject', subjectId, date] as const,
 		subjectHistory: (subjectId: string, from?: string, to?: string) =>
 			['attendance', 'subject-history', subjectId, { from, to }] as const,
+		workshopCommissions: (date: string) =>
+			['attendance', 'workshop', 'commissions', date] as const,
+		workshop: (commissionId: string, date: string) =>
+			['attendance', 'workshop', commissionId, date] as const,
 	},
 	alerts: {
 		list: (filters?: Record<string, unknown>) =>
