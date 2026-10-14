@@ -1,7 +1,7 @@
 # Feature: Workshop commissions — taller attendance in contraturno (technical schools)
 
 ## Status
-IMPLEMENTATION COMPLETE (2026-10-14; started the same day, after student bulk import). Pending before main: run every migration of the feature up/down on a real Postgres; push and PRs (user's call); Q1. Delivery: its own feature branch (not direct to main), per user 2026-10-13.
+IMPLEMENTATION COMPLETE (2026-10-14; started the same day, after student bulk import). Pending before main: run every migration of the feature up/down on a real Postgres; push and PRs (user's call). Delivery: its own feature branch (not direct to main), per user 2026-10-13.
 
 ## Objective
 Support the technical-school workshop (taller): each course is split into commissions that attend the workshop in the opposite shift, and a workshop preceptor takes attendance per commission, similar to daily attendance.
@@ -10,7 +10,7 @@ Support the technical-school workshop (taller): each course is split into commis
 - Only technical schools have it. Courses there are numeric, e.g. 1°4°, and are split into commissions named 141 and 142.
 - Commissions never mix divisions: both come from the same course.
 - The split is alphabetical by last name (then first name), aiming at 50/50.
-- One workshop preceptor per commission (user: "es por comisión, creo" — tentative, confirm).
+- One workshop preceptor per commission (confirmed by the user 2026-10-14: two commissions, two preceptor slots; it can be the same person for both).
 - Always exactly 2 commissions per course (user 2026-10-13). Codes derive from the course: yearNumber + division + 1|2 (1°4° → 141, 142), so no free-text code is needed.
 - Workshop days are known from the workshop subjects (materias de taller) and their schedule (user 2026-10-13). Implication: subjects need a type (theory vs workshop); workshop days for a commission come from its workshop subject slots.
 - Workshop slots depend on the slot: the two commissions may or may not share days/times (user 2026-10-13). Implication: a schedule slot of a workshop subject targets commission 1, 2 or both (e.g. nullable commission on the slot = both). Overlap validation must allow simultaneous slots for different commissions, and the weeklyHours check must apply per commission, not summed across both.
@@ -48,7 +48,7 @@ Support the technical-school workshop (taller): each course is split into commis
 - D3: The split is SUGGESTED alphabetically when commissions are created, then PERSISTED. Never recomputed live (a mid-year arrival would shift the cut and move students with their absence history). New students go to the smaller commission; admin can move students; explicit "regenerate split" action.
 
 ## Open questions (ask one at a time)
-- Q1: Confirm one preceptor per commission with the school. The model (preceptor per commission) also covers one person for both: assign the same user twice.
+- Q1: RESOLVED 2026-10-14 — one preceptor per commission, possibly the same user for both. Verified: `workshop_commissions.preceptor_id` per row, no uniqueness across commissions; `AssignWorkshopPreceptorHandler` only checks tenant membership and the PRECEPTOR role.
 
 ## Delivery
 - Forecast well over 400 authored changed lines → chained PRs. chain_strategy: feature-branch-chain (same as student bulk import; the user wants these features on their own branch).
