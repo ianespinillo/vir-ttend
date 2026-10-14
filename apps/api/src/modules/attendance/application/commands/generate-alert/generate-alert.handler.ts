@@ -45,6 +45,7 @@ export class GenerateAlertHandler {
 			await this.weightedAbsences.getStudentWeightedAbsencesForAlert(
 				command.studentId,
 				command.academicYearId,
+				command.triggerDate,
 			);
 		const alerts = await this.alertRepo.findByStudentId(command.studentId);
 		const currentYearAlerts = alerts.filter(

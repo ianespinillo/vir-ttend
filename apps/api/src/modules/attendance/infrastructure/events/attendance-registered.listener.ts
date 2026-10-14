@@ -4,6 +4,7 @@ import { GenerateAlertCommand } from '../../application/commands/generate-alert/
 import { GenerateAlertHandler } from '../../application/commands/generate-alert/generate-alert.handler';
 import { AttendanceRegisteredEvent } from '../../domain/events/attendance-registered.event';
 import { IAcademicYearPort } from '../../domain/ports/academic-year.port.interface';
+import { toDateKey } from '../../domain/services/weighted-absence';
 
 @Injectable()
 export class AttendanceRegisteredListener {
@@ -35,6 +36,7 @@ export class AttendanceRegisteredListener {
 					eventData.attendance.courseId,
 					year.id,
 					eventData.attendance.tenantId,
+					toDateKey(eventData.attendance.date),
 				),
 			);
 			this.logger.verbose('Attendance registered successfully.');

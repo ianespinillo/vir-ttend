@@ -89,6 +89,27 @@ describe('AttendanceRegisteredListener', () => {
 		expect(academicYearPort.findByCourseId).toHaveBeenCalledWith('course-55');
 	});
 
+	it('passes the stored date of the record as the trigger date', async () => {
+		const event = new AttendanceRegisteredEvent(
+			new Date('2026-03-10T01:30:00.000Z'),
+			AttendanceRecord.reconstitute({
+				id: 'rec-1',
+				tenantId: 'tenant-1',
+				studentId: 'student-1',
+				courseId: 'course-1',
+				date: new Date('2026-03-09T00:00:00.000Z'),
+				status: ATTENDANCE_STATUS.ABSENT,
+				editedBy: 'user-1',
+				editedAt: new Date(),
+				createdAt: new Date(),
+			}),
+		);
+		await listener.attendanceRegistered(event);
+		expect(generateAlertHandler.execute).toHaveBeenCalledWith(
+			expect.objectContaining({ triggerDate: '2026-03-09' }),
+		);
+	});
+
 	it('no lanza error si el academic year no existe (silencioso)', async () => {
 		academicYearPort.findByCourseId.mockResolvedValue(null);
 		const event = makeEvent();

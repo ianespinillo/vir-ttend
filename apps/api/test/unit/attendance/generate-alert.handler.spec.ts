@@ -111,10 +111,18 @@ describe('GenerateAlertHandler', () => {
 	});
 
 	it('counts the weighted absences of the student in the academic year', async () => {
-		await handler.execute(cmd);
+		await handler.execute(
+			new GenerateAlertCommand(
+				'student-1',
+				'course-1',
+				'year-1',
+				'tenant-1',
+				'2026-03-09',
+			),
+		);
 		expect(
 			weightedAbsences.getStudentWeightedAbsencesForAlert,
-		).toHaveBeenCalledWith('student-1', 'year-1');
+		).toHaveBeenCalledWith('student-1', 'year-1', '2026-03-09');
 	});
 
 	it.each([0, 4.5, 9.75])(
@@ -249,6 +257,14 @@ describe('GenerateAlertHandler', () => {
 		const day = (d: string) => new Date(`${d}T00:00:00.000Z`);
 		const record = (date: Date, status: string) => ({ date, status });
 
+		const triggered = new GenerateAlertCommand(
+			'student-1',
+			'course-1',
+			'year-1',
+			'tenant-1',
+			'2026-03-09',
+		);
+
 		function realHandler(workshopToday: boolean) {
 			const daily = [
 				// 9.25 from earlier days: 9 absences + 1 late.
@@ -288,19 +304,14 @@ describe('GenerateAlertHandler', () => {
 			);
 		}
 
-		beforeEach(() => {
-			jest.useFakeTimers({ now: new Date('2026-03-09T12:00:00.000Z') });
-		});
-		afterEach(() => jest.useRealTimers());
-
 		it('raises no alert when the absence of today is half a day pending the workshop', async () => {
-			await realHandler(true).execute(cmd);
+			await realHandler(true).execute(triggered);
 			// 9.25 + 0.5 = 9.75; had today weighed 1 it would be 10.25.
 			expect(alertRepo.save).not.toHaveBeenCalled();
 		});
 
 		it('raises the alert when no workshop is scheduled today (absence weighs 1)', async () => {
-			await realHandler(false).execute(cmd);
+			await realHandler(false).execute(triggered);
 			expect(savedAlert().absenceCount).toBe(10.25);
 		});
 	});

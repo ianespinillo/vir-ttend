@@ -45,28 +45,31 @@ export class StudentWeightedAbsencesService {
 		academicYearId: string,
 		period?: AbsencePeriod,
 	): Promise<StudentWeightedAbsences> {
-		return this.compute(studentId, academicYearId, period, false);
+		return this.compute(studentId, academicYearId, period);
 	}
 
 	/**
-	 * Total for alert evaluation. Same as the held-based total, except that today
-	 * also counts as a contraturno day when the student's commission has a
-	 * workshop scheduled today: the daily attendance is usually saved before the
-	 * workshop one, and weighing today's absence 1 meanwhile could cross a
-	 * threshold and raise a permanent alert. Past days stay held-based.
+	 * Total for alert evaluation. Same as the held-based total, except that the
+	 * date of the record that triggered the evaluation (`YYYY-MM-DD`) also counts
+	 * as a contraturno day when the student's commission has a workshop scheduled
+	 * that weekday: the daily attendance is usually saved before the workshop one,
+	 * and weighing that absence 1 meanwhile could cross a threshold and raise a
+	 * permanent alert. Other days stay held-based. The date comes from the stored
+	 * record, never the clock, so the evening shift cannot shift the day.
 	 */
 	getStudentWeightedAbsencesForAlert(
 		studentId: string,
 		academicYearId: string,
+		triggerDate?: string,
 	): Promise<StudentWeightedAbsences> {
-		return this.compute(studentId, academicYearId, undefined, true);
+		return this.compute(studentId, academicYearId, undefined, triggerDate);
 	}
 
 	private async compute(
 		studentId: string,
 		academicYearId: string,
 		period: AbsencePeriod | undefined,
-		expectTodayContraturno: boolean,
+		triggerDate?: string,
 	): Promise<StudentWeightedAbsences> {
 		const academicYear = await this.academicYearPort.findById(academicYearId);
 		if (!academicYear) throw new NotFoundException('Academic year not found');
@@ -84,7 +87,7 @@ export class StudentWeightedAbsencesService {
 				),
 				this.workshopRepository.findByStudentAndDateRange(studentId, from, to),
 				this.getStudentAbsenceCap(studentId),
-				expectTodayContraturno ? this.expectedContraturnoToday(studentId) : [],
+				triggerDate ? this.expectedContraturnoDay(studentId, triggerDate) : [],
 			]);
 		const { total, breakdown } = calculateWeightedAbsences({
 			dailyRecords,
@@ -94,10 +97,13 @@ export class StudentWeightedAbsencesService {
 		return { total, cap, breakdown };
 	}
 
-	/** Today (UTC, as the date keys) when the student's commission has a workshop today. */
-	private async expectedContraturnoToday(studentId: string): Promise<string[]> {
-		const today = new Date();
-		const day = dayOfWeekOf(today);
+	/** The trigger date, when the student's commission has a workshop that weekday. */
+	private async expectedContraturnoDay(
+		studentId: string,
+		triggerDate: string,
+	): Promise<string[]> {
+		const key = toDateKey(triggerDate);
+		const day = dayOfWeekOf(new Date(`${key}T00:00:00.000Z`));
 		if (!day) return [];
 		const commission = await this.commissionPort.findByStudent(studentId);
 		if (!commission) return [];
@@ -105,7 +111,7 @@ export class StudentWeightedAbsencesService {
 			commission.courseId,
 			commission.number,
 		);
-		return days.includes(day) ? [toDateKey(today)] : [];
+		return days.includes(day) ? [key] : [];
 	}
 
 	/**

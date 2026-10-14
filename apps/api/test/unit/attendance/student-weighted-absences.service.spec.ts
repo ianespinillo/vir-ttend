@@ -141,8 +141,7 @@ describe('StudentWeightedAbsencesService', () => {
 		});
 		afterEach(() => jest.useRealTimers());
 
-		it('weighs a daily absence today 0.5 when a workshop is scheduled and not taken yet', async () => {
-			jest.useFakeTimers(today(MON));
+		it('weighs a daily absence on the trigger date 0.5 when a workshop is scheduled that weekday and not taken yet', async () => {
 			const { service } = build({
 				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
 				commission,
@@ -152,13 +151,13 @@ describe('StudentWeightedAbsencesService', () => {
 			const result = await service.getStudentWeightedAbsencesForAlert(
 				'student-1',
 				'year-1',
+				'2026-03-09',
 			);
 
 			expect(result.total).toBe(0.5);
 		});
 
-		it('keeps the same absence on a past day at 1', async () => {
-			jest.useFakeTimers(today(TUE));
+		it('keeps the absence of a past day at 1 when another date triggers the evaluation', async () => {
 			const { service } = build({
 				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
 				commission,
@@ -168,13 +167,13 @@ describe('StudentWeightedAbsencesService', () => {
 			const result = await service.getStudentWeightedAbsencesForAlert(
 				'student-1',
 				'year-1',
+				'2026-03-10',
 			);
 
 			expect(result.total).toBe(1);
 		});
 
-		it('weighs today 1 for a student without a commission', async () => {
-			jest.useFakeTimers(today(MON));
+		it('weighs the trigger date 1 for a student without a commission', async () => {
 			const { service, commissionPort } = build({
 				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
 				commission: null,
@@ -184,14 +183,14 @@ describe('StudentWeightedAbsencesService', () => {
 			const result = await service.getStudentWeightedAbsencesForAlert(
 				'student-1',
 				'year-1',
+				'2026-03-09',
 			);
 
 			expect(result.total).toBe(1);
 			expect(commissionPort.getWorkshopDays).not.toHaveBeenCalled();
 		});
 
-		it('weighs today 1 when the commission has no workshop today', async () => {
-			jest.useFakeTimers(today(MON));
+		it('weighs the trigger date 1 when the commission has no workshop that weekday', async () => {
 			const { service } = build({
 				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
 				commission,
@@ -201,13 +200,32 @@ describe('StudentWeightedAbsencesService', () => {
 			const result = await service.getStudentWeightedAbsencesForAlert(
 				'student-1',
 				'year-1',
+				'2026-03-09',
 			);
 
 			expect(result.total).toBe(1);
 		});
 
-		it('keeps 0.5 when the workshop record of today exists', async () => {
-			jest.useFakeTimers(today(MON));
+		it('ignores the clock: an evening save after 21:00 (UTC-3) still judges the record date', async () => {
+			// 22:30 in Argentina on Monday 2026-03-09 is already Tuesday in UTC.
+			jest.useFakeTimers({ now: new Date('2026-03-10T01:30:00.000Z') });
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+				'2026-03-09',
+			);
+
+			expect(result.total).toBe(0.5);
+			jest.useRealTimers();
+		});
+
+		it('keeps 0.5 when the workshop record of the trigger date exists', async () => {
 			const { service } = build({
 				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
 				workshop: [workshopRecord(MON, ATTENDANCE_STATUS.PRESENT)],
@@ -218,13 +236,13 @@ describe('StudentWeightedAbsencesService', () => {
 			const result = await service.getStudentWeightedAbsencesForAlert(
 				'student-1',
 				'year-1',
+				'2026-03-09',
 			);
 
 			expect(result.total).toBe(0.5);
 		});
 
 		it('leaves the report total purely held-based', async () => {
-			jest.useFakeTimers(today(MON));
 			const { service } = build({
 				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
 				commission,
