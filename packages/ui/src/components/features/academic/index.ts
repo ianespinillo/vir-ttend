@@ -4,3 +4,4 @@ export * from './course-form';
 export * from './course-card';
 export * from './courses-list';
 export * from './course-detail';
+export * from './workshop-commissions-panel';

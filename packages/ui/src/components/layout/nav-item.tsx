@@ -16,6 +16,7 @@ import {
 	User,
 	UserCog,
 	Users,
+	Wrench,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { SidebarMenuButton, SidebarMenuItem } from '../../ui/sidebar';
@@ -35,6 +36,7 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
 	Megaphone,
 	UserCog,
 	User,
+	Wrench,
 };
 
 export interface NavItemProps {

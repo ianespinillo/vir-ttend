@@ -178,3 +178,5 @@ apps/api/temp/
 
 .turbo/
 .codegraph/
+# Claude Code agent worktrees
+.claude/worktrees/

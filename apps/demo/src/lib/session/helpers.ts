@@ -6,7 +6,12 @@
  * the vitest suite covers it without jsdom.
  */
 
-import { ALL_NAV_ITEMS, type Roles, isPathAllowedForRole } from '@repo/common';
+import {
+	ALL_NAV_ITEMS,
+	APP_ROUTES,
+	type Roles,
+	isPathAllowedForRole,
+} from '@repo/common';
 import { demoIds } from '../store/seed-data';
 import { getLandingProfiles } from '../store/selectors';
 import type { DemoState } from '../store/types';
@@ -52,10 +57,13 @@ export type DemoProfile = ReturnType<typeof getLandingProfiles>[number];
 /**
  * Paths of the product navigation that `role` is allowed to open, computed
  * with the exact same guard the client shell uses (isPathAllowedForRole).
+ * The demo has no workshop module, so that entry is left out.
  */
 export function allowedPathsForRole(role: Roles): string[] {
-	return ALL_NAV_ITEMS.filter((item) =>
-		isPathAllowedForRole(item.href, role),
+	return ALL_NAV_ITEMS.filter(
+		(item) =>
+			item.href !== APP_ROUTES.attendanceWorkshop &&
+			isPathAllowedForRole(item.href, role),
 	).map((item) => item.href);
 }
 
