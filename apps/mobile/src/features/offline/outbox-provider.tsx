@@ -17,8 +17,10 @@ import type {
 	DailyOutboxItem,
 	EnqueueDailyInput,
 	EnqueueSubjectInput,
+	EnqueueWorkshopInput,
 	OutboxItem,
 	SubjectOutboxItem,
+	WorkshopOutboxItem,
 } from './outbox-types';
 import { useServerReachabilityMonitor } from './use-server-reachability';
 
@@ -31,6 +33,7 @@ export interface OutboxContextValue extends OutboxState {
 	errorCount: number;
 	enqueueDaily: (input: EnqueueDailyInput) => Promise<void>;
 	enqueueSubject: (input: EnqueueSubjectInput) => Promise<void>;
+	enqueueWorkshop: (input: EnqueueWorkshopInput) => Promise<void>;
 	flush: (options?: { force?: boolean }) => Promise<void>;
 	removeItem: (id: string) => Promise<void>;
 	retryItem: (id: string) => Promise<void>;
@@ -43,6 +46,10 @@ export interface OutboxContextValue extends OutboxState {
 		subjectId: string,
 		date: string,
 	) => SubjectOutboxItem | undefined;
+	getItemForCommission: (
+		commissionId: string,
+		date: string,
+	) => WorkshopOutboxItem | undefined;
 }
 
 const DEFAULT_STATE: OutboxState = {
@@ -122,6 +129,10 @@ export function OutboxProvider({ children }: { children: React.ReactNode }) {
 				if (!service) throw new Error(NO_SESSION_MESSAGE);
 				await service.enqueueSubject(input);
 			},
+			enqueueWorkshop: async (input) => {
+				if (!service) throw new Error(NO_SESSION_MESSAGE);
+				await service.enqueueWorkshop(input);
+			},
 			flush: async (options) => {
 				await service?.flush(options);
 			},
@@ -136,6 +147,8 @@ export function OutboxProvider({ children }: { children: React.ReactNode }) {
 				service?.getItemForCourse(courseId, date),
 			getItemForSubject: (subjectId, date) =>
 				service?.getItemForSubject(subjectId, date),
+			getItemForCommission: (commissionId, date) =>
+				service?.getItemForCommission(commissionId, date),
 		}),
 		[state, service],
 	);

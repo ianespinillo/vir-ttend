@@ -22,4 +22,8 @@ export const queryKeys = {
 		['subjects', subjectId, 'students'] as const,
 	subjectAttendance: (subjectId: string, date: string) =>
 		['attendance', 'subject', subjectId, date] as const,
+	myWorkshopCommissions: (date: string) =>
+		['attendance', 'workshop', 'my-commissions', date] as const,
+	workshopAttendance: (commissionId: string, date: string) =>
+		['attendance', 'workshop', commissionId, date] as const,
 } as const;

@@ -71,7 +71,8 @@ export interface PreloadResult {
  * under the same keys the screens read. Never throws.
  *
  * - preceptor: dashboard (or active year + assigned courses) -> per course:
- *   students + today's daily attendance.
+ *   students + today's daily attendance; then its workshop commissions ->
+ *   per commission: today's workshop roster.
  * - teacher: `subjects/mine` -> per subject: students, plus today's subject
  *   attendance only for subjects with a class today (device local weekday).
  */
@@ -126,6 +127,14 @@ export const runPreload = async ({
 			taskThunks.push(
 				() => load(attendanceQueries.courseStudents(course.courseId)),
 				() => load(attendanceQueries.dailyAttendance(course.courseId, today)),
+			);
+		}
+		// Workshop commissions (technical schools): list + today's roster each.
+		const commissions =
+			(await load(attendanceQueries.myWorkshopCommissions(today))) ?? [];
+		for (const commission of commissions) {
+			taskThunks.push(() =>
+				load(attendanceQueries.workshopAttendance(commission.commissionId, today)),
 			);
 		}
 	} else {

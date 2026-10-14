@@ -7,10 +7,13 @@ import type {
 	CourseSnapshot,
 	DailyAttendance,
 	MySubject,
+	MyWorkshopCommission,
 	PreceptorCourse,
 	StudentItem,
 	SubjectAttendance,
+	WorkshopAttendance,
 } from './types';
+import { mapWorkshopAttendance } from './workshop';
 
 // Roster page size used by the daily screen since the first version.
 const STUDENTS_PAGE_LIMIT = 100;
@@ -106,6 +109,32 @@ export const justifyAttendance = async (
 ): Promise<void> => {
 	await api.post(`/attendance/${recordId}/justify`, payload);
 };
+
+/** Commissions the user is the workshop preceptor of (all of them for an admin). */
+export const fetchMyWorkshopCommissions = async (
+	date: string,
+): Promise<MyWorkshopCommission[]> =>
+	asArray<MyWorkshopCommission>(
+		unwrap(
+			await api.get('/attendance/workshop/my-commissions', { params: { date } }),
+		),
+	);
+
+/**
+ * The commission's roster with the day's workshop statuses. Unlike daily
+ * attendance there is no separate roster query: the roster comes with it.
+ */
+export const fetchWorkshopAttendance = async (
+	commissionId: string,
+	date: string,
+): Promise<WorkshopAttendance> =>
+	mapWorkshopAttendance(
+		commissionId,
+		date,
+		unwrap(
+			await api.get('/attendance/workshop', { params: { commissionId, date } }),
+		),
+	);
 
 export const fetchMySubjects = async (): Promise<MySubject[]> =>
 	asArray<MySubject>(unwrap(await api.get('/subjects/mine')));
