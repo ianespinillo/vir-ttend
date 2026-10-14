@@ -3,6 +3,7 @@ import { LEVEL, SHIFT, STUDENTSTATUS } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { EnrollStudentCommand } from '../../../../src/modules/academic/application/commands/enroll-student/enroll-student.command';
 import { EnrollStudentHandler } from '../../../../src/modules/academic/application/commands/enroll-student/enroll-student.handler';
+import { WorkshopPlacementService } from '../../../../src/modules/academic/application/services/workshop-placement.service';
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
@@ -12,6 +13,7 @@ describe('EnrollStudentHandler', () => {
 	let handler: EnrollStudentHandler;
 	let studentRepository: MockProxy<IStudentRepository>;
 	let courseRepository: MockProxy<ICourseRepository>;
+	let placement: MockProxy<WorkshopPlacementService>;
 
 	const mockStudent = Student.reconstitute({
 		id: 'student-id',
@@ -45,7 +47,12 @@ describe('EnrollStudentHandler', () => {
 	beforeEach(() => {
 		studentRepository = mock<IStudentRepository>();
 		courseRepository = mock<ICourseRepository>();
-		handler = new EnrollStudentHandler(studentRepository, courseRepository);
+		placement = mock<WorkshopPlacementService>();
+		handler = new EnrollStudentHandler(
+			studentRepository,
+			courseRepository,
+			placement,
+		);
 	});
 
 	it('should enroll student in a new course keeping ACTIVE status', async () => {
@@ -60,6 +67,7 @@ describe('EnrollStudentHandler', () => {
 		const saved = studentRepository.save.mock.calls[0][0];
 		expect(saved.courseId).toBe('new-course-id');
 		expect(saved.status).toBe(STUDENTSTATUS.ACTIVE);
+		expect(placement.placeNewStudent).toHaveBeenCalledWith(saved);
 	});
 
 	it('should clear the workshop commission when the course changes', async () => {

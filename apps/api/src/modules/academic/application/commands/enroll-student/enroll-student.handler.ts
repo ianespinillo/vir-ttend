@@ -7,6 +7,7 @@ import {
 import { STUDENTSTATUS } from '@repo/common';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
+import { WorkshopPlacementService } from '../../services/workshop-placement.service';
 import { EnrollStudentCommand } from './enroll-student.command';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class EnrollStudentHandler {
 		private readonly studentRepo: IStudentRepository,
 		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
+		private readonly placement: WorkshopPlacementService,
 	) {}
 	async execute(command: EnrollStudentCommand) {
 		const student = await this.studentRepo.findById(command.studentId);
@@ -32,6 +34,7 @@ export class EnrollStudentHandler {
 			throw new BadRequestException('Student is already enrolled in this course');
 		}
 		student.enrollInCourse(command.courseId);
+		await this.placement.placeNewStudent(student);
 		await this.studentRepo.save(student);
 	}
 }
