@@ -17,6 +17,7 @@ interface ErrorResponse {
 	method: string;
 	message: string | string[];
 	error: string;
+	details?: unknown;
 }
 
 @Catch()
@@ -28,7 +29,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
 		const response = ctx.getResponse<Response>();
 		const request = ctx.getRequest<Request>();
 
-		const { statusCode, message, error } = this.extractErrorDetails(exception);
+		const { statusCode, message, error, details } =
+			this.extractErrorDetails(exception);
 
 		const errorResponse: ErrorResponse = {
 			statusCode,
@@ -37,6 +39,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 			method: request.method,
 			message,
 			error,
+			...(details === undefined ? {} : { details }),
 		};
 
 		this.logger.error(
@@ -51,6 +54,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 		statusCode: number;
 		message: string | string[];
 		error: string;
+		details?: unknown;
 	} {
 		if (exception instanceof DomainError) {
 			return {
@@ -71,6 +75,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 					statusCode: status,
 					message: (res.message as string | string[]) ?? exception.message,
 					error: (res.error as string) ?? 'Error',
+					details: res.details,
 				};
 			}
 

@@ -17,6 +17,10 @@ export interface IStudentRepository {
 		documentNumber: string,
 		tenantId: string,
 	): Promise<Student | null>;
+	findByDocuments(
+		documentNumbers: string[],
+		tenantId: string,
+	): Promise<Student[]>;
 	search(filters: SearchStudentFilters): Promise<PaginatedResponse<Student>>;
 	save(student: Student): Promise<void>;
 }

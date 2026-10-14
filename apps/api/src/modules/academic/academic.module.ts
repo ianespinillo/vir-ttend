@@ -11,6 +11,10 @@ import { DeleteCourseHandler } from './application/commands/delete-course/delete
 import { DeleteStudentHandler } from './application/commands/delete-student/delete-student.handler';
 import { DeleteSubjectHandler } from './application/commands/delete-subject/delete-subject.handler';
 import { EnrollStudentHandler } from './application/commands/enroll-student/enroll-student.handler';
+import { CommitStudentImportHandler } from './application/commands/import-students/commit-student-import.handler';
+import { GetStudentImportTemplateHandler } from './application/commands/import-students/get-student-import-template.handler';
+import { PreviewStudentImportHandler } from './application/commands/import-students/preview-student-import.handler';
+import { StudentImportService } from './application/commands/import-students/student-import.service';
 import { SetScheduleHandler } from './application/commands/set-schedule/set-schedule.handler';
 import { TransferStudentHandler } from './application/commands/transer-student/transer-student.handler';
 import { UpdateAcademicYearHandler } from './application/commands/update-academic-year/update-academic-year.handler';
@@ -33,11 +37,14 @@ import { GetTeacherSubjectsQueryHandler } from './application/queries/get-teache
 import { SearchStudentsHandler } from './application/queries/search-students/search-students.handler';
 import { CourseService } from './domain/services/course.service';
 import { ScheduleService } from './domain/services/schedule.service';
+import { AcademicUnitOfWorkAdapter } from './infrastructure/adapters/academic-unit-of-work.adapter';
 import { MembershipAdapter } from './infrastructure/adapters/membership.adapter';
+import { XlsxStudentImportFileAdapter } from './infrastructure/adapters/xlsx-student-import-file.adapter';
 import { AcademicPersistenceModule } from './infrastructure/persistence/academic.persistence.module';
 import { AcademicYearsController } from './presentation/controllers/academic-year.controller';
 import { CoursesController } from './presentation/controllers/course.controller';
 import { ScheduleController } from './presentation/controllers/schedule-slot.controller';
+import { StudentImportController } from './presentation/controllers/student-import.controller';
 import { StudentsController } from './presentation/controllers/students.controller';
 import { SubjectsController } from './presentation/controllers/subjects.controller';
 
@@ -67,6 +74,10 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 		DeleteStudentHandler,
 		EnrollStudentHandler,
 		TransferStudentHandler,
+		PreviewStudentImportHandler,
+		CommitStudentImportHandler,
+		GetStudentImportTemplateHandler,
+		StudentImportService,
 
 		// Handler de queries
 		GetAcademicYearsHandler,
@@ -85,6 +96,14 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 		SearchStudentsHandler,
 
 		// Adapters
+		{
+			provide: 'IStudentImportFilePort',
+			useClass: XlsxStudentImportFileAdapter,
+		},
+		{
+			provide: 'IAcademicUnitOfWorkPort',
+			useClass: AcademicUnitOfWorkAdapter,
+		},
 		MembershipAdapter,
 		StudentAdapter,
 
@@ -98,6 +117,7 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 		ScheduleController,
 		SubjectsController,
 		StudentsController,
+		StudentImportController,
 	],
 })
 export class AcademicModule {}

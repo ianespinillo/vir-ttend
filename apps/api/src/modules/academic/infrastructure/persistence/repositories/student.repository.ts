@@ -35,6 +35,18 @@ export class StudentRepository
 		return StudentMapper.toDomain(orm);
 	}
 
+	async findByDocuments(
+		documentNumbers: string[],
+		tenantId: string,
+	): Promise<Student[]> {
+		if (documentNumbers.length === 0) return [];
+		const orms = await this.find({
+			documentNumber: { $in: documentNumbers },
+			tenantId,
+		});
+		return orms.map((o) => StudentMapper.toDomain(o));
+	}
+
 	async findById(id: string): Promise<Student | null> {
 		const orm = await this.findOne({ id });
 		if (!orm) return null;
