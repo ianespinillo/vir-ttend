@@ -1,7 +1,8 @@
 export interface CourseSummaryEntry {
 	month: number;
 	year: number;
-	averageAttendance: number;
+	/** Null when no class was given that month. */
+	averageAttendance: number | null;
 }
 
 export interface CourseSummary {

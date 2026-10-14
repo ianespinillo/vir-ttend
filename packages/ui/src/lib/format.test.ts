@@ -20,6 +20,10 @@ describe('format', () => {
 		expect(formatPercent(85, 0)).toBe('85%');
 	});
 
+	it('muestra un guion cuando no hay porcentaje (sin clases dadas)', () => {
+		expect(formatPercent(null)).toBe('—');
+	});
+
 	it('arma el nombre completo con y sin apellido', () => {
 		expect(formatFullName('María', 'González')).toBe('María González');
 		expect(formatFullName('María')).toBe('María');

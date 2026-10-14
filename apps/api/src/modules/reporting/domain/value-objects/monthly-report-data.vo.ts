@@ -8,7 +8,7 @@ export class MonthlyReportData {
 	private readonly _period: { month: number; year: number };
 	private readonly _students: StudentReportEntry[];
 	private readonly _summary: {
-		averageAttendance: number;
+		averageAttendance: number | null;
 		studentsAtRisk: number;
 		studentsExceeded: number;
 	};
@@ -57,7 +57,7 @@ export class MonthlyReportData {
 	}
 
 	get summary(): {
-		averageAttendance: number;
+		averageAttendance: number | null;
 		studentsAtRisk: number;
 		studentsExceeded: number;
 	} {

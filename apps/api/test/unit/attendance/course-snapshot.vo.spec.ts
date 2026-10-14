@@ -95,4 +95,52 @@ describe('CourseSnapshot', () => {
 
 		expect(snapshot.getRiskStatus(75, 85)).toBe(COURSE_RISK_STATUS.CRITICAL);
 	});
+
+	describe('with weighted totals', () => {
+		// 100 student-days were given: 12.5 weighted absences over them.
+		const weighted = { absences: 12.5, studentDays: 100 };
+		const snapshot = new CourseSnapshot(
+			'course-1',
+			10,
+			'3° A',
+			20,
+			92,
+			6,
+			2,
+			0,
+			weighted,
+		);
+
+		it('shows the weighted absence total, fractional as is', () => {
+			expect(snapshot.toJSON().absent).toBe(12.5);
+		});
+
+		it('measures the percentages over the student-days given', () => {
+			expect(snapshot.absencePercent).toBe(12.5);
+			expect(snapshot.presentsPercent).toBe(87.5);
+			expect(snapshot.toJSON().attendancePercent).toBe(87.5);
+		});
+
+		it('keeps the raw counts of the other statuses', () => {
+			expect(snapshot.toJSON()).toMatchObject({
+				present: 92,
+				late: 2,
+				justified: 0,
+			});
+		});
+
+		it('returns 0 in the percentages when no class was given', () => {
+			const empty = new CourseSnapshot('c', 10, '3° A', 20, 0, 0, 0, 0, {
+				absences: 0,
+				studentDays: 0,
+			});
+			expect(empty.absencePercent).toBe(0);
+			expect(empty.presentsPercent).toBe(0);
+		});
+
+		it('rates the risk with the weighted percentage', () => {
+			expect(snapshot.getRiskStatus(10, 20)).toBe(COURSE_RISK_STATUS.WARNING);
+			expect(snapshot.getRiskStatus(15, 20)).toBe(COURSE_RISK_STATUS.OK);
+		});
+	});
 });

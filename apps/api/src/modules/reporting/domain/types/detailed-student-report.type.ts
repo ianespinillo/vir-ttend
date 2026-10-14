@@ -1,4 +1,5 @@
 import { LevelType } from '@repo/common';
+import { AbsenceBreakdown } from './absence-breakdown.type';
 import {
 	ReportStudentStatus,
 	StudentReportEntry,
@@ -8,10 +9,14 @@ export interface StudentMonthlyEntry {
 	month: number;
 	year: number;
 	present: number;
+	/** Weighted absence total (may be fractional). */
 	absent: number;
 	late: number;
 	justified: number;
-	absencePercent: number;
+	daysGiven: number;
+	absenceBreakdown: AbsenceBreakdown;
+	/** Null when no class was given. */
+	absencePercent: number | null;
 	status: StudentReportEntry['status'];
 }
 
@@ -26,11 +31,15 @@ export interface IDetailedStudentReport {
 	months: StudentMonthlyEntry[];
 	totals: {
 		present: number;
+		/** Weighted absence total (may be fractional). */
 		absent: number;
 		late: number;
 		justified: number;
+		/** Distinct days with a daily or workshop record. */
 		totalDays: number;
-		averageAbsencePercent: number;
+		absenceBreakdown: AbsenceBreakdown;
+		/** Null when no class was given. */
+		averageAbsencePercent: number | null;
 	};
 	status: StudentReportEntry['status'];
 	alerts: StudentReportEntry['alerts'];

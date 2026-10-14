@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LEVEL, LevelType } from '@repo/common';
+import { AbsenceBreakdown } from '../../domain/types/absence-breakdown.type';
 import { StudentMonthlyEntry } from '../../domain/types/detailed-student-report.type';
 import { StudentReportEntry } from '../../domain/types/student-report-entry.type';
 
@@ -56,10 +57,18 @@ export class StudentReportResponseDto {
 				month: { type: 'number', example: 7 },
 				year: { type: 'number', example: 2026 },
 				present: { type: 'number', example: 19 },
-				absent: { type: 'number', example: 1 },
+				absent: { type: 'number', example: 1.5 },
 				late: { type: 'number', example: 2 },
 				justified: { type: 'number', example: 1 },
-				absencePercent: { type: 'number', example: 4.5 },
+				daysGiven: { type: 'number', example: 21 },
+				absenceBreakdown: {
+					type: 'object',
+					properties: {
+						daily: { type: 'number', example: 1 },
+						workshop: { type: 'number', example: 0.5 },
+					},
+				},
+				absencePercent: { type: 'number', nullable: true, example: 4.5 },
 				status: { type: 'string', enum: ['ok', 'at-risk', 'exceeded'] },
 			},
 		},
@@ -68,10 +77,12 @@ export class StudentReportResponseDto {
 				month: 7,
 				year: 2026,
 				present: 19,
-				absent: 1,
+				absent: 1.5,
 				late: 2,
 				justified: 1,
-				absencePercent: 4.5,
+				daysGiven: 21,
+				absenceBreakdown: { daily: 1, workshop: 0.5 },
+				absencePercent: 7.1,
 				status: 'ok',
 			},
 			{
@@ -81,6 +92,8 @@ export class StudentReportResponseDto {
 				absent: 2,
 				late: 1,
 				justified: 1,
+				daysGiven: 22,
+				absenceBreakdown: { daily: 2, workshop: 0 },
 				absencePercent: 9.1,
 				status: 'ok',
 			},
@@ -93,19 +106,27 @@ export class StudentReportResponseDto {
 		type: 'object',
 		properties: {
 			present: { type: 'number', example: 152 },
-			absent: { type: 'number', example: 8 },
+			absent: { type: 'number', example: 8.25 },
 			late: { type: 'number', example: 12 },
 			justified: { type: 'number', example: 5 },
 			totalDays: { type: 'number', example: 177 },
-			averageAbsencePercent: { type: 'number', example: 4.5 },
+			absenceBreakdown: {
+				type: 'object',
+				properties: {
+					daily: { type: 'number', example: 6.75 },
+					workshop: { type: 'number', example: 1.5 },
+				},
+			},
+			averageAbsencePercent: { type: 'number', nullable: true, example: 4.7 },
 		},
 		example: {
 			present: 152,
-			absent: 8,
+			absent: 8.25,
 			late: 12,
 			justified: 5,
 			totalDays: 177,
-			averageAbsencePercent: 4.5,
+			absenceBreakdown: { daily: 6.75, workshop: 1.5 },
+			averageAbsencePercent: 4.7,
 		},
 	})
 	readonly totals: {
@@ -114,7 +135,8 @@ export class StudentReportResponseDto {
 		late: number;
 		justified: number;
 		totalDays: number;
-		averageAbsencePercent: number;
+		absenceBreakdown: AbsenceBreakdown;
+		averageAbsencePercent: number | null;
 	};
 
 	@ApiProperty({
@@ -155,7 +177,8 @@ export class StudentReportResponseDto {
 			late: number;
 			justified: number;
 			totalDays: number;
-			averageAbsencePercent: number;
+			absenceBreakdown: AbsenceBreakdown;
+			averageAbsencePercent: number | null;
 		};
 		status: StudentReportEntry['status'];
 		alerts: StudentReportEntry['alerts'];

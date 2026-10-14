@@ -947,7 +947,7 @@ export function getMonthlyReport(
 			? Number(
 					(
 						reportStudents.reduce(
-							(sum, student) => sum + (100 - student.absencePercent),
+							(sum, student) => sum + (100 - (student.absencePercent ?? 0)),
 							0,
 						) / reportStudents.length
 					).toFixed(1),

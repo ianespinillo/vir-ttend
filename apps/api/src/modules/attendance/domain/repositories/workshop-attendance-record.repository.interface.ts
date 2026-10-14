@@ -11,5 +11,11 @@ export interface IWorkshopAttendanceRecordRepository {
 		from: Date,
 		to: Date,
 	): Promise<WorkshopAttendanceRecord[]>;
+	/** Records of the course with a date between `from` and `to`, inclusive. */
+	findByCourseAndDateRange(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<WorkshopAttendanceRecord[]>;
 	bulkSave(records: WorkshopAttendanceRecord[]): Promise<void>;
 }

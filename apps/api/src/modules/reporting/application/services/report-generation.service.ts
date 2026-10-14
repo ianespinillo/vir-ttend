@@ -1,29 +1,25 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import {
-	ATTENDANCE_STATUS,
-	ATTENDANCE_THRESHOLDS,
-	LevelType,
-	isLateStatus,
-} from '@repo/common';
+import { LevelType } from '@repo/common';
+import { toDateKey } from '../../../attendance/domain/services/weighted-absence';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { IAcademicYearPort } from '../../domain/ports/academic-year.port.interface';
 import { IAttendanceAlertPort } from '../../domain/ports/attendance-alert.port.interface';
 import { IAttendanceRecordPort } from '../../domain/ports/attendance.port.interface';
 import { ICoursePort } from '../../domain/ports/course.port.interface';
 import { IStudentPort } from '../../domain/ports/student.port.interface';
+import { MetricsCalculationService } from '../../domain/services/metrics-calculation.service';
 import {
 	IDetailedStudentReport,
 	StudentMonthlyEntry,
 } from '../../domain/types/detailed-student-report.type';
-import {
-	ReportStudentStatus,
-	StudentReportEntry,
-} from '../../domain/types/student-report-entry.type';
+import { StudentReportEntry } from '../../domain/types/student-report-entry.type';
 import { MonthlyReportData } from '../../domain/value-objects/monthly-report-data.vo';
 import { ReportPeriod } from '../../domain/value-objects/report-period.vo';
 
 @Injectable()
 export class ReportGenerationService {
+	private readonly metrics = new MetricsCalculationService();
+
 	constructor(
 		@Inject('IAttendanceRecordPort')
 		private readonly attendanceRecordPort: IAttendanceRecordPort,
@@ -44,18 +40,32 @@ export class ReportGenerationService {
 		const course = await this.coursePort.findById(courseId);
 		if (!course) throw new NotFoundException('Course not found');
 
+		// Two bulk reads for the whole course; the weighting is applied per student
+		// in memory, so the queries do not grow with the number of students.
 		const { from, to } = period.toDateRange();
-		const records = await this.attendanceRecordPort.findByCourseAndDateRange(
-			courseId,
-			from,
-			to,
-		);
+		const [dailyRecords, workshopRecords] = await Promise.all([
+			this.attendanceRecordPort.findDailyByCourseAndDateRange(courseId, from, to),
+			this.attendanceRecordPort.findWorkshopByCourseAndDateRange(
+				courseId,
+				from,
+				to,
+			),
+		]);
 
-		const recordsPerStudent = this.groupByStudent(records);
+		const dailyPerStudent = this.groupByStudent(dailyRecords);
+		const workshopPerStudent = this.groupByStudent(workshopRecords);
+		const studentIds = new Set([
+			...dailyPerStudent.keys(),
+			...workshopPerStudent.keys(),
+		]);
 
 		const studentReports = await Promise.all(
-			Array.from(recordsPerStudent.entries()).map(([id, studentRecords]) =>
-				this.buildStudentReport(id, studentRecords),
+			Array.from(studentIds).map((id) =>
+				this.buildStudentReport(
+					id,
+					dailyPerStudent.get(id) ?? [],
+					workshopPerStudent.get(id) ?? [],
+				),
 			),
 		);
 
@@ -65,7 +75,7 @@ export class ReportGenerationService {
 
 		return MonthlyReportData.fromData({
 			workingDays,
-			summary: this.buildCourseSummary(records, studentReports),
+			summary: this.buildCourseSummary(studentReports),
 			level: course.level,
 			courseName: course.name,
 			period: { month: period.month, year: period.year },
@@ -80,18 +90,29 @@ export class ReportGenerationService {
 		const year = await this.academicYearPort.findById(academicYearId);
 		if (!year) throw new Error('Academic Year not found');
 
-		const records = await this.attendanceRecordPort.findByStudentAndDateRange(
+		const [dailyRecords, workshopRecords] = await Promise.all([
+			this.attendanceRecordPort.findDailyByStudentAndDateRange(
+				studentId,
+				year.startDate,
+				year.endDate,
+			),
+			this.attendanceRecordPort.findWorkshopByStudentAndDateRange(
+				studentId,
+				year.startDate,
+				year.endDate,
+			),
+		]);
+
+		const basic = await this.buildStudentReport(
 			studentId,
-			year.startDate,
-			year.endDate,
+			dailyRecords,
+			workshopRecords,
 		);
 
-		const basic = await this.buildStudentReport(studentId, records);
-
-		const courseId = records[0]?.courseId;
+		const courseId = (dailyRecords[0] ?? workshopRecords[0])?.courseId;
 		const course = courseId ? await this.coursePort.findById(courseId) : null;
 
-		const months = this.buildMonthlyBreakdown(records);
+		const months = this.buildMonthlyBreakdown(dailyRecords, workshopRecords);
 		const totals = this.aggregateMonthlyTotals(months);
 
 		return {
@@ -104,7 +125,7 @@ export class ReportGenerationService {
 			academicYearId: course?.academicYearId ?? '',
 			months,
 			totals,
-			status: this.getReportStatus(totals.averageAbsencePercent),
+			status: this.metrics.getStatus(totals.averageAbsencePercent),
 			alerts: basic.alerts,
 		};
 	}
@@ -113,16 +134,16 @@ export class ReportGenerationService {
 
 	private async buildStudentReport(
 		id: string,
-		records: AttendanceRecord[],
+		dailyRecords: AttendanceRecord[],
+		workshopRecords: AttendanceRecord[],
 	): Promise<StudentReportEntry> {
 		const student = await this.studentPort.findStudent(id);
 		if (!student) throw new Error('Student not found');
 
 		const alerts = await this.alertsPort.findByStudentId(id);
-		const counts = this.countByStatus(records);
-		const absencePercent = this.calculateAbsencePercent(
-			records.length,
-			counts.present,
+		const metrics = this.metrics.calculateStudentMetrics(
+			dailyRecords,
+			workshopRecords,
 		);
 
 		return {
@@ -130,42 +151,15 @@ export class ReportGenerationService {
 			fullName: student.name,
 			documentNumber: student.documentNumber,
 			alerts: alerts.map((alert) => ({ status: alert.alertType.status })),
-			present: counts.present,
-			absent: counts.absent,
-			late: counts.late,
-			justified: counts.justified,
-			absencePercent,
-			status: this.getReportStatus(absencePercent),
-		} as StudentReportEntry;
-	}
-
-	private countByStatus(records: AttendanceRecord[]): {
-		present: number;
-		absent: number;
-		late: number;
-		justified: number;
-	} {
-		return records.reduce(
-			(acc, r) => {
-				if (r.status === ATTENDANCE_STATUS.PRESENT) acc.present++;
-				else if (r.status === ATTENDANCE_STATUS.ABSENT) acc.absent++;
-				else if (isLateStatus(r.status)) acc.late++;
-				else if (r.status === ATTENDANCE_STATUS.JUSTIFIED) acc.justified++;
-				return acc;
-			},
-			{ present: 0, absent: 0, late: 0, justified: 0 },
-		);
-	}
-
-	private calculateAbsencePercent(total: number, present: number): number {
-		if (total === 0) return 0;
-		return ((total - present) / total) * 100;
-	}
-
-	private getReportStatus(absencePercent: number): ReportStudentStatus {
-		if (absencePercent >= ATTENDANCE_THRESHOLDS.CRITICAL) return 'exceeded';
-		if (absencePercent >= ATTENDANCE_THRESHOLDS.WARNING) return 'at-risk';
-		return 'ok';
+			present: metrics.present,
+			absent: metrics.absent,
+			late: metrics.late,
+			justified: metrics.justified,
+			daysGiven: metrics.daysGiven,
+			absenceBreakdown: metrics.absenceBreakdown,
+			absencePercent: metrics.absencePercent,
+			status: metrics.status,
+		};
 	}
 
 	private groupByStudent(
@@ -180,91 +174,95 @@ export class ReportGenerationService {
 		return map;
 	}
 
-	private groupByMonth(
-		records: AttendanceRecord[],
-	): Map<string, AttendanceRecord[]> {
-		const map = new Map<string, AttendanceRecord[]>();
-		for (const record of records) {
-			const key = `${record.date.getFullYear()}-${(record.date.getMonth() + 1).toString().padStart(2, '0')}`;
-			const existing = map.get(key);
-			if (existing) existing.push(record);
-			else map.set(key, [record]);
-		}
-		return map;
+	/** Month key (`YYYY-MM`) of the stored calendar day, read like the weighting does. */
+	private monthKeyOf(record: AttendanceRecord): string {
+		return toDateKey(record.date).slice(0, 7);
 	}
 
 	private buildMonthlyBreakdown(
-		records: AttendanceRecord[],
+		dailyRecords: AttendanceRecord[],
+		workshopRecords: AttendanceRecord[],
 	): StudentMonthlyEntry[] {
-		const monthlyMap = this.groupByMonth(records);
+		const keys = new Set(
+			[...dailyRecords, ...workshopRecords].map((r) => this.monthKeyOf(r)),
+		);
 
-		return Array.from(monthlyMap.entries()).map(([key, monthRecords]) => {
-			const [yearStr, monthStr] = key.split('-');
-			const counts = this.countByStatus(monthRecords);
-			const absencePercent = this.calculateAbsencePercent(
-				monthRecords.length,
-				counts.present,
-			);
+		return Array.from(keys)
+			.sort()
+			.map((key) => {
+				const [yearStr, monthStr] = key.split('-');
+				const metrics = this.metrics.calculateStudentMetrics(
+					dailyRecords.filter((r) => this.monthKeyOf(r) === key),
+					workshopRecords.filter((r) => this.monthKeyOf(r) === key),
+				);
 
-			return {
-				month: Number(monthStr),
-				year: Number(yearStr),
-				present: counts.present,
-				absent: counts.absent,
-				late: counts.late,
-				justified: counts.justified,
-				absencePercent,
-				status: this.getReportStatus(absencePercent),
-			};
-		});
+				return {
+					month: Number(monthStr),
+					year: Number(yearStr),
+					present: metrics.present,
+					absent: metrics.absent,
+					late: metrics.late,
+					justified: metrics.justified,
+					daysGiven: metrics.daysGiven,
+					absenceBreakdown: metrics.absenceBreakdown,
+					absencePercent: metrics.absencePercent,
+					status: metrics.status,
+				};
+			});
 	}
 
-	private aggregateMonthlyTotals(months: StudentMonthlyEntry[]): {
-		present: number;
-		absent: number;
-		late: number;
-		justified: number;
-		totalDays: number;
-		averageAbsencePercent: number;
-	} {
+	private aggregateMonthlyTotals(
+		months: StudentMonthlyEntry[],
+	): IDetailedStudentReport['totals'] {
 		const totals = months.reduce(
 			(acc, m) => {
 				acc.present += m.present;
 				acc.absent += m.absent;
 				acc.late += m.late;
 				acc.justified += m.justified;
+				acc.totalDays += m.daysGiven;
+				acc.absenceBreakdown.daily += m.absenceBreakdown.daily;
+				acc.absenceBreakdown.workshop += m.absenceBreakdown.workshop;
 				return acc;
 			},
-			{ present: 0, absent: 0, late: 0, justified: 0 },
+			{
+				present: 0,
+				absent: 0,
+				late: 0,
+				justified: 0,
+				totalDays: 0,
+				absenceBreakdown: { daily: 0, workshop: 0 },
+			},
 		);
 
-		const totalDays =
-			totals.present + totals.absent + totals.late + totals.justified;
-		const averageAbsencePercent = this.calculateAbsencePercent(
-			totalDays,
-			totals.present,
-		);
-
-		return { ...totals, totalDays, averageAbsencePercent };
+		return {
+			...totals,
+			averageAbsencePercent:
+				totals.totalDays > 0 ? (totals.absent / totals.totalDays) * 100 : null,
+		};
 	}
 
-	private buildCourseSummary(
-		records: AttendanceRecord[],
-		studentReports: StudentReportEntry[],
-	): {
+	/**
+	 * Course attendance over the days given to each student:
+	 * (days given - weighted absences) / days given. Null when no class was given.
+	 */
+	private buildCourseSummary(studentReports: StudentReportEntry[]): {
 		studentsAtRisk: number;
 		studentsExceeded: number;
-		averageAttendance: number;
+		averageAttendance: number | null;
 	} {
-		const present = records.filter(
-			(r) => r.status === ATTENDANCE_STATUS.PRESENT,
-		).length;
+		const daysGiven = studentReports.reduce(
+			(sum, r) => sum + (r.daysGiven ?? 0),
+			0,
+		);
+		const absences = studentReports.reduce((sum, r) => sum + r.absent, 0);
 
 		return {
 			studentsAtRisk: studentReports.filter((r) => r.status === 'at-risk').length,
 			studentsExceeded: studentReports.filter((r) => r.status === 'exceeded')
 				.length,
-			averageAttendance: records.length > 0 ? (present / records.length) * 100 : 0,
+			averageAttendance:
+				daysGiven > 0 ? ((daysGiven - absences) / daysGiven) * 100 : null,
 		};
 	}
 }

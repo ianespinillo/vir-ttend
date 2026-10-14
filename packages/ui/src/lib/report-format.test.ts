@@ -62,6 +62,17 @@ describe('getAbsencePercentTone', () => {
 	});
 });
 
+describe('sin clases dadas (porcentaje nulo)', () => {
+	it('usa un tono neutro, sin semáforo', () => {
+		expect(getAbsencePercentTone(null)).toContain('muted');
+		expect(getAttendanceBarTone(null)).toBe('bg-muted');
+	});
+
+	it('lo aclara en el tooltip del estado', () => {
+		expect(getStatusTooltip('ok', null)).toContain('Todavía no hay clases dadas');
+	});
+});
+
 describe('getAttendanceBarTone', () => {
 	it('corta en los mismos umbrales que el tono de texto', () => {
 		const tones = new Set([
@@ -105,6 +116,15 @@ describe('buildTrendChartData', () => {
 			'Ago 2026',
 		]);
 		expect(points.map((p) => p.asistencia)).toEqual([80, 85, 90]);
+	});
+
+	it('omite los meses sin clases dadas', () => {
+		const points = buildTrendChartData([
+			{ month: 3, year: 2026, averageAttendance: null },
+			{ month: 4, year: 2026, averageAttendance: 90 },
+		]);
+
+		expect(points.map((p) => p.label)).toEqual(['Abr 2026']);
 	});
 
 	it('retorna un array vacío sin datos', () => {

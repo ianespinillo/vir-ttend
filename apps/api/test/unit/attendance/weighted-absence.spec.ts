@@ -7,6 +7,8 @@ import {
 	MAX_DAILY_ABSENCE,
 	WeightedAbsenceInput,
 	calculateWeightedAbsences,
+	calculateWeightedAbsencesByStudent,
+	countDaysGiven,
 	toDateKey,
 } from '../../../src/modules/attendance/domain/services/weighted-absence';
 
@@ -219,5 +221,81 @@ describe('calculateWeightedAbsences', () => {
 		it('is zero without records', () => {
 			expect(run({}).total).toBe(0);
 		});
+	});
+});
+
+describe('countDaysGiven', () => {
+	it('counts each date once, whether it has a daily record, a workshop record or both', () => {
+		expect(
+			countDaysGiven(
+				[daily(ATTENDANCE_STATUS.PRESENT, MONDAY), daily('absent', TUESDAY)],
+				[
+					daily(ATTENDANCE_STATUS.PRESENT, MONDAY),
+					daily(ATTENDANCE_STATUS.PRESENT, '2026-03-11'),
+				],
+			),
+		).toBe(3);
+	});
+
+	it('reads a Date at UTC midnight and a YYYY-MM-DD string as the same day', () => {
+		expect(
+			countDaysGiven(
+				[daily(ATTENDANCE_STATUS.PRESENT, new Date(`${MONDAY}T00:00:00.000Z`))],
+				[daily(ATTENDANCE_STATUS.PRESENT, MONDAY)],
+			),
+		).toBe(1);
+	});
+
+	it('is zero without records', () => {
+		expect(countDaysGiven([], [])).toBe(0);
+	});
+});
+
+describe('calculateWeightedAbsencesByStudent', () => {
+	const rec = (studentId: string, status: string, date = MONDAY) => ({
+		studentId,
+		status,
+		date,
+	});
+
+	it('weighs every student of a course-wide read apart, with the days given', () => {
+		const result = calculateWeightedAbsencesByStudent(
+			[
+				rec('ana', ATTENDANCE_STATUS.ABSENT),
+				rec('ana', ATTENDANCE_STATUS.PRESENT, TUESDAY),
+				rec('beto', ATTENDANCE_STATUS.ABSENT),
+				rec('beto', ATTENDANCE_STATUS.LATE, TUESDAY),
+			],
+			[rec('beto', ATTENDANCE_STATUS.ABSENT)],
+		);
+
+		// Ana has no workshop record on Monday: the daily absence weighs 1.
+		expect(result.get('ana')).toEqual({
+			total: 1,
+			breakdown: { daily: 1, workshop: 0 },
+			daysGiven: 2,
+		});
+		// Beto: Monday 0.5 + 0.5 (workshop day), Tuesday 0.25.
+		expect(result.get('beto')).toEqual({
+			total: 1.25,
+			breakdown: { daily: 0.75, workshop: 0.5 },
+			daysGiven: 2,
+		});
+	});
+
+	it('includes a student that only has workshop records', () => {
+		const result = calculateWeightedAbsencesByStudent(
+			[],
+			[rec('carla', ATTENDANCE_STATUS.ABSENT)],
+		);
+		expect(result.get('carla')).toEqual({
+			total: 0.5,
+			breakdown: { daily: 0, workshop: 0.5 },
+			daysGiven: 1,
+		});
+	});
+
+	it('leaves out students without records', () => {
+		expect(calculateWeightedAbsencesByStudent([], []).size).toBe(0);
 	});
 });

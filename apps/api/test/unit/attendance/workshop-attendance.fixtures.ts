@@ -58,6 +58,7 @@ export function buildRepo(
 			.fn()
 			.mockImplementation(async () => [...store.values()]),
 		findByStudentAndDateRange: jest.fn().mockResolvedValue([]),
+		findByCourseAndDateRange: jest.fn().mockResolvedValue([]),
 		bulkSave: jest.fn().mockImplementation(async (records) => {
 			saved.push(records);
 			for (const r of records) store.set(r.studentId, r);

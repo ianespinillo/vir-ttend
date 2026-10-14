@@ -121,3 +121,63 @@ export function calculateWeightedAbsences(
 	}
 	return { total: daily + workshop, breakdown: { daily, workshop } };
 }
+
+export interface WeightedStudentRecord extends WeightedAttendanceRecord {
+	studentId: string;
+}
+
+export interface WeightedAbsenceSummary extends WeightedAbsenceResult {
+	/**
+	 * Distinct dates on which the student has a daily or workshop record: the
+	 * classes effectively given, never the schedule. Each date counts once.
+	 */
+	daysGiven: number;
+}
+
+/** Days effectively given to a student: distinct dates with any record. */
+export function countDaysGiven(
+	dailyRecords: readonly WeightedAttendanceRecord[],
+	workshopRecords: readonly WeightedAttendanceRecord[],
+): number {
+	return new Set(
+		[...dailyRecords, ...workshopRecords].map((record) => toDateKey(record.date)),
+	).size;
+}
+
+/**
+ * Weighted totals of every student found in the (course-wide) records, from one
+ * bulk read instead of a query per student. Students with no record are absent
+ * from the result.
+ */
+export function calculateWeightedAbsencesByStudent(
+	dailyRecords: readonly WeightedStudentRecord[],
+	workshopRecords: readonly WeightedStudentRecord[],
+): Map<string, WeightedAbsenceSummary> {
+	const byStudent = new Map<
+		string,
+		{ daily: WeightedStudentRecord[]; workshop: WeightedStudentRecord[] }
+	>();
+	const bucket = (studentId: string) => {
+		let entry = byStudent.get(studentId);
+		if (!entry) {
+			entry = { daily: [], workshop: [] };
+			byStudent.set(studentId, entry);
+		}
+		return entry;
+	};
+	for (const record of dailyRecords) bucket(record.studentId).daily.push(record);
+	for (const record of workshopRecords)
+		bucket(record.studentId).workshop.push(record);
+
+	const result = new Map<string, WeightedAbsenceSummary>();
+	for (const [studentId, { daily, workshop }] of byStudent) {
+		result.set(studentId, {
+			...calculateWeightedAbsences({
+				dailyRecords: daily,
+				workshopRecords: workshop,
+			}),
+			daysGiven: countDaysGiven(daily, workshop),
+		});
+	}
+	return result;
+}

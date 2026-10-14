@@ -59,10 +59,18 @@ export class MonthlyReportResponseDto {
 				fullName: { type: 'string', example: 'Juan Pérez' },
 				documentNumber: { type: 'string', example: '40123456' },
 				present: { type: 'number', example: 19 },
-				absent: { type: 'number', example: 1 },
+				absent: { type: 'number', example: 1.5 },
 				late: { type: 'number', example: 2 },
 				justified: { type: 'number', example: 1 },
-				absencePercent: { type: 'number', example: 4.5 },
+				daysGiven: { type: 'number', example: 21 },
+				absenceBreakdown: {
+					type: 'object',
+					properties: {
+						daily: { type: 'number', example: 1 },
+						workshop: { type: 'number', example: 0.5 },
+					},
+				},
+				absencePercent: { type: 'number', nullable: true, example: 7.1 },
 				status: { type: 'string', enum: ['ok', 'at-risk', 'exceeded'] },
 				alerts: {
 					type: 'array',
@@ -84,10 +92,12 @@ export class MonthlyReportResponseDto {
 				fullName: 'Juan Pérez',
 				documentNumber: '40123456',
 				present: 19,
-				absent: 1,
+				absent: 1.5,
 				late: 2,
 				justified: 1,
-				absencePercent: 4.5,
+				daysGiven: 21,
+				absenceBreakdown: { daily: 1, workshop: 0.5 },
+				absencePercent: 7.1,
 				status: 'ok',
 				alerts: [],
 			},
@@ -111,7 +121,7 @@ export class MonthlyReportResponseDto {
 		description: 'Resumen de métricas del reporte',
 		type: 'object',
 		properties: {
-			averageAttendance: { type: 'number', example: 87.5 },
+			averageAttendance: { type: 'number', nullable: true, example: 87.5 },
 			studentsAtRisk: { type: 'number', example: 3 },
 			studentsExceeded: { type: 'number', example: 1 },
 		},
@@ -122,7 +132,7 @@ export class MonthlyReportResponseDto {
 		},
 	})
 	readonly summary: {
-		averageAttendance: number;
+		averageAttendance: number | null;
 		studentsAtRisk: number;
 		studentsExceeded: number;
 	};
