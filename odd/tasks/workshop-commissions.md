@@ -19,6 +19,20 @@ Support the technical-school workshop (taller): each course is split into commis
 - A workshop absence counts as 0.5 toward the student's absence total (user 2026-10-13).
   - Implication: today no weighted absences exist (counts are whole numbers); totals, thresholds and reports must handle fractional values.
 
+## Counting rules (decided 2026-10-14, source: PBA Res. conjunta 1650/2024, Anexo 4 "Asistencia", verified)
+- Source text read by the parent: https://normas.gba.gob.ar/anexos/descargar/LVNgaR06.pdf. Engram: `domain/pba-attendance-rules`.
+- §8: absences are computed per full school day. One shift only → 1. One shift + contraturno activities (regardless of length) → 1/2 per shift. So on a student's workshop day: daily (theory) absent = 0.5, workshop absent = 0.5; the day never exceeds 1.
+  - SUPERSEDES the earlier "reading A" (theory 1 + workshop 0.5 = 1.5/day), which the user first described and then dropped after the norm was read (user: "implementá", 2026-10-14).
+- A "workshop day" for a student is schedule-based: the student's commission has a workshop-subject slot on that weekday (slot `commissionNumber` null or equal to the commission number). Rationale: §8b talks about the obligation to attend, not about whether attendance was taken. Known limit: slots are current, not historical.
+- §9: late up to 20 minutes → 0.25 (theory and workshop alike). This replaces today's "late = full absence" in reports, for every school.
+- Late beyond the tolerance is NOT regulated by the norm. School criterion (user): 0.5. Modeled as a new status chosen by the preceptor (option B, user 2026-10-14) for daily and workshop attendance; no arrival time stored. Option A (arrival time vs shift start) deferred to institution config. The broken minutesLate (`attendance-calculation.service.ts:36`, `createdAt - editedAt` with `.getMinutes()`) goes away.
+- Weights: daily absent 1 (0.5 on a workshop day); workshop absent 0.5; late 0.25; late beyond tolerance 0.5. Justified absences still count (§24 counts "justificadas o no"); per-student exceptions belong to the extensions feature.
+- §7: institutional cap 28 per year (constant for now). §10: exceeding it does not drop the student. §11: per-subject 75% of classes effectively given applies only after exceeding the cap, computed at year end (NOT in T3b scope).
+- Alerts (§24–26): count-based on the weighted total, at 10, 20 and the student's cap (28 for now). Replaces the percent-based alert (which produced Infinity).
+- Percentages stay as statistics only (dashboards, reports, per subject), with the denominator = classes effectively given (days with attendance taken), never the schedule; no classes → no percentage.
+- Out of T3b scope (user 2026-10-14): per-student cap extensions (+N with a reason: the "+5" practice, pregnancy +30 §14, paternity §16, gender violence §19, sport §17) → separate feature; design T3b around a per-student cap so they plug in later. Weights, cap and tolerance → institution settings later; T3b keeps them as named constants in one pure weighting function.
+- Not in the norm (former school councillor's claims): "+5 → 33" and "85% per subject" (the annex says 75%).
+
 ## Current state (mapped)
 - Daily attendance: one record per student/course/date (`subjectId = NULL`), taken by PRECEPTOR/ADMIN. Subject attendance: per subject/date, taken by the subject teacher.
 - One preceptor per course (`courses.preceptorId`), one shift per course (`courses.shift`). No contraturno, no session type, no technical-school flag.
@@ -46,7 +60,11 @@ Support the technical-school workshop (taller): each course is split into commis
 - [x] T1 (route: delegated writer; commit `0cf0f6e`): Domain + persistence — subject type (theory | workshop); WorkshopCommission entity (course, number 1|2, preceptor, students) + migration; optional commission on schedule slots; schedule validation per commission (overlap + weeklyHours).
 - [x] T2 (route: delegated writer; commit `e7ecbe3`): Commission management — create the 2 commissions with an alphabetical 50/50 suggestion, persist; assign preceptor; move a student; explicit regenerate; new students join the smaller commission.
 - [x] T3a (route: delegated writer; commit `fd14aed`): Workshop attendance API — record/list per commission per day, taken by the commission preceptor (or ADMIN); separate table.
-- [ ] T3b: Weighted totals — workshop absence counts 0.5 in student absence totals, thresholds/alerts and reports (fractional values). Map the totals code first.
+- [ ] T3b: Weighted totals per "Counting rules" (branch `feat/workshop-commissions-weighted-totals`, child of the T3a branch). Split:
+  - [ ] T3b.1 (route: delegated writer — touches shared enum, API, web and mobile pickers): new status "late beyond tolerance" end to end (shared enum, DB checks/migration if any, DTO validation, daily + workshop attendance, web and mobile daily-attendance pickers, labels).
+  - [ ] T3b.2 (route: delegated writer): one pure weighting function (named constants) + workshop-day resolver from commission slots; per-student weighted total over daily + workshop records with the per-day rule; per-student cap (28 constant, extension-ready). Unit tests for every weight and the day cap.
+  - [ ] T3b.3 (route: delegated writer): alerts count-based on the weighted total at 10/20/cap; drop the percent alert and broken minutesLate; fix the `alert.trigered` event typo; workshop attendance saves trigger alert evaluation.
+  - [ ] T3b.4 (route: delegated writer): reports and stats use the weighted total; percentages over classes effectively given; fractional formatting (.25/.5/.75) in PDF/Excel/UI cards. Stored monthly reports are not recomputed (assumption: only new ones).
 - [ ] T4: Web UI — subject type in the subject form, commission selector on workshop slots, commissions screen in the course, workshop attendance screen for the preceptor.
 - [ ] T5: Mobile — workshop attendance in the app (after web).
 - Decided (parent, 2026-10-14): workshop attendance uses its own table `workshop_attendance_records`. Reusing `attendanceRecord` would make every existing absence query silently count workshop rows as full absences; a separate table keeps current totals unchanged until T3b adds the 0.5 weight explicitly.
