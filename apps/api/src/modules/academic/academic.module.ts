@@ -13,6 +13,10 @@ import { DeleteCourseHandler } from './application/commands/delete-course/delete
 import { DeleteStudentHandler } from './application/commands/delete-student/delete-student.handler';
 import { DeleteSubjectHandler } from './application/commands/delete-subject/delete-subject.handler';
 import { EnrollStudentHandler } from './application/commands/enroll-student/enroll-student.handler';
+import { CommitStudentImportHandler } from './application/commands/import-students/commit-student-import.handler';
+import { GetStudentImportTemplateHandler } from './application/commands/import-students/get-student-import-template.handler';
+import { PreviewStudentImportHandler } from './application/commands/import-students/preview-student-import.handler';
+import { StudentImportService } from './application/commands/import-students/student-import.service';
 import { MoveStudentToCommissionHandler } from './application/commands/move-student-to-commission/move-student-to-commission.handler';
 import { RegenerateWorkshopCommissionsHandler } from './application/commands/regenerate-workshop-commissions/regenerate-workshop-commissions.handler';
 import { SetScheduleHandler } from './application/commands/set-schedule/set-schedule.handler';
@@ -39,12 +43,14 @@ import { SearchStudentsHandler } from './application/queries/search-students/sea
 import { WorkshopPlacementService } from './application/services/workshop-placement.service';
 import { CourseService } from './domain/services/course.service';
 import { ScheduleService } from './domain/services/schedule.service';
+import { AcademicUnitOfWorkAdapter } from './infrastructure/adapters/academic-unit-of-work.adapter';
 import { MembershipAdapter } from './infrastructure/adapters/membership.adapter';
-import { MikroOrmUnitOfWorkAdapter } from './infrastructure/adapters/unit-of-work.adapter';
+import { XlsxStudentImportFileAdapter } from './infrastructure/adapters/xlsx-student-import-file.adapter';
 import { AcademicPersistenceModule } from './infrastructure/persistence/academic.persistence.module';
 import { AcademicYearsController } from './presentation/controllers/academic-year.controller';
 import { CoursesController } from './presentation/controllers/course.controller';
 import { ScheduleController } from './presentation/controllers/schedule-slot.controller';
+import { StudentImportController } from './presentation/controllers/student-import.controller';
 import { StudentsController } from './presentation/controllers/students.controller';
 import { SubjectsController } from './presentation/controllers/subjects.controller';
 import { WorkshopCommissionsController } from './presentation/controllers/workshop-commissions.controller';
@@ -57,10 +63,6 @@ import { WorkshopCommissionsController } from './presentation/controllers/worksh
 		{
 			provide: 'IMembershipPort',
 			useClass: MembershipAdapter,
-		},
-		{
-			provide: 'IUnitOfWorkPort',
-			useClass: MikroOrmUnitOfWorkAdapter,
 		},
 		// Handler
 		AssignWorkshopPreceptorHandler,
@@ -83,6 +85,10 @@ import { WorkshopCommissionsController } from './presentation/controllers/worksh
 		DeleteStudentHandler,
 		EnrollStudentHandler,
 		TransferStudentHandler,
+		PreviewStudentImportHandler,
+		CommitStudentImportHandler,
+		GetStudentImportTemplateHandler,
+		StudentImportService,
 
 		// Handler de queries
 		GetAcademicYearsHandler,
@@ -102,6 +108,14 @@ import { WorkshopCommissionsController } from './presentation/controllers/worksh
 		SearchStudentsHandler,
 
 		// Adapters
+		{
+			provide: 'IStudentImportFilePort',
+			useClass: XlsxStudentImportFileAdapter,
+		},
+		{
+			provide: 'IAcademicUnitOfWorkPort',
+			useClass: AcademicUnitOfWorkAdapter,
+		},
 		MembershipAdapter,
 		StudentAdapter,
 
@@ -117,6 +131,7 @@ import { WorkshopCommissionsController } from './presentation/controllers/worksh
 		SubjectsController,
 		StudentsController,
 		WorkshopCommissionsController,
+		StudentImportController,
 	],
 })
 export class AcademicModule {}

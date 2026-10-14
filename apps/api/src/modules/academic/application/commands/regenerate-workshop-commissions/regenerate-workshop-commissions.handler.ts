@@ -4,7 +4,7 @@ import {
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
-import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
+import { IAcademicUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { IWorkshopCommissionRepository } from '../../../domain/repositories/workshop-commission.repository.interface';
@@ -21,8 +21,8 @@ export class RegenerateWorkshopCommissionsHandler {
 		private readonly studentRepo: IStudentRepository,
 		@Inject('IWorkshopCommissionRepository')
 		private readonly commissionRepo: IWorkshopCommissionRepository,
-		@Inject('IUnitOfWorkPort')
-		private readonly unitOfWork: IUnitOfWorkPort,
+		@Inject('IAcademicUnitOfWorkPort')
+		private readonly unitOfWork: IAcademicUnitOfWorkPort,
 		private readonly placement: WorkshopPlacementService,
 	) {}
 

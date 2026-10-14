@@ -71,6 +71,7 @@ export * from './features/students/use-update-student';
 export * from './features/students/use-delete-student';
 export * from './features/students/use-enroll-student';
 export * from './features/students/use-transfer-student';
+export * from './features/students/use-student-import';
 
 // attendance
 export * from './features/attendance/use-daily-attendance';

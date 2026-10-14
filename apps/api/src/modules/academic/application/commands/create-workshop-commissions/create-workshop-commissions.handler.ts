@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { COMMISSION_NUMBERS } from '@repo/common';
 import { WorkshopCommission } from '../../../domain/entities/workshop-commission.entity';
-import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
+import { IAcademicUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { IWorkshopCommissionRepository } from '../../../domain/repositories/workshop-commission.repository.interface';
@@ -23,8 +23,8 @@ export class CreateWorkshopCommissionsHandler {
 		private readonly studentRepo: IStudentRepository,
 		@Inject('IWorkshopCommissionRepository')
 		private readonly commissionRepo: IWorkshopCommissionRepository,
-		@Inject('IUnitOfWorkPort')
-		private readonly unitOfWork: IUnitOfWorkPort,
+		@Inject('IAcademicUnitOfWorkPort')
+		private readonly unitOfWork: IAcademicUnitOfWorkPort,
 		private readonly placement: WorkshopPlacementService,
 	) {}
 

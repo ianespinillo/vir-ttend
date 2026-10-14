@@ -9,6 +9,7 @@ export * from './academic/subject.response.type.js';
 export * from './academic/workshop-commission.response.type.js';
 export * from './academic/student.response.type.js';
 export * from './academic/student-detail.response.type.js';
+export * from './academic/student-import.response.type.js';
 export * from './auth/login.response.type.js';
 export * from './auth/tenant-option.type.js';
 export * from './auth/user.response.type.js';

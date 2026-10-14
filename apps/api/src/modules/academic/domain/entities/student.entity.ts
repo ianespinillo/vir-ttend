@@ -48,6 +48,12 @@ interface ConstructorProps {
 	updatedAt: Date;
 }
 
+// First word is the first name; every remaining word is kept as the last name.
+const splitTutorName = (fullName: string): [string, string] => {
+	const [first = '', ...rest] = fullName.trim().split(/\s+/);
+	return [first, rest.join(' ')];
+};
+
 export class Student {
 	private readonly _id: string;
 	private readonly _tenantId: string;
@@ -72,7 +78,9 @@ export class Student {
 		this._lastName = props.lastName;
 		this._documentNumber = props.documentNumber;
 		this._birthDate = props.birthDate;
-		this._tutorName = props.tutor.firstName.concat(' ', props.tutor.lastName);
+		this._tutorName = [props.tutor.firstName, props.tutor.lastName]
+			.filter(Boolean)
+			.join(' ');
 		this._tutorPhone = props.tutor.phone;
 		this._tutorEmail = props.tutor.email?.getValue() ?? undefined;
 		this._status = props.status;
@@ -90,8 +98,7 @@ export class Student {
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			tutor: new Tutor(
-				props.tutorName.split(' ')[0],
-				props.tutorName.split(' ')[1],
+				...splitTutorName(props.tutorName),
 				props.tutorPhone,
 				props.tutorEmail ? new Email(props.tutorEmail) : undefined,
 			),
@@ -103,8 +110,7 @@ export class Student {
 			...props,
 			documentNumber: new DocumentNumber(props.documentNumber),
 			tutor: new Tutor(
-				props.tutorName.split(' ')[0],
-				props.tutorName.split(' ')[1],
+				...splitTutorName(props.tutorName),
 				props.tutorPhone,
 				props.tutorEmail ? new Email(props.tutorEmail) : undefined,
 			),

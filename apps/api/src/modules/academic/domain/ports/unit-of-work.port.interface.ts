@@ -1,4 +1,7 @@
-/** Runs the given work atomically: everything commits together or nothing does. */
-export interface IUnitOfWorkPort {
+/**
+ * Runs a piece of work atomically: every repository call made inside `work`
+ * either commits together or is rolled back together.
+ */
+export interface IAcademicUnitOfWorkPort {
 	run<T>(work: () => Promise<T>): Promise<T>;
 }

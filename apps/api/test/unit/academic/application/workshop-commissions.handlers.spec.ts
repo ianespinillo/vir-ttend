@@ -27,7 +27,7 @@ import { Course } from '../../../../src/modules/academic/domain/entities/course.
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { WorkshopCommission } from '../../../../src/modules/academic/domain/entities/workshop-commission.entity';
 import { IMembershipPort } from '../../../../src/modules/academic/domain/ports/membership.port.interface';
-import { IUnitOfWorkPort } from '../../../../src/modules/academic/domain/ports/unit-of-work.port.interface';
+import { IAcademicUnitOfWorkPort } from '../../../../src/modules/academic/domain/ports/unit-of-work.port.interface';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
 import { IWorkshopCommissionRepository } from '../../../../src/modules/academic/domain/repositories/workshop-commission.repository.interface';
@@ -93,7 +93,7 @@ describe('workshop commission handlers', () => {
 	let studentRepo: MockProxy<IStudentRepository>;
 	let commissionRepo: MockProxy<IWorkshopCommissionRepository>;
 	let memberPort: MockProxy<IMembershipPort>;
-	const unitOfWork: IUnitOfWorkPort = { run: (work) => work() };
+	const unitOfWork: IAcademicUnitOfWorkPort = { run: (work) => work() };
 	let placement: WorkshopPlacementService;
 
 	beforeEach(() => {
