@@ -171,10 +171,19 @@ describe('seeded alerts', () => {
 		if (!sofia || !joaquin || !santiago) {
 			throw new Error('expected seeded alerts');
 		}
-		// Demo alerts keep their percent bands; the count is the effective absences.
-		expect(sofia.absenceCount).toBe(4);
-		expect(joaquin.absenceCount).toBe(6);
-		expect(santiago.absenceCount).toBe(4);
+		// Demo alerts keep their percent bands; the count is lifted to the
+		// threshold of the band, as the API only alerts at or above it.
+		expect(sofia.absenceCount).toBe(10);
+		expect(joaquin.absenceCount).toBe(20);
+		expect(santiago.absenceCount).toBe(10);
+	});
+
+	it('every alert count reaches its threshold (10/20/28 = warning/critical/exceeded)', () => {
+		const thresholds = { warning: 10, critical: 20, exceeded: 28 };
+		for (const alert of createSeedState().alerts) {
+			expect(alert.threshold).toBe(thresholds[alert.alertType]);
+			expect(alert.absenceCount).toBeGreaterThanOrEqual(alert.threshold);
+		}
 	});
 
 	it('regular students carry no alerts', () => {

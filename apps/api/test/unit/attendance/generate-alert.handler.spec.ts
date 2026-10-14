@@ -1,5 +1,6 @@
+import { UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { LEVEL } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK, LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { GenerateAlertCommand } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.command';
 import { GenerateAlertHandler } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.handler';
@@ -42,7 +43,7 @@ describe('GenerateAlertHandler', () => {
 	);
 
 	const withTotal = (total: number, cap = 28) =>
-		weightedAbsences.getStudentWeightedAbsences.mockResolvedValue({
+		weightedAbsences.getStudentWeightedAbsencesForAlert.mockResolvedValue({
 			total,
 			cap,
 			breakdown: { daily: total, workshop: 0 },
@@ -111,10 +112,9 @@ describe('GenerateAlertHandler', () => {
 
 	it('counts the weighted absences of the student in the academic year', async () => {
 		await handler.execute(cmd);
-		expect(weightedAbsences.getStudentWeightedAbsences).toHaveBeenCalledWith(
-			'student-1',
-			'year-1',
-		);
+		expect(
+			weightedAbsences.getStudentWeightedAbsencesForAlert,
+		).toHaveBeenCalledWith('student-1', 'year-1');
 	});
 
 	it.each([0, 4.5, 9.75])(
@@ -226,6 +226,83 @@ describe('GenerateAlertHandler', () => {
 			'alert.triggered',
 			savedAlert(),
 		);
+	});
+
+	it('treats a unique violation on save as already alerted', async () => {
+		withTotal(10);
+		alertRepo.save.mockRejectedValue(
+			new UniqueConstraintViolationException(new Error('duplicate key')),
+		);
+		await expect(handler.execute(cmd)).resolves.toBeUndefined();
+		expect(eventEmitter.emit).not.toHaveBeenCalled();
+	});
+
+	it('rethrows any other save error', async () => {
+		withTotal(10);
+		alertRepo.save.mockRejectedValue(new Error('connection lost'));
+		await expect(handler.execute(cmd)).rejects.toThrow('connection lost');
+		expect(eventEmitter.emit).not.toHaveBeenCalled();
+	});
+
+	describe('with the real weighted count', () => {
+		// 2026-03-09 is a Monday: today in these tests.
+		const day = (d: string) => new Date(`${d}T00:00:00.000Z`);
+		const record = (date: Date, status: string) => ({ date, status });
+
+		function realHandler(workshopToday: boolean) {
+			const daily = [
+				// 9.25 from earlier days: 9 absences + 1 late.
+				...Array.from({ length: 9 }, (_, i) =>
+					record(
+						day(`2026-02-${String(2 + i).padStart(2, '0')}`),
+						ATTENDANCE_STATUS.ABSENT,
+					),
+				),
+				record(day('2026-02-16'), ATTENDANCE_STATUS.LATE),
+				// The daily save of today that triggers the evaluation.
+				record(day('2026-03-09'), ATTENDANCE_STATUS.ABSENT),
+			];
+			const commissionPort = {
+				findByStudent: jest.fn().mockResolvedValue({
+					courseId: 'course-1',
+					number: 1,
+				}),
+				getWorkshopDays: jest
+					.fn()
+					.mockResolvedValue(workshopToday ? [DAYOFWEEK.MONDAY] : []),
+			};
+			const service = new StudentWeightedAbsencesService(
+				{
+					findDailyByStudentAndDateRange: jest.fn().mockResolvedValue(daily),
+				} as never,
+				{ findByStudentAndDateRange: jest.fn().mockResolvedValue([]) } as never,
+				academicPort,
+				commissionPort as never,
+			);
+			return new GenerateAlertHandler(
+				academicPort,
+				coursePort,
+				service,
+				alertRepo,
+				eventEmitter,
+			);
+		}
+
+		beforeEach(() => {
+			jest.useFakeTimers({ now: new Date('2026-03-09T12:00:00.000Z') });
+		});
+		afterEach(() => jest.useRealTimers());
+
+		it('raises no alert when the absence of today is half a day pending the workshop', async () => {
+			await realHandler(true).execute(cmd);
+			// 9.25 + 0.5 = 9.75; had today weighed 1 it would be 10.25.
+			expect(alertRepo.save).not.toHaveBeenCalled();
+		});
+
+		it('raises the alert when no workshop is scheduled today (absence weighs 1)', async () => {
+			await realHandler(false).execute(cmd);
+			expect(savedAlert().absenceCount).toBe(10.25);
+		});
 	});
 
 	it('saves the alert before announcing it', async () => {

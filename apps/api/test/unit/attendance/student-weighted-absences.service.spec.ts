@@ -1,4 +1,4 @@
-import { ATTENDANCE_STATUS } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
 import { StudentWeightedAbsencesService } from '../../../src/modules/attendance/application/services/student-weighted-absences.service';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
@@ -53,6 +53,8 @@ describe('StudentWeightedAbsencesService', () => {
 	function build(opts: {
 		daily?: AttendanceRecord[];
 		workshop?: WorkshopAttendanceRecord[];
+		commission?: { courseId: string; number: number } | null;
+		workshopDays?: DAYOFWEEK[];
 	}) {
 		const attendanceRepo = {
 			findDailyByStudentAndDateRange: jest
@@ -63,16 +65,22 @@ describe('StudentWeightedAbsencesService', () => {
 			findByStudentAndDateRange: jest.fn().mockResolvedValue(opts.workshop ?? []),
 		};
 		const academicYearPort = { findById: jest.fn().mockResolvedValue(year) };
+		const commissionPort = {
+			findByStudent: jest.fn().mockResolvedValue(opts.commission ?? null),
+			getWorkshopDays: jest.fn().mockResolvedValue(opts.workshopDays ?? []),
+		};
 		const service = new StudentWeightedAbsencesService(
 			attendanceRepo as never,
 			workshopRepo as never,
 			academicYearPort as never,
+			commissionPort as never,
 		);
 		return {
 			service,
 			attendanceRepo,
 			workshopRepo,
 			academicYearPort,
+			commissionPort,
 		};
 	}
 
@@ -124,6 +132,112 @@ describe('StudentWeightedAbsencesService', () => {
 		);
 
 		expect(result.total).toBe(0.5);
+	});
+
+	describe('for alert evaluation', () => {
+		const commission = { courseId: 'course-1', number: 1 };
+		const today = (day: Date) => ({
+			now: new Date(day.getTime() + 12 * 3600_000),
+		});
+		afterEach(() => jest.useRealTimers());
+
+		it('weighs a daily absence today 0.5 when a workshop is scheduled and not taken yet', async () => {
+			jest.useFakeTimers(today(MON));
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+			);
+
+			expect(result.total).toBe(0.5);
+		});
+
+		it('keeps the same absence on a past day at 1', async () => {
+			jest.useFakeTimers(today(TUE));
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY, DAYOFWEEK.TUESDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+			);
+
+			expect(result.total).toBe(1);
+		});
+
+		it('weighs today 1 for a student without a commission', async () => {
+			jest.useFakeTimers(today(MON));
+			const { service, commissionPort } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission: null,
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+			);
+
+			expect(result.total).toBe(1);
+			expect(commissionPort.getWorkshopDays).not.toHaveBeenCalled();
+		});
+
+		it('weighs today 1 when the commission has no workshop today', async () => {
+			jest.useFakeTimers(today(MON));
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.TUESDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+			);
+
+			expect(result.total).toBe(1);
+		});
+
+		it('keeps 0.5 when the workshop record of today exists', async () => {
+			jest.useFakeTimers(today(MON));
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				workshop: [workshopRecord(MON, ATTENDANCE_STATUS.PRESENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+			);
+
+			expect(result.total).toBe(0.5);
+		});
+
+		it('leaves the report total purely held-based', async () => {
+			jest.useFakeTimers(today(MON));
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsences(
+				'student-1',
+				'year-1',
+			);
+
+			expect(result.total).toBe(1);
+		});
 	});
 
 	it('defaults the period to the academic year and honors an explicit one', async () => {

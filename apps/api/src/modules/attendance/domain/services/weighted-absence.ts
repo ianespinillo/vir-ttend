@@ -24,6 +24,11 @@ export interface WeightedAbsenceInput {
 	/** Daily records only (no subject attendance rows). */
 	dailyRecords: readonly WeightedAttendanceRecord[];
 	workshopRecords: readonly WeightedAttendanceRecord[];
+	/**
+	 * `YYYY-MM-DD` dates to treat as contraturno days although no workshop
+	 * record exists yet (today, while the workshop has not been taken).
+	 */
+	expectedContraturnoDays?: readonly string[];
 }
 
 export interface WeightedAbsenceBreakdown {
@@ -84,15 +89,17 @@ function sumByDay(
  * Weighted absence total of one student. A date is a contraturno day only when
  * the workshop was held, that is, the student has a workshop record on it; there
  * a daily absence weighs 1/2. With no workshop record (not held, or not
- * scheduled) the student had a single shift and a daily absence weighs 1. Each
+ * scheduled) the student had a single shift and a daily absence weighs 1, unless
+ * the caller lists the date in `expectedContraturnoDays`. Each
  * date is capped at 1, the daily shift being counted first.
  */
 export function calculateWeightedAbsences(
 	input: WeightedAbsenceInput,
 ): WeightedAbsenceResult {
-	const contraturnoDays = new Set(
-		input.workshopRecords.map((record) => toDateKey(record.date)),
-	);
+	const contraturnoDays = new Set([
+		...input.workshopRecords.map((record) => toDateKey(record.date)),
+		...(input.expectedContraturnoDays ?? []),
+	]);
 
 	const dailyByDay = sumByDay(input.dailyRecords, (day) =>
 		contraturnoDays.has(day) ? CONTRATURNO_SHIFT_WEIGHT : DAILY_ABSENT_WEIGHT,

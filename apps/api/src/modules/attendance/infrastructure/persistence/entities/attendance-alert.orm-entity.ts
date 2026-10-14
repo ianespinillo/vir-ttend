@@ -1,11 +1,14 @@
-import { Entity, Index, PrimaryKey, Property } from '@mikro-orm/core';
+import { Entity, Index, PrimaryKey, Property, Unique } from '@mikro-orm/core';
 import { AttendanceAlertRepository } from '../repository/attendance-alert.repository';
 
 @Entity({
 	tableName: 'attendance_alerts',
 	repository: () => AttendanceAlertRepository,
 })
-@Index({ properties: ['studentId', 'academicYearId', 'alertType'] })
+@Unique({
+	name: 'attendance_alerts_student_year_type_unique',
+	properties: ['studentId', 'academicYearId', 'alertType'],
+})
 @Index({ properties: ['seenAt'] })
 export class AttendanceAlertOrmEntity {
 	@PrimaryKey({

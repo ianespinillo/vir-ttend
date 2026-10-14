@@ -87,6 +87,27 @@ describe('calculateWeightedAbsences', () => {
 			expect(result.total).toBe(1);
 		});
 
+		it('halves a daily absence on an expected contraturno day with no record yet', () => {
+			const result = run({
+				dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT, MONDAY)],
+				workshopRecords: [],
+				expectedContraturnoDays: [MONDAY],
+			});
+			expect(result.total).toBe(0.5);
+		});
+
+		it('only affects the listed day', () => {
+			const result = run({
+				dailyRecords: [
+					daily(ATTENDANCE_STATUS.ABSENT, MONDAY),
+					daily(ATTENDANCE_STATUS.ABSENT, TUESDAY),
+				],
+				workshopRecords: [],
+				expectedContraturnoDays: [MONDAY],
+			});
+			expect(result.total).toBe(1.5);
+		});
+
 		it('does not halve a late arrival', () => {
 			const result = run({
 				dailyRecords: [

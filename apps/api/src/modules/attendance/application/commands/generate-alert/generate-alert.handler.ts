@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { UniqueConstraintViolationException } from '@mikro-orm/core';
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	Logger,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AttendanceAlert } from '../../../domain/entities/attendance-alert.entity';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
@@ -14,6 +20,8 @@ import { GenerateAlertCommand } from './generate-alert.command';
  */
 @Injectable()
 export class GenerateAlertHandler {
+	private readonly logger = new Logger(GenerateAlertHandler.name);
+
 	constructor(
 		@Inject('IAcademicYearPort')
 		private readonly academicPort: IAcademicYearPort,
@@ -33,10 +41,11 @@ export class GenerateAlertHandler {
 			throw new BadRequestException(
 				'No match between course and academic year id found.',
 			);
-		const { total, cap } = await this.weightedAbsences.getStudentWeightedAbsences(
-			command.studentId,
-			command.academicYearId,
-		);
+		const { total, cap } =
+			await this.weightedAbsences.getStudentWeightedAbsencesForAlert(
+				command.studentId,
+				command.academicYearId,
+			);
 		const alerts = await this.alertRepo.findByStudentId(command.studentId);
 		const currentYearAlerts = alerts.filter(
 			(alert) => alert.academicYearId === command.academicYearId,
@@ -52,7 +61,17 @@ export class GenerateAlertHandler {
 			courseId: command.courseId,
 			studentId: command.studentId,
 		});
-		await this.alertRepo.save(alert);
+		try {
+			await this.alertRepo.save(alert);
+		} catch (error) {
+			// A concurrent evaluation saved the same alert first (unique index on
+			// student, academic year and type): already alerted.
+			if (!(error instanceof UniqueConstraintViolationException)) throw error;
+			this.logger.debug(
+				`Alert ${reached.alertType.status} already raised for student ${command.studentId}`,
+			);
+			return;
+		}
 		this.em.emit('alert.triggered', alert);
 	}
 }

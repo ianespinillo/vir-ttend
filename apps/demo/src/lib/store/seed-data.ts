@@ -832,6 +832,8 @@ export function createSeedState(): DemoState {
 
 	// --- Alerts (computed with the SAME math the selectors use) --------------
 
+	const ALERT_THRESHOLDS = { warning: 10, critical: 20, exceeded: 28 } as const;
+
 	const studentCourseById = new Map(
 		students.map((student) => [student.id, student]),
 	);
@@ -848,6 +850,7 @@ export function createSeedState(): DemoState {
 		const pct = absencePercent(counts.absent, counts.late, studentRecords.length);
 		const alertType = absenceToAlertType(pct);
 		if (!alertType) continue;
+		const threshold = ALERT_THRESHOLDS[alertType];
 		const lastFlagDate =
 			[...studentRecords]
 				.reverse()
@@ -861,8 +864,13 @@ export function createSeedState(): DemoState {
 			courseId: student?.courseId ?? '',
 			courseName: student?.courseName ?? '',
 			alertType,
-			absenceCount: effectiveAbsenceCount(counts.absent, counts.late),
-			threshold: alertType === 'warning' ? 10 : 20,
+			// Like the API, an alert is raised when the count reaches its threshold;
+			// the demo bands come from percent, so the count is lifted to it.
+			absenceCount: Math.max(
+				effectiveAbsenceCount(counts.absent, counts.late),
+				threshold,
+			),
+			threshold,
 			seenAt: seed.slug === 'santiago-paz' ? demoTodayDate() : null,
 			createdAt: new Date(`${lastFlagDate}T09:30:00.000Z`),
 		});

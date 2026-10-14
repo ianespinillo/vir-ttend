@@ -79,3 +79,46 @@ describe('WorkshopCommissionAdapter.getWorkshopDays', () => {
 		expect(days).not.toContain(DAYOFWEEK.THURSDAY);
 	});
 });
+
+describe('WorkshopCommissionAdapter.findByStudent', () => {
+	const build = (student: unknown, commission: unknown) =>
+		new WorkshopCommissionAdapter(
+			{ findById: jest.fn().mockResolvedValue(commission) } as never,
+			{
+				findById: jest
+					.fn()
+					.mockResolvedValue({ id: 'course-1', yearNumber: 1, division: 4 }),
+			} as never,
+			{ findById: jest.fn().mockResolvedValue(student) } as never,
+			{} as never,
+			{} as never,
+		);
+
+	it('returns null when the student has no commission', async () => {
+		const adapter = build({ workshopCommissionId: null }, null);
+		expect(await adapter.findByStudent('s1')).toBeNull();
+	});
+
+	it('returns null when the student does not exist', async () => {
+		expect(await build(null, null).findByStudent('s1')).toBeNull();
+	});
+
+	it('returns the commission of the student', async () => {
+		const adapter = build(
+			{ workshopCommissionId: 'c1' },
+			{
+				id: 'c1',
+				tenantId: 't',
+				courseId: 'course-1',
+				number: 1,
+				preceptorId: null,
+				code: () => '141',
+			},
+		);
+		expect(await adapter.findByStudent('s1')).toMatchObject({
+			id: 'c1',
+			courseId: 'course-1',
+			number: 1,
+		});
+	});
+});
