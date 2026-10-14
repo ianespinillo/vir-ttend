@@ -28,6 +28,14 @@ export class StudentRepository
 		return orms.map((o) => StudentMapper.toDomain(o));
 	}
 
+	async findActiveByCommission(commissionId: string): Promise<Student[]> {
+		const orms = await this.find({
+			workshopCommissionId: commissionId,
+			status: STUDENTSTATUS.ACTIVE,
+		});
+		return orms.map((o) => StudentMapper.toDomain(o));
+	}
+
 	async countActiveByCommission(commissionId: string): Promise<number> {
 		return this.count({
 			workshopCommissionId: commissionId,
