@@ -41,6 +41,41 @@ describe('AuthorizationService', () => {
 		});
 	});
 
+	describe('tenancy mode', () => {
+		it('single: admin can manage and create admin', () => {
+			expect(
+				AuthorizationService.canManageRole(ROLES.ADMIN, ROLES.ADMIN, 'single'),
+			).toBe(true);
+			expect(
+				AuthorizationService.canCreateRole(ROLES.ADMIN, ROLES.ADMIN, 'single'),
+			).toBe(true);
+		});
+
+		it('single: admin cannot manage or create superadmin', () => {
+			expect(
+				AuthorizationService.canManageRole(ROLES.ADMIN, ROLES.SUPERADMIN, 'single'),
+			).toBe(false);
+			expect(
+				AuthorizationService.canCreateRole(ROLES.ADMIN, ROLES.SUPERADMIN, 'single'),
+			).toBe(false);
+		});
+
+		it('multi: admin cannot manage or create admin', () => {
+			expect(
+				AuthorizationService.canManageRole(ROLES.ADMIN, ROLES.ADMIN, 'multi'),
+			).toBe(false);
+			expect(
+				AuthorizationService.canCreateRole(ROLES.ADMIN, ROLES.ADMIN, 'multi'),
+			).toBe(false);
+		});
+
+		it('single: preceptor still cannot manage anyone', () => {
+			expect(
+				AuthorizationService.canManageRole(ROLES.PRECEPTOR, ROLES.ADMIN, 'single'),
+			).toBe(false);
+		});
+	});
+
 	describe('canAccessTenant', () => {
 		it('superadmin can access any tenant', () => {
 			expect(AuthorizationService.canAccessTenant(null, 'tenant-id')).toBe(true);

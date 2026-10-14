@@ -32,9 +32,16 @@ const ADMIN_ALLOWED_ROLES: { value: Roles; label: string }[] = [
 	{ value: ROLES.TEACHER, label: 'Docente' },
 ];
 
+const SINGLE_TENANT_ADMIN_ROLES: { value: Roles; label: string }[] = [
+	{ value: ROLES.ADMIN, label: 'Administrador' },
+	...ADMIN_ALLOWED_ROLES,
+];
+
 export interface ChangeRoleDialogProps {
 	user: IUserWithMembershipResponse | null;
 	isSuperAdmin?: boolean;
+	/** En modo single-tenant un ADMIN puede asignar el rol ADMIN. */
+	canAssignAdmin?: boolean;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onConfirm: (userId: string, newRole: Roles) => void;
@@ -44,6 +51,7 @@ export interface ChangeRoleDialogProps {
 export function ChangeRoleDialog({
 	user,
 	isSuperAdmin,
+	canAssignAdmin,
 	open,
 	onOpenChange,
 	onConfirm,
@@ -53,7 +61,11 @@ export function ChangeRoleDialog({
 		user?.role ?? ROLES.PRECEPTOR,
 	);
 
-	const roleOptions = isSuperAdmin ? ALL_ROLES : ADMIN_ALLOWED_ROLES;
+	const roleOptions = isSuperAdmin
+		? ALL_ROLES
+		: canAssignAdmin
+			? SINGLE_TENANT_ADMIN_ROLES
+			: ADMIN_ALLOWED_ROLES;
 	const currentSelected =
 		open && user ? selectedRole : (user?.role ?? ROLES.PRECEPTOR);
 

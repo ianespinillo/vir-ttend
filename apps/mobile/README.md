@@ -45,7 +45,7 @@ One codebase ships two apps, picked by `APP_VARIANT` in `app.config.ts`
 | Variant   | Name                | Scheme           | Application id       | API URL                                |
 | --------- | ------------------- | ---------------- | -------------------- | -------------------------------------- |
 | `general` | Vir-ttend           | `virttend`       | `com.virttend.app`   | pending (shared server not deployed)   |
-| `eest3`   | EEST Nº3 Eva Perón  | `virttend-eest3` | `com.virttend.eest3` | `https://eest3-virttend.duckdns.org/api` |
+| `eest3`   | EEST Nº3 Eva Perón  | `virttend-eest3` | `com.virttend.eest3` | `https://eest3.virttend.app/api` |
 
 Both variants share the slug `vir-ttend` so they belong to a single EAS
 project. The release builds read their API URL from the variant

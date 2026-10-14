@@ -1,5 +1,6 @@
 'use client';
 
+import { StudentImportContainer } from '@/components/students/student-import-container';
 import { useAuth } from '@/lib/auth/provider';
 import type {
 	CreateCourseFormValues,
@@ -49,6 +50,7 @@ export default function CourseDetailPage() {
 
 	const role = user?.role?.toLowerCase();
 	const isAdmin = role === 'admin' || role === 'superadmin';
+	const [isImportOpen, setIsImportOpen] = useState(false);
 
 	const { data: course, isLoading, isError, error } = useCourse(courseId);
 	const { data: subjectsData } = useSubjects(courseId);
@@ -200,6 +202,12 @@ export default function CourseDetailPage() {
 		}
 	};
 
+	const canImportStudents =
+		isAdmin ||
+		(role === 'preceptor' &&
+			Boolean(user?.id) &&
+			course?.preceptorId === user?.id);
+
 	if (isLoading) {
 		return (
 			<div className="flex h-64 items-center justify-center">
@@ -261,10 +269,22 @@ export default function CourseDetailPage() {
 				onEditSubject={(subject) => setSubjectModalState({ open: true, subject })}
 				onDeleteSubject={handleDeleteSubject}
 				onSaveSchedule={handleSaveSchedule}
+				onImportStudents={
+					canImportStudents ? () => setIsImportOpen(true) : undefined
+				}
 				canManage={isAdmin}
 				studentsPath={`/students?courseId=${course.id}`}
 				attendancePath={`/attendance?courseId=${course.id}`}
 			/>
+
+			{canImportStudents && (
+				<StudentImportContainer
+					courseId={courseId}
+					courseName={localizeCourseName(course.fullName)}
+					open={isImportOpen}
+					onOpenChange={setIsImportOpen}
+				/>
+			)}
 
 			{isAdmin && (
 				<Dialog

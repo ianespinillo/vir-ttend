@@ -16,6 +16,7 @@ import {
 	Edit,
 	GraduationCap,
 	Trash2,
+	Upload,
 	UserCheck,
 	Users,
 } from 'lucide-react';
@@ -41,6 +42,7 @@ export interface CourseDetailProps {
 	onEditSubject?: (subject: ISubjectResponse) => void;
 	onDeleteSubject?: (subject: ISubjectResponse) => void;
 	onSaveSchedule?: (slots: ScheduleSlotFormValues[]) => Promise<void> | void;
+	onImportStudents?: () => void;
 	canManage?: boolean;
 	studentsPath?: string;
 	attendancePath?: string;
@@ -58,6 +60,7 @@ export function CourseDetail({
 	onEditSubject,
 	onDeleteSubject,
 	onSaveSchedule,
+	onImportStudents,
 	canManage = false,
 	studentsPath,
 	attendancePath,
@@ -291,6 +294,12 @@ export function CourseDetail({
 								<p className="text-sm font-medium text-primary">
 									Conectado al Módulo de Estudiantes (Sprint 03).
 								</p>
+							)}
+							{onImportStudents && (
+								<Button onClick={onImportStudents} className="gap-2">
+									<Upload className="h-4 w-4" aria-hidden="true" />
+									Importar alumnos
+								</Button>
 							)}
 						</CardContent>
 					</Card>

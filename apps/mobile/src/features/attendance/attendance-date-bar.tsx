@@ -5,6 +5,7 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Modal, Platform, Text, TouchableOpacity, View } from 'react-native';
 import { parseDateString, toLocalDateString } from '../../lib/date';
+import { useBrand } from '../branding/brand-context';
 import type { AttendanceDateNav } from './use-attendance-date';
 
 // NativeWind: className stays static, dynamic state goes through inline style.
@@ -15,6 +16,7 @@ const IOS_PICKER_CLOSE_DELAY_MS = 350;
 
 /** `◀  Lun 06/10  ▶` plus a "Hoy" shortcut; tapping the date opens a calendar. */
 export function AttendanceDateBar({ nav }: { nav: AttendanceDateNav }) {
+	const { tokens } = useBrand();
 	const [isIosPickerOpen, setIsIosPickerOpen] = useState(false);
 
 	const pickerValue = parseDateString(nav.date) ?? new Date();
@@ -53,7 +55,7 @@ export function AttendanceDateBar({ nav }: { nav: AttendanceDateNav }) {
 					accessibilityLabel="Elegir fecha"
 					className="flex-row items-center px-2 py-2"
 				>
-					<Calendar size={14} color="#4F46E5" />
+					<Calendar size={14} color={tokens.primary} />
 					<Text className="ml-1.5 text-sm font-bold text-slate-900">
 						{nav.label}
 					</Text>
@@ -73,9 +75,9 @@ export function AttendanceDateBar({ nav }: { nav: AttendanceDateNav }) {
 				<TouchableOpacity
 					onPress={nav.goToday}
 					accessibilityLabel="Volver a hoy"
-					className="ml-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 active:bg-indigo-100"
+					className="ml-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 active:bg-primary-100"
 				>
-					<Text className="text-xs font-bold text-indigo-700">Hoy</Text>
+					<Text className="text-xs font-bold text-primary-700">Hoy</Text>
 				</TouchableOpacity>
 			) : null}
 

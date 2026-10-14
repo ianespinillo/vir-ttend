@@ -3,6 +3,7 @@ import { Settings } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../src/context/auth-context';
+import { BrandMark } from '../../src/features/branding/brand-mark';
 import { OutboxProvider } from '../../src/features/offline/outbox-provider';
 import { PreloadProvider } from '../../src/features/offline/preload-provider';
 
@@ -30,9 +31,7 @@ export default function AppLayout() {
 						options={{
 							headerTitle: () => (
 								<View className="flex-row items-center space-x-2">
-									<View className="h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
-										<Text className="text-sm font-bold text-white">V</Text>
-									</View>
+									<BrandMark size="sm" />
 									<Text
 										className="ml-2 text-lg font-bold text-slate-900"
 										numberOfLines={1}

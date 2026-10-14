@@ -3,6 +3,7 @@ import { Course } from '../entities/course.entity';
 
 export interface ICourseRepository {
 	findById(id: string): Promise<Course | null>;
+	findByIds(ids: string[]): Promise<Course[]>;
 	findByAcademicYear(
 		academicYearId: string,
 		where?: { level?: LevelType; preceptorId?: string },

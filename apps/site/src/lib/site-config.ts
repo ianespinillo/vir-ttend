@@ -5,8 +5,8 @@
  * build time, so each access must spell the variable out literally.
  */
 
-const DEFAULT_DEMO_URL = 'https://vir-ttend-demo.vercel.app';
-const DEFAULT_CONTACT_EMAIL = 'contacto@vir-ttend.app';
+const DEFAULT_DEMO_URL = 'https://demo.virttend.app';
+const DEFAULT_CONTACT_EMAIL = 'espinilloian@hotmail.com';
 const LOCAL_SITE_URL = 'http://localhost:3002';
 
 const clean = (value: string | undefined): string | null => {

@@ -5,9 +5,14 @@ import {
 	NotFoundException,
 } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { AuthorizationService } from '../../../domain/services/authorization.service';
+import {
+	SELF_DEACTIVATION_MESSAGE,
+	assertNotLastActiveAdmin,
+} from '../../services/admin-safeguard';
 import { ToggleUserStatusCommand } from './toggle-user-status.command';
 
 @Injectable()
@@ -25,6 +30,11 @@ export class ToggleUserStatusHandler {
 			throw new NotFoundException(`User with id ${command.userId} not found`);
 		}
 
+		const { TENANCY_MODE } = getTenancyConfig();
+		const isSingle = TENANCY_MODE === 'single';
+		if (isSingle && !command.isActive && command.userId === command.actorUserId)
+			throw new ForbiddenException(SELF_DEACTIVATION_MESSAGE);
+
 		let membership = command.tenantId
 			? await this.memberRepo.findByUserAndTenant(command.userId, command.tenantId)
 			: null;
@@ -36,7 +46,11 @@ export class ToggleUserStatusHandler {
 
 		if (membership) {
 			if (
-				!AuthorizationService.canManageRole(command.actorRole, membership.role)
+				!AuthorizationService.canManageRole(
+					command.actorRole,
+					membership.role,
+					TENANCY_MODE,
+				)
 			) {
 				throw new ForbiddenException('Unauthorized action');
 			}
@@ -44,6 +58,7 @@ export class ToggleUserStatusHandler {
 			if (command.isActive) {
 				membership.activate();
 			} else {
+				if (isSingle) await assertNotLastActiveAdmin(this.memberRepo, membership);
 				membership.deactivate();
 			}
 			await this.memberRepo.save(membership);

@@ -163,6 +163,17 @@ ALLOW_SUPERADMIN=false
 # Ver docs/deployment-configuration.md, "Paso 6: Marca de la instancia".
 BRANDING_SLUG=<slug de la carpeta de marca>
 
+# === Email (SMTP) ===
+# Con EMAIL_ENABLED=true la API no arranca sin SMTP_HOST y SMTP_FROM.
+# Ejemplo con Brevo: SMTP_HOST=smtp-relay.brevo.com, SMTP_USER = "SMTP login",
+# SMTP_PASS = una SMTP key (no la API key). SMTP_FROM debe estar verificado.
+EMAIL_ENABLED=false
+SMTP_HOST=<host SMTP>
+SMTP_PORT=587
+SMTP_USER=<usuario SMTP>
+SMTP_PASS=<clave SMTP>
+SMTP_FROM="<Nombre> <no-reply@tu-dominio>"
+
 # === Client (build de Next.js) ===
 NEXT_PUBLIC_API_URL=/api
 

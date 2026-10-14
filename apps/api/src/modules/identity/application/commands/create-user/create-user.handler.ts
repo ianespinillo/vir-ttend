@@ -6,7 +6,8 @@ import {
 	Injectable,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { type CreateUserResponse, ROLES, Roles } from '@repo/common';
+import { type CreateUserResponse, ROLES } from '@repo/common';
+import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
 import { User } from '../../../domain/entities/user.entity';
 import { UserCreatedEvent } from '../../../domain/events/user-created.event';
@@ -14,21 +15,10 @@ import { UserTenantLinkedEvent } from '../../../domain/events/user-tenant-linked
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import { AuthorizationService } from '../../../domain/services/authorization.service';
 import { PasswordService } from '../../../domain/services/password.service';
 import { Password } from '../../../domain/value-objects/password.vo';
 import { CreateUserCommand } from './create-user.command';
-
-const canCreate: Record<Roles, Roles[]> = {
-	[ROLES.SUPERADMIN]: [
-		ROLES.SUPERADMIN,
-		ROLES.ADMIN,
-		ROLES.PRECEPTOR,
-		ROLES.TEACHER,
-	],
-	[ROLES.ADMIN]: [ROLES.PRECEPTOR, ROLES.TEACHER],
-	[ROLES.PRECEPTOR]: [],
-	[ROLES.TEACHER]: [],
-};
 
 @Injectable()
 export class CreateUserHandler {
@@ -45,7 +35,14 @@ export class CreateUserHandler {
 
 	async execute(command: CreateUserCommand): Promise<CreateUserResponse> {
 		// 1. validar jerarquía de roles
-		if (!canCreate[command.createdByRole]?.includes(command.role)) {
+		const { TENANCY_MODE } = getTenancyConfig();
+		if (
+			!AuthorizationService.canCreateRole(
+				command.createdByRole,
+				command.role,
+				TENANCY_MODE,
+			)
+		) {
 			throw new ForbiddenException('Insufficient permissions to create this role');
 		}
 

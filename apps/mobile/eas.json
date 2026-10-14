@@ -31,14 +31,14 @@
 			"android": { "buildType": "apk" },
 			"env": {
 				"APP_VARIANT": "eest3",
-				"EXPO_PUBLIC_API_URL": "https://eest3-virttend.duckdns.org/api"
+				"EXPO_PUBLIC_API_URL": "https://eest3.virttend.app/api"
 			}
 		},
 		"production-eest3": {
 			"autoIncrement": true,
 			"env": {
 				"APP_VARIANT": "eest3",
-				"EXPO_PUBLIC_API_URL": "https://eest3-virttend.duckdns.org/api"
+				"EXPO_PUBLIC_API_URL": "https://eest3.virttend.app/api"
 			}
 		}
 	}

@@ -5,8 +5,7 @@
  * spell the variable out literally.
  */
 
-/** Placeholder until the public site has its final URL. */
-const DEFAULT_SITE_URL = 'https://vir-ttend.vercel.app';
+const DEFAULT_SITE_URL = 'https://virttend.app';
 
 /** Where "Conocé Vir-ttend" points (the `apps/site` deployment). */
 export const siteUrl: string =

@@ -22,5 +22,6 @@ export interface IUserTenantMembershipRepository {
 		tenantId: string,
 	): Promise<UserTenantMembership | null>;
 	countActiveByTenant(): Promise<TenantUsersCount[]>;
+	countActiveByTenantAndRole(tenantId: string, role: Roles): Promise<number>;
 	save(uTMember: UserTenantMembership): Promise<void>;
 }

@@ -1,7 +1,12 @@
 'use client';
 
 import { type CreateUserPayload, ROLES } from '@repo/common';
-import { useCreateUser, useCurrentUser, useTenants } from '@repo/hooks';
+import {
+	useCreateUser,
+	useCurrentUser,
+	usePublicConfig,
+	useTenants,
+} from '@repo/hooks';
 import {
 	Button,
 	Card,
@@ -22,6 +27,7 @@ export default function CreateUserDirectPage() {
 	const { data: currentUser } = useCurrentUser();
 	const isSuperAdmin = currentUser?.role === ROLES.SUPERADMIN;
 	const { data: tenants } = useTenants({ enabled: isSuperAdmin });
+	const { data: publicConfig } = usePublicConfig();
 	const createUser = useCreateUser();
 
 	const [credentials, setCredentials] = useState<{
@@ -64,6 +70,7 @@ export default function CreateUserDirectPage() {
 					<UserForm
 						mode="create"
 						isSuperAdmin={isSuperAdmin}
+						canAssignAdmin={publicConfig?.tenancyMode === 'single'}
 						tenants={tenants ?? []}
 						selectedTenantId={currentUser?.tenantId}
 						onCancel={() => router.push('/settings/users')}

@@ -31,6 +31,7 @@ import {
 	useCoursesTodayRecords,
 	useSubjectsTodayRecords,
 } from '../../src/features/attendance/use-today-records';
+import { useBrand } from '../../src/features/branding/brand-context';
 import { FailedSyncBanner } from '../../src/features/offline/failed-sync-banner';
 import { preloadRoleOf } from '../../src/features/offline/preload';
 import { usePreload } from '../../src/features/offline/preload-provider';
@@ -40,6 +41,7 @@ import { useOutbox } from '../../src/features/offline/use-outbox';
 import { toLocalDateString, weekdayOf } from '../../src/lib/date';
 
 export default function HomeScreen() {
+	const { tokens } = useBrand();
 	const { user } = useAuth();
 	const router = useRouter();
 	const online = useIsOnline();
@@ -124,22 +126,22 @@ export default function HomeScreen() {
 				<RefreshControl
 					refreshing={refreshing}
 					onRefresh={onRefresh}
-					tintColor="#4F46E5"
+					tintColor={tokens.primary}
 				/>
 			}
 		>
 			{/* Greeting & Date Header */}
-			<View className="mb-4 rounded-2xl bg-indigo-600 p-5 shadow-sm">
+			<View className="mb-4 rounded-2xl bg-primary p-5 shadow-sm">
 				<View className="flex-row items-center space-x-2">
-					<Calendar size={16} color="#E0E7FF" />
-					<Text className="ml-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-100">
+					<Calendar size={16} color={tokens.scale[100]} />
+					<Text className="ml-1.5 text-xs font-semibold uppercase tracking-wider text-primary-100">
 						{todayFormatted}
 					</Text>
 				</View>
 				<Text className="mt-2 text-2xl font-bold text-white">
 					¡Hola, {user?.firstName || 'Docente'}!
 				</Text>
-				<Text className="mt-1 text-sm text-indigo-100">
+				<Text className="mt-1 text-sm text-primary-100">
 					{isPreceptor
 						? 'Panel de Preceptoría • Control de Asistencia Diaria'
 						: 'Panel Docente • Asistencia por Materia'}
@@ -154,8 +156,8 @@ export default function HomeScreen() {
 			{isPreceptor ? (
 				<View className="mb-6 flex-row space-x-3">
 					<View className="mr-3 flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-						<View className="h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
-							<BookOpen size={18} color="#4F46E5" />
+						<View className="h-9 w-9 items-center justify-center rounded-xl bg-primary-50">
+							<BookOpen size={18} color={tokens.primary} />
 						</View>
 						<Text className="mt-2 text-2xl font-bold text-slate-800">
 							{courses.length}
@@ -177,8 +179,8 @@ export default function HomeScreen() {
 			) : (
 				<View className="mb-6 flex-row space-x-3">
 					<View className="mr-3 flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-						<View className="h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
-							<Clock size={18} color="#4F46E5" />
+						<View className="h-9 w-9 items-center justify-center rounded-xl bg-primary-50">
+							<Clock size={18} color={tokens.primary} />
 						</View>
 						<Text className="mt-2 text-2xl font-bold text-slate-800">
 							{todaysSubjects.length}
@@ -211,7 +213,7 @@ export default function HomeScreen() {
 
 			{isLoading ? (
 				<View className="items-center justify-center py-12">
-					<ActivityIndicator size="large" color="#4F46E5" />
+					<ActivityIndicator size="large" color={tokens.primary} />
 					<Text className="mt-3 text-sm text-slate-500">
 						Cargando cursos y asistencia...
 					</Text>
@@ -258,7 +260,7 @@ export default function HomeScreen() {
 										params: { id: course.courseId, name: course.courseName },
 									})
 								}
-								className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-indigo-400 active:bg-indigo-50/20"
+								className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20"
 							>
 								<View className="flex-1 pr-3">
 									<View className="flex-row items-center space-x-2">
@@ -286,8 +288,8 @@ export default function HomeScreen() {
 								</View>
 
 								<View className="flex-row items-center">
-									<View className="rounded-lg bg-indigo-50 px-2.5 py-1.5">
-										<Text className="text-xs font-semibold text-indigo-700">
+									<View className="rounded-lg bg-primary-50 px-2.5 py-1.5">
+										<Text className="text-xs font-semibold text-primary-700">
 											{outboxItem || hasAttendanceTaken ? 'Editar' : 'Pasar lista'}
 										</Text>
 									</View>
@@ -320,7 +322,7 @@ export default function HomeScreen() {
 										},
 									})
 								}
-								className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-indigo-400 active:bg-indigo-50/20"
+								className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20"
 							>
 								<View className="flex-1 pr-3">
 									<Text className="text-base font-bold text-slate-800">
@@ -341,8 +343,8 @@ export default function HomeScreen() {
 								</View>
 
 								<View className="flex-row items-center">
-									<View className="rounded-lg bg-indigo-50 px-2.5 py-1.5">
-										<Text className="text-xs font-semibold text-indigo-700">
+									<View className="rounded-lg bg-primary-50 px-2.5 py-1.5">
+										<Text className="text-xs font-semibold text-primary-700">
 											{outboxItem || taken.kind === 'taken' ? 'Editar' : 'Pasar lista'}
 										</Text>
 									</View>

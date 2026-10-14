@@ -44,6 +44,7 @@ import {
 	type AttendanceDateNav,
 	useAttendanceDate,
 } from '../../../../src/features/attendance/use-attendance-date';
+import { useBrand } from '../../../../src/features/branding/brand-context';
 import { useIsOnline } from '../../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../../src/features/offline/use-outbox';
 import { useServerReachability } from '../../../../src/features/offline/use-server-reachability';
@@ -134,6 +135,7 @@ function SubjectSheet({
 	nav,
 	hasUserEdits,
 }: SubjectSheetProps) {
+	const { tokens } = useBrand();
 	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueSubject, getItemForSubject } = useOutbox();
@@ -299,7 +301,7 @@ function SubjectSheet({
 					<View className="flex-1 pr-3">
 						<Text className="text-xl font-bold text-slate-900">{subjectName}</Text>
 						{courseName ? (
-							<Text className="mt-0.5 text-xs font-semibold text-indigo-600">
+							<Text className="mt-0.5 text-xs font-semibold text-primary">
 								{courseName}
 							</Text>
 						) : null}
@@ -332,8 +334,8 @@ function SubjectSheet({
 						<Text className="text-xs font-bold text-amber-700">{counts.late} T</Text>
 					</View>
 					{counts.justified > 0 ? (
-						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-indigo-50 py-1.5 border border-indigo-100">
-							<Text className="text-xs font-bold text-indigo-700">
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-primary-50 py-1.5 border border-primary-100">
+							<Text className="text-xs font-bold text-primary-700">
 								{counts.justified} J
 							</Text>
 						</View>
@@ -398,7 +400,7 @@ function SubjectSheet({
 			{/* Student Roster */}
 			{isLoadingStudents ? (
 				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color="#4F46E5" />
+					<ActivityIndicator size="large" color={tokens.primary} />
 					<Text className="mt-3 text-sm text-slate-500">
 						Cargando nómina de alumnos...
 					</Text>
@@ -426,7 +428,7 @@ function SubjectSheet({
 				</View>
 			) : dayState === 'loading' ? (
 				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color="#4F46E5" />
+					<ActivityIndicator size="large" color={tokens.primary} />
 					<Text className="mt-3 text-sm text-slate-500">
 						Cargando asistencia del {nav.label}...
 					</Text>
@@ -446,9 +448,9 @@ function SubjectSheet({
 					</Text>
 					<TouchableOpacity
 						onPress={() => refetchDay()}
-						className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 active:bg-indigo-100"
+						className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 active:bg-primary-100"
 					>
-						<Text className="text-xs font-bold text-indigo-700">Reintentar</Text>
+						<Text className="text-xs font-bold text-primary-700">Reintentar</Text>
 					</TouchableOpacity>
 				</View>
 			) : (
@@ -532,7 +534,7 @@ function SubjectSheet({
 					<TouchableOpacity
 						onPress={handleSave}
 						disabled={isSaving}
-						className="items-center justify-center rounded-xl bg-indigo-600 py-3.5 shadow-sm active:bg-indigo-700 disabled:opacity-50"
+						className="items-center justify-center rounded-xl bg-primary py-3.5 shadow-sm active:bg-primary-700 disabled:opacity-50"
 					>
 						{isSaving ? (
 							<ActivityIndicator size="small" color="#FFFFFF" />

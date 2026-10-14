@@ -52,6 +52,7 @@ import {
 	useAttendanceDate,
 } from '../../../src/features/attendance/use-attendance-date';
 import { useJustifyAttendance } from '../../../src/features/attendance/use-justify-attendance';
+import { useBrand } from '../../../src/features/branding/brand-context';
 import { useIsOnline } from '../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../src/features/offline/use-outbox';
 import { useServerReachability } from '../../../src/features/offline/use-server-reachability';
@@ -124,6 +125,7 @@ function DailySheet({
 	nav,
 	hasUserEdits,
 }: DailySheetProps) {
+	const { tokens } = useBrand();
 	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueDaily, getItemForCourse } = useOutbox();
@@ -396,10 +398,10 @@ function DailySheet({
 				{isPreceptor ? (
 					<TouchableOpacity
 						onPress={() => setIsMonthOpen(true)}
-						className="mt-3 flex-row items-center self-start rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 active:bg-indigo-100"
+						className="mt-3 flex-row items-center self-start rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 active:bg-primary-100"
 					>
-						<FileCheck size={14} color="#4F46E5" />
-						<Text className="ml-1.5 text-xs font-bold text-indigo-700">
+						<FileCheck size={14} color={tokens.primary} />
+						<Text className="ml-1.5 text-xs font-bold text-primary-700">
 							Justificaciones del mes
 						</Text>
 					</TouchableOpacity>
@@ -419,8 +421,8 @@ function DailySheet({
 						<Text className="text-xs font-bold text-amber-700">{counts.late} T</Text>
 					</View>
 					{counts.justified > 0 ? (
-						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-indigo-50 py-1.5 border border-indigo-100">
-							<Text className="text-xs font-bold text-indigo-700">
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-primary-50 py-1.5 border border-primary-100">
+							<Text className="text-xs font-bold text-primary-700">
 								{counts.justified} J
 							</Text>
 						</View>
@@ -485,7 +487,7 @@ function DailySheet({
 			{/* Student Roster */}
 			{isLoadingStudents ? (
 				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color="#4F46E5" />
+					<ActivityIndicator size="large" color={tokens.primary} />
 					<Text className="mt-3 text-sm text-slate-500">
 						Cargando nómina de alumnos...
 					</Text>
@@ -513,7 +515,7 @@ function DailySheet({
 				</View>
 			) : dayState === 'loading' ? (
 				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color="#4F46E5" />
+					<ActivityIndicator size="large" color={tokens.primary} />
 					<Text className="mt-3 text-sm text-slate-500">
 						Cargando asistencia del {nav.label}...
 					</Text>
@@ -533,9 +535,9 @@ function DailySheet({
 					</Text>
 					<TouchableOpacity
 						onPress={() => refetchDay()}
-						className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 active:bg-indigo-100"
+						className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 active:bg-primary-100"
 					>
-						<Text className="text-xs font-bold text-indigo-700">Reintentar</Text>
+						<Text className="text-xs font-bold text-primary-700">Reintentar</Text>
 					</TouchableOpacity>
 				</View>
 			) : (
@@ -586,8 +588,8 @@ function DailySheet({
 											className="ml-5 mt-1.5 flex-row items-center self-start rounded-md px-1 py-1"
 											style={{ opacity: justifyState.enabled ? 1 : 0.4 }}
 										>
-											<FileText size={13} color="#4F46E5" />
-											<Text className="ml-1 text-xs font-bold text-indigo-600">
+											<FileText size={13} color={tokens.primary} />
+											<Text className="ml-1 text-xs font-bold text-primary">
 												Justificar
 											</Text>
 										</TouchableOpacity>
@@ -647,7 +649,7 @@ function DailySheet({
 					<TouchableOpacity
 						onPress={handleSave}
 						disabled={isSaving}
-						className="items-center justify-center rounded-xl bg-indigo-600 py-3.5 shadow-sm active:bg-indigo-700 disabled:opacity-50"
+						className="items-center justify-center rounded-xl bg-primary py-3.5 shadow-sm active:bg-primary-700 disabled:opacity-50"
 					>
 						{isSaving ? (
 							<ActivityIndicator size="small" color="#FFFFFF" />

@@ -14,6 +14,8 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_VERSION, getUrlHost } from '../../src/config/app-config';
 import { useAuth } from '../../src/context/auth-context';
+import { useBrand } from '../../src/features/branding/brand-context';
+import { PoweredBy } from '../../src/features/branding/powered-by';
 import type { MobileAppConfig } from '../../src/features/config/mobile-config';
 
 interface InfoRowProps {
@@ -25,12 +27,13 @@ interface InfoRowProps {
 }
 
 function InfoRow({ icon: Icon, label, value, caption, isLast }: InfoRowProps) {
+	const { tokens } = useBrand();
 	return (
 		<View
 			className="flex-row items-start py-3"
 			style={isLast ? undefined : { borderBottomWidth: 1, borderColor: '#F1F5F9' }}
 		>
-			<Icon size={18} color="#4F46E5" />
+			<Icon size={18} color={tokens.primary} />
 			<View className="ml-3 flex-1">
 				<Text className="text-xs font-semibold uppercase tracking-wider text-slate-500">
 					{label}
@@ -65,6 +68,7 @@ const describeMode = (
 };
 
 export default function SettingsScreen() {
+	const { tokens, branding } = useBrand();
 	const { user, config, logout } = useAuth();
 	const router = useRouter();
 
@@ -81,8 +85,8 @@ export default function SettingsScreen() {
 				{/* User Profile Card */}
 				<View className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 					<View className="flex-row items-center space-x-3.5">
-						<View className="h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100">
-							<User size={24} color="#4F46E5" />
+						<View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary-100">
+							<User size={24} color={tokens.primary} />
 						</View>
 						<View className="ml-3 flex-1">
 							<Text className="text-base font-bold text-slate-900">
@@ -90,8 +94,8 @@ export default function SettingsScreen() {
 							</Text>
 							<Text className="text-xs text-slate-500">{user?.email}</Text>
 							<View className="mt-1 flex-row items-center">
-								<View className="rounded bg-indigo-50 px-2 py-0.5 border border-indigo-200">
-									<Text className="text-[11px] font-bold uppercase text-indigo-700">
+								<View className="rounded bg-primary-50 px-2 py-0.5 border border-primary-200">
+									<Text className="text-[11px] font-bold uppercase text-primary-700">
 										Rol: {user?.role}
 									</Text>
 								</View>
@@ -156,6 +160,12 @@ export default function SettingsScreen() {
 					<LogOut size={18} color="#EF4444" />
 					<Text className="ml-2 text-sm font-bold text-red-600">Cerrar Sesión</Text>
 				</TouchableOpacity>
+
+				{branding.showPoweredBy && (
+					<View className="mb-6">
+						<PoweredBy />
+					</View>
+				)}
 			</ScrollView>
 		</SafeAreaView>
 	);

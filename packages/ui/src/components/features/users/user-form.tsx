@@ -29,6 +29,8 @@ import {
 export interface UserFormProps {
 	mode: 'create' | 'edit';
 	isSuperAdmin?: boolean;
+	/** En modo single-tenant un ADMIN puede asignar el rol ADMIN. */
+	canAssignAdmin?: boolean;
 	initial?: {
 		firstName: string;
 		lastName: string;
@@ -54,6 +56,7 @@ const ROLE_LABELS: Record<string, string> = {
 export function UserForm({
 	mode,
 	isSuperAdmin,
+	canAssignAdmin,
 	initial,
 	tenants = [],
 	selectedTenantId,
@@ -111,7 +114,9 @@ export function UserForm({
 	// Roles a mostrar según sea SuperAdmin o Admin
 	const availableRoles = isSuperAdmin
 		? [ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER, ROLES.SUPERADMIN]
-		: [ROLES.PRECEPTOR, ROLES.TEACHER];
+		: canAssignAdmin
+			? [ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER]
+			: [ROLES.PRECEPTOR, ROLES.TEACHER];
 
 	const showTenantSelector =
 		isCreate && isSuperAdmin && watchedRole !== ROLES.SUPERADMIN;

@@ -112,6 +112,10 @@ export class Course {
 	get shift(): Shift {
 		return this._shift;
 	}
+	/** Human label matching the UI course labels, such as 2° "A". */
+	get label(): string {
+		return `${this._yearNumber}° "${this._division}"`;
+	}
 	get isActive(): boolean {
 		return this._isActive;
 	}
