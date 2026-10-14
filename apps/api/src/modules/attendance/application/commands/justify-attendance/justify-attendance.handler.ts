@@ -33,7 +33,7 @@ export class JustifyAttendanceHandler {
 		if (!year) throw new NotFoundException('Academic year not found');
 		if (!JustificationService.canJustify(record, year))
 			throw new BadRequestException(
-				`Cannot justify a record before ${year.lateCountAbscenseAfterMinutes} minutes`,
+				'Solo se pueden justificar inasistencias o tardanzas del ciclo lectivo activo.',
 			);
 		const justification = Justification.create({
 			attendanceRecordId: record.id,
@@ -41,9 +41,11 @@ export class JustifyAttendanceHandler {
 			reason: command.reason,
 			notes: command.notes ?? undefined,
 		});
+		// Persist the justification first: if it fails the record is still
+		// ABSENT/LATE, so the request can simply be retried.
+		await this.justificationRepo.save(justification);
 		record.updateStatus(ATTENDANCE_STATUS.JUSTIFIED, command.justifiedBy);
 		await this.attendaceRepo.save(record);
-		await this.justificationRepo.save(justification);
 		this.em.emit(
 			'justification',
 			new AttendanceJustifiedEvent(new Date(), justification, record),

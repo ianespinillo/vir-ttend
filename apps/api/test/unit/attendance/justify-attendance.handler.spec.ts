@@ -17,19 +17,21 @@ describe('JustifyAttendanceHandler', () => {
 	let academicYearPort: MockProxy<IAcademicYearPort>;
 	let eventEmitter: MockProxy<EventEmitter2>;
 
-	const mockRecord = AttendanceRecord.reconstitute({
-		id: 'record-id',
-		tenantId: 'tenant-id',
-		studentId: 'student-1',
-		courseId: 'course-id',
-		date: new Date('2025-03-10'),
-		status: ATTENDANCE_STATUS.ABSENT,
-		editedBy: 'user-id',
-		editedAt: new Date(),
-		createdAt: new Date('2026-05-10T12:00:00Z'),
-	});
+	// Rebuilt per test: execute() mutates the record to JUSTIFIED.
+	let mockRecord: AttendanceRecord;
 
 	beforeEach(() => {
+		mockRecord = AttendanceRecord.reconstitute({
+			id: 'record-id',
+			tenantId: 'tenant-id',
+			studentId: 'student-1',
+			courseId: 'course-id',
+			date: new Date('2025-03-10'),
+			status: ATTENDANCE_STATUS.ABSENT,
+			editedBy: 'user-id',
+			editedAt: new Date(),
+			createdAt: new Date('2026-05-10T12:00:00Z'),
+		});
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		justificationRepo = mock<IJustificationRepository>();
 		academicYearPort = mock<IAcademicYearPort>();
@@ -150,5 +152,96 @@ describe('JustifyAttendanceHandler', () => {
 		).rejects.toThrow();
 
 		expect(justificationRepo.save).not.toHaveBeenCalled();
+	});
+
+	it('should save the justification before the record', async () => {
+		attendanceRepo.findById.mockResolvedValue(mockRecord);
+		academicYearPort.findActiveByTenant.mockResolvedValue(
+			AcademicYear.reconstitute(
+				'ay-1',
+				75,
+				15,
+				new Date('2026-03-01'),
+				new Date('2026-12-31'),
+			),
+		);
+
+		await handler.execute(
+			new JustifyAttendanceCommand(
+				'record-id',
+				'Enfermedad',
+				'user-id',
+				undefined,
+			),
+		);
+
+		expect(justificationRepo.save.mock.invocationCallOrder[0]).toBeLessThan(
+			attendanceRepo.save.mock.invocationCallOrder[0],
+		);
+	});
+
+	it('should not touch the record when saving the justification fails', async () => {
+		attendanceRepo.findById.mockResolvedValue(mockRecord);
+		academicYearPort.findActiveByTenant.mockResolvedValue(
+			AcademicYear.reconstitute(
+				'ay-1',
+				75,
+				15,
+				new Date('2026-03-01'),
+				new Date('2026-12-31'),
+			),
+		);
+		justificationRepo.save.mockRejectedValue(new Error('db down'));
+
+		await expect(
+			handler.execute(
+				new JustifyAttendanceCommand(
+					'record-id',
+					'Enfermedad',
+					'user-id',
+					undefined,
+				),
+			),
+		).rejects.toThrow('db down');
+
+		expect(attendanceRepo.save).not.toHaveBeenCalled();
+	});
+
+	it('should reject with an accurate Spanish message', async () => {
+		attendanceRepo.findById.mockResolvedValue(
+			AttendanceRecord.reconstitute({
+				id: 'record-id',
+				tenantId: 'tenant-id',
+				studentId: 'student-1',
+				courseId: 'course-id',
+				date: new Date('2025-03-10'),
+				status: ATTENDANCE_STATUS.PRESENT,
+				editedBy: 'user-id',
+				editedAt: new Date(),
+				createdAt: new Date('2026-05-10T12:00:00Z'),
+			}),
+		);
+		academicYearPort.findActiveByTenant.mockResolvedValue(
+			AcademicYear.reconstitute(
+				'ay-1',
+				75,
+				15,
+				new Date('2026-03-01'),
+				new Date('2026-12-31'),
+			),
+		);
+
+		await expect(
+			handler.execute(
+				new JustifyAttendanceCommand(
+					'record-id',
+					'Enfermedad',
+					'user-id',
+					undefined,
+				),
+			),
+		).rejects.toThrow(
+			'Solo se pueden justificar inasistencias o tardanzas del ciclo lectivo activo.',
+		);
 	});
 });
