@@ -1,6 +1,6 @@
 'use client';
 
-import type { ISubjectResponse } from '@repo/common';
+import { type ISubjectResponse, SUBJECT_KIND } from '@repo/common';
 import { BookOpen, Clock, Edit, Plus, Trash2, UserCheck } from 'lucide-react';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
@@ -73,7 +73,12 @@ export function SubjectsList({
 						{subjects.map((subject) => (
 							<TableRow key={subject.id}>
 								<TableCell className="font-semibold text-foreground">
-									{subject.name}
+									<span>{subject.name}</span>
+									{subject.kind === SUBJECT_KIND.WORKSHOP && (
+										<Badge variant="secondary" className="ml-2 font-normal">
+											Taller
+										</Badge>
+									)}
 								</TableCell>
 								<TableCell>
 									<Badge variant="outline" className="font-normal">

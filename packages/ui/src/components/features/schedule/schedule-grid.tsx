@@ -111,6 +111,11 @@ export function ScheduleGrid({
 												</div>
 												<p className="font-bold text-sm">
 													{subject?.name || 'Materia desconocida'}
+													{slot.commissionNumber != null && (
+														<span className="ml-1.5 text-[10px] font-semibold rounded border border-current px-1 py-0.5">
+															C{slot.commissionNumber}
+														</span>
+													)}
 												</p>
 												{subject?.teacherName && (
 													<p className="text-[11px] opacity-80">

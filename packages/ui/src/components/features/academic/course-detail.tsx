@@ -88,6 +88,7 @@ export function CourseDetail({
 					dayOfWeek: s.dayOfWeek,
 					startTime: s.startTime,
 					endTime: s.endTime,
+					commissionNumber: s.commissionNumber ?? null,
 				})),
 				slot,
 			];
@@ -104,6 +105,7 @@ export function CourseDetail({
 					dayOfWeek: s.dayOfWeek,
 					startTime: s.startTime,
 					endTime: s.endTime,
+					commissionNumber: s.commissionNumber ?? null,
 				}));
 			await onSaveSchedule(updated);
 		}

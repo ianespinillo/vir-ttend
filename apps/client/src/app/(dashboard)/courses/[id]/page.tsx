@@ -292,6 +292,7 @@ export default function CourseDetailPage() {
 											area: subjectModalState.subject.area,
 											weeklyHours: subjectModalState.subject.weeklyHours,
 											teacherId: subjectModalState.subject.teacherId || '',
+											kind: subjectModalState.subject.kind,
 										}
 									: undefined
 							}
