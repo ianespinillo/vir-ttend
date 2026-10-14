@@ -16,6 +16,30 @@ export class WorkshopAttendanceRecordRepository
 		return orms.map((orm) => WorkshopAttendanceRecordMapper.toDomain(orm));
 	}
 
+	async findByStudentAndDateRange(
+		studentId: string,
+		from: Date,
+		to: Date,
+	): Promise<WorkshopAttendanceRecord[]> {
+		const orms = await this.find({
+			studentId,
+			date: { $gte: from, $lte: to },
+		});
+		return orms.map((orm) => WorkshopAttendanceRecordMapper.toDomain(orm));
+	}
+
+	async findByCourseAndDateRange(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<WorkshopAttendanceRecord[]> {
+		const orms = await this.find({
+			courseId,
+			date: { $gte: from, $lte: to },
+		});
+		return orms.map((orm) => WorkshopAttendanceRecordMapper.toDomain(orm));
+	}
+
 	async bulkSave(records: WorkshopAttendanceRecord[]): Promise<void> {
 		for (const record of records) {
 			const existing = await this.findOne({ id: record.id });

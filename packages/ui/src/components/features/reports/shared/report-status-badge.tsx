@@ -16,7 +16,7 @@ import {
 
 export interface ReportStatusBadgeProps {
 	status: StudentReportStatus;
-	absencePercent?: number;
+	absencePercent?: number | null;
 	className?: string;
 }
 

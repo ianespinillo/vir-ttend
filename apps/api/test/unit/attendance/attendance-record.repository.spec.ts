@@ -46,6 +46,20 @@ describe('AttendanceRecordRepository', () => {
 		});
 	});
 
+	it('findDailyByCourseAndDateRange reads the whole course in one query, daily records only', async () => {
+		const from = new Date('2026-07-01T00:00:00Z');
+		const to = new Date('2026-07-31T00:00:00Z');
+
+		await repository.findDailyByCourseAndDateRange('course-1', from, to);
+
+		expect(em.find).toHaveBeenCalledTimes(1);
+		expect(em.find.mock.calls[0][1]).toEqual({
+			courseId: 'course-1',
+			subjectId: null,
+			date: { $gte: from, $lte: to },
+		});
+	});
+
 	describe('bulkSave cache invalidation', () => {
 		const records = [
 			record('course-1', '2026-07-06'),

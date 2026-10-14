@@ -1,11 +1,14 @@
-import { Entity, Index, PrimaryKey, Property } from '@mikro-orm/core';
+import { Entity, Index, PrimaryKey, Property, Unique } from '@mikro-orm/core';
 import { AttendanceAlertRepository } from '../repository/attendance-alert.repository';
 
 @Entity({
 	tableName: 'attendance_alerts',
 	repository: () => AttendanceAlertRepository,
 })
-@Index({ properties: ['studentId', 'academicYearId', 'alertType'] })
+@Unique({
+	name: 'attendance_alerts_student_year_type_unique',
+	properties: ['studentId', 'academicYearId', 'alertType'],
+})
 @Index({ properties: ['seenAt'] })
 export class AttendanceAlertOrmEntity {
 	@PrimaryKey({
@@ -32,10 +35,21 @@ export class AttendanceAlertOrmEntity {
 		type: 'string',
 	})
 	alertType!: string;
+	/** Weighted absences when the alert was raised; fractional in 0.25 steps. */
 	@Property({
 		type: 'float4',
 	})
-	absencePercent!: number;
+	absenceCount!: number;
+	@Property({
+		type: 'integer',
+	})
+	threshold!: number;
+	/** Legacy percent-based alerts only; new alerts store `absenceCount`. */
+	@Property({
+		type: 'float4',
+		nullable: true,
+	})
+	absencePercent: number | null = null;
 	@Property({
 		type: 'uuid',
 		nullable: true,

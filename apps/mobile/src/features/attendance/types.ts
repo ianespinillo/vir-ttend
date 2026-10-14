@@ -1,7 +1,11 @@
 // Shapes of the API payloads used by the mobile app (already unwrapped from
 // the `{ success, data, timeStamp }` envelope by `api.ts`).
 
-export type AttendanceStatus = 'present' | 'absent' | 'late';
+export type AttendanceStatus =
+	| 'present'
+	| 'absent'
+	| 'late'
+	| 'late_beyond_tolerance';
 
 /** Statuses the API can return; mobile only edits `AttendanceStatus`. */
 export type RecordedAttendanceStatus = AttendanceStatus | 'justified';

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ATTENDANCE_STATUS } from '@repo/common';
+import { ATTENDANCE_STATUS, isLateStatus } from '@repo/common';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceMetricsResponseDto } from '../../dtos/attendance-metrics.response.dto';
@@ -34,7 +34,7 @@ export class GetAttendanceMetricsQueryHandler {
 			present: records.filter((r) => r.status === ATTENDANCE_STATUS.PRESENT)
 				.length,
 			absent,
-			late: records.filter((r) => r.status === ATTENDANCE_STATUS.LATE).length,
+			late: records.filter((r) => isLateStatus(r.status)).length,
 			justified: records.filter((r) => r.status === ATTENDANCE_STATUS.JUSTIFIED)
 				.length,
 			notRecorded: students.filter((s) => !studentsWithAttendance.has(s.id))

@@ -44,7 +44,7 @@ export class ExcelGeneratorService implements IExcelGeneratorService {
 			{ header: 'Nombre', key: 'name', width: 18 },
 			{ header: 'Documento', key: 'documentNumber', width: 12 },
 			{ header: 'Presentes', key: 'present', width: 10 },
-			{ header: 'Ausentes', key: 'absent', width: 10 },
+			{ header: 'Inasistencias', key: 'absent', width: 13 },
 			{ header: 'Tardanzas', key: 'late', width: 10 },
 			{ header: 'Justificados', key: 'justified', width: 12 },
 			{ header: '%', key: 'absencePercent', width: 8 },
@@ -79,24 +79,24 @@ export class ExcelGeneratorService implements IExcelGeneratorService {
 	): void {
 		sheet.addConditionalFormatting({
 			ref: `H2:H${lastDataRow}`,
+			// ISNUMBER keeps the empty percentage of a student with no class given
+			// uncolored (a blank cell would otherwise count as 0).
 			rules: [
 				{
-					type: 'cellIs',
-					operator: 'lessThan',
-					formulae: [50],
+					type: 'expression',
+					formulae: ['AND(ISNUMBER(H2),H2<50)'],
 					priority: 1,
 					style: { fill: LOW_ABSENCE_FILL },
 				},
 				{
-					type: 'cellIs',
-					operator: 'lessThan',
-					formulae: [75],
+					type: 'expression',
+					formulae: ['AND(ISNUMBER(H2),H2>=50,H2<75)'],
 					priority: 2,
 					style: { fill: MEDIUM_ABSENCE_FILL },
 				},
 				{
 					type: 'expression',
-					formulae: ['H2>=75'],
+					formulae: ['AND(ISNUMBER(H2),H2>=75)'],
 					priority: 3,
 					style: { fill: HIGH_ABSENCE_FILL },
 				},
@@ -105,7 +105,6 @@ export class ExcelGeneratorService implements IExcelGeneratorService {
 	}
 
 	private addTotalsRow(sheet: Worksheet, rows: ExcelRow[]): void {
-		const studentCount = rows.length;
 		const totalsRow = sheet.addRow({
 			surname: 'Total',
 			name: '',
@@ -114,11 +113,7 @@ export class ExcelGeneratorService implements IExcelGeneratorService {
 			absent: rows.reduce((sum, row) => sum + row.absent, 0),
 			late: rows.reduce((sum, row) => sum + row.late, 0),
 			justified: rows.reduce((sum, row) => sum + row.justified, 0),
-			absencePercent:
-				Math.round(
-					(rows.reduce((sum, row) => sum + row.absencePercent, 0) / studentCount) *
-						10,
-				) / 10,
+			absencePercent: this.averagePercent(rows),
 			status: '',
 		});
 		totalsRow.font = { bold: true };
@@ -126,6 +121,17 @@ export class ExcelGeneratorService implements IExcelGeneratorService {
 		totalsRow.eachCell((cell) => {
 			cell.border = { top: { style: 'thin' } };
 		});
+	}
+
+	/** Mean of the percentages that exist; null when no row has one. */
+	private averagePercent(rows: ExcelRow[]): number | null {
+		const percents = rows
+			.map((row) => row.absencePercent)
+			.filter((percent): percent is number => percent !== null);
+		if (percents.length === 0) return null;
+		const mean =
+			percents.reduce((sum, percent) => sum + percent, 0) / percents.length;
+		return Math.round(mean * 10) / 10;
 	}
 
 	private autoFitColumns(sheet: Worksheet): void {

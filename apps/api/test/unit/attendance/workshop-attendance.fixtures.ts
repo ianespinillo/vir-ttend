@@ -36,6 +36,7 @@ export function buildPort(
 ): jest.Mocked<IWorkshopCommissionPort> {
 	return {
 		findById: jest.fn().mockResolvedValue(info),
+		findByStudent: jest.fn().mockResolvedValue(info),
 		findByPreceptor: jest.fn().mockResolvedValue(info ? [info] : []),
 		findByTenant: jest.fn().mockResolvedValue(info ? [info] : []),
 		getActiveStudents: jest.fn().mockResolvedValue(students),
@@ -56,6 +57,8 @@ export function buildRepo(
 		findByCommissionAndDate: jest
 			.fn()
 			.mockImplementation(async () => [...store.values()]),
+		findByStudentAndDateRange: jest.fn().mockResolvedValue([]),
+		findByCourseAndDateRange: jest.fn().mockResolvedValue([]),
 		bulkSave: jest.fn().mockImplementation(async (records) => {
 			saved.push(records);
 			for (const r of records) store.set(r.studentId, r);

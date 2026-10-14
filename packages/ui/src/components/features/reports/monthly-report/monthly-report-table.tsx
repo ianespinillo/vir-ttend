@@ -1,6 +1,6 @@
 'use client';
 
-import type { MonthlyReportStudent } from '@repo/common';
+import { type MonthlyReportStudent, formatCount } from '@repo/common';
 import type { ColumnDef } from '@tanstack/react-table';
 import { formatPercent } from '../../../../lib/format';
 import { getAbsencePercentTone } from '../../../../lib/report-format';
@@ -40,12 +40,22 @@ const columns: ColumnDef<MonthlyReportStudent>[] = [
 	},
 	{
 		accessorKey: 'absent',
-		header: 'Ausentes',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('absent')}
-			</span>
-		),
+		header: 'Inasistencias',
+		cell: ({ row }) => {
+			const { absent, absenceBreakdown } = row.original;
+			return (
+				<span
+					className="block text-center tabular-nums"
+					title={
+						absenceBreakdown
+							? `Turno: ${formatCount(absenceBreakdown.daily)} · Taller: ${formatCount(absenceBreakdown.workshop)}`
+							: undefined
+					}
+				>
+					{formatCount(absent)}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'late',
@@ -69,7 +79,7 @@ const columns: ColumnDef<MonthlyReportStudent>[] = [
 		accessorKey: 'absencePercent',
 		header: '% Inasistencia',
 		cell: ({ row }) => {
-			const value = row.getValue<number>('absencePercent');
+			const value = row.getValue<number | null>('absencePercent');
 			return (
 				<span
 					className={`block text-center font-semibold tabular-nums ${getAbsencePercentTone(value)}`}

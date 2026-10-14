@@ -1,6 +1,6 @@
 'use client';
 
-import type { AlertType, StudentReport } from '@repo/common';
+import { type AlertType, type StudentReport, formatCount } from '@repo/common';
 import {
 	AlertTriangle,
 	CheckCircle2,
@@ -122,8 +122,13 @@ export function StudentReport({ report, isLoading }: StudentReportProps) {
 					variant="success"
 				/>
 				<MetricCard
-					title="Ausentes"
-					value={report.totals.absent}
+					title="Inasistencias"
+					value={formatCount(report.totals.absent)}
+					subtitle={
+						report.totals.absenceBreakdown
+							? `turno ${formatCount(report.totals.absenceBreakdown.daily)} · taller ${formatCount(report.totals.absenceBreakdown.workshop)}`
+							: undefined
+					}
 					icon={XCircle}
 					variant="destructive"
 				/>

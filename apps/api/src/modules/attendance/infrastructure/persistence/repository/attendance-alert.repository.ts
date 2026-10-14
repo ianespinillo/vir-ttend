@@ -129,7 +129,8 @@ export class AttendanceAlertRepository
 			existing.academicYearId = alert.academicYearId;
 			existing.tenantId = alert.tenantId;
 			existing.alertType = alert.alertType.status;
-			existing.absencePercent = alert.absencePercent;
+			existing.absenceCount = alert.absenceCount;
+			existing.threshold = alert.threshold;
 			existing.seenBy = alert.seenBy ?? null;
 			existing.seenAt = alert.seenAt ?? null;
 			existing.createdAt = alert.createdAt;

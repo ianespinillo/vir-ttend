@@ -73,17 +73,22 @@ const BAR_TONES: Record<Tone, string> = {
 	critical: 'bg-rose-500',
 };
 
-export function getAbsencePercentTone(absencePercent: number): string {
-	return TEXT_TONES[getTone(absencePercent)];
+/** A null percentage (no class given) has no risk tone. */
+export function getAbsencePercentTone(absencePercent: number | null): string {
+	return absencePercent === null
+		? 'text-muted-foreground'
+		: TEXT_TONES[getTone(absencePercent)];
 }
 
-export function getAttendanceBarTone(absencePercent: number): string {
-	return BAR_TONES[getTone(absencePercent)];
+export function getAttendanceBarTone(absencePercent: number | null): string {
+	return absencePercent === null
+		? 'bg-muted'
+		: BAR_TONES[getTone(absencePercent)];
 }
 
 export function getStatusTooltip(
 	status: StudentReportStatus,
-	absencePercent?: number,
+	absencePercent?: number | null,
 ): string {
 	const base =
 		status === 'ok'
@@ -92,15 +97,21 @@ export function getStatusTooltip(
 				? `Ausencias entre el ${ATTENDANCE_THRESHOLDS.WARNING}% y el ${ATTENDANCE_THRESHOLDS.CRITICAL}% del total de clases.`
 				: `Ausencias por encima del umbral crítico (${ATTENDANCE_THRESHOLDS.CRITICAL}%).`;
 
-	return absencePercent === undefined
-		? base
+	if (absencePercent === undefined) return base;
+	return absencePercent === null
+		? `${base} Todavía no hay clases dadas en el período.`
 		: `${base} Actual: ${absencePercent.toFixed(1)}%.`;
 }
 
 export function buildTrendChartData(
 	months: CourseSummaryEntry[],
 ): TrendPoint[] {
+	// A month without classes given has no attendance to plot.
 	return [...months]
+		.filter(
+			(entry): entry is CourseSummaryEntry & { averageAttendance: number } =>
+				entry.averageAttendance !== null,
+		)
 		.sort((a, b) => a.year - b.year || a.month - b.month)
 		.map((entry) => ({
 			label: `${formatMonthLabel(entry.month, 'short')} ${entry.year}`,

@@ -1,8 +1,11 @@
+import { RequestContext } from '@mikro-orm/core';
+import { Logger } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { GenerateAlertHandler } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.handler';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { WorkshopAttendanceRecord } from '../../../src/modules/attendance/domain/entities/workshop-attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../src/modules/attendance/domain/events/attendance-registered.event';
 import { IAcademicYearPort } from '../../../src/modules/attendance/domain/ports/academic-year.port.interface';
 import { AttendanceRegisteredListener } from '../../../src/modules/attendance/infrastructure/events/attendance-registered.listener';
@@ -11,6 +14,8 @@ describe('AttendanceRegisteredListener', () => {
 	let listener: AttendanceRegisteredListener;
 	let academicYearPort: MockProxy<IAcademicYearPort>;
 	let generateAlertHandler: MockProxy<GenerateAlertHandler>;
+	let em: { name: string; fork: jest.Mock };
+	let forkedEm: object;
 
 	const year = AcademicYear.reconstitute(
 		'year-1',
@@ -25,9 +30,12 @@ describe('AttendanceRegisteredListener', () => {
 		generateAlertHandler = mock<GenerateAlertHandler>();
 		academicYearPort.findByCourseId.mockResolvedValue(year);
 		generateAlertHandler.execute.mockResolvedValue(undefined);
+		forkedEm = { name: 'default' };
+		em = { name: 'default', fork: jest.fn().mockReturnValue(forkedEm) };
 		listener = new AttendanceRegisteredListener(
 			academicYearPort,
 			generateAlertHandler,
+			em as never,
 		);
 	});
 
@@ -87,17 +95,93 @@ describe('AttendanceRegisteredListener', () => {
 		expect(academicYearPort.findByCourseId).toHaveBeenCalledWith('course-55');
 	});
 
+	it('passes the stored date of the record as the trigger date', async () => {
+		const event = new AttendanceRegisteredEvent(
+			new Date('2026-03-10T01:30:00.000Z'),
+			AttendanceRecord.reconstitute({
+				id: 'rec-1',
+				tenantId: 'tenant-1',
+				studentId: 'student-1',
+				courseId: 'course-1',
+				date: new Date('2026-03-09T00:00:00.000Z'),
+				status: ATTENDANCE_STATUS.ABSENT,
+				editedBy: 'user-1',
+				editedAt: new Date(),
+				createdAt: new Date(),
+			}),
+		);
+		await listener.attendanceRegistered(event);
+		expect(generateAlertHandler.execute).toHaveBeenCalledWith(
+			expect.objectContaining({ triggerDate: '2026-03-09' }),
+		);
+	});
+
 	it('no lanza error si el academic year no existe (silencioso)', async () => {
 		academicYearPort.findByCourseId.mockResolvedValue(null);
 		const event = makeEvent();
 		await expect(listener.attendanceRegistered(event)).resolves.toBeUndefined();
 	});
 
-	it('propaga errores del GenerateAlertHandler', async () => {
+	it('evaluates the alert in its own MikroORM context, isolated from the request unit of work', async () => {
+		let contextEm: unknown;
+		generateAlertHandler.execute.mockImplementation(async () => {
+			contextEm = RequestContext.getEntityManager();
+		});
+
+		await listener.attendanceRegistered(makeEvent());
+
+		expect(em.fork).toHaveBeenCalledWith(
+			expect.objectContaining({ useContext: true }),
+		);
+		expect(contextEm).toBe(forkedEm);
+		expect(RequestContext.getEntityManager()).toBeUndefined();
+	});
+
+	it('forks a fresh context per event, even after a failed evaluation', async () => {
+		generateAlertHandler.execute.mockRejectedValueOnce(new Error('unique'));
+		const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+		await listener.attendanceRegistered(makeEvent());
+		await listener.attendanceRegistered(makeEvent());
+		expect(em.fork).toHaveBeenCalledTimes(2);
+		error.mockRestore();
+	});
+
+	it('logs and swallows errors of the GenerateAlertHandler', async () => {
 		generateAlertHandler.execute.mockRejectedValue(new Error('DB error'));
-		const event = makeEvent();
-		await expect(listener.attendanceRegistered(event)).rejects.toThrow(
-			'DB error',
+		const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+		await expect(
+			listener.attendanceRegistered(makeEvent()),
+		).resolves.toBeUndefined();
+		expect(error).toHaveBeenCalledWith(
+			expect.stringContaining('student-1'),
+			expect.any(String),
+		);
+		error.mockRestore();
+	});
+
+	it('evaluates alerts for a workshop attendance record too', async () => {
+		await listener.attendanceRegistered(
+			new AttendanceRegisteredEvent(
+				new Date(),
+				WorkshopAttendanceRecord.create({
+					tenantId: 'tenant-1',
+					workshopCommissionId: 'commission-1',
+					courseId: 'course-9',
+					studentId: 'student-8',
+					date: new Date('2026-03-10'),
+					status: ATTENDANCE_STATUS.ABSENT,
+					editedBy: 'user-1',
+				}),
+			),
+		);
+		expect(academicYearPort.findByCourseId).toHaveBeenCalledWith('course-9');
+		expect(generateAlertHandler.execute).toHaveBeenCalledWith(
+			expect.objectContaining({
+				studentId: 'student-8',
+				courseId: 'course-9',
+				academicYearId: 'year-1',
+				tenantId: 'tenant-1',
+			}),
 		);
 	});
 });

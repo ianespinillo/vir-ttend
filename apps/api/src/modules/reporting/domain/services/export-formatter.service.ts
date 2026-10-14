@@ -1,3 +1,4 @@
+import { formatCount } from '@repo/common';
 import { IDetailedStudentReport } from '../types/detailed-student-report.type';
 import { ExcelRow } from '../types/excel-row.type';
 import { IMonthlyReportData } from '../types/monthly-report-data.type';
@@ -9,7 +10,7 @@ const EXCEL_HEADERS = [
 	'Nombre',
 	'Documento',
 	'Presentes',
-	'Ausentes',
+	'Inasistencias',
 	'Tardanzas',
 	'Justificados',
 	'%',
@@ -21,14 +22,21 @@ const PDF_HEADERS = [
 	'Nombre',
 	'Documento',
 	'P',
-	'A',
+	'Inas.',
 	'T',
 	'J',
 	'%',
 	'Estado',
 ];
 
-const PDF_STUDENT_HEADERS = ['Mes', 'P', 'A', 'T', 'J', '%', 'Estado'];
+const PDF_STUDENT_HEADERS = ['Mes', 'P', 'Inas.', 'T', 'J', '%', 'Estado'];
+
+const NO_PERCENT = '—';
+
+/** Display only: the percentage itself stays unrounded. Null means no class given. */
+function percentLabel(percent: number | null): string {
+	return percent === null ? NO_PERCENT : `${percent.toFixed(2)}%`;
+}
 
 export class ExportFormatterService {
 	static formatForExcel(report: IMonthlyReportData): ExcelRow[] {
@@ -74,10 +82,10 @@ export class ExportFormatterService {
 				name || '',
 				s.documentNumber,
 				String(s.present),
-				String(s.absent),
+				formatCount(s.absent),
 				String(s.late),
 				String(s.justified),
-				`${s.absencePercent.toFixed(2)}%`,
+				percentLabel(s.absencePercent),
 				ExportFormatterService.statusLabel(s.status),
 			];
 		});
@@ -88,7 +96,8 @@ export class ExportFormatterService {
 				headers: PDF_HEADERS,
 				rows,
 				summary: [
-					`Promedio de asistencia: ${report.summary.averageAttendance}%`,
+					`Promedio de asistencia: ${percentLabel(report.summary.averageAttendance)}`,
+					'Inasistencias: total ponderado por día (turno y taller), con tope de 1 por día',
 					`Estudiantes en riesgo: ${report.summary.studentsAtRisk}`,
 					`Estudiantes con ausencia excedida: ${report.summary.studentsExceeded}`,
 				],
@@ -100,10 +109,10 @@ export class ExportFormatterService {
 		const rows = report.months.map((m) => [
 			`${m.month}/${m.year}`,
 			String(m.present),
-			String(m.absent),
+			formatCount(m.absent),
 			String(m.late),
 			String(m.justified),
-			`${m.absencePercent}%`,
+			percentLabel(m.absencePercent),
 			ExportFormatterService.statusLabel(m.status),
 		]);
 
@@ -116,7 +125,8 @@ export class ExportFormatterService {
 					`Documento: ${report.documentNumber}`,
 					`Nivel: ${report.level}`,
 					`Total días: ${report.totals.totalDays}`,
-					`Promedio de ausencia: ${report.totals.averageAbsencePercent}%`,
+					`Inasistencias: ${formatCount(report.totals.absent)} (turno ${formatCount(report.totals.absenceBreakdown.daily)}, taller ${formatCount(report.totals.absenceBreakdown.workshop)})`,
+					`Promedio de ausencia: ${percentLabel(report.totals.averageAbsencePercent)}`,
 					`Estado: ${ExportFormatterService.statusLabel(report.status)}`,
 				],
 			},

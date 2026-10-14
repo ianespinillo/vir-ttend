@@ -30,7 +30,7 @@ import { GetWorkshopAttendanceQueryHandler } from './application/queries/get-wor
 import { AttendanceCalculationService } from './application/services/attendance-calculation.service';
 import { AttendanceCopyService } from './application/services/attendance-copy.service';
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
-import { LatePolicyService } from './domain/services/late-policy.service';
+import { StudentWeightedAbsencesService } from './application/services/student-weighted-absences.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';
 import { ScheduleAdapter } from './infrastructure/adapters/schedule.adapter';
@@ -38,6 +38,8 @@ import { StudentAdapter } from './infrastructure/adapters/student.adapter';
 import { SubjectAdapter } from './infrastructure/adapters/subject.adapter';
 import { MikroOrmUnitOfWorkAdapter } from './infrastructure/adapters/unit-of-work.adapter';
 import { WorkshopCommissionAdapter } from './infrastructure/adapters/workshop-commission.adapter';
+import { AlertTriggeredListener } from './infrastructure/events/alert-triggered.listener';
+import { AttendanceRegisteredListener } from './infrastructure/events/attendance-registered.listener';
 import { AttendancePersistenceModule } from './infrastructure/persistence/attendance.persistence.module';
 import { AlertsController } from './presentation/controllers/alerts.controller';
 import { AttendanceCommandController } from './presentation/controllers/attendance.command.controller';
@@ -112,8 +114,11 @@ import { WorkshopAttendanceController } from './presentation/controllers/worksho
 		//domain services
 		AttendanceCalculationService,
 		AttendanceCopyService,
-		LatePolicyService,
 		CourseSnapshotBuilderService,
+		StudentWeightedAbsencesService,
+		//event listeners
+		AttendanceRegisteredListener,
+		AlertTriggeredListener,
 	],
 	controllers: [
 		AlertsController,

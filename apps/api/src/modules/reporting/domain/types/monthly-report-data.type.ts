@@ -8,7 +8,8 @@ export interface IMonthlyReportData {
 	workingDays: number;
 	students: StudentReportEntry[];
 	summary: {
-		averageAttendance: number;
+		/** Null when no class was given. */
+		averageAttendance: number | null;
 		studentsAtRisk: number;
 		studentsExceeded: number;
 	};

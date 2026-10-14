@@ -1,5 +1,7 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ATTENDANCE_STATUS, ROLES } from '@repo/common';
+import { MockProxy, mock } from 'jest-mock-extended';
 import { BulkRegisterWorkshopAttendanceCommand } from '../../../src/modules/attendance/application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.command';
 import { BulkRegisterWorkshopAttendanceHandler } from '../../../src/modules/attendance/application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.handler';
 import { RegisterWorkshopAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-workshop-attendance/register-workshop-attendance.command';
@@ -17,6 +19,10 @@ import {
 } from './workshop-attendance.fixtures';
 
 const unitOfWork: IUnitOfWorkPort = { run: (work) => work() };
+let emitter: MockProxy<EventEmitter2>;
+beforeEach(() => {
+	emitter = mock<EventEmitter2>();
+});
 const register = (
 	records: RegisterWorkshopAttendanceCommand['records'],
 	userId = PRECEPTOR_ID,
@@ -39,6 +45,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			buildPort(commission(), students),
 			repo,
 			unitOfWork,
+			emitter,
 		);
 
 		await handler.execute(
@@ -63,11 +70,54 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			buildPort(commission(), students),
 			repo,
 			unitOfWork,
+			emitter,
 		);
 		await handler.execute(
 			register([{ studentId: 's1', status: ATTENDANCE_STATUS.PRESENT }]),
 		);
 		expect(repo.bulkSave).not.toHaveBeenCalled();
+	});
+
+	it('announces each created or changed record, and only those', async () => {
+		const repo = buildRepo([existingRecord('s2')]);
+		const handler = new RegisterWorkshopAttendanceHandler(
+			buildPort(commission(), students),
+			repo,
+			unitOfWork,
+			emitter,
+		);
+		await handler.execute(
+			register([
+				{ studentId: 's1', status: ATTENDANCE_STATUS.ABSENT },
+				{ studentId: 's2', status: ATTENDANCE_STATUS.PRESENT },
+			]),
+		);
+		expect(emitter.emit).toHaveBeenCalledTimes(1);
+		expect(emitter.emit).toHaveBeenCalledWith(
+			'attendance.registered',
+			expect.objectContaining({
+				attendance: expect.objectContaining({
+					studentId: 's1',
+					courseId: 'course-1',
+					tenantId: TENANT,
+				}),
+			}),
+		);
+	});
+
+	it('emits nothing when the save is rejected', async () => {
+		const handler = new RegisterWorkshopAttendanceHandler(
+			buildPort(commission(), students),
+			buildRepo(),
+			unitOfWork,
+			emitter,
+		);
+		await expect(
+			handler.execute(
+				register([{ studentId: 'intruder', status: ATTENDANCE_STATUS.ABSENT }]),
+			),
+		).rejects.toThrow(BadRequestException);
+		expect(emitter.emit).not.toHaveBeenCalled();
 	});
 
 	it('rejects students outside the commission naming them, saving nothing', async () => {
@@ -76,6 +126,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			buildPort(commission(), students),
 			repo,
 			unitOfWork,
+			emitter,
 		);
 		const attempt = handler.execute(
 			register([
@@ -93,6 +144,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			buildPort(commission(), students),
 			buildRepo(),
 			unitOfWork,
+			emitter,
 		);
 		await expect(
 			handler.execute(
@@ -108,7 +160,7 @@ describe('BulkRegisterWorkshopAttendanceHandler', () => {
 		const port = buildPort(commission(), [student('s1'), student('s2')]);
 		const handler = new BulkRegisterWorkshopAttendanceHandler(
 			port,
-			new RegisterWorkshopAttendanceHandler(port, repo, unitOfWork),
+			new RegisterWorkshopAttendanceHandler(port, repo, unitOfWork, emitter),
 		);
 
 		await handler.execute(

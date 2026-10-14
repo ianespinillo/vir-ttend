@@ -8,7 +8,8 @@ interface ConstructorProperties {
 	tenantId: string;
 	academicYearId: string;
 	alertType: AlertType;
-	absencePercent: number;
+	absenceCount: number;
+	threshold: number;
 	seenBy?: string;
 	seenAt?: Date;
 	createdAt: Date;
@@ -18,7 +19,8 @@ interface CreateProperties {
 	courseId: string;
 	tenantId: string;
 	academicYearId: string;
-	absencePercent: number;
+	absenceCount: number;
+	threshold: number;
 	alertType: AlertType;
 	seenBy?: string;
 	seenAt?: Date;
@@ -35,7 +37,8 @@ export class AttendanceAlert {
 	private readonly _tenantId: string;
 	private readonly _academicYearId: string;
 	private readonly _alertType: AlertType;
-	private readonly _absencePercent: number;
+	private readonly _absenceCount: number;
+	private readonly _threshold: number;
 	private readonly _createdAt: Date;
 	private _seenBy?: string;
 	private _seenAt?: Date;
@@ -47,7 +50,8 @@ export class AttendanceAlert {
 		this._tenantId = props.tenantId;
 		this._academicYearId = props.academicYearId;
 		this._alertType = props.alertType;
-		this._absencePercent = props.absencePercent;
+		this._absenceCount = props.absenceCount;
+		this._threshold = props.threshold;
 		this._createdAt = props.createdAt;
 		this._seenBy = props.seenBy;
 		this._seenAt = props.seenAt;
@@ -92,8 +96,14 @@ export class AttendanceAlert {
 		return this._alertType;
 	}
 
-	get absencePercent(): number {
-		return this._absencePercent;
+	/** Weighted absences of the student when the alert was raised. */
+	get absenceCount(): number {
+		return this._absenceCount;
+	}
+
+	/** Absence threshold (10, 20 or the student's cap) the alert was raised for. */
+	get threshold(): number {
+		return this._threshold;
 	}
 
 	get seenBy(): string | undefined {
