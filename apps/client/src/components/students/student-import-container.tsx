@@ -50,6 +50,7 @@ export function StudentImportContainer({
 	const handleFileChange = (next: File | null) => {
 		setFile(next);
 		setPreview(null);
+		previewMutation.reset();
 	};
 
 	const handleOpenChange = (next: boolean) => {
