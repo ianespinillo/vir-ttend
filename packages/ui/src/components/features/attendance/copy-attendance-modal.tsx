@@ -65,6 +65,12 @@ const statusConfig: Record<
 		className:
 			'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
 	},
+	[ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE]: {
+		label: 'Tarde (fuera de tolerancia)',
+		icon: Clock,
+		className:
+			'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30',
+	},
 	[ATTENDANCE_STATUS.JUSTIFIED]: {
 		label: 'Justificado',
 		icon: FileCheck2,

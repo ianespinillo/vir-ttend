@@ -33,6 +33,14 @@ describe('MetricsCalculationService', () => {
 			expect(result.status).toBe('ok');
 		});
 
+		it('cuenta la tardanza fuera de tolerancia como tardanza', () => {
+			const result = service.calculateStudentMetrics([
+				makeRecord(ATTENDANCE_STATUS.LATE),
+				makeRecord(ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE),
+			]);
+			expect(result.late).toBe(2);
+		});
+
 		it('cuenta correctamente los estados de asistencia', () => {
 			const records = [
 				makeRecord(ATTENDANCE_STATUS.PRESENT),

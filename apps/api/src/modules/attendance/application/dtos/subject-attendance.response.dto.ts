@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { isLateStatus } from '@repo/common';
 import { AttendanceRecordResponseDto } from './attendance-record.response.dto';
 
 export class SubjectAttendanceResponseDto {
@@ -67,7 +68,7 @@ export class SubjectAttendanceResponseDto {
 			totalStudents: data.records.length,
 			present: data.records.filter((r) => r.status === 'present').length,
 			absent: data.records.filter((r) => r.status === 'absent').length,
-			late: data.records.filter((r) => r.status === 'late').length,
+			late: data.records.filter((r) => isLateStatus(r.status)).length,
 			justified: data.records.filter((r) => r.status === 'justified').length,
 		};
 	}

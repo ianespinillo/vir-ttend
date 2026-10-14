@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK, isLateStatus } from '@repo/common';
 import { AcademicYear } from '../../domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { ISchedulePort } from '../../domain/ports/schedule.port.interface';
@@ -32,7 +32,7 @@ export class AttendanceCalculationService {
 		let total = 0;
 		for (const record of records) {
 			if (record.status === ATTENDANCE_STATUS.ABSENT) total++;
-			else if (record.status === ATTENDANCE_STATUS.LATE) {
+			else if (isLateStatus(record.status)) {
 				const minutesLate = new Date(
 					record.createdAt.getTime() - record.editedAt.getTime(),
 				).getMinutes();

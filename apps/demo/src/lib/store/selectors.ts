@@ -79,6 +79,7 @@ function countByStatus(records: DemoAttendanceRecord[]): {
 					counts.absent += 1;
 					break;
 				case 'late':
+				case 'late_beyond_tolerance':
 					counts.late += 1;
 					break;
 				case 'justified':
@@ -824,7 +825,9 @@ export function weeklyTrendFromRecords(
 			};
 			byWeek.set(key, bucket);
 		}
-		bucket.counts[record.status] += 1;
+		bucket.counts[
+			record.status === 'late_beyond_tolerance' ? 'late' : record.status
+		] += 1;
 	}
 	return [...byWeek.entries()]
 		.sort(([a], [b]) => a.localeCompare(b))

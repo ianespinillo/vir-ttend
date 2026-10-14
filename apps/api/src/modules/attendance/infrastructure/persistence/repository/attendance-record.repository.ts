@@ -240,7 +240,7 @@ export class AttendanceRecordRepository
             COUNT(DISTINCT ar.student_id) as "totalStudents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'present') as "presents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as "absents",
-            COUNT(ar.id) FILTER (WHERE ar.status = 'late') as "late",
+            COUNT(ar.id) FILTER (WHERE ar.status IN ('late', 'late_beyond_tolerance')) as "late",
             COUNT(ar.id) FILTER (WHERE ar.status = 'justified') as "justified"
         FROM "attendanceRecord" ar
         WHERE ar.course_id = ?
@@ -275,7 +275,7 @@ export class AttendanceRecordRepository
             COUNT(DISTINCT ar.student_id) as "totalStudents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'present') as "presents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as "absents",
-            COUNT(ar.id) FILTER (WHERE ar.status = 'late') as "late",
+            COUNT(ar.id) FILTER (WHERE ar.status IN ('late', 'late_beyond_tolerance')) as "late",
             COUNT(ar.id) FILTER (WHERE ar.status = 'justified') as "justified"
         FROM "attendanceRecord" ar
         WHERE ar.course_id = ?

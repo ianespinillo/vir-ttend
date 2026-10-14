@@ -841,7 +841,9 @@ export function createSeedState(): DemoState {
 			(record) => record.studentId === studentId,
 		);
 		const counts = { present: 0, absent: 0, late: 0, justified: 0 };
-		for (const record of studentRecords) counts[record.status] += 1;
+		for (const record of studentRecords)
+			counts[record.status === 'late_beyond_tolerance' ? 'late' : record.status] +=
+				1;
 		const pct = absencePercent(counts.absent, counts.late, studentRecords.length);
 		const alertType = absenceToAlertType(pct);
 		if (!alertType) continue;

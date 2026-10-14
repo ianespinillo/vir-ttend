@@ -4,7 +4,7 @@ import {
 	InternalServerErrorException,
 	NotFoundException,
 } from '@nestjs/common';
-import { ATTENDANCE_STATUS } from '@repo/common';
+import { ATTENDANCE_STATUS, isLateStatus } from '@repo/common';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
@@ -59,7 +59,7 @@ export class GetSubjectHistoryQueryHandler {
 					new Date(k).toLocaleDateString(),
 					v.filter((r) => r.status === ATTENDANCE_STATUS.PRESENT).length,
 					v.filter((r) => r.status === ATTENDANCE_STATUS.ABSENT).length,
-					v.filter((r) => r.status === ATTENDANCE_STATUS.LATE).length,
+					v.filter((r) => isLateStatus(r.status)).length,
 					v.filter((r) => r.status === ATTENDANCE_STATUS.JUSTIFIED).length,
 					v.length,
 				),

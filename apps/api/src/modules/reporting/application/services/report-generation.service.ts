@@ -3,6 +3,7 @@ import {
 	ATTENDANCE_STATUS,
 	ATTENDANCE_THRESHOLDS,
 	LevelType,
+	isLateStatus,
 } from '@repo/common';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { IAcademicYearPort } from '../../domain/ports/academic-year.port.interface';
@@ -148,7 +149,7 @@ export class ReportGenerationService {
 			(acc, r) => {
 				if (r.status === ATTENDANCE_STATUS.PRESENT) acc.present++;
 				else if (r.status === ATTENDANCE_STATUS.ABSENT) acc.absent++;
-				else if (r.status === ATTENDANCE_STATUS.LATE) acc.late++;
+				else if (isLateStatus(r.status)) acc.late++;
 				else if (r.status === ATTENDANCE_STATUS.JUSTIFIED) acc.justified++;
 				return acc;
 			},

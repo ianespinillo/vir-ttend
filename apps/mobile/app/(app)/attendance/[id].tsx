@@ -78,9 +78,23 @@ const statusStyles: Record<
 	present: { activeBackground: '#059669', activeText: '#FFFFFF' }, // emerald-600
 	absent: { activeBackground: '#DC2626', activeText: '#FFFFFF' }, // red-600
 	late: { activeBackground: '#F59E0B', activeText: '#FFFFFF' }, // amber-500
+	late_beyond_tolerance: { activeBackground: '#EA580C', activeText: '#FFFFFF' }, // orange-600
 };
 
-const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'late'];
+const STATUS_ORDER: AttendanceStatus[] = [
+	'present',
+	'absent',
+	'late',
+	'late_beyond_tolerance',
+];
+
+// Short button labels: P(resente), A(usente), T(arde), TF (tarde fuera de tolerancia).
+const STATUS_LABEL: Record<AttendanceStatus, string> = {
+	present: 'P',
+	absent: 'A',
+	late: 'T',
+	late_beyond_tolerance: 'TF',
+};
 
 export default function AttendanceSheetScreen() {
 	const params = useLocalSearchParams();
@@ -332,7 +346,7 @@ function DailySheet({
 		for (const status of Object.values(attendanceMap)) {
 			if (status === 'present') present++;
 			else if (status === 'absent') absent++;
-			else if (status === 'late') late++;
+			else if (status === 'late' || status === 'late_beyond_tolerance') late++;
 			else if (status === 'justified') justified++;
 		}
 		return { present, absent, late, justified, total: students.length };
@@ -596,11 +610,11 @@ function DailySheet({
 									) : null}
 								</View>
 
-								{/* Segmented Controls: P | A | T */}
+								{/* Segmented Controls: P | A | T | TF */}
 								<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
 									{STATUS_ORDER.map((status, i) => {
 										const isActive = currentStatus === status;
-										const label = status[0].toUpperCase();
+										const label = STATUS_LABEL[status];
 										const colors = statusStyles[status];
 										return (
 											<TouchableOpacity

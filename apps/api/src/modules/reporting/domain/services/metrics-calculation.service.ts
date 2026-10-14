@@ -1,4 +1,4 @@
-import { ATTENDANCE_STATUS } from '@repo/common';
+import { ATTENDANCE_STATUS, isLateStatus } from '@repo/common';
 import { AttendanceRecord } from '../entities/attendance-record.entity';
 import { IStudentMetrics } from '../types/student-metrics.type';
 
@@ -8,9 +8,7 @@ export class MetricsCalculationService {
 		const absent = records.filter(
 			(r) => r.status === ATTENDANCE_STATUS.ABSENT,
 		).length;
-		const late = records.filter(
-			(r) => r.status === ATTENDANCE_STATUS.LATE,
-		).length;
+		const late = records.filter((r) => isLateStatus(r.status)).length;
 		const justified = records.filter(
 			(r) => r.status === ATTENDANCE_STATUS.JUSTIFIED,
 		).length;

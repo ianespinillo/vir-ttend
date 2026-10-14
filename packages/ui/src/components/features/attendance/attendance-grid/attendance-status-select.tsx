@@ -45,6 +45,13 @@ export function AttendanceStatusSelect({
 					className:
 						'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 font-medium',
 				};
+			case ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE:
+				return {
+					label: 'Tarde (fuera de tolerancia)',
+					icon: Clock,
+					className:
+						'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30 font-medium',
+				};
 			case ATTENDANCE_STATUS.JUSTIFIED:
 				return {
 					label: 'Justificado',
@@ -71,7 +78,7 @@ export function AttendanceStatusSelect({
 			disabled={disabled}
 		>
 			<SelectTrigger
-				className={cn('w-36 h-9 transition-colors border', config.className)}
+				className={cn('w-52 h-9 transition-colors border', config.className)}
 			>
 				<div className="flex items-center gap-1.5 truncate">
 					{Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
@@ -98,6 +105,15 @@ export function AttendanceStatusSelect({
 					<div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
 						<Clock className="h-4 w-4 shrink-0" />
 						<span>Tarde</span>
+					</div>
+				</SelectItem>
+				<SelectItem
+					key={ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE}
+					value={ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE}
+				>
+					<div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-medium">
+						<Clock className="h-4 w-4 shrink-0" />
+						<span>Tarde (fuera de tolerancia)</span>
 					</div>
 				</SelectItem>
 			</SelectContent>
