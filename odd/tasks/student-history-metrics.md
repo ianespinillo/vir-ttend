@@ -22,7 +22,20 @@ Add a per-student history and metrics screen at `/attendance/student/[id]` for A
 - Runners: `@repo/common` vitest, `@repo/ui` vitest (jsdom + RTL), api jest.
 
 ## Delivery
-- Forecast is above 400 lines across 9 tasks. Strategy `ask-on-risk`; chain strategy decided at PR time (target `dev`).
+- Actual code change is ~1250 authored lines (plus ~805 docs), over the 400-line review budget. Strategy `ask-on-risk` → the user chose **chained PRs** with **feature-branch-chain**, target `dev`.
+- Tracker: `feat/student-history-metrics` (starts at `dev`, `fab66e3`). Only the tracker merges into `dev`.
+- Slice branches are plain points on the linear commit chain, so each PR's diff is exactly its slice:
+
+| PR | Head | Base | Slice | Diff |
+|----|------|------|-------|------|
+| [#69](https://github.com/ianespinillo/vir-ttend/pull/69) | `…-01-foundation` | tracker | nav rule + pure helpers (T1, T2) | 280 / 0 |
+| [#70](https://github.com/ianespinillo/vir-ttend/pull/70) | `…-02-ui-components` | `01` | chart + breakdown + history (T3–T5) | 362 / 0 |
+| [#71](https://github.com/ianespinillo/vir-ttend/pull/71) | `…-03-page-composition` | `02` | page composition + barrels (T6) | 265 / 0 |
+| [#72](https://github.com/ianespinillo/vir-ttend/pull/72) | `…-04-client-route` | `03` | client route (T7) | 135 / 0 |
+| [#73](https://github.com/ianespinillo/vir-ttend/pull/73) | `…-05-legajo-export` | `04` | legajo filename (T8) | 162 / 46 |
+| [#74](https://github.com/ianespinillo/vir-ttend/pull/74) | `…-06-docs` | `05` | spec + plan + ODD doc (T9) | 805 / 0 |
+
+- **Merge procedure (the repo has `delete_branch_on_merge: false`, so GitHub will NOT retarget children automatically):** merge bottom-up (69 → 74), and before merging each next PR retarget its base to `feat/student-history-metrics`. Each retarget keeps that PR's diff identical, because its previous base is already merged. Finally open and merge a `feat/student-history-metrics` → `dev` PR.
 
 ## Tasks (plan numbering)
 - [x] Task 1 — restrict `/attendance/student` to ADMIN + PRECEPTOR in `nav.ts` (`9399f3a`; `@repo/common` 7 files / 66 tests pass, nav 34 tests).
@@ -55,4 +68,5 @@ Add a per-student history and metrics screen at `/attendance/student/[id]` for A
   - Gotcha: a plain `pnpm --filter api test` (and `pnpm -r test`) intermittently fails 7–16 suites with `A jest worker process was terminated by another process: signal=SIGTERM` — 0 test-assertion failures, 681–722 tests passing. This is Windows worker contention in this environment, pre-existing and unrelated to this change; limiting workers makes the whole suite green.
 
 ## Next step
-- Open the PR against `dev` (user's call). Review the screen manually in the browser: navigate from a student card to "Historial y Métrica de Asistencia", confirm each section renders, and export the legajo as Excel and PDF.
+- Review and merge the chain #69 → #74 (see merge procedure above), then merge the tracker into `dev`.
+- Review the screen manually in the browser: navigate from a student card to "Historial y Métrica de Asistencia", confirm each section renders, and export the legajo as Excel and PDF.
