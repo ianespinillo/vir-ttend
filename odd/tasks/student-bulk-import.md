@@ -36,7 +36,7 @@ User request (2026-10-13). A colleague proposed that the school fills a sheet an
 - Push and PR creation: user's call.
 
 ## Checklist
-- [ ] T1: API — template download endpoint + parse/validate (preview) endpoint + commit endpoint, with unit tests. Route: delegated writer (2+ non-trivial files).
+- [x] T1: API — template download endpoint + parse/validate (preview) endpoint + commit endpoint, with unit tests. Route: delegated writer (2+ non-trivial files). Commits: `d1685c4` (tutor-name fix found on the way), `0029a9a` (import API).
 - [ ] T2: UI — import entry point on the course/students screen, upload, preview table with per-row errors, confirm. Route: delegated writer.
 - [ ] T3: docs + commit.
 
@@ -44,4 +44,16 @@ User request (2026-10-13). A colleague proposed that the school fills a sheet an
 - Off (no TDD configuration in the project). Checks: `pnpm --filter api test`, `pnpm ts:check`, `pnpm lint:check`.
 
 ## Progress / evidence
-- (pending)
+- T1 contracts: `GET /students/import/template` (binary xlsx, no envelope); `POST /students/import/preview?courseId=` (multipart `file`, 201 with rows + per-row errors); `POST /students/import/commit?courseId=` (201 `{created}`; 422 with the preview payload under `details` if any row is invalid). 400 bad file/header/>100 rows/>1 MB; 404 course missing or other tenant; 403 preceptor not assigned.
+- DNI rule: exactly 8 digits, reusing the existing `DocumentNumber` value object (the brief said 7–9; existing rule wins).
+- Course label in messages matches the UI: `2° "A"` (parent adjusted the writer's `2°A`).
+- Added `@types/multer` (devDependency) and `multer` in `apps/api/tsconfig.json` types; `http-exception.filter.ts` now forwards an optional `details` field.
+- Checks: `pnpm --filter api test` 83 suites / 490 tests passed (parent re-run; one earlier full run had a single suite fail under parallel load and pass alone — environmental flakiness, seen before in `excel-generator.service.spec.ts`); `pnpm ts:check` 9/9; `pnpm lint:check` only the 5 known warnings.
+- Size: ~1,430 changed lines in PR 1 (about 600 are tests). One slicing pass: parser/validator vs handlers/controller would still leave both slices over 400 and split one behavior across PRs → recommend `size:exception` for PR 1.
+- Native review: medium, granted → approved, acknowledged (lineage `review-0b91673f0d202f62`).
+
+## Follow-ups (advisory review findings, non-blocking)
+- R3-concurrent-dni-race: two concurrent commits with the same DNI could both pass validation; the DB has no unique (tenantId, documentNumber) index to back it.
+- R3-uow-atomicity-unproved: `em.transactional` atomicity relies on MikroORM v6 transaction context propagation into repositories; no integration test proves the rollback.
+- R3-filter-details-untested, R3-tutor-split-untested: missing unit tests for the filter `details` pass-through and the tutor-name split.
+- R3-today-local-vs-utc: future-date check uses local today vs UTC dates.
