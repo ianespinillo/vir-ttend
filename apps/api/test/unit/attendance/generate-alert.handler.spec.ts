@@ -3,22 +3,20 @@ import { LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { GenerateAlertCommand } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.command';
 import { GenerateAlertHandler } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.handler';
-import { AttendanceCalculationService } from '../../../src/modules/attendance/application/services/attendance-calculation.service';
+import { StudentWeightedAbsencesService } from '../../../src/modules/attendance/application/services/student-weighted-absences.service';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceAlert } from '../../../src/modules/attendance/domain/entities/attendance-alert.entity';
 import { Course } from '../../../src/modules/attendance/domain/entities/course.entity';
 import { IAcademicYearPort } from '../../../src/modules/attendance/domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IAttendanceAlertRepository } from '../../../src/modules/attendance/domain/repositories/attendance-alert.repository.interface';
-import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 import { AlertType } from '../../../src/modules/attendance/domain/value-objects/alert-type.vo';
 
 describe('GenerateAlertHandler', () => {
 	let handler: GenerateAlertHandler;
 	let academicPort: MockProxy<IAcademicYearPort>;
 	let coursePort: MockProxy<ICoursePort>;
-	let attendanceService: MockProxy<AttendanceCalculationService>;
-	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
+	let weightedAbsences: MockProxy<StudentWeightedAbsencesService>;
 	let alertRepo: MockProxy<IAttendanceAlertRepository>;
 	let eventEmitter: MockProxy<EventEmitter2>;
 
@@ -36,31 +34,6 @@ describe('GenerateAlertHandler', () => {
 		true,
 		LEVEL.PRIMARY,
 	);
-
-	beforeEach(() => {
-		academicPort = mock<IAcademicYearPort>();
-		coursePort = mock<ICoursePort>();
-		attendanceService = mock<AttendanceCalculationService>();
-		attendanceRepo = mock<IAttendanceRecordRepository>();
-		alertRepo = mock<IAttendanceAlertRepository>();
-		eventEmitter = mock<EventEmitter2>();
-
-		academicPort.findById.mockResolvedValue(year);
-		coursePort.findById.mockResolvedValue(course);
-		attendanceRepo.findByStudentAndDateRange.mockResolvedValue([]);
-		attendanceService.calculateAbscensePercent.mockResolvedValue(0);
-		alertRepo.findByStudentId.mockResolvedValue([]);
-
-		handler = new GenerateAlertHandler(
-			academicPort,
-			coursePort,
-			attendanceService,
-			attendanceRepo,
-			alertRepo,
-			eventEmitter,
-		);
-	});
-
 	const cmd = new GenerateAlertCommand(
 		'student-1',
 		'course-1',
@@ -68,143 +41,198 @@ describe('GenerateAlertHandler', () => {
 		'tenant-1',
 	);
 
-	it('lanza BadRequestException si no encuentra el academic year', async () => {
+	const withTotal = (total: number, cap = 28) =>
+		weightedAbsences.getStudentWeightedAbsences.mockResolvedValue({
+			total,
+			cap,
+			breakdown: { daily: total, workshop: 0 },
+		});
+
+	const existingAlert = (
+		alertType: AlertType,
+		academicYearId = 'year-1',
+		seenAt?: Date,
+	) =>
+		AttendanceAlert.reconstitute({
+			id: 'alert-old',
+			studentId: 'student-1',
+			courseId: 'course-1',
+			tenantId: 'tenant-1',
+			academicYearId,
+			alertType,
+			absenceCount: 10,
+			threshold: 10,
+			seenAt,
+			seenBy: seenAt ? 'user-1' : undefined,
+			createdAt: new Date(),
+		});
+
+	const savedAlert = (): AttendanceAlert => alertRepo.save.mock.calls[0][0];
+
+	beforeEach(() => {
+		academicPort = mock<IAcademicYearPort>();
+		coursePort = mock<ICoursePort>();
+		weightedAbsences = mock<StudentWeightedAbsencesService>();
+		alertRepo = mock<IAttendanceAlertRepository>();
+		eventEmitter = mock<EventEmitter2>();
+
+		academicPort.findById.mockResolvedValue(year);
+		coursePort.findById.mockResolvedValue(course);
+		alertRepo.findByStudentId.mockResolvedValue([]);
+		withTotal(0);
+
+		handler = new GenerateAlertHandler(
+			academicPort,
+			coursePort,
+			weightedAbsences,
+			alertRepo,
+			eventEmitter,
+		);
+	});
+
+	it('throws when the academic year does not exist', async () => {
 		academicPort.findById.mockResolvedValue(null);
 		await expect(handler.execute(cmd)).rejects.toThrow('No academic year found.');
 	});
 
-	it('lanza BadRequestException si no encuentra el curso', async () => {
+	it('throws when the course does not exist', async () => {
 		coursePort.findById.mockResolvedValue(null);
 		await expect(handler.execute(cmd)).rejects.toThrow('No course found.');
 	});
 
-	it('lanza BadRequestException si el curso no pertenece al academic year', async () => {
-		const wrongCourse = Course.reconstitute(
-			'course-1',
-			'3ro A',
-			'year-OTHER',
-			true,
-			LEVEL.PRIMARY,
+	it('throws when the course belongs to another academic year', async () => {
+		coursePort.findById.mockResolvedValue(
+			Course.reconstitute('course-1', '3ro A', 'year-OTHER', true, LEVEL.PRIMARY),
 		);
-		coursePort.findById.mockResolvedValue(wrongCourse);
 		await expect(handler.execute(cmd)).rejects.toThrow(
 			'No match between course and academic year id found.',
 		);
 	});
 
-	it('no crea alerta si el porcentaje de ausencia es 0', async () => {
+	it('counts the weighted absences of the student in the academic year', async () => {
+		await handler.execute(cmd);
+		expect(weightedAbsences.getStudentWeightedAbsences).toHaveBeenCalledWith(
+			'student-1',
+			'year-1',
+		);
+	});
+
+	it.each([0, 4.5, 9.75])(
+		'creates no alert below 10 absences (%p)',
+		async (total) => {
+			withTotal(total);
+			await handler.execute(cmd);
+			expect(alertRepo.save).not.toHaveBeenCalled();
+			expect(eventEmitter.emit).not.toHaveBeenCalled();
+		},
+	);
+
+	it.each([
+		[10, 10, 'warning'],
+		[12.5, 10, 'warning'],
+		[20, 20, 'critical'],
+		[27.75, 20, 'critical'],
+		[28, 28, 'exceeded'],
+		[31, 28, 'exceeded'],
+	])(
+		'with %p absences raises the %p threshold (%s)',
+		async (total, threshold, status) => {
+			withTotal(total);
+			await handler.execute(cmd);
+			expect(alertRepo.save).toHaveBeenCalledTimes(1);
+			const alert = savedAlert();
+			expect(alert.absenceCount).toBe(total);
+			expect(alert.threshold).toBe(threshold);
+			expect(alert.alertType.status).toBe(status);
+			expect(alert).toMatchObject({
+				studentId: 'student-1',
+				courseId: 'course-1',
+				academicYearId: 'year-1',
+				tenantId: 'tenant-1',
+			});
+		},
+	);
+
+	it('takes the last threshold from the cap of the student', async () => {
+		withTotal(28, 30);
+		await handler.execute(cmd);
+		expect(savedAlert().threshold).toBe(20);
+
+		alertRepo.save.mockClear();
+		withTotal(30, 30);
+		await handler.execute(cmd);
+		expect(savedAlert().threshold).toBe(30);
+		expect(savedAlert().alertType.status).toBe('exceeded');
+	});
+
+	it('raises a single alert for the highest threshold crossed at once', async () => {
+		withTotal(21);
+		await handler.execute(cmd);
+		expect(alertRepo.save).toHaveBeenCalledTimes(1);
+		expect(savedAlert().threshold).toBe(20);
+	});
+
+	it('creates no duplicate when the threshold was already alerted', async () => {
+		withTotal(12);
+		alertRepo.findByStudentId.mockResolvedValue([
+			existingAlert(AlertType.warning()),
+		]);
 		await handler.execute(cmd);
 		expect(alertRepo.save).not.toHaveBeenCalled();
 		expect(eventEmitter.emit).not.toHaveBeenCalled();
 	});
 
-	it('no crea alerta si ThresholdChecker retorna null (porcentaje bajo)', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(30);
+	it('creates no duplicate when the existing alert was already seen', async () => {
+		withTotal(12);
+		alertRepo.findByStudentId.mockResolvedValue([
+			existingAlert(AlertType.warning(), 'year-1', new Date()),
+		]);
 		await handler.execute(cmd);
 		expect(alertRepo.save).not.toHaveBeenCalled();
 	});
 
-	it('crea alerta y emite evento cuando el porcentaje supera un umbral', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
+	it('escalates from warning to critical', async () => {
+		withTotal(20.25);
+		alertRepo.findByStudentId.mockResolvedValue([
+			existingAlert(AlertType.warning()),
+		]);
 		await handler.execute(cmd);
-		expect(alertRepo.save).toHaveBeenCalledTimes(1);
-		expect(eventEmitter.emit).toHaveBeenCalledWith(
-			'alert.trigered',
-			expect.objectContaining({ status: 'warning' }),
-		);
+		expect(savedAlert().alertType.status).toBe('critical');
 	});
 
-	it('no crea alerta duplicada si ya existe una activa del mismo tipo', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
-		const existingAlert = mock<AttendanceAlert>({
-			alertType: {
-				equals: (other: AlertType) => other.status === 'warning',
-			},
-			seenAt: undefined,
-			academicYearId: 'year-1',
-		});
-		alertRepo.findByStudentId.mockResolvedValue([existingAlert]);
+	it('does not raise a lower threshold once a higher one was alerted', async () => {
+		withTotal(25);
+		alertRepo.findByStudentId.mockResolvedValue([
+			existingAlert(AlertType.critical()),
+		]);
 		await handler.execute(cmd);
 		expect(alertRepo.save).not.toHaveBeenCalled();
 	});
 
-	it('no crea alerta si la existente fue vista', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
-		const seenAlert = mock<AttendanceAlert>({
-			alertType: {
-				equals: (other: AlertType) => other.status === 'warning',
-			},
-			seenAt: new Date(),
-			academicYearId: 'year-1',
-		});
-		alertRepo.findByStudentId.mockResolvedValue([seenAlert]);
-		await handler.execute(cmd);
-		expect(alertRepo.save).not.toHaveBeenCalled();
-	});
-
-	it('escala a critical cuando el porcentaje es >= 75', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(80);
+	it('ignores alerts of a previous academic year', async () => {
+		withTotal(12);
+		alertRepo.findByStudentId.mockResolvedValue([
+			existingAlert(AlertType.warning(), 'year-previous'),
+		]);
 		await handler.execute(cmd);
 		expect(alertRepo.save).toHaveBeenCalledTimes(1);
+	});
+
+	it('emits alert.triggered with the saved alert', async () => {
+		withTotal(10);
+		await handler.execute(cmd);
+		expect(eventEmitter.emit).toHaveBeenCalledTimes(1);
 		expect(eventEmitter.emit).toHaveBeenCalledWith(
-			'alert.trigered',
-			expect.objectContaining({ status: 'critical' }),
+			'alert.triggered',
+			savedAlert(),
 		);
 	});
 
-	it('escala a exceeded cuando el porcentaje es >= 100', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(105);
+	it('saves the alert before announcing it', async () => {
+		withTotal(10);
 		await handler.execute(cmd);
-		expect(alertRepo.save).toHaveBeenCalledTimes(1);
-		expect(eventEmitter.emit).toHaveBeenCalledWith(
-			'alert.trigered',
-			expect.objectContaining({ status: 'exceeded' }),
+		expect(alertRepo.save.mock.invocationCallOrder[0]).toBeLessThan(
+			eventEmitter.emit.mock.invocationCallOrder[0],
 		);
-	});
-
-	it('permite escalar de warning a critical aunque exista una warning activa', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(80);
-		const existingWarning = mock<AttendanceAlert>({
-			alertType: {
-				equals: (other: AlertType) => other.status === 'warning',
-			},
-			seenAt: undefined,
-			academicYearId: 'year-1',
-		});
-		alertRepo.findByStudentId.mockResolvedValue([existingWarning]);
-		await handler.execute(cmd);
-		expect(alertRepo.save).toHaveBeenCalledTimes(1);
-		expect(eventEmitter.emit).toHaveBeenCalledWith(
-			'alert.trigered',
-			expect.objectContaining({ status: 'critical' }),
-		);
-	});
-
-	it('crea alerta si existe una alerta del mismo tipo en año académico anterior', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
-		const previousYearAlert = mock<AttendanceAlert>({
-			alertType: {
-				equals: (other: AlertType) => other.status === 'warning',
-			},
-			seenAt: undefined,
-			academicYearId: 'year-previous',
-		});
-		alertRepo.findByStudentId.mockResolvedValue([previousYearAlert]);
-		await handler.execute(cmd);
-		expect(alertRepo.save).toHaveBeenCalledTimes(1);
-	});
-
-	it('no crea alerta si existe una alerta del mismo tipo en el mismo año académico', async () => {
-		attendanceService.calculateAbscensePercent.mockResolvedValue(60);
-		const sameYearAlert = mock<AttendanceAlert>({
-			alertType: {
-				equals: (other: AlertType) => other.status === 'warning',
-			},
-			seenAt: undefined,
-			academicYearId: 'year-1',
-		});
-		alertRepo.findByStudentId.mockResolvedValue([sameYearAlert]);
-		await handler.execute(cmd);
-		expect(alertRepo.save).not.toHaveBeenCalled();
 	});
 });

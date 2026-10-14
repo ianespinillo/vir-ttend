@@ -4,11 +4,9 @@ import { AttendanceAlertOrmEntity } from '../entities/attendance-alert.orm-entit
 
 export class AttendanceAlertMapper {
 	static toDomain(orm: AttendanceAlertOrmEntity): AttendanceAlert {
-		const alertType = AlertType.fromPercent(orm.absencePercent);
-		if (!alertType) throw new Error('Invalid absence percent for alert');
 		return AttendanceAlert.reconstitute({
 			...orm,
-			alertType,
+			alertType: AlertType.fromStatus(orm.alertType),
 			seenAt: orm.seenAt ?? undefined,
 			seenBy: orm.seenBy ?? undefined,
 		});
@@ -16,7 +14,8 @@ export class AttendanceAlertMapper {
 	static toOrm(domain: AttendanceAlert): AttendanceAlertOrmEntity {
 		const orm = new AttendanceAlertOrmEntity();
 		orm.id = domain.id;
-		orm.absencePercent = domain.absencePercent;
+		orm.absenceCount = domain.absenceCount;
+		orm.threshold = domain.threshold;
 		orm.alertType = domain.alertType.status;
 		orm.academicYearId = domain.academicYearId;
 		orm.courseId = domain.courseId;

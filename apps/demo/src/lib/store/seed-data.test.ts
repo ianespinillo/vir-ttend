@@ -157,7 +157,7 @@ describe('seeded alerts', () => {
 		);
 	});
 
-	it('alert absencePercent matches the selectors math', () => {
+	it('alert absenceCount matches the selectors math', () => {
 		const state = createSeedState();
 		const sofia = state.alerts.find(
 			(alert) => alert.studentId === demoIds.student['sofia-rossi'],
@@ -171,10 +171,10 @@ describe('seeded alerts', () => {
 		if (!sofia || !joaquin || !santiago) {
 			throw new Error('expected seeded alerts');
 		}
-		// 4 absent / 35 subject sessions = 11.4%; 6/35 = 17.1%; 4/30 = 13.3%
-		expect(sofia.absencePercent).toBe(11.4);
-		expect(joaquin.absencePercent).toBe(17.1);
-		expect(santiago.absencePercent).toBe(13.3);
+		// Demo alerts keep their percent bands; the count is the effective absences.
+		expect(sofia.absenceCount).toBe(4);
+		expect(joaquin.absenceCount).toBe(6);
+		expect(santiago.absenceCount).toBe(4);
 	});
 
 	it('regular students carry no alerts', () => {

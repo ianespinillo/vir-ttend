@@ -1,8 +1,10 @@
+import { Logger } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { GenerateAlertHandler } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.handler';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { WorkshopAttendanceRecord } from '../../../src/modules/attendance/domain/entities/workshop-attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../src/modules/attendance/domain/events/attendance-registered.event';
 import { IAcademicYearPort } from '../../../src/modules/attendance/domain/ports/academic-year.port.interface';
 import { AttendanceRegisteredListener } from '../../../src/modules/attendance/infrastructure/events/attendance-registered.listener';
@@ -93,11 +95,42 @@ describe('AttendanceRegisteredListener', () => {
 		await expect(listener.attendanceRegistered(event)).resolves.toBeUndefined();
 	});
 
-	it('propaga errores del GenerateAlertHandler', async () => {
+	it('logs and swallows errors of the GenerateAlertHandler', async () => {
 		generateAlertHandler.execute.mockRejectedValue(new Error('DB error'));
-		const event = makeEvent();
-		await expect(listener.attendanceRegistered(event)).rejects.toThrow(
-			'DB error',
+		const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+		await expect(
+			listener.attendanceRegistered(makeEvent()),
+		).resolves.toBeUndefined();
+		expect(error).toHaveBeenCalledWith(
+			expect.stringContaining('student-1'),
+			expect.any(String),
+		);
+		error.mockRestore();
+	});
+
+	it('evaluates alerts for a workshop attendance record too', async () => {
+		await listener.attendanceRegistered(
+			new AttendanceRegisteredEvent(
+				new Date(),
+				WorkshopAttendanceRecord.create({
+					tenantId: 'tenant-1',
+					workshopCommissionId: 'commission-1',
+					courseId: 'course-9',
+					studentId: 'student-8',
+					date: new Date('2026-03-10'),
+					status: ATTENDANCE_STATUS.ABSENT,
+					editedBy: 'user-1',
+				}),
+			),
+		);
+		expect(academicYearPort.findByCourseId).toHaveBeenCalledWith('course-9');
+		expect(generateAlertHandler.execute).toHaveBeenCalledWith(
+			expect.objectContaining({
+				studentId: 'student-8',
+				courseId: 'course-9',
+				academicYearId: 'year-1',
+				tenantId: 'tenant-1',
+			}),
 		);
 	});
 });

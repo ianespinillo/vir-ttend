@@ -4,11 +4,17 @@ export class AlertType {
 	private constructor(status: Status) {
 		this._status = status;
 	}
-	static fromPercent(percentage: number): AlertType | null {
-		if (percentage >= 100) return AlertType.exceeded();
-		if (percentage >= 75) return AlertType.critical();
-		if (percentage >= 50) return AlertType.warning();
-		return null;
+	static fromStatus(status: string): AlertType {
+		switch (status) {
+			case 'warning':
+				return AlertType.warning();
+			case 'critical':
+				return AlertType.critical();
+			case 'exceeded':
+				return AlertType.exceeded();
+			default:
+				throw new Error(`Unknown alert type: ${status}`);
+		}
 	}
 	static warning(): AlertType {
 		return new AlertType('warning');

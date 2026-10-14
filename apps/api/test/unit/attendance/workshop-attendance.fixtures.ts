@@ -36,7 +36,6 @@ export function buildPort(
 ): jest.Mocked<IWorkshopCommissionPort> {
 	return {
 		findById: jest.fn().mockResolvedValue(info),
-		findByStudent: jest.fn().mockResolvedValue(info),
 		findByPreceptor: jest.fn().mockResolvedValue(info ? [info] : []),
 		findByTenant: jest.fn().mockResolvedValue(info ? [info] : []),
 		getActiveStudents: jest.fn().mockResolvedValue(students),

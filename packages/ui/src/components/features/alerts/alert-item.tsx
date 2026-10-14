@@ -7,6 +7,12 @@ import { localizeCourseName } from '../../../lib/shift';
 import { Button } from '../../../ui/button';
 import { AlertTypeBadge } from './alert-type-badge';
 
+/** Weighted absences move in 0.25 steps: "12,5 faltas", "1 falta". */
+function formatAbsenceCount(count: number): string {
+	const formatted = count.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+	return `${formatted} ${count === 1 ? 'falta' : 'faltas'}`;
+}
+
 export interface AlertItemProps {
 	alert: Alert;
 	onMarkSeen?: (alertId: string) => void;
@@ -47,8 +53,8 @@ export function AlertItem({
 			<div className="flex items-center gap-3 ml-auto shrink-0">
 				<AlertTypeBadge alertType={alert.alertType} />
 
-				<p className="text-sm font-semibold text-foreground tabular-nums w-14 text-right">
-					{alert.absencePercent.toFixed(1)}%
+				<p className="text-sm font-semibold text-foreground tabular-nums w-24 text-right">
+					{formatAbsenceCount(alert.absenceCount)}
 				</p>
 
 				<p className="text-xs text-muted-foreground w-20 text-right">

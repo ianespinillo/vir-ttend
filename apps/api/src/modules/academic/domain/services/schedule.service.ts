@@ -7,6 +7,11 @@ export class ScheduleService {
 		if (date.getDay() > 4) return [];
 		return slots.filter((slot) => slot.dayOfWeek === this.getDayOfWeek(date));
 	}
+	/**
+	 * Class dates are calendar days stored as UTC midnight (`YYYY-MM-DD`
+	 * columns), so weekdays and day keys are read in UTC: the result does not
+	 * depend on the server timezone and matches the keys of attendance records.
+	 */
 	getWorkingDaysOnPeriod(
 		from: Date,
 		to: Date,
@@ -19,7 +24,11 @@ export class ScheduleService {
 		let current = new Date(from);
 		while (current <= to) {
 			const isNonWorkingDay = nonWorkingDayKeys.has(this.toDateKey(current));
-			if (!isNonWorkingDay && current.getDay() !== 0 && current.getDay() !== 6) {
+			if (
+				!isNonWorkingDay &&
+				current.getUTCDay() !== 0 &&
+				current.getUTCDay() !== 6
+			) {
 				dates.push(current);
 			}
 			current = new Date(current.getTime() + 24 * 60 * 60 * 1000);
@@ -28,7 +37,7 @@ export class ScheduleService {
 	}
 	private toDateKey(date: Date | string): string {
 		if (typeof date === 'string') return date.slice(0, 10);
-		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+		return date.toISOString().slice(0, 10);
 	}
 	private getDayOfWeek(date: Date): DAYOFWEEK {
 		const days: Record<number, DAYOFWEEK> = {

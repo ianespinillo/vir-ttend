@@ -30,6 +30,7 @@ import {
 import {
 	absencePercent,
 	absenceToAlertType,
+	effectiveAbsenceCount,
 	generateLastBusinessDays,
 } from './selectors';
 import {
@@ -860,7 +861,8 @@ export function createSeedState(): DemoState {
 			courseId: student?.courseId ?? '',
 			courseName: student?.courseName ?? '',
 			alertType,
-			absencePercent: pct,
+			absenceCount: effectiveAbsenceCount(counts.absent, counts.late),
+			threshold: alertType === 'warning' ? 10 : 20,
 			seenAt: seed.slug === 'santiago-paz' ? demoTodayDate() : null,
 			createdAt: new Date(`${lastFlagDate}T09:30:00.000Z`),
 		});

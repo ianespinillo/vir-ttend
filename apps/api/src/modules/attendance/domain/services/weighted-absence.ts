@@ -24,8 +24,6 @@ export interface WeightedAbsenceInput {
 	/** Daily records only (no subject attendance rows). */
 	dailyRecords: readonly WeightedAttendanceRecord[];
 	workshopRecords: readonly WeightedAttendanceRecord[];
-	/** Dates the student's commission has a scheduled workshop. */
-	scheduledWorkshopDates: Iterable<Date | string>;
 }
 
 export interface WeightedAbsenceBreakdown {
@@ -40,7 +38,12 @@ export interface WeightedAbsenceResult {
 	breakdown: WeightedAbsenceBreakdown;
 }
 
-/** Calendar day (`YYYY-MM-DD`) of a date, read in UTC like the stored dates. */
+/**
+ * Calendar day (`YYYY-MM-DD`) of a `date` column value. Both daily and workshop
+ * records come from `date` columns: a string is already the day and a `Date` is
+ * UTC midnight (`new Date('YYYY-MM-DD')`), so the day is read in UTC and never
+ * depends on the server timezone.
+ */
 export function toDateKey(date: Date | string): string {
 	return typeof date === 'string'
 		? date.slice(0, 10)
@@ -78,20 +81,18 @@ function sumByDay(
 }
 
 /**
- * Weighted absence total of one student. A date is a contraturno day when the
- * commission schedules a workshop on it or the student has a workshop record
- * on it; there a daily absence weighs 1/2. Each date is capped at 1, the daily
- * shift being counted first.
+ * Weighted absence total of one student. A date is a contraturno day only when
+ * the workshop was held, that is, the student has a workshop record on it; there
+ * a daily absence weighs 1/2. With no workshop record (not held, or not
+ * scheduled) the student had a single shift and a daily absence weighs 1. Each
+ * date is capped at 1, the daily shift being counted first.
  */
 export function calculateWeightedAbsences(
 	input: WeightedAbsenceInput,
 ): WeightedAbsenceResult {
 	const contraturnoDays = new Set(
-		[...input.scheduledWorkshopDates].map(toDateKey),
+		input.workshopRecords.map((record) => toDateKey(record.date)),
 	);
-	for (const record of input.workshopRecords) {
-		contraturnoDays.add(toDateKey(record.date));
-	}
 
 	const dailyByDay = sumByDay(input.dailyRecords, (day) =>
 		contraturnoDays.has(day) ? CONTRATURNO_SHIFT_WEIGHT : DAILY_ABSENT_WEIGHT,

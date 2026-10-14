@@ -4,11 +4,14 @@ import { AttendanceAlert } from '../../../domain/entities/attendance-alert.entit
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IAttendanceAlertRepository } from '../../../domain/repositories/attendance-alert.repository.interface';
-import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { ThresholdCheckerService } from '../../../domain/services/threshold-checker.service';
-import { AttendanceCalculationService } from '../../services/attendance-calculation.service';
+import { StudentWeightedAbsencesService } from '../../services/student-weighted-absences.service';
 import { GenerateAlertCommand } from './generate-alert.command';
 
+/**
+ * Raises the absence alert of a student when the weighted absence count
+ * reaches 10, 20 or the student's cap, justified or not.
+ */
 @Injectable()
 export class GenerateAlertHandler {
 	constructor(
@@ -16,9 +19,7 @@ export class GenerateAlertHandler {
 		private readonly academicPort: IAcademicYearPort,
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
-		private readonly attendanceService: AttendanceCalculationService,
-		@Inject('IAttendanceRecordRepository')
-		private readonly attendanceRepo: IAttendanceRecordRepository,
+		private readonly weightedAbsences: StudentWeightedAbsencesService,
 		@Inject('IAttendanceAlertRepository')
 		private readonly alertRepo: IAttendanceAlertRepository,
 		private readonly em: EventEmitter2,
@@ -32,34 +33,26 @@ export class GenerateAlertHandler {
 			throw new BadRequestException(
 				'No match between course and academic year id found.',
 			);
-		const records = await this.attendanceRepo.findByStudentAndDateRange(
+		const { total, cap } = await this.weightedAbsences.getStudentWeightedAbsences(
 			command.studentId,
-			year.startDate,
-			year.endDate,
+			command.academicYearId,
 		);
-		const percent = await this.attendanceService.calculateAbscensePercent(
-			records,
-			year,
-			year.startDate,
-			year.endDate,
-		);
-		if (percent === 0) return;
 		const alerts = await this.alertRepo.findByStudentId(command.studentId);
 		const currentYearAlerts = alerts.filter(
 			(alert) => alert.academicYearId === command.academicYearId,
 		);
-		const newAlert = ThresholdCheckerService.check(percent, currentYearAlerts);
-		if (!newAlert) return;
-		await this.alertRepo.save(
-			AttendanceAlert.create({
-				academicYearId: command.academicYearId,
-				tenantId: command.tenantId,
-				alertType: newAlert,
-				absencePercent: percent,
-				courseId: command.courseId,
-				studentId: command.studentId,
-			}),
-		);
-		this.em.emit('alert.trigered', newAlert);
+		const reached = ThresholdCheckerService.check(total, cap, currentYearAlerts);
+		if (!reached) return;
+		const alert = AttendanceAlert.create({
+			academicYearId: command.academicYearId,
+			tenantId: command.tenantId,
+			alertType: reached.alertType,
+			absenceCount: total,
+			threshold: reached.threshold,
+			courseId: command.courseId,
+			studentId: command.studentId,
+		});
+		await this.alertRepo.save(alert);
+		this.em.emit('alert.triggered', alert);
 	}
 }

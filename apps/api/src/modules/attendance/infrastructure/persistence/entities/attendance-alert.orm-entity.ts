@@ -32,10 +32,21 @@ export class AttendanceAlertOrmEntity {
 		type: 'string',
 	})
 	alertType!: string;
+	/** Weighted absences when the alert was raised; fractional in 0.25 steps. */
 	@Property({
 		type: 'float4',
 	})
-	absencePercent!: number;
+	absenceCount!: number;
+	@Property({
+		type: 'integer',
+	})
+	threshold!: number;
+	/** Legacy percent-based alerts only; new alerts store `absenceCount`. */
+	@Property({
+		type: 'float4',
+		nullable: true,
+	})
+	absencePercent: number | null = null;
 	@Property({
 		type: 'uuid',
 		nullable: true,

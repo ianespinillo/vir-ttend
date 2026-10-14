@@ -1,37 +1,15 @@
-import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
+import { ATTENDANCE_STATUS } from '@repo/common';
 import { StudentWeightedAbsencesService } from '../../../src/modules/attendance/application/services/student-weighted-absences.service';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { WorkshopAttendanceRecord } from '../../../src/modules/attendance/domain/entities/workshop-attendance-record.entity';
-import { selectWorkshopDates } from '../../../src/modules/attendance/domain/services/workshop-dates';
-import { commission } from './workshop-attendance.fixtures';
 
 const utc = (day: string) => new Date(`${day}T00:00:00.000Z`);
 // 2026-03-09 is a Monday.
 const MON = utc('2026-03-09');
 const TUE = utc('2026-03-10');
 const WED = utc('2026-03-11');
-const THU = utc('2026-03-12');
 const FRI = utc('2026-03-13');
-const WEEK = [MON, TUE, WED, THU, FRI];
-
-describe('selectWorkshopDates', () => {
-	it('keeps the working days that fall on a workshop weekday', () => {
-		expect(
-			selectWorkshopDates(WEEK, [DAYOFWEEK.MONDAY, DAYOFWEEK.WEDNESDAY]),
-		).toEqual([MON, WED]);
-	});
-
-	it('returns nothing without workshop weekdays', () => {
-		expect(selectWorkshopDates(WEEK, [])).toEqual([]);
-	});
-
-	it('skips weekend dates', () => {
-		expect(selectWorkshopDates([utc('2026-03-14')], [DAYOFWEEK.MONDAY])).toEqual(
-			[],
-		);
-	});
-});
 
 describe('StudentWeightedAbsencesService', () => {
 	const year = AcademicYear.reconstitute(
@@ -75,8 +53,6 @@ describe('StudentWeightedAbsencesService', () => {
 	function build(opts: {
 		daily?: AttendanceRecord[];
 		workshop?: WorkshopAttendanceRecord[];
-		hasCommission?: boolean;
-		workshopDays?: DAYOFWEEK[];
 	}) {
 		const attendanceRepo = {
 			findDailyByStudentAndDateRange: jest
@@ -86,31 +62,16 @@ describe('StudentWeightedAbsencesService', () => {
 		const workshopRepo = {
 			findByStudentAndDateRange: jest.fn().mockResolvedValue(opts.workshop ?? []),
 		};
-		const commissionPort = {
-			findByStudent: jest
-				.fn()
-				.mockResolvedValue(
-					opts.hasCommission === false ? null : commission({ number: 2 }),
-				),
-			getWorkshopDays: jest.fn().mockResolvedValue(opts.workshopDays ?? []),
-		};
-		const schedulePort = {
-			getWorkingDaysOnPeriod: jest.fn().mockResolvedValue(WEEK),
-		};
 		const academicYearPort = { findById: jest.fn().mockResolvedValue(year) };
 		const service = new StudentWeightedAbsencesService(
 			attendanceRepo as never,
 			workshopRepo as never,
-			commissionPort as never,
-			schedulePort as never,
 			academicYearPort as never,
 		);
 		return {
 			service,
 			attendanceRepo,
 			workshopRepo,
-			commissionPort,
-			schedulePort,
 			academicYearPort,
 		};
 	}
@@ -123,7 +84,6 @@ describe('StudentWeightedAbsencesService', () => {
 				dailyRecord(WED, ATTENDANCE_STATUS.LATE),
 			],
 			workshop: [workshopRecord(MON, ATTENDANCE_STATUS.ABSENT)],
-			workshopDays: [DAYOFWEEK.MONDAY],
 		});
 
 		const result = await service.getStudentWeightedAbsences(
@@ -139,39 +99,8 @@ describe('StudentWeightedAbsencesService', () => {
 		});
 	});
 
-	it('halves a daily absence on a scheduled workshop day without a workshop record', async () => {
+	it('weighs a daily absence 1 on a scheduled workshop day that was not held', async () => {
 		const { service } = build({
-			daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
-			workshopDays: [DAYOFWEEK.MONDAY],
-		});
-
-		const result = await service.getStudentWeightedAbsences(
-			'student-1',
-			'year-1',
-		);
-
-		expect(result.total).toBe(0.5);
-	});
-
-	it('resolves workshop days from the commission course and number', async () => {
-		const { service, commissionPort, schedulePort } = build({
-			workshopDays: [DAYOFWEEK.TUESDAY],
-		});
-
-		const dates = await service.getWorkshopDates('student-1', 'year-1', MON, FRI);
-
-		expect(dates).toEqual([TUE]);
-		expect(commissionPort.getWorkshopDays).toHaveBeenCalledWith('course-1', 2);
-		expect(schedulePort.getWorkingDaysOnPeriod).toHaveBeenCalledWith(
-			MON,
-			FRI,
-			'year-1',
-		);
-	});
-
-	it('a student without a commission has no workshop days and full daily weight', async () => {
-		const { service, commissionPort } = build({
-			hasCommission: false,
 			daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
 		});
 
@@ -181,7 +110,20 @@ describe('StudentWeightedAbsencesService', () => {
 		);
 
 		expect(result.total).toBe(1);
-		expect(commissionPort.getWorkshopDays).not.toHaveBeenCalled();
+	});
+
+	it('halves a daily absence on a day with a workshop record', async () => {
+		const { service } = build({
+			daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+			workshop: [workshopRecord(MON, ATTENDANCE_STATUS.PRESENT)],
+		});
+
+		const result = await service.getStudentWeightedAbsences(
+			'student-1',
+			'year-1',
+		);
+
+		expect(result.total).toBe(0.5);
 	});
 
 	it('defaults the period to the academic year and honors an explicit one', async () => {

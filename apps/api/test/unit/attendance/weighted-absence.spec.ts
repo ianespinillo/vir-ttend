@@ -7,6 +7,7 @@ import {
 	MAX_DAILY_ABSENCE,
 	WeightedAbsenceInput,
 	calculateWeightedAbsences,
+	toDateKey,
 } from '../../../src/modules/attendance/domain/services/weighted-absence';
 
 const MONDAY = '2026-03-09';
@@ -16,7 +17,6 @@ const run = (input: Partial<WeightedAbsenceInput>) =>
 	calculateWeightedAbsences({
 		dailyRecords: [],
 		workshopRecords: [],
-		scheduledWorkshopDates: [],
 		...input,
 	});
 
@@ -61,11 +61,11 @@ describe('calculateWeightedAbsences', () => {
 		});
 	});
 
-	describe('contraturno day', () => {
-		it('halves the daily absence on a scheduled workshop day', () => {
+	describe('contraturno day (workshop held)', () => {
+		it('halves the daily absence on a day with a workshop record', () => {
 			const result = run({
 				dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
-				scheduledWorkshopDates: [MONDAY],
+				workshopRecords: [daily(ATTENDANCE_STATUS.PRESENT)],
 			});
 			expect(result.total).toBe(0.5);
 		});
@@ -73,9 +73,18 @@ describe('calculateWeightedAbsences', () => {
 		it('halves a justified daily absence too', () => {
 			const result = run({
 				dailyRecords: [daily(ATTENDANCE_STATUS.JUSTIFIED)],
-				scheduledWorkshopDates: [MONDAY],
+				workshopRecords: [daily(ATTENDANCE_STATUS.PRESENT)],
 			});
 			expect(result.total).toBe(0.5);
+		});
+
+		it('weighs a daily absence 1 when the workshop was not held (no record)', () => {
+			const result = run({
+				dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT, MONDAY)],
+				workshopRecords: [daily(ATTENDANCE_STATUS.PRESENT, TUESDAY)],
+			});
+			// Monday has no workshop record, so it is a single-shift day.
+			expect(result.total).toBe(1);
 		});
 
 		it('does not halve a late arrival', () => {
@@ -84,23 +93,34 @@ describe('calculateWeightedAbsences', () => {
 					daily(ATTENDANCE_STATUS.LATE, MONDAY),
 					daily(ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE, TUESDAY),
 				],
-				scheduledWorkshopDates: [MONDAY, TUESDAY],
+				workshopRecords: [
+					daily(ATTENDANCE_STATUS.PRESENT, MONDAY),
+					daily(ATTENDANCE_STATUS.PRESENT, TUESDAY),
+				],
 			});
 			expect(result.total).toBe(0.75);
-		});
-
-		it('is a contraturno day when the student has a workshop record, even unscheduled', () => {
-			const result = run({
-				dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
-				workshopRecords: [daily(ATTENDANCE_STATUS.PRESENT)],
-			});
-			expect(result.total).toBe(0.5);
 		});
 
 		it('matches Date and string spellings of the same calendar day', () => {
 			const result = run({
 				dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT, new Date(MONDAY))],
-				scheduledWorkshopDates: [new Date(`${MONDAY}T00:00:00.000Z`)],
+				workshopRecords: [
+					daily(ATTENDANCE_STATUS.PRESENT, `${MONDAY}T00:00:00.000Z`),
+				],
+			});
+			expect(result.total).toBe(0.5);
+		});
+
+		it('shares one key between a daily and a workshop record of the same day, whatever the spelling', () => {
+			// Local midnight of a UTC-3 server, built explicitly (an absolute instant).
+			const localMidnightUtcMinus3 = new Date(`${MONDAY}T00:00:00-03:00`);
+			expect(toDateKey(localMidnightUtcMinus3)).toBe(MONDAY);
+			expect(toDateKey(new Date(MONDAY))).toBe(MONDAY);
+			expect(toDateKey(MONDAY)).toBe(MONDAY);
+
+			const result = run({
+				dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT, MONDAY)],
+				workshopRecords: [daily(ATTENDANCE_STATUS.PRESENT, localMidnightUtcMinus3)],
 			});
 			expect(result.total).toBe(0.5);
 		});
@@ -123,7 +143,6 @@ describe('calculateWeightedAbsences', () => {
 			const result = run({
 				dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
 				workshopRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
-				scheduledWorkshopDates: [MONDAY],
 			});
 			expect(result.total).toBe(1);
 			expect(result.breakdown).toEqual({ daily: 0.5, workshop: 0.5 });
@@ -159,7 +178,6 @@ describe('calculateWeightedAbsences', () => {
 			const result = run({
 				dailyRecords: [daily(ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE)],
 				workshopRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
-				scheduledWorkshopDates: [MONDAY],
 			});
 			expect(result.total).toBe(1);
 		});
