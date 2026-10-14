@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SUBJECT_KIND } from '../constants/subject-kind.enum.js';
 
 export const createSubjectSchema = z.object({
 	courseId: z.string().uuid('Debe indicar un curso válido'),
@@ -8,6 +9,7 @@ export const createSubjectSchema = z.object({
 		.number()
 		.min(1, 'Las horas semanales deben ser al menos 1'),
 	teacherId: z.string().optional().or(z.literal('')),
+	kind: z.nativeEnum(SUBJECT_KIND).optional(),
 });
 
 export const updateSubjectSchema = createSubjectSchema.partial();

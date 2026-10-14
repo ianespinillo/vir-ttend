@@ -10,6 +10,7 @@ export class SubjectMapper {
 		ormEntity.name = entity.name;
 		ormEntity.area = entity.area;
 		ormEntity.weeklyHours = entity.weeklyHours;
+		ormEntity.kind = entity.kind;
 		ormEntity.courseId = entity.courseId;
 		ormEntity.course = em.getReference(CourseOrmEntity, entity.courseId);
 		ormEntity.teacherId = entity.teacherId;
@@ -24,6 +25,7 @@ export class SubjectMapper {
 			name: ormEntity.name,
 			area: ormEntity.area,
 			weeklyHours: ormEntity.weeklyHours,
+			kind: ormEntity.kind,
 			createdAt: ormEntity.createdAt,
 			updatedAt: ormEntity.updatedAt,
 			deletedAt: ormEntity.deletedAt ?? undefined,

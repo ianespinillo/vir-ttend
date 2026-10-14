@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ISubjectResponse } from '@repo/common';
+import { ISubjectResponse, SUBJECT_KIND, SubjectKindType } from '@repo/common';
 import { Subject } from '../../domain/entities/subject.entity';
 
 // subject.response.dto.ts
@@ -34,6 +34,13 @@ export class SubjectResponseDto implements ISubjectResponse {
 	weeklyHours: number;
 
 	@ApiProperty({
+		enum: SUBJECT_KIND,
+		description: 'Tipo de materia: teórica o de taller.',
+		example: SUBJECT_KIND.THEORY,
+	})
+	kind: SubjectKindType;
+
+	@ApiProperty({
 		type: String,
 		description: 'ID del docente a cargo de la materia.',
 		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
@@ -53,6 +60,7 @@ export class SubjectResponseDto implements ISubjectResponse {
 		this.name = subject.name;
 		this.area = subject.area;
 		this.weeklyHours = subject.weeklyHours;
+		this.kind = subject.kind;
 		this.teacherId = subject.teacherId;
 	}
 }

@@ -1,9 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { DAYOFWEEK } from '@repo/common';
+import { COMMISSION_NUMBERS, CommissionNumber, DAYOFWEEK } from '@repo/common';
 import { Type } from 'class-transformer';
 import {
 	IsArray,
 	IsEnum,
+	IsIn,
 	IsNotEmpty,
 	IsOptional,
 	IsString,
@@ -46,6 +47,18 @@ export class ScheduleSlotRequestDto {
 	@IsNotEmpty()
 	@IsString()
 	endTime!: string;
+
+	@ApiPropertyOptional({
+		type: Number,
+		enum: COMMISSION_NUMBERS,
+		nullable: true,
+		description:
+			'Comisión de taller a la que aplica el bloque (1 o 2). Si se omite o es null aplica a ambas comisiones. Solo válido en materias de taller.',
+		example: 1,
+	})
+	@IsOptional()
+	@IsIn(COMMISSION_NUMBERS)
+	commissionNumber?: CommissionNumber | null;
 }
 
 export class SetScheduleRequestDto {

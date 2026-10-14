@@ -62,6 +62,34 @@ describe('EnrollStudentHandler', () => {
 		expect(saved.status).toBe(STUDENTSTATUS.ACTIVE);
 	});
 
+	it('should clear the workshop commission when the course changes', async () => {
+		const withCommission = Student.reconstitute({
+			id: 'student-id',
+			tenantId: 'tenant-id',
+			courseId: 'course-id',
+			firstName: 'Juan',
+			lastName: 'Garcia',
+			documentNumber: '12345678',
+			birthDate: new Date('2010-05-15'),
+			tutorName: 'Maria Garcia',
+			tutorPhone: '1123456789',
+			status: STUDENTSTATUS.ACTIVE,
+			workshopCommissionId: 'commission-1',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		studentRepository.findById.mockResolvedValue(withCommission);
+		courseRepository.findById.mockResolvedValue(mockCourse);
+
+		await handler.execute(
+			new EnrollStudentCommand('student-id', 'new-course-id'),
+		);
+
+		const saved = studentRepository.save.mock.calls[0][0];
+		expect(saved.courseId).toBe('new-course-id');
+		expect(saved.workshopCommissionId).toBeNull();
+	});
+
 	it('should reactivate an inactive student on enroll', async () => {
 		const inactiveStudent = Student.reconstitute({
 			id: 'student-id',

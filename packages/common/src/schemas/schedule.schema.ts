@@ -14,6 +14,10 @@ export const scheduleSlotSchema = z
 		endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, {
 			message: 'Hora de fin inválida (HH:mm)',
 		}),
+		commissionNumber: z
+			.union([z.literal(1), z.literal(2)])
+			.nullable()
+			.optional(),
 	})
 	.refine((data) => data.startTime < data.endTime, {
 		message: 'La hora de fin debe ser posterior a la hora de inicio',
