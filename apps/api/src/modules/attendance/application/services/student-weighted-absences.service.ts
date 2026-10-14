@@ -11,6 +11,8 @@ import {
 	toDateKey,
 } from '../../domain/services/weighted-absence';
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export interface AbsencePeriod {
 	from: Date;
 	to: Date;
@@ -54,15 +56,22 @@ export class StudentWeightedAbsencesService {
 	 * as a contraturno day when the student's commission has a workshop scheduled
 	 * that weekday: the daily attendance is usually saved before the workshop one,
 	 * and weighing that absence 1 meanwhile could cross a threshold and raise a
-	 * permanent alert. Other days stay held-based. The date comes from the stored
-	 * record, never the clock, so the evening shift cannot shift the day.
+	 * permanent alert. Only recent trigger dates qualify (today or yesterday in
+	 * UTC, yesterday covering the evening-shift rollover): an edit of an older day
+	 * stays held-based, since its workshop either was taken already or never will
+	 * be. The day itself comes from the stored record; `now` only bounds how
+	 * recent it must be.
 	 */
 	getStudentWeightedAbsencesForAlert(
 		studentId: string,
 		academicYearId: string,
 		triggerDate?: string,
+		now: Date = new Date(),
 	): Promise<StudentWeightedAbsences> {
-		return this.compute(studentId, academicYearId, undefined, triggerDate);
+		const yesterday = toDateKey(new Date(now.getTime() - MS_PER_DAY));
+		const recentTrigger =
+			triggerDate && toDateKey(triggerDate) >= yesterday ? triggerDate : undefined;
+		return this.compute(studentId, academicYearId, undefined, recentTrigger);
 	}
 
 	private async compute(

@@ -1,3 +1,4 @@
+import { RequestContext } from '@mikro-orm/core';
 import { Logger } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
@@ -13,6 +14,8 @@ describe('AttendanceRegisteredListener', () => {
 	let listener: AttendanceRegisteredListener;
 	let academicYearPort: MockProxy<IAcademicYearPort>;
 	let generateAlertHandler: MockProxy<GenerateAlertHandler>;
+	let em: { name: string; fork: jest.Mock };
+	let forkedEm: object;
 
 	const year = AcademicYear.reconstitute(
 		'year-1',
@@ -27,9 +30,12 @@ describe('AttendanceRegisteredListener', () => {
 		generateAlertHandler = mock<GenerateAlertHandler>();
 		academicYearPort.findByCourseId.mockResolvedValue(year);
 		generateAlertHandler.execute.mockResolvedValue(undefined);
+		forkedEm = { name: 'default' };
+		em = { name: 'default', fork: jest.fn().mockReturnValue(forkedEm) };
 		listener = new AttendanceRegisteredListener(
 			academicYearPort,
 			generateAlertHandler,
+			em as never,
 		);
 	});
 
@@ -114,6 +120,30 @@ describe('AttendanceRegisteredListener', () => {
 		academicYearPort.findByCourseId.mockResolvedValue(null);
 		const event = makeEvent();
 		await expect(listener.attendanceRegistered(event)).resolves.toBeUndefined();
+	});
+
+	it('evaluates the alert in its own MikroORM context, isolated from the request unit of work', async () => {
+		let contextEm: unknown;
+		generateAlertHandler.execute.mockImplementation(async () => {
+			contextEm = RequestContext.getEntityManager();
+		});
+
+		await listener.attendanceRegistered(makeEvent());
+
+		expect(em.fork).toHaveBeenCalledWith(
+			expect.objectContaining({ useContext: true }),
+		);
+		expect(contextEm).toBe(forkedEm);
+		expect(RequestContext.getEntityManager()).toBeUndefined();
+	});
+
+	it('forks a fresh context per event, even after a failed evaluation', async () => {
+		generateAlertHandler.execute.mockRejectedValueOnce(new Error('unique'));
+		const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+		await listener.attendanceRegistered(makeEvent());
+		await listener.attendanceRegistered(makeEvent());
+		expect(em.fork).toHaveBeenCalledTimes(2);
+		error.mockRestore();
 	});
 
 	it('logs and swallows errors of the GenerateAlertHandler', async () => {

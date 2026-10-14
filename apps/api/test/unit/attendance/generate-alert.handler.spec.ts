@@ -254,6 +254,10 @@ describe('GenerateAlertHandler', () => {
 
 	describe('with the real weighted count', () => {
 		// 2026-03-09 is a Monday: today in these tests.
+		beforeEach(() => {
+			jest.useFakeTimers({ now: new Date('2026-03-09T15:00:00.000Z') });
+		});
+		afterEach(() => jest.useRealTimers());
 		const day = (d: string) => new Date(`${d}T00:00:00.000Z`);
 		const record = (date: Date, status: string) => ({ date, status });
 

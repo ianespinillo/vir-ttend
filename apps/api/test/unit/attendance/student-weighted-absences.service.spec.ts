@@ -136,9 +136,7 @@ describe('StudentWeightedAbsencesService', () => {
 
 	describe('for alert evaluation', () => {
 		const commission = { courseId: 'course-1', number: 1 };
-		const today = (day: Date) => ({
-			now: new Date(day.getTime() + 12 * 3600_000),
-		});
+		const noonOf = (day: Date) => new Date(day.getTime() + 12 * 3600_000);
 		afterEach(() => jest.useRealTimers());
 
 		it('weighs a daily absence on the trigger date 0.5 when a workshop is scheduled that weekday and not taken yet', async () => {
@@ -152,6 +150,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
+				noonOf(MON),
 			);
 
 			expect(result.total).toBe(0.5);
@@ -168,6 +167,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-10',
+				noonOf(TUE),
 			);
 
 			expect(result.total).toBe(1);
@@ -184,6 +184,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
+				noonOf(MON),
 			);
 
 			expect(result.total).toBe(1);
@@ -201,6 +202,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
+				noonOf(MON),
 			);
 
 			expect(result.total).toBe(1);
@@ -237,9 +239,45 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
+				noonOf(MON),
 			);
 
 			expect(result.total).toBe(0.5);
+		});
+
+		it('also weighs 0.5 when the trigger date is yesterday (evening-shift UTC rollover)', async () => {
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+				'2026-03-09',
+				noonOf(TUE),
+			);
+
+			expect(result.total).toBe(0.5);
+		});
+
+		it('keeps a trigger date 3 days old held-based, without asking for the commission', async () => {
+			const { service, commissionPort } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+				'2026-03-09',
+				noonOf(utc('2026-03-12')),
+			);
+
+			expect(result.total).toBe(1);
+			expect(commissionPort.findByStudent).not.toHaveBeenCalled();
 		});
 
 		it('leaves the report total purely held-based', async () => {
