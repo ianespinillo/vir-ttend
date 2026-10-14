@@ -151,4 +151,89 @@ describe('XlsxStudentImportFileAdapter', () => {
 		]);
 		expect(wb.worksheets).toHaveLength(2);
 	});
+
+	describe('template styling', () => {
+		const load = async () => {
+			const wb = new Workbook();
+			await wb.xlsx.load(
+				(await adapter.buildTemplate()) as unknown as ArrayBuffer,
+			);
+			return wb;
+		};
+
+		it('styles the header row and freezes it', async () => {
+			const sheet = (await load()).getWorksheet('Alumnos');
+			const cell = sheet?.getCell('A1');
+
+			expect(cell?.font?.bold).toBe(true);
+			expect(cell?.font?.color?.argb).toBe('FFFFFFFF');
+			expect(cell?.fill).toMatchObject({ fgColor: { argb: 'FF1F4E78' } });
+			expect(sheet?.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
+		});
+
+		it('tints the optional column header differently', async () => {
+			const sheet = (await load()).getWorksheet('Alumnos');
+			const required = sheet?.getCell('A1').fill as { fgColor: { argb: string } };
+			const optional = sheet?.getCell('G1').fill as { fgColor: { argb: string } };
+
+			expect(optional.fgColor.argb).not.toBe(required.fgColor.argb);
+		});
+
+		it('pre-formats input rows without values', async () => {
+			const sheet = (await load()).getWorksheet('Alumnos');
+
+			expect(sheet?.getCell('C2').numFmt).toBe('@');
+			expect(sheet?.getCell('D2').numFmt).toBe('dd/mm/yyyy');
+			expect(sheet?.getCell('C101').numFmt).toBe('@');
+			expect(sheet?.getCell('A2').border?.top?.style).toBe('thin');
+			expect(sheet?.getCell('A2').value).toBeNull();
+		});
+
+		it('validates the birth date and DNI columns', async () => {
+			const sheet = (await load()).getWorksheet('Alumnos');
+
+			expect(sheet?.getCell('D2').dataValidation).toMatchObject({
+				type: 'date',
+				errorStyle: 'warning',
+			});
+			expect(sheet?.getCell('C2').dataValidation).toMatchObject({
+				type: 'textLength',
+				errorStyle: 'warning',
+			});
+		});
+
+		it('documents every column with an example in the help sheet', async () => {
+			const help = (await load()).getWorksheet('Instrucciones');
+			const rows: string[][] = [];
+			help?.eachRow((row) => {
+				rows.push([1, 2, 3, 4].map((c) => String(row.getCell(c).value ?? '')));
+			});
+			const headerIndex = rows.findIndex((r) => r[0] === 'Columna');
+
+			expect(rows[headerIndex]).toEqual([
+				'Columna',
+				'Obligatoria',
+				'Formato',
+				'Ejemplo',
+			]);
+			const guide = rows.slice(headerIndex + 1);
+			expect(guide.map((r) => r[0])).toEqual([...STUDENT_IMPORT_HEADERS]);
+			expect(guide.every((r) => r[3] !== '')).toBe(true);
+		});
+
+		it('keeps a filled template parseable', async () => {
+			const wb = await load();
+			const sheet = wb.getWorksheet('Alumnos');
+			if (!sheet) throw new Error('template has no "Alumnos" sheet');
+			validRow().forEach((value, i) => {
+				sheet.getCell(2, i + 1).value = value as string;
+			});
+			const buffer = Buffer.from(await wb.xlsx.writeBuffer());
+
+			const rows = await adapter.parse(buffer);
+
+			expect(rows).toHaveLength(1);
+			expect(rows[0]).toMatchObject({ rowNumber: 2, documentNumber: '45233210' });
+		});
+	});
 });
