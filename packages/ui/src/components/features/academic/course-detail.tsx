@@ -19,7 +19,7 @@ import {
 	UserCheck,
 	Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { formatShift, localizeCourseName } from '../../../lib/shift';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
@@ -44,6 +44,8 @@ export interface CourseDetailProps {
 	canManage?: boolean;
 	studentsPath?: string;
 	attendancePath?: string;
+	/** Optional "Comisiones" tab content (workshop commissions); shown only to managers. */
+	commissionsTab?: ReactNode;
 }
 
 export function CourseDetail({
@@ -61,6 +63,7 @@ export function CourseDetail({
 	canManage = false,
 	studentsPath,
 	attendancePath,
+	commissionsTab,
 }: CourseDetailProps) {
 	const [scheduleModalState, setScheduleModalState] = useState<{
 		open: boolean;
@@ -75,6 +78,7 @@ export function CourseDetail({
 				: 'Inicial';
 
 	const shiftLabel = formatShift(course.shift);
+	const showCommissions = canManage && Boolean(commissionsTab);
 
 	const courseTitle =
 		localizeCourseName(course.fullName) ||
@@ -186,12 +190,17 @@ export function CourseDetail({
 			</Card>
 
 			<Tabs defaultValue="overview" className="w-full">
-				<TabsList className="grid w-full grid-cols-5 max-w-xl">
+				<TabsList
+					className={`grid w-full max-w-xl ${showCommissions ? 'grid-cols-6' : 'grid-cols-5'}`}
+				>
 					<TabsTrigger value="overview">Resumen</TabsTrigger>
 					<TabsTrigger value="subjects">Materias</TabsTrigger>
 					<TabsTrigger value="schedule">Horario</TabsTrigger>
 					<TabsTrigger value="students">Estudiantes</TabsTrigger>
 					<TabsTrigger value="attendance">Asistencia</TabsTrigger>
+					{showCommissions && (
+						<TabsTrigger value="commissions">Comisiones</TabsTrigger>
+					)}
 				</TabsList>
 
 				<TabsContent value="overview" className="pt-4 space-y-6">
@@ -323,6 +332,12 @@ export function CourseDetail({
 						</CardContent>
 					</Card>
 				</TabsContent>
+
+				{showCommissions && (
+					<TabsContent value="commissions" className="pt-4">
+						{commissionsTab}
+					</TabsContent>
+				)}
 			</Tabs>
 
 			{canManage && (

@@ -6,6 +6,7 @@ export * from './academic/academic-year.response.type.js';
 export * from './academic/course.response.type.js';
 export * from './academic/schedule-slot.response.type.js';
 export * from './academic/subject.response.type.js';
+export * from './academic/workshop-commission.response.type.js';
 export * from './academic/student.response.type.js';
 export * from './academic/student-detail.response.type.js';
 export * from './auth/login.response.type.js';

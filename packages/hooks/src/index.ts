@@ -52,6 +52,11 @@ export * from './features/academic/use-delete-subject';
 export * from './features/academic/use-schedule';
 export * from './features/academic/use-set-schedule';
 export * from './features/academic/use-users-by-role';
+export * from './features/academic/use-workshop-commissions';
+export * from './features/academic/use-create-workshop-commissions';
+export * from './features/academic/use-assign-workshop-preceptor';
+export * from './features/academic/use-move-student-to-commission';
+export * from './features/academic/use-regenerate-workshop-commissions';
 
 // courses
 export * from './features/courses/use-courses';

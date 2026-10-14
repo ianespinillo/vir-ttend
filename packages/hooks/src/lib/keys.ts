@@ -28,6 +28,10 @@ export const queryKeys = {
 	schedule: {
 		byCourse: (courseId: string) => ['schedule', 'course', courseId] as const,
 	},
+	workshopCommissions: {
+		byCourse: (courseId: string) =>
+			['workshop-commissions', 'course', courseId] as const,
+	},
 	students: {
 		list: (filters?: Record<string, unknown>) =>
 			['students', 'list', filters ?? {}] as const,

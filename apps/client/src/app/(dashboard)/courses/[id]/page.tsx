@@ -9,16 +9,21 @@ import type {
 } from '@repo/common';
 import {
 	useAcademicYears,
+	useAssignWorkshopPreceptor,
 	useCourse,
 	useCreateSubject,
+	useCreateWorkshopCommissions,
 	useDeleteCourse,
 	useDeleteSubject,
+	useMoveStudentToCommission,
+	useRegenerateWorkshopCommissions,
 	useSchedule,
 	useSetSchedule,
 	useSubjects,
 	useUpdateCourse,
 	useUpdateSubject,
 	useUsersByRole,
+	useWorkshopCommissions,
 } from '@repo/hooks';
 import {
 	CourseDetail,
@@ -31,6 +36,7 @@ import {
 	LoadingSpinner,
 	PageHeader,
 	SubjectForm,
+	WorkshopCommissionsPanel,
 	localizeCourseName,
 } from '@repo/ui';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -56,6 +62,8 @@ export default function CourseDetailPage() {
 	const { data: academicYears } = useAcademicYears();
 	const { data: preceptors } = useUsersByRole('preceptor');
 	const { data: teachers } = useUsersByRole('teacher');
+	const { data: commissions, isLoading: commissionsLoading } =
+		useWorkshopCommissions(courseId, isAdmin);
 
 	const updateCourseMutation = useUpdateCourse();
 	const deleteCourseMutation = useDeleteCourse();
@@ -63,6 +71,10 @@ export default function CourseDetailPage() {
 	const updateSubjectMutation = useUpdateSubject();
 	const deleteSubjectMutation = useDeleteSubject();
 	const setScheduleMutation = useSetSchedule();
+	const createCommissionsMutation = useCreateWorkshopCommissions();
+	const regenerateCommissionsMutation = useRegenerateWorkshopCommissions();
+	const assignPreceptorMutation = useAssignWorkshopPreceptor();
+	const moveStudentMutation = useMoveStudentToCommission();
 
 	const [subjectModalState, setSubjectModalState] = useState<{
 		open: boolean;
@@ -200,6 +212,31 @@ export default function CourseDetailPage() {
 		}
 	};
 
+	const runCommissionAction = async (
+		action: () => Promise<unknown>,
+		successMessage: string,
+		fallbackError: string,
+	) => {
+		try {
+			await action();
+			toast.success(successMessage);
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message || errorObj?.message || fallbackError,
+			);
+		}
+	};
+
+	const commissionsBusy =
+		createCommissionsMutation.isPending ||
+		regenerateCommissionsMutation.isPending ||
+		assignPreceptorMutation.isPending ||
+		moveStudentMutation.isPending;
+
 	if (isLoading) {
 		return (
 			<div className="flex h-64 items-center justify-center">
@@ -264,6 +301,54 @@ export default function CourseDetailPage() {
 				canManage={isAdmin}
 				studentsPath={`/students?courseId=${course.id}`}
 				attendancePath={`/attendance?courseId=${course.id}`}
+				commissionsTab={
+					isAdmin ? (
+						<WorkshopCommissionsPanel
+							commissions={commissions ?? []}
+							preceptors={preceptors?.items || []}
+							isLoading={commissionsLoading}
+							isBusy={commissionsBusy}
+							onCreate={() =>
+								runCommissionAction(
+									() => createCommissionsMutation.mutateAsync(courseId),
+									'Comisiones creadas exitosamente',
+									'Error al crear las comisiones',
+								)
+							}
+							onAssignPreceptor={(commissionId, preceptorId) =>
+								runCommissionAction(
+									() =>
+										assignPreceptorMutation.mutateAsync({
+											courseId,
+											commissionId,
+											preceptorId,
+										}),
+									'Preceptor de la comisión actualizado',
+									'Error al asignar el preceptor',
+								)
+							}
+							onMoveStudent={(commissionId, studentId) =>
+								runCommissionAction(
+									() =>
+										moveStudentMutation.mutateAsync({
+											courseId,
+											commissionId,
+											studentId,
+										}),
+									'Estudiante movido de comisión',
+									'Error al mover al estudiante',
+								)
+							}
+							onRegenerate={() =>
+								runCommissionAction(
+									() => regenerateCommissionsMutation.mutateAsync(courseId),
+									'Reparto regenerado exitosamente',
+									'Error al regenerar el reparto',
+								)
+							}
+						/>
+					) : undefined
+				}
 			/>
 
 			{isAdmin && (
