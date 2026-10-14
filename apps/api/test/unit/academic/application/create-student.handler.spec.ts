@@ -4,6 +4,7 @@ import { STUDENTSTATUS } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { CreateStudentCommand } from '../../../../src/modules/academic/application/commands/create-student/create-student.command';
 import { CreateStudentHandler } from '../../../../src/modules/academic/application/commands/create-student/create-student.handler';
+import { WorkshopPlacementService } from '../../../../src/modules/academic/application/services/workshop-placement.service';
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
 
@@ -11,11 +12,17 @@ describe('CreateStudentHandler', () => {
 	let handler: CreateStudentHandler;
 	let studentRepository: MockProxy<IStudentRepository>;
 	let eventEmitter: MockProxy<EventEmitter2>;
+	let placement: MockProxy<WorkshopPlacementService>;
 
 	beforeEach(() => {
 		studentRepository = mock<IStudentRepository>();
 		eventEmitter = mock<EventEmitter2>();
-		handler = new CreateStudentHandler(studentRepository, eventEmitter);
+		placement = mock<WorkshopPlacementService>();
+		handler = new CreateStudentHandler(
+			studentRepository,
+			eventEmitter,
+			placement,
+		);
 	});
 
 	it('should create student when document is unique in tenant', async () => {
@@ -34,6 +41,9 @@ describe('CreateStudentHandler', () => {
 			),
 		);
 
+		expect(placement.placeNewStudent).toHaveBeenCalledWith(
+			expect.objectContaining({ courseId: 'course-id' }),
+		);
 		expect(studentRepository.save).toHaveBeenCalledTimes(1);
 		expect(eventEmitter.emit).toHaveBeenCalledWith(
 			'student.created',

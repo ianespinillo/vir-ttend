@@ -3,14 +3,18 @@ import { StudentAdapter } from '../attendance/infrastructure/adapters/student.ad
 import { IdentityPersistenceModule } from '../identity/infrastructure/persistence/identity.persistence.module';
 import { AssignPreceptorHandler } from './application/commands/assign-preceptor/assign-preceptor.handler';
 import { AssignTeacherHandler } from './application/commands/assign-teaher/assign-teacher.handler';
+import { AssignWorkshopPreceptorHandler } from './application/commands/assign-workshop-preceptor/assign-workshop-preceptor.handler';
 import { CreateAcademicYearHandler } from './application/commands/create-academic-year/create-academic-year.handler';
 import { CreateCourseHandler } from './application/commands/create-course/create-course.handler';
 import { CreateStudentHandler } from './application/commands/create-student/create-student.handler';
 import { CreateSubjectHandler } from './application/commands/create-subject/create-subject.handler';
+import { CreateWorkshopCommissionsHandler } from './application/commands/create-workshop-commissions/create-workshop-commissions.handler';
 import { DeleteCourseHandler } from './application/commands/delete-course/delete-course.handler';
 import { DeleteStudentHandler } from './application/commands/delete-student/delete-student.handler';
 import { DeleteSubjectHandler } from './application/commands/delete-subject/delete-subject.handler';
 import { EnrollStudentHandler } from './application/commands/enroll-student/enroll-student.handler';
+import { MoveStudentToCommissionHandler } from './application/commands/move-student-to-commission/move-student-to-commission.handler';
+import { RegenerateWorkshopCommissionsHandler } from './application/commands/regenerate-workshop-commissions/regenerate-workshop-commissions.handler';
 import { SetScheduleHandler } from './application/commands/set-schedule/set-schedule.handler';
 import { TransferStudentHandler } from './application/commands/transer-student/transer-student.handler';
 import { UpdateAcademicYearHandler } from './application/commands/update-academic-year/update-academic-year.handler';
@@ -30,16 +34,20 @@ import { GetStudentsByGradeHandler } from './application/queries/get-students-by
 import { GetSubjectStudentsHandler } from './application/queries/get-subject-students/get-subject-students.handler';
 import { GetSubjectsByCourseHandler } from './application/queries/get-subjects-by-course/get-subjects-by-course.handler';
 import { GetTeacherSubjectsQueryHandler } from './application/queries/get-teacher-subjects/get-teacher-subjects.handler';
+import { GetWorkshopCommissionsHandler } from './application/queries/get-workshop-commissions/get-workshop-commissions.handler';
 import { SearchStudentsHandler } from './application/queries/search-students/search-students.handler';
+import { WorkshopPlacementService } from './application/services/workshop-placement.service';
 import { CourseService } from './domain/services/course.service';
 import { ScheduleService } from './domain/services/schedule.service';
 import { MembershipAdapter } from './infrastructure/adapters/membership.adapter';
+import { MikroOrmUnitOfWorkAdapter } from './infrastructure/adapters/unit-of-work.adapter';
 import { AcademicPersistenceModule } from './infrastructure/persistence/academic.persistence.module';
 import { AcademicYearsController } from './presentation/controllers/academic-year.controller';
 import { CoursesController } from './presentation/controllers/course.controller';
 import { ScheduleController } from './presentation/controllers/schedule-slot.controller';
 import { StudentsController } from './presentation/controllers/students.controller';
 import { SubjectsController } from './presentation/controllers/subjects.controller';
+import { WorkshopCommissionsController } from './presentation/controllers/workshop-commissions.controller';
 
 @Module({
 	exports: [ScheduleService],
@@ -50,7 +58,15 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 			provide: 'IMembershipPort',
 			useClass: MembershipAdapter,
 		},
+		{
+			provide: 'IUnitOfWorkPort',
+			useClass: MikroOrmUnitOfWorkAdapter,
+		},
 		// Handler
+		AssignWorkshopPreceptorHandler,
+		CreateWorkshopCommissionsHandler,
+		MoveStudentToCommissionHandler,
+		RegenerateWorkshopCommissionsHandler,
 		AssignPreceptorHandler,
 		AssignTeacherHandler,
 		CreateAcademicYearHandler,
@@ -81,6 +97,7 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 		GetStudentHandler,
 		GetStudentsByCourseHandler,
 		GetStudentsByGradeHandler,
+		GetWorkshopCommissionsHandler,
 		GetTeacherSubjectsQueryHandler,
 		SearchStudentsHandler,
 
@@ -91,6 +108,7 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 		// Servicio de dominio
 		ScheduleService,
 		CourseService,
+		WorkshopPlacementService,
 	],
 	controllers: [
 		AcademicYearsController,
@@ -98,6 +116,7 @@ import { SubjectsController } from './presentation/controllers/subjects.controll
 		ScheduleController,
 		SubjectsController,
 		StudentsController,
+		WorkshopCommissionsController,
 	],
 })
 export class AcademicModule {}
