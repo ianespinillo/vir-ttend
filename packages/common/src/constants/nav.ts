@@ -149,6 +149,8 @@ export function allowedRolesForPathname(
 	if (pathname.startsWith('/attendance/workshop'))
 		return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/attendance/subject')) return [ROLES.TEACHER];
+	if (pathname.startsWith('/attendance/student'))
+		return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/alerts')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/reports')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/me/announcements'))
