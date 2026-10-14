@@ -79,3 +79,43 @@ describe('WorkshopCommissionAdapter.getWorkshopDays', () => {
 		expect(days).not.toContain(DAYOFWEEK.THURSDAY);
 	});
 });
+
+describe('WorkshopCommissionAdapter.findByStudent', () => {
+	const build = (workshopCommissionId: string | null) => {
+		const commissionRepository = {
+			findById: jest.fn().mockResolvedValue({
+				id: 'commission-1',
+				tenantId: 'tenant-1',
+				courseId: 'course-1',
+				number: 2,
+				preceptorId: null,
+				code: () => '142',
+			}),
+		};
+		const adapter = new WorkshopCommissionAdapter(
+			commissionRepository as never,
+			{
+				findById: jest
+					.fn()
+					.mockResolvedValue({ yearNumber: 1, division: 4, isActive: true }),
+			} as never,
+			{ findById: jest.fn().mockResolvedValue({ workshopCommissionId }) } as never,
+			{} as never,
+			{} as never,
+		);
+		return { adapter, commissionRepository };
+	};
+
+	it('resolves the commission the student belongs to', async () => {
+		const { adapter, commissionRepository } = build('commission-1');
+		const info = await adapter.findByStudent('student-1');
+		expect(commissionRepository.findById).toHaveBeenCalledWith('commission-1');
+		expect(info).toMatchObject({ courseId: 'course-1', number: 2 });
+	});
+
+	it('returns null for a student without a commission', async () => {
+		const { adapter, commissionRepository } = build(null);
+		expect(await adapter.findByStudent('student-1')).toBeNull();
+		expect(commissionRepository.findById).not.toHaveBeenCalled();
+	});
+});

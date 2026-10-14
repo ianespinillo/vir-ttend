@@ -30,6 +30,7 @@ import { GetWorkshopAttendanceQueryHandler } from './application/queries/get-wor
 import { AttendanceCalculationService } from './application/services/attendance-calculation.service';
 import { AttendanceCopyService } from './application/services/attendance-copy.service';
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
+import { StudentWeightedAbsencesService } from './application/services/student-weighted-absences.service';
 import { LatePolicyService } from './domain/services/late-policy.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';
@@ -114,6 +115,7 @@ import { WorkshopAttendanceController } from './presentation/controllers/worksho
 		AttendanceCopyService,
 		LatePolicyService,
 		CourseSnapshotBuilderService,
+		StudentWeightedAbsencesService,
 	],
 	controllers: [
 		AlertsController,

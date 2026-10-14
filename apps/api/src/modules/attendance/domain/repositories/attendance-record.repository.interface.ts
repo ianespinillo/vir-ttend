@@ -21,6 +21,13 @@ export interface IAttendanceRecordRepository {
 		date: Date,
 	): Promise<AttendanceRecord[]>;
 
+	/** Daily records only (no subject) of a student, `from` to `to` inclusive. */
+	findDailyByStudentAndDateRange(
+		studentId: string,
+		from: Date,
+		to: Date,
+	): Promise<AttendanceRecord[]>;
+
 	findByStudentAndCourseAndDate(
 		courseId: string,
 		studentId: string,

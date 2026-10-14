@@ -136,6 +136,19 @@ export class AttendanceRecordRepository
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
 	}
 
+	async findDailyByStudentAndDateRange(
+		studentId: string,
+		from: Date,
+		to: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			studentId,
+			subjectId: null,
+			date: { $gte: from, $lte: to },
+		});
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
 	async findByCourseAndRange(
 		courseId: string,
 		from: Date,
