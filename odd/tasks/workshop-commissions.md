@@ -45,7 +45,7 @@ Support the technical-school workshop (taller): each course is split into commis
 ## Checklist
 - [x] T1 (route: delegated writer; commit `0cf0f6e`): Domain + persistence — subject type (theory | workshop); WorkshopCommission entity (course, number 1|2, preceptor, students) + migration; optional commission on schedule slots; schedule validation per commission (overlap + weeklyHours).
 - [x] T2 (route: delegated writer; commit `e7ecbe3`): Commission management — create the 2 commissions with an alphabetical 50/50 suggestion, persist; assign preceptor; move a student; explicit regenerate; new students join the smaller commission.
-- [ ] T3a (route: delegated writer): Workshop attendance API — record/list per commission per day, taken by the commission preceptor (or ADMIN); separate table.
+- [x] T3a (route: delegated writer; commit `fd14aed`): Workshop attendance API — record/list per commission per day, taken by the commission preceptor (or ADMIN); separate table.
 - [ ] T3b: Weighted totals — workshop absence counts 0.5 in student absence totals, thresholds/alerts and reports (fractional values). Map the totals code first.
 - [ ] T4: Web UI — subject type in the subject form, commission selector on workshop slots, commissions screen in the course, workshop attendance screen for the preceptor.
 - [ ] T5: Mobile — workshop attendance in the app (after web).
@@ -63,3 +63,5 @@ Support the technical-school workshop (taller): each course is split into commis
 - Found on the way, separate commit `db895f3`: PUT /courses/:id/preceptor passed (id, preceptorId) to AssignPreceptorCommand(preceptorId, courseId) → always "Course not found". No client calls it today, so no production impact.
 - T2 decision gaps: regenerate without commissions → 404; preceptor check does not filter inactive memberships (existsAndHasRole); concurrent create → 500 from the unique constraint instead of 409.
 - T2 review: medium, 1 lens, approved and acknowledged (lineage review-bafe0560b1e074da). Advisory: UoW atomicity untested, concurrent create → 500, assign-preceptor fix untested.
+- T3a: table `workshop_attendance_records` (types match `attendanceRecord`; unique (commission, student, date); FK commission cascade). Endpoints POST /attendance/workshop, POST /attendance/workshop/all, GET /attendance/workshop?commissionId&date, GET /attendance/workshop/my-commissions?date (hasWorkshopToday from workshop subject slots). Access: commission preceptor or ADMIN. No events, no totals. Checks: 93 suites / 552 API tests, ts:check 9/9, lint 5 known warnings. Migration not run (no DB). Writer stalled once (stream watchdog) and was resumed.
+- T3a gaps: justify not implemented (justification is 1:1 with attendanceRecord); inactive students drop from the read view.
