@@ -45,10 +45,11 @@ Support the technical-school workshop (taller): each course is split into commis
 ## Checklist
 - [x] T1 (route: delegated writer; commit `0cf0f6e`): Domain + persistence — subject type (theory | workshop); WorkshopCommission entity (course, number 1|2, preceptor, students) + migration; optional commission on schedule slots; schedule validation per commission (overlap + weeklyHours).
 - [x] T2 (route: delegated writer; commit `e7ecbe3`): Commission management — create the 2 commissions with an alphabetical 50/50 suggestion, persist; assign preceptor; move a student; explicit regenerate; new students join the smaller commission.
-- [ ] T3: Workshop attendance API — per commission per day, taken by the commission preceptor (access policy), weight 0.5 in absence totals; totals, thresholds and reports accept fractional values.
+- [ ] T3a (route: delegated writer): Workshop attendance API — record/list per commission per day, taken by the commission preceptor (or ADMIN); separate table.
+- [ ] T3b: Weighted totals — workshop absence counts 0.5 in student absence totals, thresholds/alerts and reports (fractional values). Map the totals code first.
 - [ ] T4: Web UI — subject type in the subject form, commission selector on workshop slots, commissions screen in the course, workshop attendance screen for the preceptor.
 - [ ] T5: Mobile — workshop attendance in the app (after web).
-- Open design point for T3: reuse `attendanceRecord` with a kind/commission column vs a separate table.
+- Decided (parent, 2026-10-14): workshop attendance uses its own table `workshop_attendance_records`. Reusing `attendanceRecord` would make every existing absence query silently count workshop rows as full absences; a separate table keeps current totals unchanged until T3b adds the 0.5 weight explicitly.
 
 ## Progress / evidence
 - T1: subject `kind` (`subjects.kind` default theory); `workshop_commissions` (tenant_id, course_id FK cascade, number 1|2 CHECK, preceptor_id, unique (course_id, number)); `students.workshop_commission_id` FK set null + index; `schedule_slots.commission_number` CHECK null|1|2. Migration `Migration20261014120000_workshop_commissions.ts` with down().
@@ -61,3 +62,4 @@ Support the technical-school workshop (taller): each course is split into commis
 - T2: endpoints POST/GET /courses/:courseId/workshop-commissions, PUT /workshop-commissions/:id/preceptor, PUT /workshop-commissions/:id/students/:studentId, POST /courses/:courseId/workshop-commissions/regenerate ({confirm:true}). WorkshopPlacementService places new/re-enrolled students in the smaller commission (tie → 1). Checks: 89 suites / 533 API tests, ts:check 9/9, lint 5 known warnings.
 - Found on the way, separate commit `db895f3`: PUT /courses/:id/preceptor passed (id, preceptorId) to AssignPreceptorCommand(preceptorId, courseId) → always "Course not found". No client calls it today, so no production impact.
 - T2 decision gaps: regenerate without commissions → 404; preceptor check does not filter inactive memberships (existsAndHasRole); concurrent create → 500 from the unique constraint instead of 409.
+- T2 review: medium, 1 lens, approved and acknowledged (lineage review-bafe0560b1e074da). Advisory: UoW atomicity untested, concurrent create → 500, assign-preceptor fix untested.
