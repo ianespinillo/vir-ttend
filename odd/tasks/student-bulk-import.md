@@ -57,6 +57,7 @@ User request (2026-10-13). A colleague proposed that the school fills a sheet an
 
 ## Follow-ups (advisory review findings, non-blocking)
 - R3-mime-allowlist-false-reject: a valid .xlsx sent with a generic MIME (e.g. application/octet-stream) may be rejected.
+- UI review (approved, lineage of commit e33b9df): fixed in a follow-up commit — stale preview after closing (in-flight validation now detached) and preview kept after picking another file (now cleared). Left as follow-ups: template download revokes the URL right after clicking a detached anchor (same pattern as the existing report export, `use-export-report.ts`); duplicate React key risk for identical error strings in a row; 422 mapping in the container untested.
 - R3-multer-size-limit-status: the 1 MB multer limit may answer with a status other than the documented 400.
 - R3-concurrent-dni-race: two concurrent commits with the same DNI could both pass validation; the DB has no unique (tenantId, documentNumber) index to back it.
 - R3-uow-atomicity-unproved: `em.transactional` atomicity relies on MikroORM v6 transaction context propagation into repositories; no integration test proves the rollback.

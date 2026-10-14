@@ -42,6 +42,14 @@ export function StudentImportContainer({
 	const reset = () => {
 		setFile(null);
 		setPreview(null);
+		// Detach an in-flight validation so its result cannot land after closing.
+		previewMutation.reset();
+	};
+
+	// A preview only describes the file it was made from.
+	const handleFileChange = (next: File | null) => {
+		setFile(next);
+		setPreview(null);
 	};
 
 	const handleOpenChange = (next: boolean) => {
@@ -95,7 +103,7 @@ export function StudentImportContainer({
 			courseName={courseName}
 			file={file}
 			preview={preview}
-			onFileChange={setFile}
+			onFileChange={handleFileChange}
 			onDownloadTemplate={handleDownload}
 			onValidate={handleValidate}
 			onConfirm={handleConfirm}
