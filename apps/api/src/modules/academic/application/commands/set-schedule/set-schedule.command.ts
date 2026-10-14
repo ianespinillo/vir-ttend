@@ -1,10 +1,11 @@
-import { DAYOFWEEK } from '@repo/common';
+import { CommissionNumber, DAYOFWEEK } from '@repo/common';
 
 export interface Slot {
 	subjectId?: string;
 	dayOfWeek: DAYOFWEEK;
 	startTime: string;
 	endTime: string;
+	commissionNumber?: CommissionNumber | null;
 }
 
 export class SetScheduleCommand {

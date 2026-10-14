@@ -20,6 +20,7 @@ export class StudentMapper {
 		student.firstName = domain.firstName;
 		student.lastName = domain.lastName;
 		student.tenantId = domain.tenantId;
+		student.workshopCommissionId = domain.workshopCommissionId;
 		return student;
 	}
 	static toDomain(orm: StudentOrmEntity): Student {

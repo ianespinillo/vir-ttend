@@ -69,6 +69,7 @@ export class StudentRepository
 			existing.tutorPhone = student.tutorPhone;
 			existing.tutorEmail = student.tutorEmail;
 			existing.status = student.status;
+			existing.workshopCommissionId = student.workshopCommissionId;
 			existing.createdAt = student.createdAt;
 			existing.updatedAt = student.updatedAt;
 		} else {

@@ -32,13 +32,19 @@ export class SetScheduleHandler {
 					endTime: s.endTime,
 					subjectId: slotSubjectId,
 					courseId,
+					commissionNumber: s.commissionNumber ?? null,
 				});
 			});
 
 			const courseSubjects = await this.subjetRepo.findByCourse(courseId);
+			const workshopSubjectIds = new Set(
+				courseSubjects.filter((s) => s.isWorkshop).map((s) => s.id.getRaw()),
+			);
+			CourseService.validateCommissionSlots(newSlots, workshopSubjectIds);
 			CourseService.validateWeeklyHours(
 				newSlots,
 				new Map(courseSubjects.map((s) => [s.id.getRaw(), s.weeklyHours])),
+				workshopSubjectIds,
 			);
 			CourseService.validateScheduleOverlap(newSlots);
 			await this.scheduleRepo.deleteByCourse(courseId);
@@ -63,9 +69,14 @@ export class SetScheduleHandler {
 				courseId: subject.courseId,
 			}),
 		);
+		const workshopSubjectIds = new Set(
+			subject.isWorkshop ? [subject.id.getRaw()] : [],
+		);
+		CourseService.validateCommissionSlots(newSlots, workshopSubjectIds);
 		CourseService.validateWeeklyHours(
 			newSlots,
 			new Map([[subject.id.getRaw(), subject.weeklyHours]]),
+			workshopSubjectIds,
 		);
 		CourseService.validateScheduleOverlap([...filtered, ...newSlots]);
 		await this.scheduleRepo.deleteBySubject(subjectId);

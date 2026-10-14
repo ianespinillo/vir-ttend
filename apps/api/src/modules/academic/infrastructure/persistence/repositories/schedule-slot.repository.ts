@@ -46,6 +46,7 @@ export class ScheduleSlotRepository
 			existing.startTime = scheduleSlot.startTime;
 			existing.endTime = scheduleSlot.endTime;
 			existing.dayOfWeek = scheduleSlot.dayOfWeek;
+			existing.commissionNumber = scheduleSlot.commissionNumber;
 		} else {
 			const orm = ScheduleSlotMapper.toOrm(scheduleSlot, this.em);
 			this.em.persist(orm);
@@ -63,6 +64,7 @@ export class ScheduleSlotRepository
 				existing.startTime = slot.startTime;
 				existing.endTime = slot.endTime;
 				existing.dayOfWeek = slot.dayOfWeek;
+				existing.commissionNumber = slot.commissionNumber;
 			} else {
 				this.em.persist(ScheduleSlotMapper.toOrm(slot, this.em));
 			}

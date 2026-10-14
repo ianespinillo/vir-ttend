@@ -82,6 +82,7 @@ export class SubjectsController {
 				dto.name,
 				dto.area,
 				dto.weeklyHours,
+				dto.kind,
 			),
 		);
 	}
@@ -221,6 +222,7 @@ export class SubjectsController {
 				dto.name,
 				dto.area,
 				dto.weeklyHours,
+				dto.kind,
 			),
 		);
 	}
