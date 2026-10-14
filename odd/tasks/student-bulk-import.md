@@ -1,7 +1,7 @@
 # Feature: Student bulk import — upload a fixed .xlsx template per course
 
 ## Status
-QUEUED (2026-10-13). Not started. Design agreed at a high level; open questions below must be resolved before T1.
+IN PROGRESS (started 2026-10-13). Prioritized over workshop commissions by the user.
 
 ## Objective
 Let school staff load a whole course's students at once, self-service, without the developer handling student data.
@@ -19,18 +19,29 @@ User request (2026-10-13). A colleague proposed that the school fills a sheet an
 - D2: One file = one course; the course is chosen in the UI, never read from the file.
 - D3: Upload → server parses and validates every row → mandatory preview with per-row errors (duplicate DNI in file or tenant, invalid date, missing field).
 - D4: Confirm is all-or-nothing in a single transaction; if any row fails, nothing is inserted.
-- D5: Reuse the create-student domain rules (one source of validation), emit `student.created` per student as today (or a batched equivalent — decide in T1).
+- D5: Reuse the create-student domain rules (one source of validation), emit `student.created` per student as today (or a batched equivalent — decided in T1).
 
-## Open questions (ask the user one at a time before T1)
-- Q1: A DNI that already exists in another course of the tenant: reject the row, or offer a transfer?
-- Q2: Who may import: ADMIN only, or ADMIN and PRECEPTOR (same as `POST /students`)? Preceptor limited to their own courses?
-- Q3: Row limit per file (e.g. 60)?
-- Q4: Preview as stateless re-upload on confirm, or a server-side staged import with an id/TTL?
+## Resolved questions
+- Q1 (user, 2026-10-13): a DNI that already exists in another course of the tenant → reject the row, naming the course it is in; moving is done with the existing course change. The import never transfers students.
+- Q2 (user, 2026-10-13): ADMIN and PRECEPTOR may import. ADMIN into any course of the tenant; PRECEPTOR only into courses where they are the assigned preceptor (`courses.preceptorId`). Note: `POST /students` today does not scope preceptors to their courses; that existing gap stays out of scope.
+- Q3 (default chosen by the parent, user may override): max 100 data rows per file.
+- Q4 (technical default chosen by the parent): stateless. Preview endpoint parses and validates; commit endpoint receives the same file, re-parses and re-validates inside the transaction. No staged state, no TTL.
 
-## Checklist (draft)
-- [ ] T1: API — template download endpoint + parse/validate (preview) endpoint + commit endpoint, with unit tests.
-- [ ] T2: UI — import entry point on the course/students screen, upload, preview table with per-row errors, confirm.
+## Delivery
+- Forecast: well over 400 authored changed lines (API with tests + UI) → chained PRs.
+- delivery_strategy: ask-on-risk → chain_strategy: feature-branch-chain (user said "avanza"; the parent chose it because the user wants these features on their own branch, not direct to main).
+- Tracker branch `feat/student-bulk-import` (draft, no-merge tracker PR into `main`).
+  - PR 1 `feat/student-bulk-import-api` → tracker: T1.
+  - PR 2 `feat/student-bulk-import-ui` → PR 1 branch: T2 + T3.
+- Push and PR creation: user's call.
+
+## Checklist
+- [ ] T1: API — template download endpoint + parse/validate (preview) endpoint + commit endpoint, with unit tests. Route: delegated writer (2+ non-trivial files).
+- [ ] T2: UI — import entry point on the course/students screen, upload, preview table with per-row errors, confirm. Route: delegated writer.
 - [ ] T3: docs + commit.
 
 ## TDD
 - Off (no TDD configuration in the project). Checks: `pnpm --filter api test`, `pnpm ts:check`, `pnpm lint:check`.
+
+## Progress / evidence
+- (pending)
