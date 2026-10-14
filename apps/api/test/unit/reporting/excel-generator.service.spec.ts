@@ -56,6 +56,11 @@ const rows: ExcelRow[] = [
 	},
 ];
 
+const fractional: ExcelRow[] = [
+	{ ...rows[0], absent: 12.5, absencePercent: 62.5 },
+	{ ...rows[1], absent: 10.25, absencePercent: null },
+];
+
 describe('ExcelGeneratorService', () => {
 	let service: ExcelGeneratorService;
 
@@ -87,7 +92,7 @@ describe('ExcelGeneratorService', () => {
 			'Nombre',
 			'Documento',
 			'Presentes',
-			'Ausentes',
+			'Inasistencias',
 			'Tardanzas',
 			'Justificados',
 			'%',
@@ -115,6 +120,29 @@ describe('ExcelGeneratorService', () => {
 		expect(totals.getCell(6).value).toBe(10);
 		expect(totals.getCell(7).value).toBe(2);
 		expect(totals.getCell(8).value).toBe(50);
+	});
+
+	it('escribe los conteos fraccionarios como números exactos, sin redondear', async () => {
+		const buffer = (await service.generate(
+			fractional,
+			'Reporte',
+		)) as unknown as Buffer;
+		const sheet = await loadSheet(buffer);
+
+		expect(sheet.getRow(2).getCell(5).value).toBe(12.5);
+		expect(sheet.getRow(3).getCell(5).value).toBe(10.25);
+		expect(sheet.getRow(4).getCell(5).value).toBe(22.75);
+	});
+
+	it('deja vacío el porcentaje de un alumno sin clases dadas y lo excluye del promedio', async () => {
+		const buffer = (await service.generate(
+			fractional,
+			'Reporte',
+		)) as unknown as Buffer;
+		const sheet = await loadSheet(buffer);
+
+		expect(sheet.getRow(3).getCell(8).value).toBeNull();
+		expect(sheet.getRow(4).getCell(8).value).toBe(62.5);
 	});
 
 	it('estiliza el encabezado con fondo azul y texto en negrita', async () => {

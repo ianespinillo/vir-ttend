@@ -1,5 +1,15 @@
 import { COURSE_RISK_STATUS } from '@repo/common';
 
+/**
+ * Institutional absence total of the course (weighted and held-based, so it may
+ * be fractional) and the student-days it is measured over: the days effectively
+ * given to each student, never the schedule.
+ */
+export interface WeightedCourseTotals {
+	absences: number;
+	studentDays: number;
+}
+
 export class CourseSnapshot {
 	private readonly _courseId: string;
 	private readonly _courseName: string;
@@ -9,6 +19,7 @@ export class CourseSnapshot {
 	private readonly _late: number;
 	private readonly _justified: number;
 	private readonly _notRecorded: number;
+	private readonly _weighted?: WeightedCourseTotals;
 
 	constructor(
 		courseId: string,
@@ -19,6 +30,7 @@ export class CourseSnapshot {
 		absents: number,
 		late: number,
 		justified: number,
+		weighted?: WeightedCourseTotals,
 	) {
 		this._courseId = courseId;
 		this._courseName = courseName;
@@ -27,6 +39,7 @@ export class CourseSnapshot {
 		this._absents = absents;
 		this._late = late;
 		this._justified = justified;
+		this._weighted = weighted;
 		this._notRecorded =
 			expectedClasses * totalStudents - (presents + late + absents + justified);
 	}
@@ -39,12 +52,29 @@ export class CourseSnapshot {
 	private get recordedSlots(): number {
 		return this._presents + this._absents + this._late + this._justified;
 	}
+	/**
+	 * Absence total shown for the course: the weighted one when available,
+	 * otherwise the raw count of absent records.
+	 */
+	public get absentTotal(): number {
+		return this._weighted ? this._weighted.absences : this._absents;
+	}
 	public get absencePercent(): number {
+		if (this._weighted) {
+			const { absences, studentDays } = this._weighted;
+			return studentDays === 0 ? 0 : (absences / studentDays) * 100;
+		}
 		const slots = this.recordedSlots;
 		if (slots === 0) return 0;
 		return ((this._absents + this._late) / slots) * 100;
 	}
 	public get presentsPercent(): number {
+		if (this._weighted) {
+			const { absences, studentDays } = this._weighted;
+			return studentDays === 0
+				? 0
+				: ((studentDays - absences) / studentDays) * 100;
+		}
 		const slots = this.recordedSlots;
 		if (slots === 0) return 0;
 		return ((this._presents + this._late) / slots) * 100;
@@ -64,7 +94,7 @@ export class CourseSnapshot {
 			courseName: this._courseName,
 			totalStudents: this._totalStudents,
 			present: this._presents,
-			absent: this._absents,
+			absent: this.absentTotal,
 			late: this._late,
 			justified: this._justified,
 			notRecorded: this._notRecorded,

@@ -1,15 +1,22 @@
 import type { LevelType } from '../../constants/level.enum.js';
 import type { AlertType } from '../alerts/alert.response.type.js';
-import type { StudentReportStatus } from './monthly-report.response.type.js';
+import type {
+	AbsenceBreakdown,
+	StudentReportStatus,
+} from './monthly-report.response.type.js';
 
 export interface StudentMonthlyEntry {
 	month: number;
 	year: number;
 	present: number;
+	/** Weighted absence total (may be fractional). */
 	absent: number;
 	late: number;
 	justified: number;
-	absencePercent: number;
+	daysGiven?: number;
+	absenceBreakdown?: AbsenceBreakdown;
+	/** Null when no class was given. */
+	absencePercent: number | null;
 	status: StudentReportStatus;
 }
 
@@ -24,11 +31,15 @@ export interface StudentReport {
 	months: StudentMonthlyEntry[];
 	totals: {
 		present: number;
+		/** Weighted absence total (may be fractional). */
 		absent: number;
 		late: number;
 		justified: number;
+		/** Distinct days with a daily or workshop record. */
 		totalDays: number;
-		averageAbsencePercent: number;
+		absenceBreakdown?: AbsenceBreakdown;
+		/** Null when no class was given. */
+		averageAbsencePercent: number | null;
 	};
 	status: StudentReportStatus;
 	alerts: { status: AlertType }[];

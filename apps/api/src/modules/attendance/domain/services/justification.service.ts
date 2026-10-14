@@ -5,6 +5,7 @@ import { AttendanceRecord } from '../entities/attendance-record.entity';
 const JUSTIFIABLE_STATUSES: readonly string[] = [
 	ATTENDANCE_STATUS.ABSENT,
 	ATTENDANCE_STATUS.LATE,
+	ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE,
 ];
 
 export class JustificationService {

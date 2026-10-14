@@ -19,7 +19,7 @@ const ALERT_ICONS: Record<AlertType, typeof AlertTriangle> = {
 
 export interface ReportStatusCellProps {
 	status: StudentReportStatus;
-	absencePercent: number;
+	absencePercent: number | null;
 	alerts?: { status: AlertType }[];
 }
 

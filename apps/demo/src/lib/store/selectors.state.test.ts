@@ -303,7 +303,9 @@ describe('reports', () => {
 	it('course summary covers the months with activity', () => {
 		const summary = getCourseSummary(state, demoIds.course['crs-3a']);
 		expect(summary.length).toBe(2);
-		expect(summary.every((entry) => entry.averageAttendance > 0)).toBe(true);
+		expect(summary.every((entry) => (entry.averageAttendance ?? 0) > 0)).toBe(
+			true,
+		);
 	});
 
 	it('student report exposes monthly entries and totals', () => {

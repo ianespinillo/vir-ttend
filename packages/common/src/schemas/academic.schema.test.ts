@@ -93,4 +93,51 @@ describe('academic schemas', () => {
 		];
 		expect(checkScheduleOverlap(nonOverlapping)).toBe(false);
 	});
+
+	describe('checkScheduleOverlap with workshop commissions', () => {
+		const slot = (commissionNumber?: number | null) => ({
+			dayOfWeek: 'monday',
+			startTime: '08:00',
+			endTime: '10:00',
+			commissionNumber,
+		});
+
+		it('allows simultaneous slots of different commissions', () => {
+			expect(checkScheduleOverlap([slot(1), slot(2)])).toBe(false);
+		});
+
+		it('detects overlap within the same commission', () => {
+			expect(checkScheduleOverlap([slot(1), slot(1)])).toBe(true);
+			expect(checkScheduleOverlap([slot(2), slot(2)])).toBe(true);
+		});
+
+		it('treats a null commission as both commissions', () => {
+			expect(checkScheduleOverlap([slot(null), slot(1)])).toBe(true);
+			expect(checkScheduleOverlap([slot(2), slot(null)])).toBe(true);
+			expect(checkScheduleOverlap([slot(null), slot(null)])).toBe(true);
+			expect(checkScheduleOverlap([slot(undefined), slot(2)])).toBe(true);
+		});
+
+		it('does not flag adjacent slots of the same commission', () => {
+			const next = { ...slot(1), startTime: '10:00', endTime: '12:00' };
+			expect(checkScheduleOverlap([slot(1), next])).toBe(false);
+		});
+	});
+
+	it('accepts a commission number of 1, 2 or null and rejects others', () => {
+		const base = {
+			subjectId: 'sub-1',
+			dayOfWeek: DAYOFWEEK.MONDAY,
+			startTime: '08:00',
+			endTime: '09:20',
+		};
+		for (const commissionNumber of [1, 2, null]) {
+			expect(
+				scheduleSlotSchema.safeParse({ ...base, commissionNumber }).success,
+			).toBe(true);
+		}
+		expect(
+			scheduleSlotSchema.safeParse({ ...base, commissionNumber: 3 }).success,
+		).toBe(false);
+	});
 });

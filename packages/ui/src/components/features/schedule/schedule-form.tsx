@@ -2,9 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+	COMMISSION_NUMBERS,
 	DAYOFWEEK,
 	type IScheduleSlotResponse,
 	type ISubjectResponse,
+	SUBJECT_KIND,
 	type ScheduleSlotFormValues,
 	checkScheduleOverlap,
 	scheduleSlotSchema,
@@ -55,11 +57,22 @@ export function ScheduleForm({
 			dayOfWeek: defaultDay,
 			startTime: '08:00',
 			endTime: '09:20',
+			commissionNumber: null,
 		},
 	});
 
+	const isWorkshopSubject = (subjectId: string) =>
+		subjects.find((sub) => sub.id === subjectId)?.kind === SUBJECT_KIND.WORKSHOP;
+	const showCommission = isWorkshopSubject(form.watch('subjectId'));
+
 	const handleSubmit = async (values: ScheduleSlotFormValues) => {
 		setFormError(null);
+
+		const subject = subjects.find((sub) => sub.id === values.subjectId);
+		// Only workshop subjects can be split by commission; theory slots always cover both.
+		const commissionNumber = isWorkshopSubject(values.subjectId)
+			? (values.commissionNumber ?? null)
+			: null;
 
 		// Client-side overlap validation
 		const isOverlapping = checkScheduleOverlap([
@@ -68,6 +81,7 @@ export function ScheduleForm({
 				dayOfWeek: values.dayOfWeek,
 				startTime: values.startTime,
 				endTime: values.endTime,
+				commissionNumber,
 			},
 		]);
 
@@ -78,17 +92,27 @@ export function ScheduleForm({
 			return;
 		}
 
-		const subject = subjects.find((sub) => sub.id === values.subjectId);
 		if (subject) {
-			const scheduledMinutes = existingSlots
-				.filter((slot) => slot.subjectId === values.subjectId)
-				.reduce(
-					(total, slot) => total + minutesBetween(slot.startTime, slot.endTime),
-					0,
-				);
 			const newSlotMinutes = minutesBetween(values.startTime, values.endTime);
+			// Weekly hours are counted per commission: a slot for both commissions
+			// counts towards each of them.
+			const affectedCommissions =
+				commissionNumber === null ? COMMISSION_NUMBERS : [commissionNumber];
+			const exceedsWeeklyHours = affectedCommissions.some((commission) => {
+				const scheduledMinutes = existingSlots
+					.filter(
+						(slot) =>
+							slot.subjectId === values.subjectId &&
+							(slot.commissionNumber == null || slot.commissionNumber === commission),
+					)
+					.reduce(
+						(total, slot) => total + minutesBetween(slot.startTime, slot.endTime),
+						0,
+					);
+				return scheduledMinutes + newSlotMinutes > subject.weeklyHours * 60;
+			});
 
-			if (scheduledMinutes + newSlotMinutes > subject.weeklyHours * 60) {
+			if (exceedsWeeklyHours) {
 				setFormError(
 					`Esta franja haría que ${subject.name} supere sus horas semanales (máximo ${subject.weeklyHours} hs/sem).`,
 				);
@@ -96,7 +120,7 @@ export function ScheduleForm({
 			}
 		}
 
-		await onSubmit(values);
+		await onSubmit({ ...values, commissionNumber });
 	};
 
 	return (
@@ -195,6 +219,36 @@ export function ScheduleForm({
 						)}
 					/>
 				</div>
+
+				{showCommission && (
+					<FormField
+						control={form.control}
+						name="commissionNumber"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Comisión</FormLabel>
+								<Select
+									onValueChange={(value) =>
+										field.onChange(value === 'BOTH' ? null : Number(value))
+									}
+									value={field.value == null ? 'BOTH' : String(field.value)}
+								>
+									<FormControl>
+										<SelectTrigger>
+											<SelectValue placeholder="Seleccione comisión" />
+										</SelectTrigger>
+									</FormControl>
+									<SelectContent>
+										<SelectItem value="BOTH">Ambas</SelectItem>
+										<SelectItem value="1">1</SelectItem>
+										<SelectItem value="2">2</SelectItem>
+									</SelectContent>
+								</Select>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+				)}
 
 				<div className="flex items-center justify-end gap-2 pt-4">
 					{onCancel && (

@@ -5,9 +5,10 @@ export type ExcelRow = {
 	name: string;
 	documentNumber: string;
 	present: number;
+	/** Weighted absence total (may be fractional). */
 	absent: number;
 	late: number;
 	justified: number;
-	absencePercent: number;
+	absencePercent: number | null;
 	status: ReportStudentStatus;
 };

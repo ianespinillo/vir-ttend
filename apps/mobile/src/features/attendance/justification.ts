@@ -94,7 +94,9 @@ export const getJustifyRowState = (input: {
 	blockHint: string | null;
 }): { visible: boolean; enabled: boolean } => {
 	const justifiable =
-		input.savedStatus === 'absent' || input.savedStatus === 'late';
+		input.savedStatus === 'absent' ||
+		input.savedStatus === 'late' ||
+		input.savedStatus === 'late_beyond_tolerance';
 	const visible =
 		input.isPreceptor && justifiable && input.localStatus === input.savedStatus;
 	return {

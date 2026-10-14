@@ -1,0 +1,96 @@
+import { ATTENDANCE_STATUS, type MyWorkshopCommission } from '@repo/common';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import {
+	WorkshopAttendancePage,
+	type WorkshopAttendancePageProps,
+	formatCommissionLabel,
+} from './workshop-attendance-page';
+
+const commission: MyWorkshopCommission = {
+	commissionId: 'c-1',
+	code: '141',
+	number: 1,
+	courseId: 'course-1',
+	courseName: '1° 4°',
+	hasWorkshopToday: true,
+};
+
+function renderPage(overrides: Partial<WorkshopAttendancePageProps> = {}) {
+	const props: WorkshopAttendancePageProps = {
+		commissions: [commission],
+		gridStudents: [
+			{
+				id: 's-1',
+				name: 'Perez, Juan',
+				attendanceRecord: {
+					id: 'r-1',
+					studentId: 's-1',
+					studentName: 'Perez, Juan',
+					status: ATTENDANCE_STATUS.PRESENT,
+				},
+				originalStatus: ATTENDANCE_STATUS.PRESENT,
+			},
+		],
+		selectedCommissionId: '',
+		selectedDate: '2026-03-10',
+		isLoadingCommissions: false,
+		isLoadingAttendance: false,
+		isSaving: false,
+		onCommissionChange: vi.fn(),
+		onDateChange: vi.fn(),
+		onStatusChange: vi.fn(),
+		onMarkAll: vi.fn(),
+		onConfirmChanges: vi.fn(),
+		onResetChanges: vi.fn(),
+		...overrides,
+	};
+	render(<WorkshopAttendancePage {...props} />);
+	return props;
+}
+
+describe('formatCommissionLabel', () => {
+	it('joins the course name and the commission code', () => {
+		expect(formatCommissionLabel(commission)).toBe('1° 4° · Comisión 141');
+	});
+});
+
+describe('WorkshopAttendancePage', () => {
+	it('shows an empty state when the user has no commissions', () => {
+		renderPage({ commissions: [] });
+		expect(screen.getByText('Sin comisiones asignadas')).toBeInTheDocument();
+	});
+
+	it('lists commissions and notifies the selected one', () => {
+		const props = renderPage();
+		expect(screen.getByText('Hay taller este día')).toBeInTheDocument();
+		fireEvent.click(screen.getByText('1° 4° · Comisión 141'));
+		expect(props.onCommissionChange).toHaveBeenCalledWith('c-1');
+		expect(screen.queryByText('Perez, Juan')).not.toBeInTheDocument();
+	});
+
+	it('shows the student grid for the selected commission', () => {
+		renderPage({ selectedCommissionId: 'c-1' });
+		expect(screen.getByText('Perez, Juan')).toBeInTheDocument();
+		expect(screen.queryByRole('status')).not.toBeInTheDocument();
+	});
+
+	it('warns when the selected commission has no workshop that day', () => {
+		renderPage({
+			commissions: [{ ...commission, hasWorkshopToday: false }],
+			selectedCommissionId: 'c-1',
+		});
+		expect(screen.getByText('Sin taller este día')).toBeInTheDocument();
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'no tiene taller programado este día',
+		);
+	});
+
+	it('marks everyone present and confirms changes', () => {
+		const props = renderPage({ selectedCommissionId: 'c-1' });
+		fireEvent.click(screen.getByText('Todos Presentes'));
+		expect(props.onMarkAll).toHaveBeenCalledWith(ATTENDANCE_STATUS.PRESENT);
+		fireEvent.click(screen.getByText('Confirmar'));
+		expect(props.onConfirmChanges).toHaveBeenCalled();
+	});
+});

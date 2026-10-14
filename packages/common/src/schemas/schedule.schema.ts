@@ -32,18 +32,30 @@ export const setScheduleSchema = z.object({
 export type ScheduleSlotFormValues = z.infer<typeof scheduleSlotSchema>;
 export type SetScheduleFormValues = z.infer<typeof setScheduleSchema>;
 
+interface OverlapSlot {
+	dayOfWeek: string;
+	startTime: string;
+	endTime: string;
+	commissionNumber?: number | null;
+}
+
+/** Two slots can share students when either covers both commissions (null) or they match. */
+const canShareStudents = (a: OverlapSlot, b: OverlapSlot): boolean =>
+	a.commissionNumber == null ||
+	b.commissionNumber == null ||
+	a.commissionNumber === b.commissionNumber;
+
 /**
  * Validates whether a list of schedule slots contains any overlapping time slots on the same day.
+ * Slots of different workshop commissions (1 vs 2) may run at the same time.
  * Returns true if overlapping, false otherwise.
  */
-export function checkScheduleOverlap(
-	slots: Array<{ dayOfWeek: string; startTime: string; endTime: string }>,
-): boolean {
-	const byDay = new Map<string, Array<{ startTime: string; endTime: string }>>();
+export function checkScheduleOverlap(slots: OverlapSlot[]): boolean {
+	const byDay = new Map<string, OverlapSlot[]>();
 
 	for (const slot of slots) {
 		const existing = byDay.get(slot.dayOfWeek) || [];
-		existing.push({ startTime: slot.startTime, endTime: slot.endTime });
+		existing.push(slot);
 		byDay.set(slot.dayOfWeek, existing);
 	}
 
@@ -52,7 +64,13 @@ export function checkScheduleOverlap(
 			for (let j = i + 1; j < daySlots.length; j++) {
 				const a = daySlots[i];
 				const b = daySlots[j];
-				if (a && b && a.startTime < b.endTime && b.startTime < a.endTime) {
+				if (
+					a &&
+					b &&
+					a.startTime < b.endTime &&
+					b.startTime < a.endTime &&
+					canShareStudents(a, b)
+				) {
 					return true;
 				}
 			}

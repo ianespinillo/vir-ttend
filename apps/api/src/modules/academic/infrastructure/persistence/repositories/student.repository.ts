@@ -1,6 +1,6 @@
 import { FilterQuery } from '@mikro-orm/core';
 import { EntityRepository } from '@mikro-orm/postgresql';
-import { PaginatedResponse } from '@repo/common';
+import { PaginatedResponse, STUDENTSTATUS } from '@repo/common';
 import { Student } from '../../../domain/entities/student.entity';
 import {
 	IStudentRepository,
@@ -21,6 +21,26 @@ export class StudentRepository
 			},
 		});
 		return orms.map((o) => StudentMapper.toDomain(o));
+	}
+
+	async findActiveByCourse(courseId: string): Promise<Student[]> {
+		const orms = await this.find({ courseId, status: STUDENTSTATUS.ACTIVE });
+		return orms.map((o) => StudentMapper.toDomain(o));
+	}
+
+	async findActiveByCommission(commissionId: string): Promise<Student[]> {
+		const orms = await this.find({
+			workshopCommissionId: commissionId,
+			status: STUDENTSTATUS.ACTIVE,
+		});
+		return orms.map((o) => StudentMapper.toDomain(o));
+	}
+
+	async countActiveByCommission(commissionId: string): Promise<number> {
+		return this.count({
+			workshopCommissionId: commissionId,
+			status: STUDENTSTATUS.ACTIVE,
+		});
 	}
 
 	async findByDocument(

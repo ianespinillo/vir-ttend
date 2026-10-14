@@ -1,6 +1,6 @@
 'use client';
 
-import type { CourseSnapshot } from '@repo/common';
+import { type CourseSnapshot, formatCount } from '@repo/common';
 import { AlertTriangle } from 'lucide-react';
 import { localizeCourseName } from '../../../lib/shift';
 import { Card, CardContent } from '../../../ui/card';
@@ -52,7 +52,7 @@ export function CourseStatusCard({
 					</div>
 					<div>
 						<p className="font-semibold text-rose-600 dark:text-rose-400">
-							{course.absent}
+							{formatCount(course.absent)}
 						</p>
 						<p className="text-muted-foreground">Ausente</p>
 					</div>

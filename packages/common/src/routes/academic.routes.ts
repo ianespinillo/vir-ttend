@@ -9,4 +9,12 @@ export const ACADEMIC_ROUTES = {
 	subject: (id: string) => `/subjects/${id}`,
 	subjectTeacher: (id: string) => `/subjects/${id}/teacher`,
 	schedule: '/schedule',
+	workshopCommissions: (courseId: string) =>
+		`/courses/${courseId}/workshop-commissions`,
+	workshopCommissionsRegenerate: (courseId: string) =>
+		`/courses/${courseId}/workshop-commissions/regenerate`,
+	workshopCommissionPreceptor: (id: string) =>
+		`/workshop-commissions/${id}/preceptor`,
+	workshopCommissionStudent: (id: string, studentId: string) =>
+		`/workshop-commissions/${id}/students/${studentId}`,
 } as const;

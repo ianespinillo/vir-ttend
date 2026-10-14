@@ -47,12 +47,20 @@ export class AlertResponseDto {
 	readonly alertType!: string;
 
 	@ApiProperty({
-		description: 'Porcentaje de inasistencias que disparó la alerta',
-		example: 62,
+		description:
+			'Inasistencias computadas (ponderadas, en pasos de 0,25) al disparar la alerta',
+		example: 12.5,
 		minimum: 0,
-		maximum: 100,
 	})
-	readonly absencePercent!: number;
+	readonly absenceCount!: number;
+
+	@ApiProperty({
+		description:
+			'Umbral de inasistencias que disparó la alerta: 10, 20 o el límite del estudiante',
+		example: 10,
+		minimum: 0,
+	})
+	readonly threshold!: number;
 
 	@ApiPropertyOptional({
 		description:
@@ -84,7 +92,8 @@ export class AlertResponseDto {
 				? alert.alertType
 				: ((alert.alertType as { status?: string })?.status ??
 					String(alert.alertType));
-		this.absencePercent = alert.absencePercent;
+		this.absenceCount = alert.absenceCount;
+		this.threshold = alert.threshold;
 		this.seenAt = alert.seenAt ?? null;
 		this.createdAt = alert.createdAt;
 	}

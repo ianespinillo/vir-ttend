@@ -1,6 +1,12 @@
 import { AttendanceAlert } from '../../../src/modules/attendance/domain/entities/attendance-alert.entity';
-import { ThresholdCheckerService } from '../../../src/modules/attendance/domain/services/threshold-checker.service';
+import {
+	CRITICAL_ABSENCE_THRESHOLD,
+	ThresholdCheckerService,
+	WARNING_ABSENCE_THRESHOLD,
+} from '../../../src/modules/attendance/domain/services/threshold-checker.service';
 import { AlertType } from '../../../src/modules/attendance/domain/value-objects/alert-type.vo';
+
+const CAP = 28;
 
 describe('ThresholdCheckerService', () => {
 	const makeAlert = (alertType: AlertType, seenAt?: Date): AttendanceAlert =>
@@ -11,126 +17,67 @@ describe('ThresholdCheckerService', () => {
 			tenantId: 'tenant-1',
 			academicYearId: 'year-1',
 			alertType,
-			absencePercent: 60,
+			absenceCount: 10,
+			threshold: 10,
 			seenBy: seenAt ? 'user-1' : undefined,
 			seenAt,
 			createdAt: new Date(),
 		});
 
-	describe('check', () => {
-		it('retorna null cuando el porcentaje está por debajo del umbral de warning (< 50)', () => {
-			expect(ThresholdCheckerService.check(0, [])).toBeNull();
-			expect(ThresholdCheckerService.check(25, [])).toBeNull();
-			expect(ThresholdCheckerService.check(49, [])).toBeNull();
-		});
-
-		it('retorna warning cuando el porcentaje es >= 50 y < 75', () => {
-			const result = ThresholdCheckerService.check(50, []);
-			expect(result).not.toBeNull();
-			expect(result?.status).toBe('warning');
-		});
-
-		it('retorna warning para 60%', () => {
-			const result = ThresholdCheckerService.check(60, []);
-			expect(result?.status).toBe('warning');
-		});
-
-		it('retorna critical cuando el porcentaje es >= 75', () => {
-			const result = ThresholdCheckerService.check(75, []);
-			expect(result).not.toBeNull();
-			expect(result?.status).toBe('critical');
-		});
-
-		it('retorna critical para 90%', () => {
-			const result = ThresholdCheckerService.check(90, []);
-			expect(result?.status).toBe('critical');
-		});
-
-		it('retorna exceeded cuando el porcentaje es >= 100', () => {
-			const result = ThresholdCheckerService.check(100, []);
-			expect(result).not.toBeNull();
-			expect(result?.status).toBe('exceeded');
-		});
-
-		it('retorna exceeded para porcentajes superiores a 100', () => {
-			const result = ThresholdCheckerService.check(150, []);
-			expect(result?.status).toBe('exceeded');
-		});
-
-		it('retorna null para porcentaje negativo', () => {
-			expect(ThresholdCheckerService.check(-10, [])).toBeNull();
-		});
-
-		it('retorna exactamente en los límites de cada umbral', () => {
-			expect(ThresholdCheckerService.check(49.99, [])).toBeNull();
-			expect(ThresholdCheckerService.check(50, [])?.status).toBe('warning');
-			expect(ThresholdCheckerService.check(74.99, [])?.status).toBe('warning');
-			expect(ThresholdCheckerService.check(75, [])?.status).toBe('critical');
-			expect(ThresholdCheckerService.check(99.99, [])?.status).toBe('critical');
-			expect(ThresholdCheckerService.check(100, [])?.status).toBe('exceeded');
-		});
+	it('exposes the 10 and 20 absence thresholds of the norm', () => {
+		expect(WARNING_ABSENCE_THRESHOLD).toBe(10);
+		expect(CRITICAL_ABSENCE_THRESHOLD).toBe(20);
 	});
 
-	describe('deduplicación', () => {
-		it('retorna null si ya existe una alerta activa del mismo tipo', () => {
-			const existing = makeAlert(AlertType.warning());
-			const result = ThresholdCheckerService.check(60, [existing]);
-			expect(result).toBeNull();
-		});
+	it.each([0, 5, 9.75])(
+		'returns null below the first threshold (%p)',
+		(count) => {
+			expect(ThresholdCheckerService.check(count, CAP, [])).toBeNull();
+		},
+	);
 
-		it('retorna null si ya existe una alerta activa critical y el porcentaje corresponde a critical', () => {
-			const existing = makeAlert(AlertType.critical());
-			const result = ThresholdCheckerService.check(80, [existing]);
-			expect(result).toBeNull();
-		});
+	it.each([
+		[10, 10, 'warning'],
+		[10.25, 10, 'warning'],
+		[19.75, 10, 'warning'],
+		[20, 20, 'critical'],
+		[27.75, 20, 'critical'],
+		[28, 28, 'exceeded'],
+		[35, 28, 'exceeded'],
+	])('count %p reaches threshold %p (%s)', (count, threshold, status) => {
+		const result = ThresholdCheckerService.check(count, CAP, []);
+		expect(result?.threshold).toBe(threshold);
+		expect(result?.alertType.status).toBe(status);
+	});
 
-		it('retorna null si ya existe una alerta activa exceeded y el porcentaje corresponde a exceeded', () => {
-			const existing = makeAlert(AlertType.exceeded());
-			const result = ThresholdCheckerService.check(110, [existing]);
-			expect(result).toBeNull();
-		});
+	it('uses the given cap for the last threshold', () => {
+		expect(ThresholdCheckerService.check(28, 30, [])?.threshold).toBe(20);
+		expect(ThresholdCheckerService.check(30, 30, [])?.threshold).toBe(30);
+	});
 
-		it('no permite crear otra alerta si la existente ya fue vista', () => {
-			const seen = makeAlert(AlertType.warning(), new Date());
-			const result = ThresholdCheckerService.check(60, [seen]);
-			expect(result).toBeNull();
-		});
+	it('returns null when the alert of the reached threshold already exists', () => {
+		const existing = makeAlert(AlertType.warning());
+		expect(ThresholdCheckerService.check(12, CAP, [existing])).toBeNull();
+	});
 
-		it('permite escalar de warning a critical aunque exista una warning activa', () => {
-			const existingWarning = makeAlert(AlertType.warning());
-			const result = ThresholdCheckerService.check(80, [existingWarning]);
-			expect(result).not.toBeNull();
-			expect(result?.status).toBe('critical');
-		});
+	it('treats a seen alert as already raised', () => {
+		const seen = makeAlert(AlertType.warning(), new Date());
+		expect(ThresholdCheckerService.check(12, CAP, [seen])).toBeNull();
+	});
 
-		it('permite escalar de critical a exceeded aunque exista una critical activa', () => {
-			const existingCritical = makeAlert(AlertType.critical());
-			const result = ThresholdCheckerService.check(105, [existingCritical]);
-			expect(result).not.toBeNull();
-			expect(result?.status).toBe('exceeded');
-		});
+	it('escalates to the next threshold when only lower ones were raised', () => {
+		const warning = makeAlert(AlertType.warning());
+		const result = ThresholdCheckerService.check(21, CAP, [warning]);
+		expect(result?.alertType.status).toBe('critical');
+	});
 
-		it('retorna null si existe warning activa y el porcentaje sigue en rango warning', () => {
-			const existing = makeAlert(AlertType.warning());
-			expect(ThresholdCheckerService.check(55, [existing])).toBeNull();
-		});
+	it('does not fall back to a lower threshold already skipped', () => {
+		const critical = makeAlert(AlertType.critical());
+		expect(ThresholdCheckerService.check(25, CAP, [critical])).toBeNull();
+	});
 
-		it('funciona con múltiples alertas existentes de distintos tipos', () => {
-			const warning = makeAlert(AlertType.warning());
-			const critical = makeAlert(AlertType.critical());
-			// exceeded sigue disponible porque no hay exceeded activa
-			const result = ThresholdCheckerService.check(100, [warning, critical]);
-			expect(result).not.toBeNull();
-			expect(result?.status).toBe('exceeded');
-		});
-
-		it('retorna null si hay alertas de todos los tipos activos y el porcentaje es exceeded', () => {
-			const warning = makeAlert(AlertType.warning());
-			const critical = makeAlert(AlertType.critical());
-			const exceeded = makeAlert(AlertType.exceeded());
-			expect(
-				ThresholdCheckerService.check(100, [warning, critical, exceeded]),
-			).toBeNull();
-		});
+	it('raises only the highest threshold when several are crossed at once', () => {
+		const result = ThresholdCheckerService.check(29, CAP, []);
+		expect(result?.alertType.status).toBe('exceeded');
 	});
 });

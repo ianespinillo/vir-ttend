@@ -42,6 +42,7 @@ import { JustificationBadge } from '../../../src/features/attendance/justificati
 import { JustifySheet } from '../../../src/features/attendance/justify-sheet';
 import { MonthlyJustificationsModal } from '../../../src/features/attendance/monthly-justifications-modal';
 import { attendanceQueries } from '../../../src/features/attendance/queries';
+import { StatusPicker } from '../../../src/features/attendance/status-picker';
 import type {
 	AttendanceStatus,
 	RecordedAttendanceStatus,
@@ -58,29 +59,6 @@ import { useOutbox } from '../../../src/features/offline/use-outbox';
 import { useServerReachability } from '../../../src/features/offline/use-server-reachability';
 
 const NO_STUDENTS: StudentItem[] = [];
-
-// NativeWind crash workaround: className must stay STATIC per render.
-// Dynamic visual state goes through inline `style` so css-interop never
-// adds CSS variables after the initial render (which triggers its upgrade
-// warning path and crashes with "Couldn't find a navigation context").
-const statusButtonActiveStyle = {
-	shadowColor: '#000',
-	shadowOffset: { width: 0, height: 1 },
-	shadowOpacity: 0.05,
-	shadowRadius: 2,
-	elevation: 2,
-} as const;
-
-const statusStyles: Record<
-	AttendanceStatus,
-	{ activeBackground: string; activeText: string }
-> = {
-	present: { activeBackground: '#059669', activeText: '#FFFFFF' }, // emerald-600
-	absent: { activeBackground: '#DC2626', activeText: '#FFFFFF' }, // red-600
-	late: { activeBackground: '#F59E0B', activeText: '#FFFFFF' }, // amber-500
-};
-
-const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'late'];
 
 export default function AttendanceSheetScreen() {
 	const params = useLocalSearchParams();
@@ -332,7 +310,7 @@ function DailySheet({
 		for (const status of Object.values(attendanceMap)) {
 			if (status === 'present') present++;
 			else if (status === 'absent') absent++;
-			else if (status === 'late') late++;
+			else if (status === 'late' || status === 'late_beyond_tolerance') late++;
 			else if (status === 'justified') justified++;
 		}
 		return { present, absent, late, justified, total: students.length };
@@ -596,46 +574,17 @@ function DailySheet({
 									) : null}
 								</View>
 
-								{/* Segmented Controls: P | A | T */}
-								<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
-									{STATUS_ORDER.map((status, i) => {
-										const isActive = currentStatus === status;
-										const label = status[0].toUpperCase();
-										const colors = statusStyles[status];
-										return (
-											<TouchableOpacity
-												key={status}
-												onPress={() =>
-													handleStatusChange(
-														student.id,
-														`${student.firstName} ${student.lastName}`,
-														status,
-													)
-												}
-												className={`h-9 w-9 items-center justify-center rounded-md ${
-													i > 0 ? 'ml-1' : ''
-												}`}
-												style={
-													isActive
-														? {
-																backgroundColor: colors.activeBackground,
-																...statusButtonActiveStyle,
-															}
-														: undefined
-												}
-											>
-												<Text
-													className="text-sm font-bold"
-													style={{
-														color: isActive ? colors.activeText : '#475569', // slate-600
-													}}
-												>
-													{label}
-												</Text>
-											</TouchableOpacity>
-										);
-									})}
-								</View>
+								{/* Segmented Controls: P | A | T | TF */}
+								<StatusPicker
+									value={currentStatus}
+									onSelect={(status) =>
+										handleStatusChange(
+											student.id,
+											`${student.firstName} ${student.lastName}`,
+											status,
+										)
+									}
+								/>
 							</View>
 						);
 					})}

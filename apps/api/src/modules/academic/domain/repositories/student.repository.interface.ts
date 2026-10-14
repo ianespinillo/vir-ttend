@@ -13,6 +13,10 @@ export interface SearchStudentFilters {
 export interface IStudentRepository {
 	findById(id: string): Promise<Student | null>;
 	findByCourse(courseId: string): Promise<Student[]>;
+	findActiveByCourse(courseId: string): Promise<Student[]>;
+	/** ACTIVE students currently assigned to the workshop commission. */
+	findActiveByCommission(commissionId: string): Promise<Student[]>;
+	countActiveByCommission(commissionId: string): Promise<number>;
 	findByDocument(
 		documentNumber: string,
 		tenantId: string,

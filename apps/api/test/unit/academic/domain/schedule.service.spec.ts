@@ -127,6 +127,33 @@ describe('ScheduleService', () => {
 			);
 		});
 
+		it('reads weekdays and holidays of UTC-midnight dates in UTC, whatever the server timezone', () => {
+			const year = AcademicYear.reconstitute({
+				id: 'ay-2',
+				tenantId: 'tenant-1',
+				year: 2026,
+				startDate: new Date('2026-03-02'),
+				endDate: new Date('2026-03-13'),
+				nonWorkingDays: ['2026-03-11'] as unknown as Date[],
+				absenceThresholdPercent: 75,
+				lateCountAbscenseAfterMinutes: 15,
+				isActive: true,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			});
+			const result = service.getWorkingDaysOnPeriod(
+				new Date('2026-03-07'), // Saturday, UTC midnight
+				new Date('2026-03-13'), // Friday, UTC midnight
+				year,
+			);
+			expect(result.map((d) => d.toISOString().slice(0, 10))).toEqual([
+				'2026-03-09',
+				'2026-03-10',
+				'2026-03-12',
+				'2026-03-13',
+			]);
+		});
+
 		it('should return empty when from equals to and is weekend', () => {
 			const result = service.getWorkingDaysOnPeriod(
 				new Date('2025-03-01T12:00:00'), // sábado

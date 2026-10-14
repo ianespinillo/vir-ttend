@@ -69,6 +69,7 @@ const statusStyles: Record<
 	present: { activeBackground: '#059669', activeText: '#FFFFFF' }, // emerald-600
 	absent: { activeBackground: '#DC2626', activeText: '#FFFFFF' }, // red-600
 	late: { activeBackground: '#F59E0B', activeText: '#FFFFFF' }, // amber-500
+	late_beyond_tolerance: { activeBackground: '#EA580C', activeText: '#FFFFFF' }, // orange-600
 };
 
 const STATUS_ORDER: AttendanceStatus[] = ['present', 'absent', 'late'];
@@ -241,7 +242,7 @@ function SubjectSheet({
 		for (const status of Object.values(attendanceMap)) {
 			if (status === 'present') present++;
 			else if (status === 'absent') absent++;
-			else if (status === 'late') late++;
+			else if (status === 'late' || status === 'late_beyond_tolerance') late++;
 			else if (status === 'justified') justified++;
 		}
 		return { present, absent, late, justified, total: students.length };

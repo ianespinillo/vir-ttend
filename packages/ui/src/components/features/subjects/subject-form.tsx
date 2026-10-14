@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
 	type CreateSubjectFormValues,
 	type IUserResponse,
+	SUBJECT_KIND,
 	createSubjectSchema,
 } from '@repo/common';
 import { useForm } from 'react-hook-form';
@@ -53,6 +54,7 @@ export function SubjectForm({
 			area: defaultValues?.area || '',
 			weeklyHours: defaultValues?.weeklyHours || 4,
 			teacherId: defaultValues?.teacherId || '',
+			kind: defaultValues?.kind || SUBJECT_KIND.THEORY,
 		},
 	});
 
@@ -103,6 +105,32 @@ export function SubjectForm({
 									<FormControl>
 										<Input type="number" min="1" max="40" {...field} />
 									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="kind"
+							render={({ field }) => (
+								<FormItem className="md:col-span-2">
+									<FormLabel>Tipo *</FormLabel>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+										value={field.value}
+									>
+										<FormControl>
+											<SelectTrigger>
+												<SelectValue placeholder="Seleccione tipo" />
+											</SelectTrigger>
+										</FormControl>
+										<SelectContent>
+											<SelectItem value={SUBJECT_KIND.THEORY}>Teórica</SelectItem>
+											<SelectItem value={SUBJECT_KIND.WORKSHOP}>Taller</SelectItem>
+										</SelectContent>
+									</Select>
 									<FormMessage />
 								</FormItem>
 							)}
