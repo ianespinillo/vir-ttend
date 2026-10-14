@@ -19,6 +19,22 @@ export class WorkshopCommissionRepository
 		return WorkshopCommissionMapper.toDomain(orm);
 	}
 
+	async findByPreceptor(preceptorId: string): Promise<WorkshopCommission[]> {
+		const orms = await this.find(
+			{ preceptorId },
+			{ orderBy: { courseId: 'asc', number: 'asc' } },
+		);
+		return orms.map((orm) => WorkshopCommissionMapper.toDomain(orm));
+	}
+
+	async findByTenant(tenantId: string): Promise<WorkshopCommission[]> {
+		const orms = await this.find(
+			{ tenantId },
+			{ orderBy: { courseId: 'asc', number: 'asc' } },
+		);
+		return orms.map((orm) => WorkshopCommissionMapper.toDomain(orm));
+	}
+
 	async save(commission: WorkshopCommission): Promise<void> {
 		const existing = await this.findOne({ id: commission.id });
 		if (existing) {

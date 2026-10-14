@@ -5,9 +5,11 @@ import { AfterCommitQueue } from './after-commit.queue';
 import { AttendanceAlertOrmEntity } from './entities/attendance-alert.orm-entity';
 import { AttendanceRecordOrmEntity } from './entities/attendance-record.orm-entity';
 import { JustificationOrmEntity } from './entities/justification.orm-entity';
+import { WorkshopAttendanceRecordOrmEntity } from './entities/workshop-attendance-record.orm-entity';
 import { AttendanceAlertRepository } from './repository/attendance-alert.repository';
 import { AttendanceRecordRepository } from './repository/attendance-record.repository';
 import { JustificationRepository } from './repository/justification.repository';
+import { WorkshopAttendanceRecordRepository } from './repository/workshop-attendance-record.repository';
 
 @Module({
 	imports: [
@@ -15,11 +17,22 @@ import { JustificationRepository } from './repository/justification.repository';
 			JustificationOrmEntity,
 			AttendanceRecordOrmEntity,
 			AttendanceAlertOrmEntity,
+			WorkshopAttendanceRecordOrmEntity,
 		]),
 	],
 	providers: [
 		AfterCommitQueue,
 		AttendanceRecordRepository,
+		{
+			provide: WorkshopAttendanceRecordRepository,
+			useFactory: (em: EntityManager) =>
+				em.getRepository(WorkshopAttendanceRecordOrmEntity),
+			inject: [EntityManager],
+		},
+		{
+			provide: 'IWorkshopAttendanceRecordRepository',
+			useExisting: WorkshopAttendanceRecordRepository,
+		},
 		{
 			provide: AttendanceAlertRepository,
 			useFactory: (em: EntityManager) =>
@@ -52,6 +65,7 @@ import { JustificationRepository } from './repository/justification.repository';
 		'IAttendanceRecordRepository',
 		'IAttendanceAlertRepository',
 		'IJustificationRepository',
+		'IWorkshopAttendanceRecordRepository',
 	],
 })
 export class AttendancePersistenceModule {}
