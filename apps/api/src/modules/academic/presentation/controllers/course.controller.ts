@@ -269,7 +269,7 @@ export class CoursesController {
 		@Body('preceptorId') preceptorId: string,
 	) {
 		return this.assignPreceptorHandler.execute(
-			new AssignPreceptorCommand(id, preceptorId),
+			new AssignPreceptorCommand(preceptorId, id),
 		);
 	}
 }
