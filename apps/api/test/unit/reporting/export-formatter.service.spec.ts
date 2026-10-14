@@ -108,6 +108,16 @@ describe('ExportFormatterService', () => {
 			expect(rows[1].absencePercent).toBe(51.25);
 		});
 
+		it('maps the absence breakdown, empty for entries stored without it', () => {
+			const rows = ExportFormatterService.formatForExcel(monthly);
+
+			expect(rows.map((r) => [r.absentDaily, r.absentWorkshop])).toEqual([
+				[10, 2.5],
+				[null, null],
+				[null, null],
+			]);
+		});
+
 		it('keeps a missing percentage empty', () => {
 			expect(
 				ExportFormatterService.formatForExcel(monthly)[2].absencePercent,
@@ -119,6 +129,8 @@ describe('ExportFormatterService', () => {
 
 			expect(rows.map((r) => r.absent)).toEqual([12.5, 0]);
 			expect(rows[1].absencePercent).toBeNull();
+			expect(rows.map((r) => r.absentDaily)).toEqual([10, 0]);
+			expect(rows.map((r) => r.absentWorkshop)).toEqual([2.5, 0]);
 		});
 	});
 
