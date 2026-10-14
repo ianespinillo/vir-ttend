@@ -219,8 +219,8 @@ export class SubjectsController {
 			new UpdateSubjectCommand(
 				id,
 				dto.teacherId,
-				dto.name,
 				dto.area,
+				dto.name,
 				dto.weeklyHours,
 				dto.kind,
 			),
