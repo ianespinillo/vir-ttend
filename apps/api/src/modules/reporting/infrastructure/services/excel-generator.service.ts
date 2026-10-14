@@ -15,11 +15,10 @@ const HEADER_FILL = solidFill('FF1F4E78');
 const ZEBRA_FILL = solidFill('FFF5F7FA');
 const TOTALS_FILL = solidFill('FFE7E9ED');
 
+type StatusStyle = { label: string; fill: Fill; textColor: string };
+
 /** Soft fill + dark text per student status; also used to tint the percent. */
-const STATUS_STYLES: Record<
-	ReportStudentStatus,
-	{ label: string; fill: Fill; textColor: string }
-> = {
+const STATUS_STYLES: Record<ReportStudentStatus, StatusStyle> = {
 	ok: { label: 'OK', fill: solidFill('FFC6EFCE'), textColor: 'FF006100' },
 	'at-risk': {
 		label: 'En riesgo',
@@ -143,11 +142,13 @@ export class ExcelGeneratorService implements IExcelGeneratorService {
 	}
 
 	private addDataRow(sheet: Worksheet, data: ExcelRow, index: number): void {
-		const style = STATUS_STYLES[data.status];
+		// Stored reports are jsonb, so a status outside the union can reach here;
+		// it renders blank and untinted instead of failing the whole export.
+		const style: StatusStyle | undefined = STATUS_STYLES[data.status];
 		const row = sheet.getRow(FIRST_DATA_ROW + index);
 		const values: Record<ColumnKey, CellValue> = {
 			...data,
-			status: style.label,
+			status: style?.label ?? null,
 		};
 
 		COLUMNS.forEach((column, columnIndex) => {
@@ -160,6 +161,8 @@ export class ExcelGeneratorService implements IExcelGeneratorService {
 
 		const percentCell = row.getCell('absencePercent');
 		percentCell.numFmt = PERCENT_FORMAT;
+		if (!style) return;
+
 		// The tint mirrors the "Estado" column; an empty percent stays uncolored.
 		if (data.absencePercent !== null) {
 			percentCell.fill = style.fill;

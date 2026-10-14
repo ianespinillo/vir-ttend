@@ -327,6 +327,24 @@ describe('ExcelGeneratorService', () => {
 		const sheet = await build([]);
 
 		expect(sheet.getCell(HEADER_ROW, 1).value).toBe('Apellido');
-		expect(sheet.getCell(FIRST_DATA_ROW, 1).value).not.toBe('Total');
+		// No totals row: the row after the header stays blank as the spacer,
+		// and the legend starts right after it.
+		expect(sheet.getCell(FIRST_DATA_ROW, 1).value).toBeNull();
+		expect(sheet.getCell(HEADER_ROW + 2, 1).value).toEqual(
+			expect.stringContaining('tarde ¼'),
+		);
+	});
+
+	it('deja en blanco y sin color un estado desconocido de un reporte guardado', async () => {
+		const unknown = {
+			...rows[0],
+			status: 'archived',
+		} as unknown as ExcelRow;
+		const sheet = await build([unknown]);
+
+		expect(sheet.getCell(FIRST_DATA_ROW, COL.status).value).toBeNull();
+		expect(fillColor(sheet, FIRST_DATA_ROW, COL.status)).toBeUndefined();
+		expect(fillColor(sheet, FIRST_DATA_ROW, COL.percent)).toBeUndefined();
+		expect(sheet.getCell(FIRST_DATA_ROW, COL.surname).value).toBe('García');
 	});
 });
