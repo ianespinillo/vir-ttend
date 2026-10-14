@@ -1,6 +1,7 @@
 import { EntityManager } from '@mikro-orm/core';
-import { DAYOFWEEK } from '@repo/common';
+import { CommissionNumber, DAYOFWEEK } from '@repo/common';
 import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
+import { ScheduleSlotOrmEntity } from '../../../../src/modules/academic/infrastructure/persistence/entities/schedule-slot.orm-entity';
 import { SubjectOrmEntity } from '../../../../src/modules/academic/infrastructure/persistence/entities/subject.orm-entity';
 import { ScheduleSlotMapper } from '../../../../src/modules/academic/infrastructure/persistence/mappers/schedule-slot.mapper';
 
@@ -27,4 +28,22 @@ describe('ScheduleSlotMapper', () => {
 		expect(orm.subject).toEqual({ id: subjectId });
 		expect(em.getReference).toHaveBeenCalledWith(SubjectOrmEntity, subjectId);
 	});
+
+	it.each<CommissionNumber | null>([1, 2, null])(
+		'conserva commissionNumber=%s en toDomain',
+		(commissionNumber) => {
+			const orm = new ScheduleSlotOrmEntity();
+			orm.id = 'slot-1';
+			orm.subjectId = 'subject-1';
+			orm.courseId = 'course-1';
+			orm.dayOfWeek = DAYOFWEEK.MONDAY;
+			orm.startTime = '08:00';
+			orm.endTime = '09:00';
+			orm.commissionNumber = commissionNumber;
+
+			expect(ScheduleSlotMapper.toDomain(orm).commissionNumber).toBe(
+				commissionNumber,
+			);
+		},
+	);
 });
