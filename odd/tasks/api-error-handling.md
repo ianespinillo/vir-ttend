@@ -19,13 +19,13 @@ Test runner: Jest in `apps/api` (`npx jest test/unit/...`); baseline 103 suites 
 
 | ID | Specs | Route | Status | Commit / evidence |
 |---|---|---|---|---|
-| T1 | S1, S2 | inline | pending | |
-| T2 | S3 | inline | pending | |
-| T3 | S4 | inline | pending | |
-| T4 | S5 (identity) + S6 auth | delegated (parallel writers: disjoint module surfaces) | pending | |
-| T5 | S5 (academic) | delegated (parallel writers) | pending | |
-| T6 | S5 (attendance, reporting) | delegated (parallel writers) | pending | |
-| T7 | S6 (shared type) + seam check + independent verifier (high risk: item 3, API status contract) | inline + verifier | pending | |
+| T1 | S1, S2 | inline | done | `f7e00a6` — RED (missing module) → GREEN filter spec 11/11; API 103 suites / 730 tests |
+| T2 | S3 | inline | done | `9506591` — RED (missing factory, 3 pipe tests) → GREEN; API 105 suites / 742 tests |
+| T3 | S4 | inline | done | `e71e6f0` — RED 6 DB cases → GREEN; API 105 suites / 749 tests |
+| T4 | S5 (identity) + S6 auth | delegated (parallel writers: disjoint module surfaces) | done | `cac2024` — RED 65 failing → GREEN identity+shared 25 suites / 179 tests |
+| T5 | S5 (academic) | delegated (parallel writers) | done | `35d8821` — RED 34 failing → GREEN 35 suites / 207 tests |
+| T6 | S5 (attendance, reporting) | delegated (parallel writers) | done | `5972002` — RED ~60 failing → GREEN 42 suites / 361 tests |
+| T7 | S6 (shared type) + seam check + independent verifier (high risk: item 3, API status contract) | inline + verifier | done | `a7d9b81` (500 HttpException message hidden, RED→GREEN), `002fe5a` (ErrorResponse), `2acf1c8` (axios 401 on auth routes, RED 3 → GREEN 38); seam: API 111 suites / 795 tests, ts:check 9/9, biome clean |
 
 ## Log
 
@@ -33,3 +33,7 @@ Test runner: Jest in `apps/api` (`npx jest test/unit/...`); baseline 103 suites 
 - **L2 (2026-10-15, user decision):** approach "Errores de dominio tipados (Recomendado)" over Nest HTTP exceptions in handlers.
 - **L3 (2026-10-15, exploration):** single global `@Catch()` filter at `apps/api/src/common/filters/http-exception.filter.ts` maps `DomainError`→400, keeps `HttpException`, everything else → 500 "Internal server error". ~91 `throw new Error` in handlers/entities/VOs become 500 (mostly English). No DB error mapping. `ValidationPipe` has no `exceptionFactory`. Many specs assert exact English messages and must be updated with the new messages.
 - **L4:** forecast well over 400 authored lines → slices per task, chained PRs (`feature-branch-chain`) as in `student-history-metrics`.
+- **L5 (2026-10-15):** T1–T3 done. T4–T6 run as parallel writers in the same tree with disjoint module surfaces; the parent owns git and commits each unit after checking its diff against its surface.
+- **L6 (2026-10-15):** T7 partial (uncommitted until writers finish, because the pre-commit hook checks the whole repo): `ErrorResponse` in `@repo/common` now has `timestamp` and `details` (66 tests pass). Web axios interceptor no longer refreshes on a 401 from login/select-tenant/refresh/logout, so the user sees the real auth error; RED 3 failing → GREEN 38/38 in `packages/hooks`. Fixed a pre-existing test flaw: `mock.restore()` in `afterEach` detached the mock, so later tests hit the real API; the mock is now per test with `onNoMatch: 'throwException'`.
+- **L7 (2026-10-15):** writers done; not-found messages unified on the academic wording ("Curso no encontrado"...). Seam check passed. Open user decisions: login reveals a deactivated account because the active check runs before the password check (behavior change, not done); course.service weekly-hours and commission-on-theory rules stay 400 (could be 422). Advisory: `get-reports-by-course` rebuilds `ReportPeriod` for stored reports and fails for past years (pre-existing; now 400 instead of 500). Independent verifier launched against base `02a3028`.
+- **L8 (2026-10-15, verifier):** PASS on S1–S6, no blockers. API 111 suites / 795 tests, hooks 38, common 66, ui 126. Client consumers checked: login 401 shows the Spanish message on web and mobile; duplicate DNI 409 matches the client; import 422 + details intact. Advisories: (1) mobile outbox `classifyError` treats 4xx except 401/408 as permanent, so a race on the attendance unique constraint that used to be a retried 500 is now a permanent 409; (2) dead English-text branches in client user-create pages; (3) web login direct-select shows `err.message` instead of `response.data.message` (pre-existing); (4) voseo in unchanged `student-import.service.ts:38` (pre-existing).
