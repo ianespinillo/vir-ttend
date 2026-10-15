@@ -100,6 +100,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
 		if (exception instanceof HttpException) {
 			const status = exception.getStatus();
+
+			// A 500 means the server failed: its text is internal, never for the user.
+			if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+				return {
+					statusCode: status,
+					message: UNEXPECTED_ERROR_MESSAGE,
+					error: 'Internal Server Error',
+				};
+			}
 			const exceptionResponse = exception.getResponse();
 
 			// class-validator devuelve un objeto con array de mensajes

@@ -5,7 +5,12 @@ import {
 	NotNullConstraintViolationException,
 	UniqueConstraintViolationException,
 } from '@mikro-orm/core';
-import { ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
+import {
+	ArgumentsHost,
+	BadRequestException,
+	InternalServerErrorException,
+	Logger,
+} from '@nestjs/common';
 import {
 	BusinessRuleError,
 	ConflictError,
@@ -148,6 +153,26 @@ describe('HttpExceptionFilter', () => {
 
 		expect(errorLog).toHaveBeenCalledWith('POST /subjects 500', exception.stack);
 		expect(warnLog).not.toHaveBeenCalled();
+	});
+
+	it('oculta el mensaje de un HttpException 5xx', () => {
+		const { response, host } = createHost();
+
+		filter.catch(
+			new InternalServerErrorException('Record 42 is JUSTIFIED without data'),
+			host,
+		);
+
+		expect(response.status).toHaveBeenCalledWith(500);
+		expect(response.json).toHaveBeenCalledWith(
+			expect.objectContaining({
+				statusCode: 500,
+				message: 'Ocurrió un error inesperado. Intente nuevamente más tarde.',
+			}),
+		);
+		expect(JSON.stringify(response.json.mock.calls[0][0])).not.toContain(
+			'Record 42',
+		);
 	});
 
 	describe('errores de base de datos', () => {
