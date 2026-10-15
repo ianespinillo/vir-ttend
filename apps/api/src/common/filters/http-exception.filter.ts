@@ -16,6 +16,7 @@ import {
 	NotFoundError,
 	UnauthorizedError,
 } from '../errors';
+import { mapDatabaseError } from './database-error.mapper';
 
 const UNEXPECTED_ERROR_MESSAGE =
 	'Ocurrió un error inesperado. Intente nuevamente más tarde.';
@@ -117,6 +118,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
 				message: exception.message,
 				error: 'Error',
 			};
+		}
+
+		const databaseError = mapDatabaseError(exception);
+		if (databaseError) {
+			return databaseError;
 		}
 
 		// Errores no controlados (500)
