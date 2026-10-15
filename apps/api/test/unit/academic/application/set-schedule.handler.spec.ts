@@ -1,6 +1,7 @@
 import { DAYOFWEEK } from '@repo/common';
 // set-schedule.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../../src/common/errors';
 import { DomainError } from '../../../../src/common/errors/domain.error';
 import { SetScheduleCommand } from '../../../../src/modules/academic/application/commands/set-schedule/set-schedule.command';
 import { SetScheduleHandler } from '../../../../src/modules/academic/application/commands/set-schedule/set-schedule.handler';
@@ -8,6 +9,7 @@ import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/s
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('SetScheduleHandler', () => {
 	let handler: SetScheduleHandler;
@@ -72,13 +74,15 @@ describe('SetScheduleHandler', () => {
 	it('should throw when subject does not exist', async () => {
 		subjectRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new SetScheduleCommand('sub-1', [
 					{ dayOfWeek: DAYOFWEEK.MONDAY, startTime: '08:00', endTime: '09:00' },
 				]),
 			),
-		).rejects.toThrow('Subject not found');
+			NotFoundError,
+			'Materia no encontrada',
+		);
 
 		expect(scheduleRepository.deleteBySubject).not.toHaveBeenCalled();
 		expect(scheduleRepository.saveMany).not.toHaveBeenCalled();

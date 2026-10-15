@@ -5,6 +5,7 @@ import {
 	CommissionNumber,
 	DAYOFWEEK as DayOfWeek,
 } from '@repo/common';
+import { DomainError } from '../../../../common/errors';
 
 interface CreateProps {
 	subjectId: string;
@@ -49,14 +50,16 @@ export class ScheduleSlot {
 
 	static create(props: CreateProps): ScheduleSlot {
 		if (props.startTime >= props.endTime) {
-			throw new Error('Start time must be before end time');
+			throw new DomainError(
+				'La hora de inicio debe ser anterior a la hora de fin.',
+			);
 		}
 		if (
 			props.commissionNumber !== undefined &&
 			props.commissionNumber !== null &&
 			!(COMMISSION_NUMBERS as readonly number[]).includes(props.commissionNumber)
 		) {
-			throw new Error('Commission number must be 1 or 2');
+			throw new DomainError('La comisión debe ser 1 o 2.');
 		}
 		return new ScheduleSlot({
 			id: randomUUID(),

@@ -1,10 +1,10 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { STUDENTSTATUS } from '@repo/common';
+import {
+	BusinessRuleError,
+	ConflictError,
+	NotFoundError,
+} from '../../../../../common/errors';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { WorkshopPlacementService } from '../../services/workshop-placement.service';
@@ -21,17 +21,19 @@ export class EnrollStudentHandler {
 	) {}
 	async execute(command: EnrollStudentCommand) {
 		const student = await this.studentRepo.findById(command.studentId);
-		if (!student) throw new NotFoundException('Student not found');
+		if (!student) throw new NotFoundError('Estudiante no encontrado');
 
 		const course = await this.courseRepo.findById(command.courseId);
-		if (!course) throw new NotFoundException('Course not found');
+		if (!course) throw new NotFoundError('Curso no encontrado');
 
 		if (student.status === STUDENTSTATUS.TRANSFERRED) {
-			throw new BadRequestException('Cannot enroll a transferred student');
+			throw new BusinessRuleError(
+				'No se puede inscribir a un estudiante transferido.',
+			);
 		}
 
 		if (student.courseId === command.courseId) {
-			throw new BadRequestException('Student is already enrolled in this course');
+			throw new ConflictError('El estudiante ya está inscripto en este curso.');
 		}
 		student.enrollInCourse(command.courseId);
 		await this.placement.placeNewStudent(student);

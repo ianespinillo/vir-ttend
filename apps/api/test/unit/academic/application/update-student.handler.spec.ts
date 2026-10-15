@@ -1,6 +1,7 @@
 import { STUDENTSTATUS } from '@repo/common';
 // update-student.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../../src/common/errors';
 import { UpdateStudentCommand } from '../../../../src/modules/academic/application/commands/update-student/update-student.command';
 import { UpdateStudentHandler } from '../../../../src/modules/academic/application/commands/update-student/update-student.handler';
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
@@ -8,6 +9,7 @@ import { IStudentRepository } from '../../../../src/modules/academic/domain/repo
 import { DocumentNumber } from '../../../../src/modules/academic/domain/value-objects/document-number.vo';
 import { Tutor } from '../../../../src/modules/academic/domain/value-objects/tutor.vo';
 import { Email } from '../../../../src/modules/identity/domain/value-objects/email.vo';
+import { expectRejection } from '../expect-rejection';
 
 describe('UpdateStudentHandler', () => {
 	let handler: UpdateStudentHandler;
@@ -76,7 +78,7 @@ describe('UpdateStudentHandler', () => {
 	it('should throw when student does not exist', async () => {
 		studentRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new UpdateStudentCommand(
 					'student-id',
@@ -86,7 +88,9 @@ describe('UpdateStudentHandler', () => {
 					undefined,
 				),
 			),
-		).rejects.toThrow();
+			NotFoundError,
+			'Estudiante no encontrado',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});

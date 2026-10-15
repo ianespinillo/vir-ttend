@@ -1,4 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { CourseService } from '../../../domain/services/course.service';
@@ -16,7 +17,7 @@ export class GetStudentHandler {
 	async execute(query: GetStudentQuery): Promise<StudentDetailResponseDto> {
 		const student = await this.studentRepo.findById(query.id);
 		if (!student) {
-			throw new NotFoundException('Student not found');
+			throw new NotFoundError('Estudiante no encontrado');
 		}
 		const course = student.courseId
 			? await this.courseRepo.findById(student.courseId)

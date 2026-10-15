@@ -1,8 +1,10 @@
+import { DomainError } from '../../../../common/errors';
 export class SubjectId {
 	private readonly value: string;
 
 	constructor(id: string) {
-		if (!id) throw new Error('Id can not be empty');
+		if (!id)
+			throw new DomainError('El identificador de la materia es obligatorio.');
 		this.value = id;
 	}
 

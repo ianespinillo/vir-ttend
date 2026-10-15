@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { DomainError } from '../../../../common/errors';
 import { AcademicYearId } from '../value-objects/academic-year-id.vo';
 
 export interface CreateProps {
@@ -128,7 +129,7 @@ export class AcademicYear {
 	// Métodos de mutación
 	changeYear(year: number): void {
 		if (year < 2020) {
-			throw new Error('Year must be greater than or equal to 2020');
+			throw new DomainError('El año debe ser 2020 o posterior.');
 		}
 		this._year = year;
 		this._updatedAt = new Date();
@@ -136,7 +137,9 @@ export class AcademicYear {
 
 	changeYearLapse(startDate: Date, endDate: Date): void {
 		if (new Date(startDate).getTime() >= new Date(endDate).getTime()) {
-			throw new Error('Start date must be before end date');
+			throw new DomainError(
+				'La fecha de inicio debe ser anterior a la fecha de fin.',
+			);
 		}
 		this._startDate = new Date(startDate);
 		this._endDate = new Date(endDate);
@@ -165,13 +168,15 @@ export class AcademicYear {
 	): void {
 		if (absenceThresholdPercent !== undefined) {
 			if (absenceThresholdPercent < 0 || absenceThresholdPercent > 100) {
-				throw new Error('Absence threshold must be between 0 and 100');
+				throw new DomainError(
+					'El umbral de inasistencias debe estar entre 0 y 100.',
+				);
 			}
 			this._absenceThresholdPercent = absenceThresholdPercent;
 		}
 		if (lateCountAbscenseAfterMinutes !== undefined) {
 			if (lateCountAbscenseAfterMinutes < 0) {
-				throw new Error('Late count minutes must be positive');
+				throw new DomainError('Los minutos de tardanza no pueden ser negativos.');
 			}
 			this._lateCountAbscenseAfterMinutes = lateCountAbscenseAfterMinutes;
 		}

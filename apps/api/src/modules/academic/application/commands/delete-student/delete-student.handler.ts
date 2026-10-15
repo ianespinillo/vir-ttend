@@ -1,10 +1,6 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { STUDENTSTATUS } from '@repo/common';
+import { ConflictError, NotFoundError } from '../../../../../common/errors';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { DeleteStudentCommand } from './delete-student.command';
 
@@ -16,9 +12,9 @@ export class DeleteStudentHandler {
 	) {}
 	async execute(command: DeleteStudentCommand) {
 		const student = await this.studentRepo.findById(command.studentId);
-		if (!student) throw new NotFoundException('Student not found');
+		if (!student) throw new NotFoundError('Estudiante no encontrado');
 		if (student.status === STUDENTSTATUS.INACTIVE)
-			throw new BadRequestException('Student already inactive');
+			throw new ConflictError('El estudiante ya está inactivo.');
 		student.deactivate();
 		await this.studentRepo.save(student);
 	}

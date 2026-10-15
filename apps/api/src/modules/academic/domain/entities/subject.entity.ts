@@ -1,6 +1,7 @@
 // subject.entity.ts
 import { randomUUID } from 'node:crypto';
 import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import { DomainError } from '../../../../common/errors';
 import { SubjectId } from '../value-objects/subject-id.vo';
 
 interface CreateProps {
@@ -65,7 +66,7 @@ export class Subject {
 
 	static create(props: CreateProps): Subject {
 		if (props.weeklyHours < 1) {
-			throw new Error('Weekly hours must be at least 1');
+			throw new DomainError('Las horas semanales deben ser al menos 1.');
 		}
 		return new Subject({
 			id: new SubjectId(randomUUID()),
@@ -135,7 +136,8 @@ export class Subject {
 		if (kind) this._kind = kind;
 		if (area) this._area = area;
 		if (weeklyHours !== undefined) {
-			if (weeklyHours < 1) throw new Error('Weekly hours must be at least 1');
+			if (weeklyHours < 1)
+				throw new DomainError('Las horas semanales deben ser al menos 1.');
 			this._weeklyHours = weeklyHours;
 		}
 		this._updatedAt = new Date();

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IScheduleRepository } from '../../../domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { DeleteSubjectCommand } from './delete-subject.command';
@@ -13,7 +14,7 @@ export class DeleteSubjectHandler {
 	) {}
 	async execute({ subjectId }: DeleteSubjectCommand) {
 		const subject = await this.subjectRepo.findById(subjectId);
-		if (!subject) throw new Error('Subject not found');
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		subject.softDelete();
 		await this.subjectRepo.save(subject);
 		// Cascade: remove the subject's schedule slots so no orphan slots remain.

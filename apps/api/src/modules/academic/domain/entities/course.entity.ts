@@ -1,6 +1,7 @@
 // course.entity.ts.ts
 import { randomUUID } from 'node:crypto';
 import { LEVEL as Level, SHIFT as Shift } from '@repo/common';
+import { DomainError } from '../../../../common/errors';
 import { CourseId } from '../value-objects/course-id.vo';
 
 interface CreateProps {
@@ -70,7 +71,7 @@ export class Course {
 
 	static create(props: CreateProps): Course {
 		if (props.yearNumber < 1 || props.yearNumber > 7) {
-			throw new Error('Year number must be between 1 and 7');
+			throw new DomainError('El año del curso debe estar entre 1 y 7.');
 		}
 		return new Course({
 			id: new CourseId(randomUUID()),

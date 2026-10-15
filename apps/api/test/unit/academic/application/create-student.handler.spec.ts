@@ -2,11 +2,13 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { STUDENTSTATUS } from '@repo/common';
 // create-student.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ConflictError } from '../../../../src/common/errors';
 import { CreateStudentCommand } from '../../../../src/modules/academic/application/commands/create-student/create-student.command';
 import { CreateStudentHandler } from '../../../../src/modules/academic/application/commands/create-student/create-student.handler';
 import { WorkshopPlacementService } from '../../../../src/modules/academic/application/services/workshop-placement.service';
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('CreateStudentHandler', () => {
 	let handler: CreateStudentHandler;
@@ -71,7 +73,7 @@ describe('CreateStudentHandler', () => {
 			}),
 		);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new CreateStudentCommand(
 					'tenant-id',
@@ -84,7 +86,9 @@ describe('CreateStudentHandler', () => {
 					'1123456789',
 				),
 			),
-		).rejects.toThrow();
+			ConflictError,
+			'Ya existe un estudiante con ese número de documento.',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});

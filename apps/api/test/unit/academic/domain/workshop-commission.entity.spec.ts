@@ -1,7 +1,9 @@
 import { LEVEL, SHIFT } from '@repo/common';
+import { DomainError } from '../../../../src/common/errors';
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
 import { WorkshopCommission } from '../../../../src/modules/academic/domain/entities/workshop-commission.entity';
 import { WorkshopCommissionMapper } from '../../../../src/modules/academic/infrastructure/persistence/mappers/workshop-commission.mapper';
+import { expectThrow } from '../expect-rejection';
 
 describe('WorkshopCommission', () => {
 	const course = Course.create({
@@ -46,13 +48,16 @@ describe('WorkshopCommission', () => {
 	});
 
 	it('rejects a commission number other than 1 or 2', () => {
-		expect(() =>
-			WorkshopCommission.create({
-				tenantId: 'tenant-1',
-				courseId: 'course-1',
-				number: 3 as unknown as 1,
-			}),
-		).toThrow('Commission number must be 1 or 2');
+		expectThrow(
+			() =>
+				WorkshopCommission.create({
+					tenantId: 'tenant-1',
+					courseId: 'course-1',
+					number: 3 as unknown as 1,
+				}),
+			DomainError,
+			'La comisión debe ser 1 o 2.',
+		);
 	});
 
 	it('round-trips through the ORM mapper', () => {
