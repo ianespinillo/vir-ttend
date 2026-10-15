@@ -28,6 +28,8 @@ COPY . .
 # Argumentos de compilación para Next.js
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_TENANCY_MODE=multi
+ENV NEXT_PUBLIC_TENANCY_MODE=${NEXT_PUBLIC_TENANCY_MODE}
 
 # Compilar paquetes dependientes y la aplicación cliente
 RUN pnpm --filter @repo/common build

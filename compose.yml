@@ -4,15 +4,15 @@ services:
     container_name: vir-ttend_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: virttend
-      POSTGRES_PASSWORD: 2026virttend
-      POSTGRES_DB: vir_ttend
+      POSTGRES_USER: ${POSTGRES_USER:-virttend}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-2026virttend}
+      POSTGRES_DB: ${POSTGRES_DB:-vir_ttend}
     ports:
       - "${POSTGRES_PORT:-5436}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U virttend -d vir_ttend"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,16 +35,22 @@ services:
     build:
       context: .
       dockerfile: apps/api/dockerfile
+    image: vir-ttend-api
     container_name: vir-ttend_api
     restart: unless-stopped
     ports:
       - "${API_PORT:-3001}:3001"
+    # Optional API settings (tenancy, bootstrap admin, SMTP...) come from the
+    # root .env; the explicit values below take precedence over it.
+    env_file:
+      - path: .env
+        required: false
     environment:
       PORT: 3001
       NODE_ENV: production
       # dev/http: cookies sin flag Secure (Android rechaza Secure sobre http)
       COOKIES_SECURE: ${COOKIES_SECURE:-false}
-      DATABASE_URL: postgresql://virttend:2026virttend@postgres:5432/vir_ttend
+      DATABASE_URL: postgresql://${POSTGRES_USER:-virttend}:${POSTGRES_PASSWORD:-2026virttend}@postgres:5432/${POSTGRES_DB:-vir_ttend}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-vir_ttend_super_secret_jwt_key_2026}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-vir_ttend_super_secret_refresh_jwt_key_2026}
@@ -67,6 +73,8 @@ services:
       dockerfile: apps/client/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+        NEXT_PUBLIC_TENANCY_MODE: ${NEXT_PUBLIC_TENANCY_MODE:-multi}
+    image: vir-ttend-client
     container_name: vir-ttend_client
     restart: unless-stopped
     ports:
@@ -75,6 +83,7 @@ services:
       PORT: 3000
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_TENANCY_MODE: ${NEXT_PUBLIC_TENANCY_MODE:-multi}
     depends_on:
       api:
         condition: service_healthy

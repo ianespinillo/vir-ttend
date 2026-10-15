@@ -9,15 +9,15 @@ services:
     container_name: vir-ttend_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: virttend
-      POSTGRES_PASSWORD: 2026virttend
-      POSTGRES_DB: vir_ttend
+      POSTGRES_USER: ${POSTGRES_USER:-virttend}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-2026virttend}
+      POSTGRES_DB: ${POSTGRES_DB:-vir_ttend}
     ports:
       - "${POSTGRES_PORT:-5436}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U virttend -d vir_ttend"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
