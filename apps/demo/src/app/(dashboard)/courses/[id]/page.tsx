@@ -17,7 +17,6 @@ import {
 	type CreateCourseFormValues,
 	type CreateSubjectFormValues,
 	ROLES,
-	STUDENT_ROUTES,
 } from '@repo/common';
 import {
 	CourseDetail,
@@ -175,7 +174,6 @@ export default function CourseDetailPage() {
 						: undefined
 				}
 				canManage={isAdmin}
-				studentsPath={`${STUDENT_ROUTES.students}?courseId=${course.id}`}
 				attendancePath={`${ATTENDANCE_ROUTES.daily}?courseId=${course.id}`}
 			/>
 

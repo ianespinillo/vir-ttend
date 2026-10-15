@@ -4,6 +4,7 @@ import type {
 	DAYOFWEEK,
 	ICourseDetailResponse,
 	IScheduleSlotResponse,
+	IStudentResponse,
 	ISubjectResponse,
 	ScheduleSlotFormValues,
 } from '@repo/common';
@@ -28,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
 import { ScheduleGrid } from '../schedule/schedule-grid';
 import { ScheduleModal } from '../schedule/schedule-modal';
+import { StudentsTable } from '../students/students-table';
 import { SubjectsList } from '../subjects/subjects-list';
 
 export interface CourseDetailProps {
@@ -35,6 +37,10 @@ export interface CourseDetailProps {
 	subjects?: ISubjectResponse[];
 	schedule?: IScheduleSlotResponse[];
 	studentCount?: number;
+	/** Students of the course, listed in the "Estudiantes" tab. */
+	students?: IStudentResponse[];
+	isLoadingStudents?: boolean;
+	onViewStudent?: (id: string) => void;
 	onBack?: () => void;
 	onEdit?: () => void;
 	onDelete?: () => void;
@@ -44,7 +50,6 @@ export interface CourseDetailProps {
 	onSaveSchedule?: (slots: ScheduleSlotFormValues[]) => Promise<void> | void;
 	onImportStudents?: () => void;
 	canManage?: boolean;
-	studentsPath?: string;
 	attendancePath?: string;
 	/** Optional "Comisiones" tab content (workshop commissions); shown only to managers. */
 	commissionsTab?: ReactNode;
@@ -55,6 +60,9 @@ export function CourseDetail({
 	subjects = [],
 	schedule = [],
 	studentCount,
+	students = [],
+	isLoadingStudents = false,
+	onViewStudent,
 	onBack,
 	onEdit,
 	onDelete,
@@ -64,7 +72,6 @@ export function CourseDetail({
 	onSaveSchedule,
 	onImportStudents,
 	canManage = false,
-	studentsPath,
 	attendancePath,
 	commissionsTab,
 }: CourseDetailProps) {
@@ -286,32 +293,24 @@ export function CourseDetail({
 
 				<TabsContent value="students" className="pt-4">
 					<Card>
-						<CardHeader>
+						<CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
 							<CardTitle className="text-lg font-semibold flex items-center gap-2">
 								<Users className="h-5 w-5 text-primary" />
 								Alumnado del Curso
 							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<p className="text-sm text-muted-foreground">
-								Consulte la lista completa de estudiantes matriculados en este curso,
-								así como las opciones de matriculación y transferencias.
-							</p>
-							{studentsPath ? (
-								<Button asChild variant="outline">
-									<a href={studentsPath}>Ver estudiantes en el módulo de Alumnado</a>
-								</Button>
-							) : (
-								<p className="text-sm font-medium text-primary">
-									Conectado al Módulo de Estudiantes (Sprint 03).
-								</p>
-							)}
 							{onImportStudents && (
 								<Button onClick={onImportStudents} className="gap-2">
 									<Upload className="h-4 w-4" aria-hidden="true" />
 									Importar alumnos
 								</Button>
 							)}
+						</CardHeader>
+						<CardContent>
+							<StudentsTable
+								data={students}
+								isLoading={isLoadingStudents}
+								onView={onViewStudent}
+							/>
 						</CardContent>
 					</Card>
 				</TabsContent>
