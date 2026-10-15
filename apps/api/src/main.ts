@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LogginInterceptor } from './common/interceptors/loggin.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { validationExceptionFactory } from './common/validation/validation-exception.factory';
 import { BrandingService } from './modules/shared/branding/branding.service';
 import { getEnvs } from './modules/shared/config/app.config';
 
@@ -26,6 +27,7 @@ async function bootstrap() {
 			transformOptions: {
 				enableImplicitConversion: true,
 			},
+			exceptionFactory: validationExceptionFactory,
 		}),
 	);
 	app.useGlobalFilters(new HttpExceptionFilter());

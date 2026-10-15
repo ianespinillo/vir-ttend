@@ -40,19 +40,25 @@ export function Match(property: string, validationOptions?: ValidationOptions) {
 export class ChangePasswordRequestDto {
 	@IsNotEmpty()
 	@IsString()
-	@MaxLength(20, { message: 'Password must not exceed 20 characters' })
+	@MaxLength(20, {
+		message: 'La contraseña debe tener como máximo 20 caracteres.',
+	})
 	oldPassword!: string;
 
 	@IsNotEmpty()
 	@IsString()
-	@MinLength(8, { message: 'Password must be at least 8 characters long' })
-	@MaxLength(20, { message: 'Password must not exceed 20 characters' })
+	@MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres.' })
+	@MaxLength(20, {
+		message: 'La contraseña debe tener como máximo 20 caracteres.',
+	})
 	newPassword!: string;
 
 	@IsNotEmpty()
 	@IsString()
-	@MinLength(8, { message: 'Password must be at least 8 characters long' })
-	@MaxLength(20, { message: 'Password must not exceed 20 characters' })
-	@Match('newPassword', { message: 'Passwords do not match' })
+	@MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres.' })
+	@MaxLength(20, {
+		message: 'La contraseña debe tener como máximo 20 caracteres.',
+	})
+	@Match('newPassword', { message: 'Las contraseñas no coinciden.' })
 	confirmNewPassword!: string;
 }
