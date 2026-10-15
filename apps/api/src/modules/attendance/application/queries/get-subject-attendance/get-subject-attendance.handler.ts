@@ -1,4 +1,5 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
@@ -26,14 +27,14 @@ export class GetSubjectAttendanceQueryHandler {
 		query: GetSubjectAttendanceQuery,
 	): Promise<SubjectAttendanceResponseDto> {
 		const subject = await this.subjectPort.getSubjectById(query.subjectId);
-		if (!subject) throw new BadRequestException('Invalid subject id');
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		assertCanReadSubjectAttendance(subject, {
 			userId: query.userId,
 			role: query.userRole,
 			tenantId: query.tenantId,
 		});
 		if (Number.isNaN(query.date.getTime()))
-			throw new BadRequestException('Invalid date');
+			throw new DomainError('La fecha no es válida');
 
 		const [records, students] = await Promise.all([
 			this.attendanceRepo.findBySubjectAndDate(query.subjectId, query.date),

@@ -1,4 +1,5 @@
 import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
+import { NotFoundError } from '../../../src/common/errors';
 import { StudentWeightedAbsencesService } from '../../../src/modules/attendance/application/services/student-weighted-absences.service';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
@@ -321,9 +322,9 @@ describe('StudentWeightedAbsencesService', () => {
 		const { service, academicYearPort } = build({});
 		academicYearPort.findById.mockResolvedValue(null);
 
-		await expect(
-			service.getStudentWeightedAbsences('student-1', 'nope'),
-		).rejects.toThrow('Academic year not found');
+		const attempt = service.getStudentWeightedAbsences('student-1', 'nope');
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Ciclo lectivo no encontrado');
 	});
 
 	it('uses the institutional cap of 28', async () => {

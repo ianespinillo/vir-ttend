@@ -1,11 +1,7 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ATTENDANCE_STATUS } from '@repo/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { Justification } from '../../../domain/entities/justification.entity';
 import { AttendanceJustifiedEvent } from '../../../domain/events/attendance-justified.event';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
@@ -28,11 +24,11 @@ export class JustifyAttendanceHandler {
 
 	async execute(command: JustifyAttendanceCommand): Promise<void> {
 		const record = await this.attendaceRepo.findById(command.attendanceRecordId);
-		if (!record) throw new NotFoundException('Attendance not found');
+		if (!record) throw new NotFoundError('Registro de asistencia no encontrado');
 		const year = await this.accademicYearPort.findActiveByTenant(record.tenantId);
-		if (!year) throw new NotFoundException('Academic year not found');
+		if (!year) throw new NotFoundError('No hay un ciclo lectivo activo');
 		if (!JustificationService.canJustify(record, year))
-			throw new BadRequestException(
+			throw new DomainError(
 				'Solo se pueden justificar inasistencias o tardanzas del ciclo lectivo activo.',
 			);
 		const justification = Justification.create({

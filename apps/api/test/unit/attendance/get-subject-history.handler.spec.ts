@@ -1,6 +1,6 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_STATUS, ROLES, Roles } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ForbiddenError, NotFoundError } from '../../../src/common/errors';
 import { GetSubjectHistoryQueryHandler } from '../../../src/modules/attendance/application/queries/get-subject-history/get-subject-history.handler';
 import { GetSubjectHistoryQuery } from '../../../src/modules/attendance/application/queries/get-subject-history/get-subject-history.query';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
@@ -49,24 +49,24 @@ describe('GetSubjectHistoryQueryHandler', () => {
 		expect(result.subjectId).toBe('sub-1');
 	});
 
-	it('should reject another teacher with ForbiddenException', async () => {
+	it('should reject another teacher with ForbiddenError', async () => {
 		await expect(
 			handler.execute(buildQuery('other-teacher', ROLES.TEACHER)),
-		).rejects.toThrow(ForbiddenException);
+		).rejects.toThrow(ForbiddenError);
 		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
 	});
 
-	it('should reject cross-tenant requester with ForbiddenException', async () => {
+	it('should reject cross-tenant requester with ForbiddenError', async () => {
 		await expect(
 			handler.execute(buildQuery('teacher-1', ROLES.TEACHER, 'other-tenant')),
-		).rejects.toThrow(ForbiddenException);
+		).rejects.toThrow(ForbiddenError);
 		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
 	});
 
 	it('should reject when the requester has no tenant', async () => {
 		await expect(
 			handler.execute(buildQuery('teacher-1', ROLES.TEACHER, '')),
-		).rejects.toThrow(ForbiddenException);
+		).rejects.toThrow(ForbiddenError);
 		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
 	});
 
@@ -76,7 +76,7 @@ describe('GetSubjectHistoryQueryHandler', () => {
 		);
 		await expect(
 			handler.execute(buildQuery('admin-1', ROLES.ADMIN)),
-		).rejects.toThrow(ForbiddenException);
+		).rejects.toThrow(ForbiddenError);
 		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
 	});
 
@@ -85,10 +85,10 @@ describe('GetSubjectHistoryQueryHandler', () => {
 		new GetSubjectHistoryQuery('sub-1', from, to);
 	});
 
-	it('should throw NotFoundException when subject does not exist', async () => {
+	it('should throw NotFoundError when subject does not exist', async () => {
 		subjectPort.getSubjectById.mockResolvedValue(null);
-		await expect(handler.execute(buildQuery())).rejects.toThrow(
-			NotFoundException,
-		);
+		const attempt = handler.execute(buildQuery());
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Materia no encontrada');
 	});
 });

@@ -1,7 +1,7 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ATTENDANCE_STATUS, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { DomainError, ForbiddenError } from '../../../src/common/errors';
 import { BulkRegisterWorkshopAttendanceCommand } from '../../../src/modules/attendance/application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.command';
 import { BulkRegisterWorkshopAttendanceHandler } from '../../../src/modules/attendance/application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.handler';
 import { RegisterWorkshopAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-workshop-attendance/register-workshop-attendance.command';
@@ -116,7 +116,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			handler.execute(
 				register([{ studentId: 'intruder', status: ATTENDANCE_STATUS.ABSENT }]),
 			),
-		).rejects.toThrow(BadRequestException);
+		).rejects.toThrow(DomainError);
 		expect(emitter.emit).not.toHaveBeenCalled();
 	});
 
@@ -134,7 +134,10 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 				{ studentId: 'intruder', status: ATTENDANCE_STATUS.PRESENT },
 			]),
 		);
-		await expect(attempt).rejects.toThrow(BadRequestException);
+		await expect(attempt).rejects.toThrow(DomainError);
+		await expect(attempt).rejects.toThrow(
+			'Los siguientes estudiantes no pertenecen a la comisión',
+		);
 		await expect(attempt).rejects.toThrow(/intruder/);
 		expect(repo.bulkSave).not.toHaveBeenCalled();
 	});
@@ -150,7 +153,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			handler.execute(
 				register([{ studentId: 's1', status: ATTENDANCE_STATUS.PRESENT }], 'other'),
 			),
-		).rejects.toThrow(ForbiddenException);
+		).rejects.toThrow(ForbiddenError);
 	});
 });
 

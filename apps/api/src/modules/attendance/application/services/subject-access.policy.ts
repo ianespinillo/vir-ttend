@@ -1,5 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
 import { ROLES, Roles } from '@repo/common';
+import { ForbiddenError } from '../../../../common/errors';
 import { Subject } from '../../domain/entities/subject.entity';
 
 export interface SubjectActor {
@@ -18,7 +18,7 @@ function assertSameTenant(subject: Subject, actor: SubjectActor): void {
 		!actor.tenantId ||
 		subject.tenantId !== actor.tenantId
 	) {
-		throw new ForbiddenException('Subject does not belong to your tenant');
+		throw new ForbiddenError('No tiene acceso a esta materia');
 	}
 }
 
@@ -34,8 +34,8 @@ export function assertCanWriteSubjectAttendance(
 	assertSameTenant(subject, actor);
 	if (actor.role === ROLES.ADMIN) return;
 	if (actor.role === ROLES.TEACHER && subject.teacherId === actor.userId) return;
-	throw new ForbiddenException(
-		'You are not allowed to manage attendance for this subject',
+	throw new ForbiddenError(
+		'No tiene permiso para gestionar la asistencia de esta materia',
 	);
 }
 

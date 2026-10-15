@@ -1,4 +1,5 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { DomainError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { CopyDailyAttendanceCommand } from './copy-daily-attendance.command';
@@ -24,7 +25,7 @@ export class CopyDailyAttendanceHandler {
 			);
 
 			if (recentRecords.length === 0) {
-				throw new BadRequestException(
+				throw new DomainError(
 					'No se encontraron registros previos para este curso',
 				);
 			}
@@ -38,7 +39,7 @@ export class CopyDailyAttendanceHandler {
 			].sort();
 
 			if (dates.length === 0) {
-				throw new BadRequestException(
+				throw new DomainError(
 					'No se encontraron registros previos para este curso',
 				);
 			}
@@ -52,9 +53,7 @@ export class CopyDailyAttendanceHandler {
 		);
 
 		if (sourceRecords.length === 0) {
-			throw new BadRequestException(
-				'No se encontraron registros para la fecha origen',
-			);
+			throw new DomainError('No se encontraron registros para la fecha origen');
 		}
 
 		const existingRecords = await this.attendanceRepo.findByCourseAndDate(

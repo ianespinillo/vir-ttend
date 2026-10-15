@@ -1,5 +1,6 @@
 import { ATTENDANCE_STATUS, LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../src/common/errors';
 import { GetMonthlyReportQueryHandler } from '../../../src/modules/reporting/application/queries/get-monthly-report/get-monthly-report.handler';
 import { GetMonthlyReportQuery } from '../../../src/modules/reporting/application/queries/get-monthly-report/get-monthly-report.query';
 import { ReportGenerationService } from '../../../src/modules/reporting/application/services/report-generation.service';
@@ -45,9 +46,11 @@ describe('GetMonthlyReportQueryHandler', () => {
 		handler = new GetMonthlyReportQueryHandler(repo, coursePort, reportService);
 	});
 
-	it('lanza NotFoundException si el curso no existe', async () => {
+	it('lanza NotFoundError si el curso no existe', async () => {
 		coursePort.findById.mockResolvedValue(null);
-		await expect(handler.execute(query)).rejects.toThrow('Course not found');
+		const attempt = handler.execute(query);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Curso no encontrado');
 		expect(repo.save).not.toHaveBeenCalled();
 	});
 

@@ -1,6 +1,7 @@
 import type { AttendanceStatus } from '@repo/common';
 import { ATTENDANCE_STATUS, LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../src/common/errors';
 import { ReportGenerationService } from '../../../src/modules/reporting/application/services/report-generation.service';
 import { AcademicYear } from '../../../src/modules/reporting/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/reporting/domain/entities/attendance-record.entity';
@@ -106,11 +107,11 @@ describe('ReportGenerationService', () => {
 			return entry;
 		};
 
-		it('lanza NotFoundException si el curso no existe', async () => {
+		it('lanza NotFoundError si el curso no existe', async () => {
 			coursePort.findById.mockResolvedValue(null);
-			await expect(
-				service.generateMonthlyReport('invalid', period),
-			).rejects.toThrow('Course not found');
+			const attempt = service.generateMonthlyReport('invalid', period);
+			await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+			await expect(attempt).rejects.toThrow('Curso no encontrado');
 		});
 
 		it('builds the header and the summary over the days given', async () => {
@@ -298,6 +299,22 @@ describe('ReportGenerationService', () => {
 				}),
 			);
 			coursePort.findById.mockResolvedValue(course);
+		});
+
+		it('answers not found when the academic year does not exist', async () => {
+			academicYearPort.findById.mockResolvedValue(null);
+			const attempt = service.generateDetailedStudentReport('student-1', 'nope');
+			await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+			await expect(attempt).rejects.toThrow('Ciclo lectivo no encontrado');
+		});
+
+		it('answers not found when the student does not exist', async () => {
+			attendanceRecordPort.findDailyByStudentAndDateRange.mockResolvedValue([]);
+			attendanceRecordPort.findWorkshopByStudentAndDateRange.mockResolvedValue([]);
+			studentPort.findStudent.mockResolvedValue(null);
+			const attempt = service.generateDetailedStudentReport('missing', 'ay-1');
+			await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+			await expect(attempt).rejects.toThrow('Estudiante no encontrado');
 		});
 
 		it('breaks the weighted totals down by month and sums them', async () => {

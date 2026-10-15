@@ -1,7 +1,7 @@
-import { ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ATTENDANCE_STATUS, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ForbiddenError } from '../../../src/common/errors';
 import { BulkUpdateSubjectStatusCommand } from '../../../src/modules/attendance/application/commands/bulk-update-subject-status/bulk-update-subject-status.command';
 import { BulkUpdateSubjectStatusHandler } from '../../../src/modules/attendance/application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
@@ -106,7 +106,7 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 			ATTENDANCE_STATUS.PRESENT,
 		);
 
-		await expect(handler.execute(foreign)).rejects.toThrow(ForbiddenException);
+		await expect(handler.execute(foreign)).rejects.toThrow(ForbiddenError);
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 		expect(eventEmitter.emit).not.toHaveBeenCalled();
 	});
@@ -137,8 +137,6 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 			ATTENDANCE_STATUS.PRESENT,
 		);
 
-		await expect(handler.execute(crossTenant)).rejects.toThrow(
-			ForbiddenException,
-		);
+		await expect(handler.execute(crossTenant)).rejects.toThrow(ForbiddenError);
 	});
 });

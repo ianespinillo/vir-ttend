@@ -2,6 +2,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 // justify-attendance.handler.spec.ts
+import { DomainError, NotFoundError } from '../../../src/common/errors';
 import { JustifyAttendanceCommand } from '../../../src/modules/attendance/application/commands/justify-attendance/justify-attendance.command';
 import { JustifyAttendanceHandler } from '../../../src/modules/attendance/application/commands/justify-attendance/justify-attendance.handler';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
@@ -111,16 +112,16 @@ describe('JustifyAttendanceHandler', () => {
 	it('should throw when record does not exist', async () => {
 		attendanceRepo.findById.mockResolvedValue(null);
 
-		await expect(
-			handler.execute(
-				new JustifyAttendanceCommand(
-					'record-id',
-					'Enfermedad',
-					'user-id',
-					undefined,
-				),
+		const attempt = handler.execute(
+			new JustifyAttendanceCommand(
+				'record-id',
+				'Enfermedad',
+				'user-id',
+				undefined,
 			),
-		).rejects.toThrow();
+		);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Registro de asistencia no encontrado');
 
 		expect(justificationRepo.save).not.toHaveBeenCalled();
 	});
@@ -231,16 +232,16 @@ describe('JustifyAttendanceHandler', () => {
 			),
 		);
 
-		await expect(
-			handler.execute(
-				new JustifyAttendanceCommand(
-					'record-id',
-					'Enfermedad',
-					'user-id',
-					undefined,
-				),
+		const attempt = handler.execute(
+			new JustifyAttendanceCommand(
+				'record-id',
+				'Enfermedad',
+				'user-id',
+				undefined,
 			),
-		).rejects.toThrow(
+		);
+		await expect(attempt).rejects.toBeInstanceOf(DomainError);
+		await expect(attempt).rejects.toThrow(
 			'Solo se pueden justificar inasistencias o tardanzas del ciclo lectivo activo.',
 		);
 	});

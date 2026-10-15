@@ -1,9 +1,5 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { ICoursePort } from '../../../domain/ports/course.port.interface';
 import { IPdfGeneratorService } from '../../../domain/ports/pdf-generator.port.interface';
 import { ITenantPort } from '../../../domain/ports/tenant.port.interface';
@@ -27,11 +23,14 @@ export class ExportPdfHandler {
 
 	async execute(command: ExportPdfCommand): Promise<Buffer> {
 		const course = await this.coursePort.findById(command.courseId);
-		if (!course) throw new NotFoundException('Course not found');
+		if (!course) throw new NotFoundError('Curso no encontrado');
 		const metadata = await this.buildMetadata(command, course.tenantId);
 		if (command.type === 'student') {
 			const studentId = command.studentId;
-			if (!studentId) throw new BadRequestException('Student id required');
+			if (!studentId)
+				throw new DomainError(
+					'Debe indicar el estudiante para generar el reporte individual',
+				);
 			return this.studentExecute(studentId, course.academicYearId, metadata);
 		}
 		const report = await this.reporter.generateMonthlyReport(

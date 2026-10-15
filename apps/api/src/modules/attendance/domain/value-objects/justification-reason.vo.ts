@@ -1,13 +1,15 @@
+import { DomainError } from '../../../../common/errors';
+
 export class JustificationReason {
 	private readonly value: string;
 
 	constructor(value: string) {
 		if (!value) {
-			throw new Error("Invalid justification reason, it can't be empty.");
+			throw new DomainError('El motivo de la justificación es obligatorio');
 		}
 		if (value.length > 500) {
-			throw new Error(
-				'Invalid justification reason, it should be at least 500 characters.',
+			throw new DomainError(
+				'El motivo de la justificación no puede superar los 500 caracteres',
 			);
 		}
 		this.value = value;

@@ -1,5 +1,6 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { LevelType } from '@repo/common';
+import { NotFoundError } from '../../../../common/errors';
 import { toDateKey } from '../../../attendance/domain/services/weighted-absence';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { IAcademicYearPort } from '../../domain/ports/academic-year.port.interface';
@@ -38,7 +39,7 @@ export class ReportGenerationService {
 		period: ReportPeriod,
 	): Promise<MonthlyReportData> {
 		const course = await this.coursePort.findById(courseId);
-		if (!course) throw new NotFoundException('Course not found');
+		if (!course) throw new NotFoundError('Curso no encontrado');
 
 		// Two bulk reads for the whole course; the weighting is applied per student
 		// in memory, so the queries do not grow with the number of students.
@@ -88,7 +89,7 @@ export class ReportGenerationService {
 		academicYearId: string,
 	): Promise<IDetailedStudentReport> {
 		const year = await this.academicYearPort.findById(academicYearId);
-		if (!year) throw new Error('Academic Year not found');
+		if (!year) throw new NotFoundError('Ciclo lectivo no encontrado');
 
 		const [dailyRecords, workshopRecords] = await Promise.all([
 			this.attendanceRecordPort.findDailyByStudentAndDateRange(
@@ -138,7 +139,7 @@ export class ReportGenerationService {
 		workshopRecords: AttendanceRecord[],
 	): Promise<StudentReportEntry> {
 		const student = await this.studentPort.findStudent(id);
-		if (!student) throw new Error('Student not found');
+		if (!student) throw new NotFoundError('Estudiante no encontrado');
 
 		const alerts = await this.alertsPort.findByStudentId(id);
 		const metrics = this.metrics.calculateStudentMetrics(

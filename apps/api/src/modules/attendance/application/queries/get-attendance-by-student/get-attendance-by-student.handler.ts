@@ -1,9 +1,6 @@
-import {
-	Inject,
-	Injectable,
-	InternalServerErrorException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { IJustificationRepository } from '../../../domain/repositories/justification.repository.interface';
@@ -30,17 +27,14 @@ export class GetAttendanceByStudentQueryHandler {
 			query.to,
 		);
 		const student = await this.studentPort.findById(query.studentId);
-		if (!student) {
-			throw new InternalServerErrorException(
-				`Student with ID ${query.studentId} not found.`,
-			);
-		}
+		if (!student) throw new NotFoundError('Estudiante no encontrado');
 		const result: AttendanceRecordResponseDto[] = [];
 		for (const record of records) {
 			if (record.status === ATTENDANCE_STATUS.JUSTIFIED) {
 				const j = await this.justificationRepository.findByRecord(record.id);
+				// Data inconsistency: answered as 500, the filter hides this message.
 				if (!j)
-					throw new InternalServerErrorException(
+					throw new Error(
 						`AttendanceRecord ${record.id} is marked as JUSTIFIED but has no justification.`,
 					);
 				result.push(new AttendanceRecordResponseDto(student, record, j));

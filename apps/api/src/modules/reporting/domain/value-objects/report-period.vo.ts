@@ -1,15 +1,17 @@
+import { DomainError } from '../../../../common/errors';
+
 export class ReportPeriod {
 	private readonly _month: number;
 	private readonly _year: number;
 
 	private constructor(month: number, year: number) {
 		if (month > 12 || month < 1)
-			throw new Error('Month must be an integer between 1 and 12');
+			throw new DomainError('El mes debe ser un número entero entre 1 y 12');
 		this._month = month;
 		if (year < new Date().getFullYear())
-			throw new Error('Can not register an older report');
+			throw new DomainError('No se puede generar un reporte de un año anterior');
 		if (year > new Date().getFullYear())
-			throw new Error('Can not register an future report');
+			throw new DomainError('No se puede generar un reporte de un año futuro');
 		this._year = year;
 	}
 	static generate(month: number, year: number): ReportPeriod {
