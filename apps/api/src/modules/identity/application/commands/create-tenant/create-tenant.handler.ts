@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConflictError } from '../../../../../common/errors';
 import { Tenant } from '../../../domain/entities/tenant.entity';
 import { TenantCreatedEvent } from '../../../domain/events/tenant-created.event';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
@@ -15,7 +16,8 @@ export class CreateTenantHandler {
 	) {}
 	async execute(command: CreateTenantCommand): Promise<TenantResponseDto> {
 		const exist = await this.tenantRepo.findBySubdomain(command.subdomain);
-		if (exist) throw new Error('Tenant with this subdomain already exists');
+		if (exist)
+			throw new ConflictError('Ya existe una institución con ese subdominio.');
 		const newTenant = Tenant.create(command);
 		await this.tenantRepo.save(newTenant);
 		this.em.emit(

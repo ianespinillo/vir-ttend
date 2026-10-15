@@ -4,6 +4,7 @@ import { ROLES } from '@repo/common';
 import type { Request, Response } from 'express';
 import { MockProxy, mock } from 'jest-mock-extended';
 import * as jwt from 'jsonwebtoken';
+import { UnauthorizedError } from '../../../src/common/errors';
 import { LoginCommand } from '../../../src/modules/identity/application/commands/login/login.command';
 import { LoginHandler } from '../../../src/modules/identity/application/commands/login/login.handler';
 import { TenancyBootstrapService } from '../../../src/modules/identity/application/services/tenancy-bootstrap.service';
@@ -250,7 +251,9 @@ describe('Single-Tenant Tenancy Mode', () => {
 
 			await expect(
 				handler.execute(new LoginCommand('teacher@school.edu.ar', 'Password123!')),
-			).rejects.toThrow('Invalid credentials');
+			).rejects.toStrictEqual(
+				new UnauthorizedError('El correo o la contraseña son incorrectos.'),
+			);
 		});
 
 		it('rejects superadmin login when ALLOW_SUPERADMIN is false in single mode', async () => {
@@ -263,7 +266,9 @@ describe('Single-Tenant Tenancy Mode', () => {
 
 			await expect(
 				handler.execute(new LoginCommand('teacher@school.edu.ar', 'Password123!')),
-			).rejects.toThrow('Invalid credentials');
+			).rejects.toStrictEqual(
+				new UnauthorizedError('El correo o la contraseña son incorrectos.'),
+			);
 		});
 	});
 
@@ -313,6 +318,9 @@ describe('Single-Tenant Tenancy Mode', () => {
 			} as unknown as Request;
 			const res = {} as unknown as Response;
 
+			expect(() => middleware.use(req, res, () => {})).toThrow(
+				new ForbiddenException('Su sesión no corresponde a esta institución.'),
+			);
 			expect(() => middleware.use(req, res, () => {})).toThrow(ForbiddenException);
 		});
 
@@ -338,6 +346,11 @@ describe('Single-Tenant Tenancy Mode', () => {
 			} as unknown as Request;
 			const res = {} as unknown as Response;
 
+			expect(() => middleware.use(req, res, () => {})).toThrow(
+				new ForbiddenException(
+					'El acceso de superadministrador está deshabilitado en esta instancia.',
+				),
+			);
 			expect(() => middleware.use(req, res, () => {})).toThrow(ForbiddenException);
 		});
 	});

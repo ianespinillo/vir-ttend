@@ -1,9 +1,5 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ConflictError, NotFoundError } from '../../../../../common/errors';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { UpdateUserCommand } from './update-user.command';
@@ -17,14 +13,13 @@ export class UpdateUserHandler {
 	) {}
 	async execute(command: UpdateUserCommand): Promise<void> {
 		const user = await this.userRepository.findById(command.userId);
-		if (!user)
-			throw new NotFoundException(`User with id ${command.userId} not found`);
+		if (!user) throw new NotFoundError('Usuario no encontrado.');
 		if (command.props.email) {
 			const takenEmail = await this.userRepository.findByEmail(
 				command.props.email.getValue(),
 			);
 			if (takenEmail && takenEmail.id !== command.userId)
-				throw new BadRequestException('Email already in use');
+				throw new ConflictError('El correo electrónico ya está en uso.');
 		}
 		if (command.tenantId) {
 			const membership = await this.memberRepo.findByUserAndTenant(
@@ -32,7 +27,7 @@ export class UpdateUserHandler {
 				command.tenantId,
 			);
 			if (!membership)
-				throw new NotFoundException('User not found in this tenant');
+				throw new NotFoundError('El usuario no pertenece a esta institución.');
 		}
 		user.update(command.props);
 		await this.userRepository.save(user);

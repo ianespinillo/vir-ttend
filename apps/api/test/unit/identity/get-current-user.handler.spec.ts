@@ -1,6 +1,7 @@
-// get-current-user.handler.spec.ts
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// get-current-user.handler.spec.ts
+import { ForbiddenError, NotFoundError } from '../../../src/common/errors';
 import { GetCurrentUserHandler } from '../../../src/modules/identity/application/queries/get-current-user/get-current-user.handler';
 import { GetCurrentUserQuery } from '../../../src/modules/identity/application/queries/get-current-user/get-current-user.query';
 import { Tenant } from '../../../src/modules/identity/domain/entities/tenant.entity';
@@ -62,10 +63,11 @@ describe('GetCurrentUserHandler', () => {
 
 	it('should throw when user does not exist', async () => {
 		userRepo.findById.mockResolvedValue(null);
+		membershipRepo.findByUserAndTenant.mockResolvedValue(mockMembership);
 
 		await expect(
 			handler.execute(new GetCurrentUserQuery('user-id', 'tenant-id')),
-		).rejects.toThrow();
+		).rejects.toStrictEqual(new NotFoundError('Usuario no encontrado.'));
 	});
 
 	it('should throw when membership does not exist', async () => {
@@ -75,7 +77,9 @@ describe('GetCurrentUserHandler', () => {
 
 		await expect(
 			handler.execute(new GetCurrentUserQuery('user-id', 'tenant-id')),
-		).rejects.toThrow("User doesn't belongs to this tenant");
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene acceso a la institución seleccionada.'),
+		);
 	});
 
 	it('should return admin role with isImpersonating when superadmin accesses a tenant', async () => {

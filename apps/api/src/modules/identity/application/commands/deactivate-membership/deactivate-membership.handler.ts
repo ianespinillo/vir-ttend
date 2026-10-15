@@ -1,10 +1,10 @@
-import {
-	ForbiddenException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import {
+	ConflictError,
+	ForbiddenError,
+	NotFoundError,
+} from '../../../../../common/errors';
 import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -27,7 +27,9 @@ export class DeactivateMembershipHandler {
 		if (command.email) {
 			const user = await this.userRepository.findByEmail(command.email);
 			if (!user)
-				throw new NotFoundException(`User with email ${command.email} not found`);
+				throw new NotFoundError(
+					`No existe un usuario con el correo ${command.email}.`,
+				);
 			userId = user.id;
 		}
 		const { TENANCY_MODE } = getTenancyConfig();
@@ -43,7 +45,8 @@ export class DeactivateMembershipHandler {
 			membership = list[0] ?? null;
 		}
 
-		if (!membership) throw new Error("User doesn't belongs to this tenant");
+		if (!membership)
+			throw new NotFoundError('El usuario no pertenece a esta institución.');
 		if (
 			!AuthorizationService.canManageRole(
 				command.actorRole,
@@ -51,9 +54,11 @@ export class DeactivateMembershipHandler {
 				TENANCY_MODE,
 			)
 		)
-			throw new Error('Unhautorized action');
+			throw new ForbiddenError('No tiene permiso para gestionar a este usuario.');
 		if (!membership.isActive)
-			throw new Error("Can't deactivate a membership not active");
+			throw new ConflictError(
+				'El usuario ya está desactivado en esta institución.',
+			);
 		if (isSingle) await assertNotLastActiveAdmin(this.memberRepo, membership);
 		membership.deactivate();
 		await this.memberRepo.save(membership);

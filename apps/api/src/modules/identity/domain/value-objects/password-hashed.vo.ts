@@ -1,8 +1,9 @@
+import { DomainError } from '../../../../common/errors';
 export class PasswordHashed {
 	private readonly value: string;
 	constructor(value: string) {
 		if (!value) {
-			throw new Error('Hashed password cannot be empty');
+			throw new DomainError('La contraseña es obligatoria.');
 		}
 		this.value = value;
 	}
