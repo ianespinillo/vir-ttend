@@ -1,14 +1,24 @@
 'use client';
 
 import { type CurrentUser, ROLES, type Roles, type Tenant } from '@repo/common';
-import type { ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { SidebarInset, SidebarProvider } from '../../ui/sidebar';
+import { TourProvider, TourTriggerButton, buildTourSteps } from '../tour';
 import { AlertBadgePlaceholder } from './alert-badge-placeholder';
 import { AppSidebar } from './app-sidebar';
 import { ImpersonationBanner } from './impersonation-banner';
 import type { LayoutLinkComponent } from './link-component';
 import { Topbar } from './topbar';
 import { UserMenu } from './user-menu';
+
+export interface DashboardTourOptions {
+	/** Whose "tour seen" flag this is, e.g. `${userId}:${role}`. */
+	storageKey: string;
+	/** While false the tour neither starts nor stays open. */
+	enabled?: boolean;
+	/** Navigation entries the host app cannot open. */
+	excludeHrefs?: string[];
+}
 
 export interface DashboardLayoutProps {
 	role: Roles;
@@ -31,6 +41,8 @@ export interface DashboardLayoutProps {
 	onExitImpersonation?: () => void;
 	isExitingImpersonation?: boolean;
 	tenancyMode?: 'multi' | 'single';
+	/** Onboarding tour of the role; omitted, the layout shows no tour. */
+	tour?: DashboardTourOptions;
 }
 
 export function DashboardLayout({
@@ -52,6 +64,7 @@ export function DashboardLayout({
 	onSelectTenant,
 	onExitImpersonation,
 	isExitingImpersonation,
+	tour,
 }: DashboardLayoutProps) {
 	const defaultActions = (
 		<>
@@ -68,11 +81,21 @@ export function DashboardLayout({
 		</>
 	);
 
+	const excludeKey = tour?.excludeHrefs?.join('|') ?? '';
+	const tourSteps = useMemo(
+		() =>
+			buildTourSteps(role, {
+				tenancyMode,
+				excludeHrefs: excludeKey ? excludeKey.split('|') : [],
+			}),
+		[role, tenancyMode, excludeKey],
+	);
+
 	const activeTenantId =
 		currentTenantId ??
 		('tenantId' in user ? (user.tenantId ?? undefined) : undefined);
 
-	return (
+	const shell = (
 		<SidebarProvider>
 			<AppSidebar
 				role={role}
@@ -97,11 +120,33 @@ export function DashboardLayout({
 						isExiting={isExitingImpersonation}
 					/>
 				)}
-				<Topbar title={title} actions={actions ?? defaultActions} />
+				<Topbar
+					title={title}
+					actions={
+						<>
+							{tour && <TourTriggerButton />}
+							{actions ?? defaultActions}
+						</>
+					}
+				/>
 				<main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
 					{children}
 				</main>
 			</SidebarInset>
 		</SidebarProvider>
+	);
+
+	if (!tour) return shell;
+
+	return (
+		<TourProvider
+			steps={tourSteps}
+			storageKey={tour.storageKey}
+			enabled={tour.enabled ?? true}
+			currentPath={currentPath}
+			onNavigate={onNavigate}
+		>
+			{shell}
+		</TourProvider>
 	);
 }

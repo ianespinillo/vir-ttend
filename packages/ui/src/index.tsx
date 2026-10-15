@@ -14,6 +14,9 @@ export * from './components/brand';
 // Layout
 export * from './components/layout';
 
+// Onboarding tour
+export * from './components/tour';
+
 // Features
 export * from './components/features/auth';
 export * from './components/features/students';
