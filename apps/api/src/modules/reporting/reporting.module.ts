@@ -11,6 +11,7 @@ import { GetMonthlyReportQueryHandler } from './application/queries/get-monthly-
 import { GetReportsByCourseQueryHandler } from './application/queries/get-reports-by-course/get-reports-by-course.handler';
 import { GetStudentReportQueryHandler } from './application/queries/get-student-report/get-student-report.handler';
 import { ReportGenerationService } from './application/services/report-generation.service';
+import { ExportFilenameService } from './domain/services/export-filename.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { AttendanceAlertAdapter } from './infrastructure/adapters/attendance-alert.adapter';
 import { AttendanceRecordAdapter } from './infrastructure/adapters/attendance-record.adapter';
@@ -53,7 +54,7 @@ const handlers = [
 	ExportPdfHandler,
 ];
 
-const services = [ReportGenerationService];
+const services = [ReportGenerationService, ExportFilenameService];
 
 @Module({
 	imports: [

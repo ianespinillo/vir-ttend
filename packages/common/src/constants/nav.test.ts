@@ -65,6 +65,17 @@ describe('allowedRolesForPathname', () => {
 		]);
 	});
 
+	it('grants /attendance/student to admin and preceptor', () => {
+		expect(allowedRolesForPathname('/attendance/student')).toEqual([
+			ROLES.ADMIN,
+			ROLES.PRECEPTOR,
+		]);
+		expect(allowedRolesForPathname('/attendance/student/abc')).toEqual([
+			ROLES.ADMIN,
+			ROLES.PRECEPTOR,
+		]);
+	});
+
 	it('grants /alerts to admin and preceptor', () => {
 		expect(allowedRolesForPathname('/alerts')).toEqual([
 			ROLES.ADMIN,
