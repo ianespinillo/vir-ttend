@@ -1,5 +1,12 @@
 import { ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
-import { DomainError } from '../../../../src/common/errors/domain.error';
+import {
+	BusinessRuleError,
+	ConflictError,
+	DomainError,
+	ForbiddenError,
+	NotFoundError,
+	UnauthorizedError,
+} from '../../../../src/common/errors';
 import { HttpExceptionFilter } from '../../../../src/common/filters/http-exception.filter';
 
 // http-exception.filter.spec.ts
@@ -21,8 +28,16 @@ describe('HttpExceptionFilter', () => {
 		return { response, host };
 	};
 
+	let errorLog: jest.SpyInstance;
+	let warnLog: jest.SpyInstance;
+
 	beforeEach(() => {
-		jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+		errorLog = jest
+			.spyOn(Logger.prototype, 'error')
+			.mockImplementation(() => undefined);
+		warnLog = jest
+			.spyOn(Logger.prototype, 'warn')
+			.mockImplementation(() => undefined);
 	});
 
 	afterEach(() => {
@@ -67,8 +82,64 @@ describe('HttpExceptionFilter', () => {
 		expect(response.json).toHaveBeenCalledWith(
 			expect.objectContaining({
 				statusCode: 500,
-				message: 'Internal server error',
+				message: 'Ocurrió un error inesperado. Intente nuevamente más tarde.',
+				error: 'Internal Server Error',
 			}),
 		);
+		expect(JSON.stringify(response.json.mock.calls[0][0])).not.toContain(
+			'secret internal detail',
+		);
+	});
+
+	it.each([
+		[new NotFoundError('El curso no existe.'), 404, 'Not Found'],
+		[new ConflictError('El curso ya existe.'), 409, 'Conflict'],
+		[new ForbiddenError('No tiene permiso.'), 403, 'Forbidden'],
+		[new UnauthorizedError('Credenciales inválidas.'), 401, 'Unauthorized'],
+		[
+			new BusinessRuleError('El horario se superpone.'),
+			422,
+			'Unprocessable Entity',
+		],
+	])(
+		'mapea %s a su status HTTP conservando el mensaje',
+		(exception, status, error) => {
+			const { response, host } = createHost();
+
+			filter.catch(exception, host);
+
+			expect(response.status).toHaveBeenCalledWith(status);
+			expect(response.json).toHaveBeenCalledWith(
+				expect.objectContaining({
+					statusCode: status,
+					message: exception.message,
+					error,
+				}),
+			);
+		},
+	);
+
+	it('trata los errores tipados como DomainError', () => {
+		expect(new NotFoundError('x')).toBeInstanceOf(DomainError);
+		expect(new BusinessRuleError('x')).toBeInstanceOf(DomainError);
+	});
+
+	it('registra los errores 4xx como warning y no como error', () => {
+		const { host } = createHost();
+
+		filter.catch(new NotFoundError('El curso no existe.'), host);
+
+		expect(warnLog).toHaveBeenCalledTimes(1);
+		expect(errorLog).not.toHaveBeenCalled();
+	});
+
+	it('registra los errores 5xx como error con el stack', () => {
+		const { host } = createHost();
+		const exception = new Error('boom');
+
+		filter.catch(exception, host);
+
+		expect(errorLog).toHaveBeenCalledWith('POST /subjects 500', exception.stack);
+		expect(warnLog).not.toHaveBeenCalled();
 	});
 });
