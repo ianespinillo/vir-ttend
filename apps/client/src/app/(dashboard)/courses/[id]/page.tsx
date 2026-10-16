@@ -59,6 +59,8 @@ export default function CourseDetailPage() {
 
 	const role = user?.role?.toLowerCase();
 	const isAdmin = role === ROLES.ADMIN || role === ROLES.SUPERADMIN;
+	const isPreceptor = role === ROLES.PRECEPTOR;
+	const canManageSchedule = isAdmin || isPreceptor;
 	const [isImportOpen, setIsImportOpen] = useState(false);
 
 	const { data: course, isLoading, isError, error } = useCourse(courseId);
@@ -318,6 +320,7 @@ export default function CourseDetailPage() {
 					canImportStudents ? () => setIsImportOpen(true) : undefined
 				}
 				canManage={isAdmin}
+				canManageSchedule={canManageSchedule}
 				students={studentsData?.items ?? []}
 				isLoadingStudents={studentsLoading}
 				studentCount={studentsData?.total}

@@ -64,4 +64,16 @@ describe('CourseDetail', () => {
 			screen.queryByText('Ver estudiantes en el módulo de Alumnado'),
 		).not.toBeInTheDocument();
 	});
+
+	it('allows schedule management when canManageSchedule is true even if canManage is false', () => {
+		render(
+			<CourseDetail course={course} canManage={false} canManageSchedule={true} />,
+		);
+		fireEvent.mouseDown(screen.getByRole('tab', { name: 'Horario' }));
+
+		expect(
+			screen.getByRole('button', { name: /Agregar Franja Horaria/i }),
+		).toBeInTheDocument();
+		expect(screen.queryByText('Editar Curso')).not.toBeInTheDocument();
+	});
 });

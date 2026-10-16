@@ -1,8 +1,8 @@
 # RFC: Gestión de horarios — Roles ADMIN vs PRECEPTOR
 
-**Estado:** Abierto — pendiente de decisión  
-**Fecha:** 2026-10-15  
-**Contexto:** Discusión de diseño de dominio
+**Estado:** Aprobado / Implementado (Opción A — Shared write)  
+**Fecha:** 2026-10-16  
+**Contexto:** Decisión de diseño y permisos de dominio
 
 ---
 
@@ -38,8 +38,9 @@ Ambos roles pueden crear y modificar horarios sin restricción.
 
 La respuesta define si alcanza con Opción B o si hay que modelar un concepto nuevo (ej: `ScheduleOverride` o `ScheduleException`).
 
-## Próximos pasos sugeridos
+## Resolución y Decisión
 
-1. Validar con usuarios reales (preceptores) qué tipo de cambios necesitan hacer
-2. Evaluar si `ScheduleException` es un concepto de dominio que vale la pena modelar
-3. Decidir granularidad de permisos: ¿el preceptor edita solo su curso o cualquier curso?
+Se implementó la **Opción A (Shared write)**:
+- Backend: el endpoint `POST /schedule` admite los roles `ADMIN` y `PRECEPTOR`.
+- Frontend: el preceptor tiene permisos de gestión sobre la grilla de horarios del curso (`ScheduleGrid` y `ScheduleModal`) tanto en la app web de producción como en la demo.
+- Los controles de integridad de horarios (no superposición de franjas, carga horaria semanal y comisiones de taller) se mantienen activos e invariantes en la capa de dominio (`ScheduleService` / `CourseService`).

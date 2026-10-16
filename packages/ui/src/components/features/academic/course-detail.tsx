@@ -50,6 +50,7 @@ export interface CourseDetailProps {
 	onSaveSchedule?: (slots: ScheduleSlotFormValues[]) => Promise<void> | void;
 	onImportStudents?: () => void;
 	canManage?: boolean;
+	canManageSchedule?: boolean;
 	attendancePath?: string;
 	/** Optional "Comisiones" tab content (workshop commissions); shown only to managers. */
 	commissionsTab?: ReactNode;
@@ -72,6 +73,7 @@ export function CourseDetail({
 	onSaveSchedule,
 	onImportStudents,
 	canManage = false,
+	canManageSchedule,
 	attendancePath,
 	commissionsTab,
 }: CourseDetailProps) {
@@ -79,6 +81,8 @@ export function CourseDetail({
 		open: boolean;
 		day?: DAYOFWEEK;
 	}>({ open: false });
+
+	const isScheduleEditable = canManageSchedule ?? canManage;
 
 	const levelLabel =
 		course.level === 'PRIMARY'
@@ -287,7 +291,7 @@ export function CourseDetail({
 						subjects={subjects}
 						onAddSlot={(day) => setScheduleModalState({ open: true, day })}
 						onDeleteSlot={handleDeleteSlot}
-						canManage={canManage}
+						canManage={isScheduleEditable}
 					/>
 				</TabsContent>
 
@@ -348,7 +352,7 @@ export function CourseDetail({
 				)}
 			</Tabs>
 
-			{canManage && (
+			{isScheduleEditable && (
 				<ScheduleModal
 					open={scheduleModalState.open}
 					onOpenChange={(open) =>
