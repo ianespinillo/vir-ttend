@@ -103,6 +103,11 @@ describe('AuthController (refresh / logout)', () => {
 			await expect(
 				controller.refresh(bodyWith(), reqWith({}), res),
 			).rejects.toBeInstanceOf(UnauthorizedException);
+			await expect(
+				controller.refresh(bodyWith(), reqWith({}), res),
+			).rejects.toThrow(
+				'Su sesión expiró o no es válida. Inicie sesión nuevamente.',
+			);
 			expect(refreshTokenHandler.execute).not.toHaveBeenCalled();
 		});
 
@@ -145,6 +150,11 @@ describe('AuthController (refresh / logout)', () => {
 			await expect(
 				controller.logout(bodyWith(), reqWith({}), res),
 			).rejects.toBeInstanceOf(UnauthorizedException);
+			await expect(
+				controller.logout(bodyWith(), reqWith({}), res),
+			).rejects.toThrow(
+				'Su sesión expiró o no es válida. Inicie sesión nuevamente.',
+			);
 			expect(logoutHandler.execute).not.toHaveBeenCalled();
 		});
 	});

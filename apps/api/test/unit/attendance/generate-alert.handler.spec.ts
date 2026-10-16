@@ -2,6 +2,7 @@ import { UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ATTENDANCE_STATUS, DAYOFWEEK, LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { DomainError, NotFoundError } from '../../../src/common/errors';
 import { GenerateAlertCommand } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.command';
 import { GenerateAlertHandler } from '../../../src/modules/attendance/application/commands/generate-alert/generate-alert.handler';
 import { StudentWeightedAbsencesService } from '../../../src/modules/attendance/application/services/student-weighted-absences.service';
@@ -93,20 +94,27 @@ describe('GenerateAlertHandler', () => {
 
 	it('throws when the academic year does not exist', async () => {
 		academicPort.findById.mockResolvedValue(null);
-		await expect(handler.execute(cmd)).rejects.toThrow('No academic year found.');
+		const attempt = handler.execute(cmd);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Ciclo lectivo no encontrado');
 	});
 
 	it('throws when the course does not exist', async () => {
 		coursePort.findById.mockResolvedValue(null);
-		await expect(handler.execute(cmd)).rejects.toThrow('No course found.');
+		const attempt = handler.execute(cmd);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Curso no encontrado');
 	});
 
 	it('throws when the course belongs to another academic year', async () => {
 		coursePort.findById.mockResolvedValue(
 			Course.reconstitute('course-1', '3ro A', 'year-OTHER', true, LEVEL.PRIMARY),
 		);
-		await expect(handler.execute(cmd)).rejects.toThrow(
-			'No match between course and academic year id found.',
+		const attempt = handler.execute(cmd);
+		await expect(attempt).rejects.toBeInstanceOf(DomainError);
+		await expect(attempt).rejects.not.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow(
+			'El curso no pertenece al ciclo lectivo indicado',
 		);
 	});
 

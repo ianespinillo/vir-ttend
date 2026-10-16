@@ -1,18 +1,37 @@
-import { DAYOFWEEK } from '@repo/common';
+import { DAYOFWEEK, LEVEL, SHIFT } from '@repo/common';
 // set-schedule.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../../src/common/errors';
 import { DomainError } from '../../../../src/common/errors/domain.error';
 import { SetScheduleCommand } from '../../../../src/modules/academic/application/commands/set-schedule/set-schedule.command';
 import { SetScheduleHandler } from '../../../../src/modules/academic/application/commands/set-schedule/set-schedule.handler';
+import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
 import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
+import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('SetScheduleHandler', () => {
 	let handler: SetScheduleHandler;
 	let scheduleRepository: MockProxy<IScheduleRepository>;
 	let subjectRepository: MockProxy<ISubjectRepository>;
+	let courseRepository: MockProxy<ICourseRepository>;
+
+	const mockCourse = Course.reconstitute({
+		id: 'course-1',
+		tenantId: 'tenant-1',
+		academicYearId: 'ay-1',
+		preceptorId: 'preceptor-1',
+		level: LEVEL.SECONDARY,
+		yearNumber: 1,
+		division: 'A',
+		shift: SHIFT.MORNING,
+		isActive: true,
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	});
 
 	const mockSubject = Subject.reconstitute({
 		id: 'sub-1',
@@ -36,17 +55,10 @@ describe('SetScheduleHandler', () => {
 		}),
 	];
 
-	let courseRepository: MockProxy<
-		import('../../../../src/modules/academic/domain/repositories/course.repository.interface').ICourseRepository
-	>;
-
 	beforeEach(() => {
 		scheduleRepository = mock<IScheduleRepository>();
 		subjectRepository = mock<ISubjectRepository>();
-		courseRepository =
-			mock<
-				import('../../../../src/modules/academic/domain/repositories/course.repository.interface').ICourseRepository
-			>();
+		courseRepository = mock<ICourseRepository>();
 
 		handler = new SetScheduleHandler(
 			scheduleRepository,
@@ -72,13 +84,15 @@ describe('SetScheduleHandler', () => {
 	it('should throw when subject does not exist', async () => {
 		subjectRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new SetScheduleCommand('sub-1', [
 					{ dayOfWeek: DAYOFWEEK.MONDAY, startTime: '08:00', endTime: '09:00' },
 				]),
 			),
-		).rejects.toThrow('Subject not found');
+			NotFoundError,
+			'Materia no encontrada',
+		);
 
 		expect(scheduleRepository.deleteBySubject).not.toHaveBeenCalled();
 		expect(scheduleRepository.saveMany).not.toHaveBeenCalled();
@@ -126,7 +140,6 @@ describe('SetScheduleHandler', () => {
 	});
 
 	it('should set full course schedule when courseId is provided', async () => {
-		const mockCourse = { id: { getRaw: () => 'course-1' } } as any;
 		courseRepository.findById.mockResolvedValue(mockCourse);
 		subjectRepository.findByCourse.mockResolvedValue([mockSubject]);
 
@@ -175,7 +188,6 @@ describe('SetScheduleHandler', () => {
 	});
 
 	it('should throw when courseId schedule exceeds a subject weeklyHours', async () => {
-		const mockCourse = { id: { getRaw: () => 'course-1' } } as any;
 		courseRepository.findById.mockResolvedValue(mockCourse);
 		subjectRepository.findByCourse.mockResolvedValue([mockSubject]); // weeklyHours: 4
 

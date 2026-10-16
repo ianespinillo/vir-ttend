@@ -1,8 +1,9 @@
+import { DomainError } from '../../../../common/errors';
 export class StudentId {
 	private readonly value: string;
 	constructor(value: string) {
 		if (!value || value.trim() === '') {
-			throw new Error('Student ID cannot be empty.');
+			throw new DomainError('El identificador del estudiante es obligatorio.');
 		}
 		this.value = value;
 	}

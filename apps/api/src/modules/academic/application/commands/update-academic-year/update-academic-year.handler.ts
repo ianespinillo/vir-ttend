@@ -1,4 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IAcademicYearRepository } from '../../../domain/repositories/academic-year.repository.interface';
 import { AcademicYearResponseDto } from '../../dtos/academic-year.response.dto';
 import { UpdateAcademicYearCommand } from './update-academic-year.command';
@@ -14,7 +15,7 @@ export class UpdateAcademicYearHandler {
 		command: UpdateAcademicYearCommand,
 	): Promise<AcademicYearResponseDto> {
 		const period = await this.aYRepo.findById(command.academicYearId);
-		if (!period) throw new NotFoundException('Academic year not found');
+		if (!period) throw new NotFoundError('Ciclo lectivo no encontrado');
 
 		if (command.year !== undefined && command.year !== period.year) {
 			period.changeYear(command.year);

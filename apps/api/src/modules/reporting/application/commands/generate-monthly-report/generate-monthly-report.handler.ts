@@ -1,4 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { MonthlyReport } from '../../../domain/entities/monthly-report.entity';
 import { ICoursePort } from '../../../domain/ports/course.port.interface';
 import { IReportRepository } from '../../../domain/repositories/report.repository.interface';
@@ -20,8 +21,7 @@ export class GenerateMonthlyReportHandler {
 		command: GenerateMonthlyReportCommand,
 	): Promise<MonthlyReportResponseDto> {
 		const course = await this.courseRepo.findById(command.courseId);
-		if (!course)
-			throw new NotFoundException(`Course ${command.courseId} not found`);
+		if (!course) throw new NotFoundError('Curso no encontrado');
 		const reportPeriod = ReportPeriod.generate(command.month, command.year);
 		const existingReport = await this.reportRepo.findByCourseAndPeriod(
 			command.courseId,

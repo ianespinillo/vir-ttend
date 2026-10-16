@@ -8,7 +8,29 @@ import {
 	Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { DomainError } from '../errors/domain.error';
+import {
+	BusinessRuleError,
+	ConflictError,
+	DomainError,
+	ForbiddenError,
+	NotFoundError,
+	UnauthorizedError,
+} from '../errors';
+import { mapDatabaseError } from './database-error.mapper';
+
+const UNEXPECTED_ERROR_MESSAGE =
+	'Ocurrió un error inesperado. Intente nuevamente más tarde.';
+
+/** Status and reason phrase for each typed domain error, most specific first. */
+const DOMAIN_ERROR_STATUS: ReadonlyArray<
+	[new (message: string) => DomainError, HttpStatus, string]
+> = [
+	[NotFoundError, HttpStatus.NOT_FOUND, 'Not Found'],
+	[ConflictError, HttpStatus.CONFLICT, 'Conflict'],
+	[ForbiddenError, HttpStatus.FORBIDDEN, 'Forbidden'],
+	[UnauthorizedError, HttpStatus.UNAUTHORIZED, 'Unauthorized'],
+	[BusinessRuleError, HttpStatus.UNPROCESSABLE_ENTITY, 'Unprocessable Entity'],
+];
 
 interface ErrorResponse {
 	statusCode: number;
@@ -42,10 +64,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
 			...(details === undefined ? {} : { details }),
 		};
 
-		this.logger.error(
-			`${request.method} ${request.url} ${statusCode}`,
-			exception instanceof Error ? exception.stack : String(exception),
-		);
+		const summary = `${request.method} ${request.url} ${statusCode}`;
+		if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+			this.logger.error(
+				summary,
+				exception instanceof Error ? exception.stack : String(exception),
+			);
+		} else {
+			this.logger.warn(`${summary} ${JSON.stringify(message)}`);
+		}
 
 		response.status(statusCode).json(errorResponse);
 	}
@@ -57,6 +84,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
 		details?: unknown;
 	} {
 		if (exception instanceof DomainError) {
+			const match = DOMAIN_ERROR_STATUS.find(
+				([errorClass]) => exception instanceof errorClass,
+			);
+			if (match) {
+				const [, statusCode, error] = match;
+				return { statusCode, message: exception.message, error };
+			}
 			return {
 				statusCode: HttpStatus.BAD_REQUEST,
 				message: exception.message,
@@ -66,6 +100,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
 		if (exception instanceof HttpException) {
 			const status = exception.getStatus();
+
+			// A 500 means the server failed: its text is internal, never for the user.
+			if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+				return {
+					statusCode: status,
+					message: UNEXPECTED_ERROR_MESSAGE,
+					error: 'Internal Server Error',
+				};
+			}
 			const exceptionResponse = exception.getResponse();
 
 			// class-validator devuelve un objeto con array de mensajes
@@ -86,10 +129,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
 			};
 		}
 
+		const databaseError = mapDatabaseError(exception);
+		if (databaseError) {
+			return databaseError;
+		}
+
 		// Errores no controlados (500)
 		return {
 			statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-			message: 'Internal server error',
+			message: UNEXPECTED_ERROR_MESSAGE,
 			error: 'Internal Server Error',
 		};
 	}

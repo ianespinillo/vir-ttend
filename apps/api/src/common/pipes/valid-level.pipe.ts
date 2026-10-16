@@ -8,7 +8,7 @@ export class ValidLevelPipe implements PipeTransform {
 			return undefined;
 		}
 		if (LEVEL[value as keyof typeof LEVEL] === undefined) {
-			throw new BadRequestException(`Invalid level: ${value}`);
+			throw new BadRequestException(`El nivel "${value}" no es válido.`);
 		}
 		return value as LevelType;
 	}

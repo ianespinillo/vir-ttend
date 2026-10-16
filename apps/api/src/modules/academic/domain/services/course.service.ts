@@ -1,7 +1,18 @@
-import { COMMISSION_NUMBERS } from '@repo/common';
-import { DomainError } from '../../../../common/errors/domain.error';
+import { COMMISSION_NUMBERS, DAYOFWEEK } from '@repo/common';
+import {
+	BusinessRuleError,
+	DomainError,
+} from '../../../../common/errors/domain.error';
 import { Course } from '../entities/course.entity';
 import { ScheduleSlot } from '../entities/schedule-slot.entity';
+
+const DAY_LABELS: Record<DAYOFWEEK, string> = {
+	[DAYOFWEEK.MONDAY]: 'lunes',
+	[DAYOFWEEK.TUESDAY]: 'martes',
+	[DAYOFWEEK.WEDNESDAY]: 'miércoles',
+	[DAYOFWEEK.THURSDAY]: 'jueves',
+	[DAYOFWEEK.FRIDAY]: 'viernes',
+};
 
 export class CourseService {
 	static calculateFulName(course: Course) {
@@ -11,8 +22,8 @@ export class CourseService {
 		for (let i = 0; i < slots.length; i++) {
 			for (let j = i + 1; j < slots.length; j++) {
 				if (slots[i].overlaps(slots[j])) {
-					throw new DomainError(
-						`Schedule overlap detected between ${slots[i].startTime}-${slots[i].endTime} and ${slots[j].startTime}-${slots[j].endTime} on ${slots[i].dayOfWeek}`,
+					throw new BusinessRuleError(
+						`Los horarios se superponen: ${slots[i].startTime}-${slots[i].endTime} y ${slots[j].startTime}-${slots[j].endTime} el ${DAY_LABELS[slots[i].dayOfWeek]}.`,
 					);
 				}
 			}

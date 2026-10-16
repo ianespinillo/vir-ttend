@@ -1,10 +1,6 @@
-import {
-	ForbiddenException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IAnnouncementRepository } from '../../../domain/repositories/announcement.repository.interface';
 import { DeleteAnnouncementCommand } from './delete-announcement.command';
 
@@ -25,7 +21,7 @@ export class DeleteAnnouncementHandler {
 			command.announcementId,
 		);
 		if (!announcement || announcement.schoolId !== command.schoolId) {
-			throw new NotFoundException('Announcement not found');
+			throw new NotFoundError('Comunicado no encontrado.');
 		}
 		await this.announcementRepo.delete(command.announcementId);
 		return { success: true };

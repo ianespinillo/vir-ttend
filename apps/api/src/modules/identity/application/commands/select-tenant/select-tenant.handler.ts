@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES, Roles } from '@repo/common';
+import { ForbiddenError, NotFoundError } from '../../../../../common/errors';
 import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { RefreshToken } from '../../../domain/entities/refresh-token.entity';
 import { User } from '../../../domain/entities/user.entity';
@@ -18,6 +19,11 @@ interface ExpectedReturn {
 	refreshToken: string;
 	user: UserResponseDto;
 }
+
+const INVALID_TENANT_SELECTION =
+	'No tiene acceso a la institución seleccionada.';
+const SUPERADMIN_DISABLED =
+	'El acceso de superadministrador está deshabilitado en esta instancia.';
 
 @Injectable()
 export class SelectTenantHandler {
@@ -40,7 +46,7 @@ export class SelectTenantHandler {
 
 		if (tenancy.TENANCY_MODE === 'single') {
 			if (tenantId !== tenancy.TENANT_ID) {
-				throw new Error('Invalid tenant selection');
+				throw new ForbiddenError(INVALID_TENANT_SELECTION);
 			}
 		}
 
@@ -59,16 +65,17 @@ export class SelectTenantHandler {
 		} else {
 			const tenant = await this.tenantRepo.findById(tenantId);
 			if (!tenant || !tenant.isActive) {
-				throw new Error('Invalid tenant selection');
+				throw new ForbiddenError(INVALID_TENANT_SELECTION);
 			}
 
 			if (!command.isSuperAdminOrImpersonating) {
 				const memberships = await this.memberRepo.findByUserId(userId);
-				if (memberships.length > 0) throw new Error('Invalid tenant selection');
+				if (memberships.length > 0)
+					throw new ForbiddenError(INVALID_TENANT_SELECTION);
 			}
 
 			if (tenancy.TENANCY_MODE === 'single' && !tenancy.ALLOW_SUPERADMIN) {
-				throw new Error('Superadmin access is disabled on this instance');
+				throw new ForbiddenError(SUPERADMIN_DISABLED);
 			}
 
 			role = ROLES.ADMIN;
@@ -94,9 +101,7 @@ export class SelectTenantHandler {
 	): Promise<ExpectedReturn> {
 		const tenancy = getTenancyConfig();
 		if (tenancy.TENANCY_MODE === 'single' && !tenancy.ALLOW_SUPERADMIN) {
-			throw new Error(
-				'Superadmin access is disabled on this single-tenant instance',
-			);
+			throw new ForbiddenError(SUPERADMIN_DISABLED);
 		}
 
 		return this.issueSession(
@@ -120,7 +125,7 @@ export class SelectTenantHandler {
 		tenantName?: string,
 	): Promise<ExpectedReturn> {
 		const user = await this.userRepo.findById(userId);
-		if (!user) throw new Error('User not found');
+		if (!user) throw new NotFoundError('Usuario no encontrado.');
 		const accessToken = this.tokenService.generateAccessToken({
 			email: user.email,
 			role,

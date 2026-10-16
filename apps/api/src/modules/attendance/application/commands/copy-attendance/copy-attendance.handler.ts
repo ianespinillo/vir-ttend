@@ -1,4 +1,5 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
@@ -17,7 +18,7 @@ export class CopyAttendanceHandler {
 	) {}
 	async execute(command: CopyAttendanceCommand): Promise<void> {
 		const subject = await this.subjectPort.getSubjectById(command.subjectId);
-		if (!subject) throw new BadRequestException('Invalid subject id');
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		assertCanWriteSubjectAttendance(subject, {
 			userId: command.userId,
 			role: command.userRole,
@@ -28,7 +29,9 @@ export class CopyAttendanceHandler {
 			command.sourceDate ?? command.targetDate,
 		);
 		if (sourceRecords.length === 0)
-			throw new BadRequestException('No records found for the source date');
+			throw new DomainError(
+				'No se encontraron registros de asistencia para la fecha de origen',
+			);
 		const result: AttendanceRecord[] = [];
 		const existingRecords = await this.attendanceRepo.findBySubjectAndDate(
 			command.subjectId,

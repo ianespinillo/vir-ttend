@@ -1,11 +1,7 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AttendanceStatus } from '@repo/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { WorkshopAttendanceRecord } from '../../../domain/entities/workshop-attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
@@ -34,7 +30,7 @@ export class RegisterWorkshopAttendanceHandler {
 
 	async execute(command: RegisterWorkshopAttendanceCommand): Promise<void> {
 		const commission = await this.commissionPort.findById(command.commissionId);
-		if (!commission) throw new NotFoundException('Commission not found');
+		if (!commission) throw new NotFoundError('Comisión no encontrada');
 		assertCanManageWorkshopAttendance(commission, {
 			userId: command.userId,
 			role: command.role,
@@ -54,8 +50,8 @@ export class RegisterWorkshopAttendanceHandler {
 			),
 		];
 		if (outsiders.length > 0) {
-			throw new BadRequestException(
-				`Students not in commission ${commission.code}: ${outsiders.join(', ')}`,
+			throw new DomainError(
+				`Los siguientes estudiantes no pertenecen a la comisión ${commission.code}: ${outsiders.join(', ')}`,
 			);
 		}
 

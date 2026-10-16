@@ -1,4 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IWorkshopCommissionPort } from '../../../domain/ports/workshop-commission.port.interface';
 import { assertCanManageWorkshopAttendance } from '../../services/workshop-attendance-access.policy';
 import { RegisterWorkshopAttendanceCommand } from '../register-workshop-attendance/register-workshop-attendance.command';
@@ -16,7 +17,7 @@ export class BulkRegisterWorkshopAttendanceHandler {
 
 	async execute(command: BulkRegisterWorkshopAttendanceCommand): Promise<void> {
 		const commission = await this.commissionPort.findById(command.commissionId);
-		if (!commission) throw new NotFoundException('Commission not found');
+		if (!commission) throw new NotFoundError('Comisión no encontrada');
 		assertCanManageWorkshopAttendance(commission, {
 			userId: command.userId,
 			role: command.role,

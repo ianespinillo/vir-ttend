@@ -1,5 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { ForbiddenError } from '../../../src/common/errors';
 import { assertCanManageWorkshopAttendance } from '../../../src/modules/attendance/application/services/workshop-attendance-access.policy';
 import {
 	TENANT,
@@ -27,7 +27,10 @@ describe('workshop attendance access policy', () => {
 	it('rejects another preceptor', () => {
 		expect(() =>
 			assertCanManageWorkshopAttendance(commission(), asPreceptor('other')),
-		).toThrow(ForbiddenException);
+		).toThrow(ForbiddenError);
+		expect(() =>
+			assertCanManageWorkshopAttendance(commission(), asPreceptor('other')),
+		).toThrow('No tiene permiso para gestionar la asistencia de esta comisión');
 	});
 
 	it('rejects any preceptor when the commission has no preceptor', () => {
@@ -36,7 +39,7 @@ describe('workshop attendance access policy', () => {
 				commission({ preceptorId: null }),
 				asPreceptor(),
 			),
-		).toThrow(ForbiddenException);
+		).toThrow(ForbiddenError);
 	});
 
 	it('rejects a teacher', () => {
@@ -46,7 +49,7 @@ describe('workshop attendance access policy', () => {
 				role: ROLES.TEACHER,
 				tenantId: TENANT,
 			}),
-		).toThrow(ForbiddenException);
+		).toThrow(ForbiddenError);
 	});
 
 	it('rejects a cross-tenant admin', () => {
@@ -56,6 +59,6 @@ describe('workshop attendance access policy', () => {
 				role: ROLES.ADMIN,
 				tenantId: 'other-tenant',
 			}),
-		).toThrow(ForbiddenException);
+		).toThrow(ForbiddenError);
 	});
 });

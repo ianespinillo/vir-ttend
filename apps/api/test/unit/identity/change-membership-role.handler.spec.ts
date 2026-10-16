@@ -1,7 +1,8 @@
-// change-membership-role.handler.spec.ts
 import { ForbiddenException } from '@nestjs/common';
 import { ROLES, type Roles } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// change-membership-role.handler.spec.ts
+import { ForbiddenError, NotFoundError } from '../../../src/common/errors';
 import { ChangeMembershipRoleCommand } from '../../../src/modules/identity/application/commands/change-membership-role/change-membership-role.command';
 import { ChangeMembershipRoleHandler } from '../../../src/modules/identity/application/commands/change-membership-role/change-membership-role.handler';
 import { UserTenantMembership } from '../../../src/modules/identity/domain/entities/user-tenant-membership.entity';
@@ -123,7 +124,9 @@ describe('ChangeMembershipRoleHandler', () => {
 		it('keeps multi mode unchanged: admin cannot assign admin', async () => {
 			process.env.TENANCY_MODE = 'multi';
 
-			await expect(change('teacher-id', ROLES.ADMIN)).rejects.toThrow();
+			await expect(change('teacher-id', ROLES.ADMIN)).rejects.toStrictEqual(
+				new ForbiddenError('No tiene permiso para asignar ese rol.'),
+			);
 			expect(membershipRepository.save).not.toHaveBeenCalled();
 		});
 	});
@@ -139,7 +142,9 @@ describe('ChangeMembershipRoleHandler', () => {
 					'actor-id',
 				),
 			),
-		).rejects.toThrow();
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene permiso para asignar ese rol.'),
+		);
 
 		expect(membershipRepository.save).not.toHaveBeenCalled();
 	});
@@ -157,7 +162,9 @@ describe('ChangeMembershipRoleHandler', () => {
 					'actor-id',
 				),
 			),
-		).rejects.toThrow();
+		).rejects.toStrictEqual(
+			new NotFoundError('El usuario no pertenece a esta institución.'),
+		);
 
 		expect(membershipRepository.save).not.toHaveBeenCalled();
 	});

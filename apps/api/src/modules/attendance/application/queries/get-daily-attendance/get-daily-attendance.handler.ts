@@ -1,8 +1,4 @@
-import {
-	Inject,
-	Injectable,
-	InternalServerErrorException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
@@ -39,8 +35,9 @@ export class GetDailyAttendanceQueryHandler {
 				const justification = await this.justificationRepo.findByRecord(
 					attendanceRecord.id,
 				);
+				// Data inconsistency: answered as 500, the filter hides this message.
 				if (!justification)
-					throw new InternalServerErrorException(
+					throw new Error(
 						`AttendanceRecord ${attendanceRecord.id} is marked as JUSTIFIED but has no justification.`,
 					);
 				result.push(

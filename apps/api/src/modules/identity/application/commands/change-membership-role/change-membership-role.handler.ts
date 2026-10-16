@@ -1,5 +1,6 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { ForbiddenError, NotFoundError } from '../../../../../common/errors';
 import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { AuthorizationService } from '../../../domain/services/authorization.service';
@@ -25,7 +26,7 @@ export class ChangeMembershipRoleHandler {
 				TENANCY_MODE,
 			)
 		)
-			throw new Error('Unhautorized role managment');
+			throw new ForbiddenError('No tiene permiso para asignar ese rol.');
 		if (isSingle && command.userId === command.actorUserId)
 			throw new ForbiddenException(SELF_ROLE_CHANGE_MESSAGE);
 		let membership = command.tenantId
@@ -37,7 +38,8 @@ export class ChangeMembershipRoleHandler {
 			membership = list[0] ?? null;
 		}
 
-		if (!membership) throw new Error("User doesn't belongs to this tenant");
+		if (!membership)
+			throw new NotFoundError('El usuario no pertenece a esta institución.');
 		if (isSingle) {
 			if (
 				!AuthorizationService.canManageRole(
@@ -46,7 +48,7 @@ export class ChangeMembershipRoleHandler {
 					TENANCY_MODE,
 				)
 			)
-				throw new ForbiddenException('Unauthorized role managment');
+				throw new ForbiddenError('No tiene permiso para gestionar a este usuario.');
 			if (command.newRole !== ROLES.ADMIN)
 				await assertNotLastActiveAdmin(this.memberRepo, membership);
 		}

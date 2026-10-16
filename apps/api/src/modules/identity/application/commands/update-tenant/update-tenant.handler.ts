@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { UpdateTenantCommand } from './update-tenant.command';
 
@@ -10,7 +11,7 @@ export class UpdateTenantHandler {
 	) {}
 	async execute(command: UpdateTenantCommand) {
 		const tenant = await this.tenantRepo.findById(command.tenantId);
-		if (!tenant) throw new Error('Tenant not found');
+		if (!tenant) throw new NotFoundError('Institución no encontrada.');
 		if (command.contactEmail) tenant.updateContactEmail(command.contactEmail);
 		if (command.name) tenant.updateName(command.name);
 		await this.tenantRepo.save(tenant);

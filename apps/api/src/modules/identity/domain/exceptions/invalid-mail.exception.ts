@@ -1,7 +1,8 @@
-export class InvalidMailException extends Error {
-	constructor(email: string) {
-		super(`The email "${email}" is invalid.`);
-		this.name = 'InvalidMailException';
-		Object.setPrototypeOf(this, InvalidMailException.prototype);
+import { DomainError } from '../../../../common/errors';
+
+/** The email is missing or malformed (HTTP 400 through the global filter). */
+export class InvalidMailException extends DomainError {
+	constructor(_email: string) {
+		super('El correo electrónico no es válido.');
 	}
 }

@@ -1,5 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../src/common/errors';
 import { MarkAlertSeenCommand } from '../../../src/modules/attendance/application/commands/mark-alert-seen/mark-alert-seen.command';
 import { MarkAlertSeenHandler } from '../../../src/modules/attendance/application/commands/mark-alert-seen/mark-alert-seen.handler';
 import { AttendanceAlert } from '../../../src/modules/attendance/domain/entities/attendance-alert.entity';
@@ -16,9 +16,11 @@ describe('MarkAlertSeenHandler', () => {
 
 	const cmd = new MarkAlertSeenCommand('alert-1', 'user-1');
 
-	it('lanza NotFoundException si no encuentra la alerta', async () => {
+	it('lanza NotFoundError si no encuentra la alerta', async () => {
 		alertRepo.findById.mockResolvedValue(null);
-		await expect(handler.execute(cmd)).rejects.toThrow(NotFoundException);
+		const attempt = handler.execute(cmd);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Alerta no encontrada');
 	});
 
 	it('marca la alerta como vista cuando no ha sido vista', async () => {

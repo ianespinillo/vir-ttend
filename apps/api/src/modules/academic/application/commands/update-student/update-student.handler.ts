@@ -1,4 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { UpdateStudentCommand } from './update-student.command';
 
@@ -10,7 +11,7 @@ export class UpdateStudentHandler {
 	) {}
 	async execute(command: UpdateStudentCommand) {
 		const student = await this.studentRepo.findById(command.studentId);
-		if (!student) throw new NotFoundException('Student not found');
+		if (!student) throw new NotFoundError('Estudiante no encontrado');
 		student.updateTutorInfo(
 			command.tutorName,
 			command.tutorPhone,

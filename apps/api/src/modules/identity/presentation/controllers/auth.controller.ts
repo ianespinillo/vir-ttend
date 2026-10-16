@@ -15,7 +15,10 @@ import {
 } from '@nestjs/swagger';
 import { ROLES } from '@repo/common';
 import { Request, Response } from 'express';
-import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
+import {
+	INVALID_SESSION_MESSAGE,
+	JwtAuthGuard,
+} from '../../../../common/guard/jwt-auth.guard';
 import { getTenancyConfig } from '../../../shared/config/tenancy.config';
 import { LoginCommand } from '../../application/commands/login/login.command';
 import { LoginHandler } from '../../application/commands/login/login.handler';
@@ -66,7 +69,7 @@ function resolveRefreshToken(
 	const cookieToken = req.cookies?.refresh_token;
 	if (cookieToken) return { token: cookieToken, source: 'cookie' };
 	if (dto?.refreshToken) return { token: dto.refreshToken, source: 'body' };
-	throw new UnauthorizedException();
+	throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
 }
 
 @Controller('auth')
@@ -175,7 +178,7 @@ export class AuthController {
 				(req.headers.authorization?.startsWith('Bearer ')
 					? req.headers.authorization.substring(7)
 					: undefined);
-			if (!accessToken) throw new UnauthorizedException();
+			if (!accessToken) throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
 			try {
 				const payload = this.tokenService.verifyAccessToken(accessToken);
 				userId = payload.sub;
@@ -183,7 +186,7 @@ export class AuthController {
 					payload.isImpersonating || payload.role === ROLES.SUPERADMIN,
 				);
 			} catch {
-				throw new UnauthorizedException();
+				throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
 			}
 		}
 
@@ -228,12 +231,12 @@ export class AuthController {
 		@Res({ passthrough: true }) res: Response,
 	) {
 		const accessToken = req.cookies?.access_token;
-		if (!accessToken) throw new UnauthorizedException();
+		if (!accessToken) throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
 		let userId: string;
 		try {
 			userId = this.tokenService.verifyAccessToken(accessToken).sub;
 		} catch {
-			throw new UnauthorizedException();
+			throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
 		}
 
 		const session = await this.selectTenantHandler.startGlobalSuperAdminSession(

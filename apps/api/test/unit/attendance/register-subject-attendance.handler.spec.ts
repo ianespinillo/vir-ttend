@@ -1,7 +1,11 @@
-import { ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ATTENDANCE_STATUS, DAYOFWEEK, ROLES, Roles } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import {
+	DomainError,
+	ForbiddenError,
+	NotFoundError,
+} from '../../../src/common/errors';
 import { RegisterSubjectAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.command';
 import { RegisterSubjectAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.handler';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
@@ -91,8 +95,10 @@ describe('RegisterSubjectAttendanceHandler', () => {
 			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.WEDNESDAY, '08:00', '09:00'),
 		]);
 
-		await expect(handler.execute(command)).rejects.toThrow(
-			'Invalid class day for this subject',
+		const attempt = handler.execute(command);
+		await expect(attempt).rejects.toBeInstanceOf(DomainError);
+		await expect(attempt).rejects.toThrow(
+			'La materia no tiene clases el día seleccionado',
 		);
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 	});
@@ -160,7 +166,7 @@ describe('RegisterSubjectAttendanceHandler', () => {
 		it('should reject a teacher who does not teach the subject', async () => {
 			await expect(
 				handler.execute(buildCommand(payload, 'other-teacher', ROLES.TEACHER)),
-			).rejects.toThrow(ForbiddenException);
+			).rejects.toThrow(ForbiddenError);
 
 			expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 			expect(eventEmitter.emit).not.toHaveBeenCalled();
@@ -169,7 +175,7 @@ describe('RegisterSubjectAttendanceHandler', () => {
 		it('should reject a preceptor, who can only read subject attendance', async () => {
 			await expect(
 				handler.execute(buildCommand(payload, 'preceptor-1', ROLES.PRECEPTOR)),
-			).rejects.toThrow(ForbiddenException);
+			).rejects.toThrow(ForbiddenError);
 		});
 
 		it('should allow the owner teacher', async () => {
@@ -188,12 +194,12 @@ describe('RegisterSubjectAttendanceHandler', () => {
 			expect(attendanceRepo.bulkSave).toHaveBeenCalledTimes(1);
 		});
 
-		it('should fail with a bad request when the subject does not exist', async () => {
+		it('should fail with not found when the subject does not exist', async () => {
 			subjectPort.getSubjectById.mockResolvedValue(null);
 
-			await expect(handler.execute(buildCommand(payload))).rejects.toThrow(
-				'Invalid subject id',
-			);
+			const attempt = handler.execute(buildCommand(payload));
+			await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+			await expect(attempt).rejects.toThrow('Materia no encontrada');
 		});
 
 		it('should reject when the subject belongs to another tenant', async () => {
@@ -202,7 +208,7 @@ describe('RegisterSubjectAttendanceHandler', () => {
 			);
 
 			await expect(handler.execute(buildCommand(payload))).rejects.toThrow(
-				ForbiddenException,
+				ForbiddenError,
 			);
 			expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 		});
@@ -218,8 +224,10 @@ describe('RegisterSubjectAttendanceHandler', () => {
 				payload,
 			);
 
-			await expect(handler.execute(mismatched)).rejects.toThrow(
-				'Course does not match subject',
+			const attempt = handler.execute(mismatched);
+			await expect(attempt).rejects.toBeInstanceOf(DomainError);
+			await expect(attempt).rejects.toThrow(
+				'El curso no corresponde a la materia',
 			);
 			expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 		});
@@ -264,7 +272,7 @@ describe('RegisterSubjectAttendanceHandler', () => {
 						new Date('2026-07-07'),
 					),
 				),
-			).rejects.toThrow('Invalid class day for this subject');
+			).rejects.toThrow('La materia no tiene clases el día seleccionado');
 		});
 
 		it('should reject weekends', async () => {
@@ -272,7 +280,7 @@ describe('RegisterSubjectAttendanceHandler', () => {
 				handler.execute(
 					buildCommand([], 'user-1', ROLES.TEACHER, new Date('2026-07-05')),
 				),
-			).rejects.toThrow('Invalid class day for this subject');
+			).rejects.toThrow('La materia no tiene clases el día seleccionado');
 		});
 	});
 });

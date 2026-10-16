@@ -11,6 +11,15 @@ export const apiClient = axios.create({
 	},
 });
 
+// A 401 on these endpoints is a credentials/session problem, not an expired
+// access token: refreshing would hide the real error from the user.
+const NO_REFRESH_ROUTES: readonly string[] = [
+	AUTH_ROUTES.login,
+	AUTH_ROUTES.selectTenant,
+	AUTH_ROUTES.refresh,
+	AUTH_ROUTES.logout,
+];
+
 // INTERCEPTOR DE RESPUESTA (antes estaba mal en request)
 apiClient.interceptors.response.use(
 	(response) => response,
@@ -20,7 +29,7 @@ apiClient.interceptors.response.use(
 			error.response?.status === 401 &&
 			originalRequest &&
 			!originalRequest._retry &&
-			originalRequest.url !== AUTH_ROUTES.refresh
+			!NO_REFRESH_ROUTES.includes(originalRequest.url ?? '')
 		) {
 			originalRequest._retry = true;
 			await apiClient.post(AUTH_ROUTES.refresh);

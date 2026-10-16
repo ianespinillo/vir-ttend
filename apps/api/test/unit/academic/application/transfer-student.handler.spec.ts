@@ -1,10 +1,12 @@
 import { STUDENTSTATUS } from '@repo/common';
 // transfer-student.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ConflictError, NotFoundError } from '../../../../src/common/errors';
 import { TransferStudentCommand } from '../../../../src/modules/academic/application/commands/transer-student/transer-student.command';
 import { TransferStudentHandler } from '../../../../src/modules/academic/application/commands/transer-student/transer-student.handler';
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('TransferStudentHandler', () => {
 	let handler: TransferStudentHandler;
@@ -44,9 +46,11 @@ describe('TransferStudentHandler', () => {
 	it('should throw when student does not exist', async () => {
 		studentRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new TransferStudentCommand('student-id')),
-		).rejects.toThrow();
+			NotFoundError,
+			'Estudiante no encontrado',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});
@@ -68,9 +72,11 @@ describe('TransferStudentHandler', () => {
 		});
 		studentRepository.findById.mockResolvedValue(inactiveStudent);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new TransferStudentCommand('student-id')),
-		).rejects.toThrow('Student is already inactive');
+			ConflictError,
+			'El estudiante ya está inactivo.',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});
@@ -92,9 +98,11 @@ describe('TransferStudentHandler', () => {
 		});
 		studentRepository.findById.mockResolvedValue(transferredStudent);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new TransferStudentCommand('student-id')),
-		).rejects.toThrow('Student is already transferred');
+			ConflictError,
+			'El estudiante ya fue transferido.',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});

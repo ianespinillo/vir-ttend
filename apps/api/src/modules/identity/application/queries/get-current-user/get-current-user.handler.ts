@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ROLES, Roles } from '@repo/common';
+import { ForbiddenError, NotFoundError } from '../../../../../common/errors';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -37,7 +38,7 @@ export class GetCurrentUserHandler {
 		} else {
 			const memberships = await this.membersRepo.findByUserId(userId);
 			if (memberships.length > 0)
-				throw new Error("User doesn't belongs to this tenant");
+				throw new ForbiddenError('No tiene acceso a la institución seleccionada.');
 			if (tenantId) {
 				role = ROLES.ADMIN;
 				isImpersonating = true;
@@ -49,7 +50,7 @@ export class GetCurrentUserHandler {
 			}
 		}
 		const user = await this.userRepo.findById(userId);
-		if (!user) throw new Error('User not found');
+		if (!user) throw new NotFoundError('Usuario no encontrado.');
 		const dto = new UserResponseDto();
 		dto.email = user.email;
 		dto.firstName = user.firstName;

@@ -1,4 +1,3 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import {
 	LEVEL,
 	ROLES,
@@ -7,6 +6,7 @@ import {
 	StudentStatus,
 } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ForbiddenError, NotFoundError } from '../../../../src/common/errors';
 import { GetSubjectStudentsHandler } from '../../../../src/modules/academic/application/queries/get-subject-students/get-subject-students.handler';
 import { GetSubjectStudentsQuery } from '../../../../src/modules/academic/application/queries/get-subject-students/get-subject-students.query';
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
@@ -15,6 +15,7 @@ import { Subject } from '../../../../src/modules/academic/domain/entities/subjec
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('GetSubjectStudentsHandler', () => {
 	let handler: GetSubjectStudentsHandler;
@@ -107,8 +108,8 @@ describe('GetSubjectStudentsHandler', () => {
 		},
 	);
 
-	it('should throw ForbiddenException when a teacher asks for another teacher subject', async () => {
-		await expect(
+	it('should throw ForbiddenError when a teacher asks for another teacher subject', async () => {
+		await expectRejection(
 			handler.execute(
 				new GetSubjectStudentsQuery(
 					'sub-1',
@@ -117,28 +118,34 @@ describe('GetSubjectStudentsHandler', () => {
 					ROLES.TEACHER,
 				),
 			),
-		).rejects.toThrow(ForbiddenException);
+			ForbiddenError,
+			'La materia no está asignada a este docente.',
+		);
 		expect(studentRepo.findByCourse).not.toHaveBeenCalled();
 	});
 
-	it('should throw NotFoundException when the subject does not exist or is deleted', async () => {
+	it('should throw NotFoundError when the subject does not exist or is deleted', async () => {
 		subjectRepo.findById.mockResolvedValueOnce(null);
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new GetSubjectStudentsQuery('nope', 'tenant-1', 'admin-1', ROLES.ADMIN),
 			),
-		).rejects.toThrow(NotFoundException);
+			NotFoundError,
+			'Materia no encontrada',
+		);
 
 		subjectRepo.findById.mockResolvedValueOnce(buildSubject(new Date()));
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new GetSubjectStudentsQuery('sub-1', 'tenant-1', 'admin-1', ROLES.ADMIN),
 			),
-		).rejects.toThrow(NotFoundException);
+			NotFoundError,
+			'Materia no encontrada',
+		);
 	});
 
-	it('should throw ForbiddenException when the subject course belongs to another tenant', async () => {
-		await expect(
+	it('should throw ForbiddenError when the subject course belongs to another tenant', async () => {
+		await expectRejection(
 			handler.execute(
 				new GetSubjectStudentsQuery(
 					'sub-1',
@@ -147,7 +154,9 @@ describe('GetSubjectStudentsHandler', () => {
 					ROLES.TEACHER,
 				),
 			),
-		).rejects.toThrow(ForbiddenException);
+			ForbiddenError,
+			'La materia no pertenece a su escuela.',
+		);
 		expect(studentRepo.findByCourse).not.toHaveBeenCalled();
 	});
 });

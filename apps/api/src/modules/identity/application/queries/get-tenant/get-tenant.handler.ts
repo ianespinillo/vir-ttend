@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { TenantResponseDto } from '../../dto/tenant.response.dto';
 import { GetTenantQuery } from './get-tenant.query';
@@ -11,7 +12,7 @@ export class GetTenantHandler {
 	) {}
 	async execute(command: GetTenantQuery): Promise<TenantResponseDto> {
 		const tenant = await this.tenantRepo.findById(command.tenantId);
-		if (!tenant) throw new Error('Tenant not found');
+		if (!tenant) throw new NotFoundError('Institución no encontrada.');
 		return new TenantResponseDto(
 			tenant.id,
 			tenant.name,

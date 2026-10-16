@@ -1,6 +1,10 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ATTENDANCE_STATUS, ROLES, Roles } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import {
+	DomainError,
+	ForbiddenError,
+	NotFoundError,
+} from '../../../src/common/errors';
 import { GetSubjectAttendanceQueryHandler } from '../../../src/modules/attendance/application/queries/get-subject-attendance/get-subject-attendance.handler';
 import { GetSubjectAttendanceQuery } from '../../../src/modules/attendance/application/queries/get-subject-attendance/get-subject-attendance.query';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
@@ -124,7 +128,7 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 	it('should reject another teacher', async () => {
 		await expect(
 			handler.execute(buildQuery('other-teacher', ROLES.TEACHER)),
-		).rejects.toThrow(ForbiddenException);
+		).rejects.toThrow(ForbiddenError);
 		expect(attendanceRepo.findBySubjectAndDate).not.toHaveBeenCalled();
 		expect(studentPort.getActiveByCourseId).not.toHaveBeenCalled();
 	});
@@ -132,28 +136,28 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 	it('should reject when subject belongs to another tenant', async () => {
 		await expect(
 			handler.execute(buildQuery('teacher-1', ROLES.TEACHER, 'other-tenant')),
-		).rejects.toThrow(ForbiddenException);
+		).rejects.toThrow(ForbiddenError);
 	});
 
-	it('should fail with a bad request when the subject does not exist', async () => {
+	it('should fail with not found when the subject does not exist', async () => {
 		subjectPort.getSubjectById.mockResolvedValue(null);
 
-		await expect(handler.execute(buildQuery())).rejects.toThrow(
-			BadRequestException,
-		);
+		const attempt = handler.execute(buildQuery());
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Materia no encontrada');
 	});
 
 	it('should fail with a bad request when the date is invalid', async () => {
-		await expect(
-			handler.execute(
-				new GetSubjectAttendanceQuery(
-					'sub-1',
-					new Date('not-a-date'),
-					'teacher-1',
-					ROLES.TEACHER,
-					'tenant-1',
-				),
+		const attempt = handler.execute(
+			new GetSubjectAttendanceQuery(
+				'sub-1',
+				new Date('not-a-date'),
+				'teacher-1',
+				ROLES.TEACHER,
+				'tenant-1',
 			),
-		).rejects.toThrow('Invalid date');
+		);
+		await expect(attempt).rejects.toBeInstanceOf(DomainError);
+		await expect(attempt).rejects.toThrow('La fecha no es válida');
 	});
 });

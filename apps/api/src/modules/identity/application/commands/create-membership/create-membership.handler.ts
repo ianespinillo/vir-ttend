@@ -1,4 +1,5 @@
-import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ConflictError, NotFoundError } from '../../../../../common/errors';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
@@ -17,19 +18,18 @@ export class CreateMembershipHandler {
 	async execute(command: CreateMembershipCommand): Promise<void> {
 		const user = await this.userRepository.findByEmail(command.userEmail);
 		if (!user)
-			throw new NotFoundException(
-				`User with email ${command.userEmail} not found`,
+			throw new NotFoundError(
+				`No existe un usuario con el correo ${command.userEmail}.`,
 			);
 		const tenant = await this.tenantRepository.findById(command.tenantId);
-		if (!tenant)
-			throw new NotFoundException(`Tenant with id ${command.tenantId} not found`);
+		if (!tenant) throw new NotFoundError('Institución no encontrada.');
 		const existentRelation = await this.memberRepo.findByUserAndTenant(
 			user.id,
 			command.tenantId,
 		);
 		if (existentRelation)
-			throw new BadRequestException(
-				`User with email ${command.userEmail} is already a member of this tenant`,
+			throw new ConflictError(
+				`El usuario ${command.userEmail} ya pertenece a esta institución.`,
 			);
 		await this.memberRepo.save(
 			UserTenantMembership.create(user.id, command.tenantId, command.role),

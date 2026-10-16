@@ -1,5 +1,6 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_THRESHOLDS } from '@repo/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
@@ -23,8 +24,7 @@ export class GetCourseDailyOverviewQueryHandler {
 		query: GetCourseDailyOverviewQuery,
 	): Promise<{ records: AttendanceRecordResponseDto[] } & CourseSnapshotDto> {
 		const course = await this.coursePort.findById(query.courseId);
-		if (!course)
-			throw new NotFoundException(`Course doesn't exist: ${query.courseId}`);
+		if (!course) throw new NotFoundError('Curso no encontrado');
 		const records = await this.attendanceRepo.findByCourseAndDate(
 			query.courseId,
 			query.date,
@@ -37,7 +37,7 @@ export class GetCourseDailyOverviewQueryHandler {
 		for (const record of records) {
 			const student = await this.studentPort.findById(record.studentId);
 			if (!student) {
-				throw new NotFoundException(`Student doesn't exist: ${record.studentId}`);
+				throw new NotFoundError('Estudiante no encontrado');
 			}
 			dtos.push(new AttendanceRecordResponseDto(student, record));
 		}

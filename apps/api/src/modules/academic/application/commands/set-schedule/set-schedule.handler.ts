@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { ScheduleSlot } from '../../../domain/entities/schedule-slot.entity';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../domain/repositories/schedule.repository.interface';
@@ -21,11 +22,12 @@ export class SetScheduleHandler {
 		const { courseId, subjectId } = command;
 		if (courseId) {
 			const course = await this.courseRepo.findById(courseId);
-			if (!course) throw new Error('Course not found');
+			if (!course) throw new NotFoundError('Curso no encontrado');
 
 			const newSlots = command.slots.map((s) => {
 				const slotSubjectId = s.subjectId ?? subjectId;
-				if (!slotSubjectId) throw new Error('Slot must have a subjectId');
+				if (!slotSubjectId)
+					throw new DomainError('Cada horario debe indicar una materia.');
 				return ScheduleSlot.create({
 					dayOfWeek: s.dayOfWeek,
 					startTime: s.startTime,
@@ -55,11 +57,11 @@ export class SetScheduleHandler {
 		}
 
 		if (!subjectId) {
-			throw new Error('Subject or course must be specified');
+			throw new DomainError('Debe indicar una materia o un curso.');
 		}
 
 		const subject = await this.subjetRepo.findById(subjectId);
-		if (!subject) throw new Error('Subject not found');
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		const schedules = await this.scheduleRepo.findByCourse(subject.courseId);
 		const filtered = schedules.filter((s) => s.subjectId !== subjectId);
 		const newSlots = command.slots.map((s) =>
