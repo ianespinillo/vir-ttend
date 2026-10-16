@@ -27,11 +27,21 @@ export class GetCourseHandler {
 			: null;
 		const schedules = await this.slotRepo.findByCourse(course.id.getRaw());
 		const subjects = await this.subjectRepo.findByCourse(course.id.getRaw());
+		const teacherIds = Array.from(
+			new Set(
+				subjects.map((s) => s.teacherId).filter((id): id is string => Boolean(id)),
+			),
+		);
+		const teachers =
+			teacherIds.length > 0 ? await this.userRepo.findByIds(teacherIds) : [];
+		const teacherMap = new Map(teachers.map((t) => [t.id, t.fullName]));
+
 		return new CourseDetailResponseDto(
 			course,
 			subjects,
 			schedules,
 			preceptor?.fullName ?? 'Sin asignar',
+			teacherMap,
 		);
 	}
 }

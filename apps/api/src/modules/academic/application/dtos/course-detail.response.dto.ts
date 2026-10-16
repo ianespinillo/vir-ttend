@@ -43,9 +43,16 @@ export class CourseDetailResponseDto extends CourseResponseDto {
 		subjects: Subject[],
 		slots: ScheduleSlot[],
 		preceptorName: string,
+		teacherNames?: Map<string, string>,
 	) {
 		super(course, preceptorName);
-		this.subjects = subjects.map((s) => new SubjectResponseDto(s));
+		this.subjects = subjects.map(
+			(s) =>
+				new SubjectResponseDto(
+					s,
+					s.teacherId ? teacherNames?.get(s.teacherId) : undefined,
+				),
+		);
 		this.schedule = slots.map((s) => new ScheduleSlotResponseDto(s));
 	}
 }
