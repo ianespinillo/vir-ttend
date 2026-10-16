@@ -10,12 +10,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../../ui/popover';
 export interface AcademicYearCardProps {
 	academicYear: IAcademicYearResponse;
 	onEdit?: (year: IAcademicYearResponse) => void;
+	onDeclareNonWorkingDay?: (year: IAcademicYearResponse) => void;
 	canEdit?: boolean;
 }
 
 export function AcademicYearCard({
 	academicYear,
 	onEdit,
+	onDeclareNonWorkingDay,
 	canEdit = true,
 }: AcademicYearCardProps) {
 	const startDateFormatted = new Date(academicYear.startDate).toLocaleDateString(
@@ -86,7 +88,7 @@ export function AcademicYearCard({
 							</strong>
 						</span>
 					</div>
-					<div className="flex items-center justify-between gap-2 text-muted-foreground sm:col-span-2 pt-2 border-t">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-muted-foreground sm:col-span-2 pt-2 border-t">
 						<div className="flex items-center gap-2">
 							<CalendarOff className="h-4 w-4 text-rose-500" />
 							<span>
@@ -96,56 +98,69 @@ export function AcademicYearCard({
 								</strong>
 							</span>
 						</div>
-						{academicYear.nonWorkingDays &&
-							academicYear.nonWorkingDays.length > 0 && (
-								<Popover>
-									<PopoverTrigger asChild>
-										<Button
-											variant="outline"
-											size="sm"
-											className="h-7 text-xs px-2 gap-1"
-										>
-											Ver feriados
-										</Button>
-									</PopoverTrigger>
-									<PopoverContent
-										align="end"
-										className="w-80 max-h-64 overflow-y-auto p-3 text-xs"
-									>
-										<p className="font-semibold mb-2 text-foreground">
-											Feriados y días no laborables ({academicYear.nonWorkingDays.length})
-										</p>
-										<ul className="space-y-1.5 divide-y divide-border">
-											{academicYear.nonWorkingDays.map((d) => {
-												const dateStr =
-													typeof d === 'string'
-														? d
-														: d.toISOString
-															? d.toISOString()
-															: String(d);
-												const holidayName = getHolidayName(dateStr);
-												const formattedDate = new Date(d).toLocaleDateString('es-AR', {
-													day: '2-digit',
-													month: '2-digit',
-													year: 'numeric',
-													timeZone: 'UTC',
-												});
-												return (
-													<li
-														key={dateStr}
-														className="pt-1.5 flex justify-between items-center text-muted-foreground"
-													>
-														<span>{holidayName || 'Feriado / Receso'}</span>
-														<span className="font-mono text-[11px] text-foreground">
-															{formattedDate}
-														</span>
-													</li>
-												);
-											})}
-										</ul>
-									</PopoverContent>
-								</Popover>
+						<div className="flex items-center gap-1.5 flex-wrap">
+							{canEdit && onDeclareNonWorkingDay && (
+								<Button
+									variant="outline"
+									size="sm"
+									className="h-7 text-xs px-2 gap-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900"
+									onClick={() => onDeclareNonWorkingDay(academicYear)}
+								>
+									<CalendarOff className="h-3.5 w-3.5" />
+									Suspender clases / Feriado
+								</Button>
 							)}
+							{academicYear.nonWorkingDays &&
+								academicYear.nonWorkingDays.length > 0 && (
+									<Popover>
+										<PopoverTrigger asChild>
+											<Button
+												variant="outline"
+												size="sm"
+												className="h-7 text-xs px-2 gap-1"
+											>
+												Ver feriados
+											</Button>
+										</PopoverTrigger>
+										<PopoverContent
+											align="end"
+											className="w-80 max-h-64 overflow-y-auto p-3 text-xs"
+										>
+											<p className="font-semibold mb-2 text-foreground">
+												Feriados y días no laborables ({academicYear.nonWorkingDays.length})
+											</p>
+											<ul className="space-y-1.5 divide-y divide-border">
+												{academicYear.nonWorkingDays.map((d) => {
+													const dateStr =
+														typeof d === 'string'
+															? d
+															: d.toISOString
+																? d.toISOString()
+																: String(d);
+													const holidayName = getHolidayName(dateStr);
+													const formattedDate = new Date(d).toLocaleDateString('es-AR', {
+														day: '2-digit',
+														month: '2-digit',
+														year: 'numeric',
+														timeZone: 'UTC',
+													});
+													return (
+														<li
+															key={dateStr}
+															className="pt-1.5 flex justify-between items-center text-muted-foreground"
+														>
+															<span>{holidayName || 'Feriado / Receso'}</span>
+															<span className="font-mono text-[11px] text-foreground">
+																{formattedDate}
+															</span>
+														</li>
+													);
+												})}
+											</ul>
+										</PopoverContent>
+									</Popover>
+								)}
+						</div>
 					</div>
 				</div>
 			</CardContent>

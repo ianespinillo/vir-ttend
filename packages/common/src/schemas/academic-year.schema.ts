@@ -21,9 +21,25 @@ export const createAcademicYearSchema = z.object({
 
 export const updateAcademicYearSchema = createAcademicYearSchema.partial();
 
+export const declareNonWorkingDaySchema = z.object({
+	date: z
+		.string()
+		.min(1, 'La fecha es requerida')
+		.regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha esperado: YYYY-MM-DD'),
+	reason: z
+		.string()
+		.min(3, 'El motivo debe tener al menos 3 caracteres')
+		.max(255, 'El motivo no puede exceder 255 caracteres'),
+	type: z.string().optional(),
+	notifySchool: z.boolean().default(true),
+});
+
 export type CreateAcademicYearFormValues = z.infer<
 	typeof createAcademicYearSchema
 >;
 export type UpdateAcademicYearFormValues = z.infer<
 	typeof updateAcademicYearSchema
+>;
+export type DeclareNonWorkingDayFormValues = z.infer<
+	typeof declareNonWorkingDaySchema
 >;

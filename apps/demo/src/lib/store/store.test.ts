@@ -436,4 +436,33 @@ describe('alerts + announcements', () => {
 			demoIds.announcement['annc-2'],
 		]);
 	});
+
+	it('declares non-working day and creates school announcement when notifySchool is true', () => {
+		const store = freshStore();
+		const year = store.getState().academicYears[0];
+		expect(year).toBeDefined();
+		if (!year) return;
+		const initialNonWorkingCount = year.nonWorkingDays?.length ?? 0;
+		const initialAnnouncementsCount = store.getState().announcements.length;
+
+		store.declareNonWorkingDay(year.id, {
+			date: '2026-05-15',
+			reason: 'Paro docente provincial',
+			notifySchool: true,
+			authorName: 'Equipo Directivo',
+		});
+
+		const updatedYear = store
+			.getState()
+			.academicYears.find((y) => y.id === year.id);
+		expect(updatedYear?.nonWorkingDays).toHaveLength(initialNonWorkingCount + 1);
+
+		const announcements = store.getState().announcements;
+		expect(announcements).toHaveLength(initialAnnouncementsCount + 1);
+		const lastAnnouncement = announcements[announcements.length - 1];
+		expect(lastAnnouncement).toBeDefined();
+		expect(lastAnnouncement?.status).toBe('published');
+		expect(lastAnnouncement?.targetType).toBe('school');
+		expect(lastAnnouncement?.title).toContain('Paro docente');
+	});
 });

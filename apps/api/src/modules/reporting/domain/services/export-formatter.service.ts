@@ -35,7 +35,9 @@ const NO_PERCENT = '—';
 
 /** Display only: the percentage itself stays unrounded. Null means no class given. */
 function percentLabel(percent: number | null): string {
-	return percent === null ? NO_PERCENT : `${percent.toFixed(2)}%`;
+	if (percent === null || Number.isNaN(percent)) return NO_PERCENT;
+	const normalized = percent <= 1 && percent > 0 ? percent * 100 : percent;
+	return `${normalized.toFixed(2)}%`;
 }
 
 export class ExportFormatterService {

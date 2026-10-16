@@ -32,11 +32,14 @@ const columns: ColumnDef<MonthlyReportStudent>[] = [
 	{
 		accessorKey: 'present',
 		header: 'Presentes',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('present')}
-			</span>
-		),
+		cell: ({ row }) => {
+			const val = row.getValue<number>('present');
+			return (
+				<span className="block text-center tabular-nums">
+					{typeof val === 'number' && Number.isNaN(val) ? '-' : val}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'absent',
@@ -60,20 +63,26 @@ const columns: ColumnDef<MonthlyReportStudent>[] = [
 	{
 		accessorKey: 'late',
 		header: 'Tardanzas',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('late')}
-			</span>
-		),
+		cell: ({ row }) => {
+			const val = row.getValue<number>('late');
+			return (
+				<span className="block text-center tabular-nums">
+					{typeof val === 'number' && Number.isNaN(val) ? '-' : val}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'justified',
 		header: 'Justificadas',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('justified')}
-			</span>
-		),
+		cell: ({ row }) => {
+			const val = row.getValue<number>('justified');
+			return (
+				<span className="block text-center tabular-nums">
+					{typeof val === 'number' && Number.isNaN(val) ? '-' : val}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'absencePercent',

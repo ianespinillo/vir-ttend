@@ -1,6 +1,10 @@
 'use client';
 
-import type { AttendanceRecord, ISubjectResponse } from '@repo/common';
+import {
+	type AttendanceRecord,
+	type ISubjectResponse,
+	formatCount,
+} from '@repo/common';
 import { BookOpen } from 'lucide-react';
 import { formatPercent } from '../../../../lib/format';
 import { buildSubjectBreakdown } from '../../../../lib/student-history';
@@ -48,7 +52,18 @@ export function StudentSubjectBreakdown({
 								<div className="min-w-0">
 									<p className="truncate text-sm font-medium">{row.name}</p>
 									<p className="text-xs text-muted-foreground">
-										P {row.present} · A {row.absent} · T {row.late} · J {row.justified}
+										P{' '}
+										{typeof row.present === 'number' && Number.isNaN(row.present)
+											? '-'
+											: row.present}{' '}
+										· A {formatCount(row.absent)} · T{' '}
+										{typeof row.late === 'number' && Number.isNaN(row.late)
+											? '-'
+											: row.late}{' '}
+										· J{' '}
+										{typeof row.justified === 'number' && Number.isNaN(row.justified)
+											? '-'
+											: row.justified}
 									</p>
 								</div>
 								<span className="shrink-0 text-sm font-semibold tabular-nums">

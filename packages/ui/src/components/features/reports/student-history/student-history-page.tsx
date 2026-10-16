@@ -74,15 +74,31 @@ export function StudentHistoryPage({
 	const totals = report?.totals;
 	const tally = tallyAttendance(history);
 
-	const present = totals?.present ?? tally.present;
-	const late = totals?.late ?? tally.late;
-	const absent = totals ? formatCount(totals.absent) : tally.absent;
+	const rawPresent = totals?.present ?? tally.present;
+	const rawLate = totals?.late ?? tally.late;
+	const rawAbsent = totals ? formatCount(totals.absent) : tally.absent;
+
+	const present =
+		typeof rawPresent === 'number' && Number.isNaN(rawPresent) ? '-' : rawPresent;
+	const late =
+		typeof rawLate === 'number' && Number.isNaN(rawLate) ? '-' : rawLate;
+	const absent =
+		typeof rawAbsent === 'number' && Number.isNaN(rawAbsent) ? '-' : rawAbsent;
+
+	const isNaNAbsence =
+		typeof totals?.averageAbsencePercent === 'number' &&
+		Number.isNaN(totals.averageAbsencePercent);
 	const absencePercent = totals
-		? totals.averageAbsencePercent
+		? isNaNAbsence
+			? Number.NaN
+			: totals.averageAbsencePercent
 		: tally.attendancePercent === null
 			? null
 			: 100 - tally.attendancePercent;
-	const absenceSubtitle = totals ? `de ${totals.totalDays} días` : undefined;
+	const absenceSubtitle =
+		totals && !Number.isNaN(totals.totalDays)
+			? `de ${totals.totalDays} días`
+			: undefined;
 
 	return (
 		<div className="space-y-6">

@@ -18,10 +18,35 @@ const geistMono = localFont({
 	weight: '100 900',
 });
 
-export const metadata: Metadata = {
-	title: 'Vir-ttend',
-	description: 'Gestión de asistencia escolar',
-};
+export function generateMetadata(): Metadata {
+	const tenancyMode =
+		process.env.NEXT_PUBLIC_TENANCY_MODE || process.env.TENANCY_MODE || 'multi';
+	const isSingle = tenancyMode === 'single';
+	const schoolShortName = (
+		process.env.NEXT_PUBLIC_SCHOOL_SHORT_NAME ||
+		process.env.SCHOOL_SHORT_NAME ||
+		process.env.TENANT_NAME
+	)?.trim();
+	const brandingSlug = (
+		process.env.NEXT_PUBLIC_BRANDING_SLUG || process.env.BRANDING_SLUG
+	)?.trim();
+
+	const title =
+		isSingle && schoolShortName ? `Virttend | ${schoolShortName}` : 'Virttend';
+
+	const iconUrl =
+		isSingle && brandingSlug ? '/branding/favicon.ico' : '/icon.svg';
+
+	return {
+		title,
+		description: 'Gestión de asistencia escolar',
+		icons: {
+			icon: iconUrl,
+			shortcut: iconUrl,
+			apple: iconUrl,
+		},
+	};
+}
 
 export default function RootLayout({
 	children,

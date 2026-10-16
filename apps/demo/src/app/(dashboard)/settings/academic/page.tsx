@@ -1,8 +1,8 @@
 'use client';
-
 import { useDemo } from '@/lib/session/demo-provider';
 import type {
 	CreateAcademicYearFormValues,
+	DeclareNonWorkingDayFormValues,
 	IAcademicYearResponse,
 } from '@repo/common';
 import { ROLES } from '@repo/common';
@@ -10,6 +10,7 @@ import {
 	AcademicYearCard,
 	AcademicYearForm,
 	Button,
+	DeclareNonWorkingDayDialog,
 	Dialog,
 	DialogContent,
 	DialogHeader,
@@ -22,7 +23,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 export default function AcademicSettingsPage() {
-	const { state, session, selectors } = useDemo();
+	const { state, session, selectors, store } = useDemo();
 	const user = session.user;
 	const role = user?.role;
 	const isAdmin = role === ROLES.ADMIN || role === ROLES.SUPERADMIN;
@@ -30,6 +31,11 @@ export default function AcademicSettingsPage() {
 	const years = selectors.getAcademicYears(state);
 
 	const [modalState, setModalState] = useState<{
+		open: boolean;
+		year: IAcademicYearResponse | null;
+	}>({ open: false, year: null });
+
+	const [declareModalState, setDeclareModalState] = useState<{
 		open: boolean;
 		year: IAcademicYearResponse | null;
 	}>({ open: false, year: null });
@@ -42,6 +48,25 @@ export default function AcademicSettingsPage() {
 			/>
 		);
 	}
+
+	const handleDeclareNonWorkingDay = (
+		values: DeclareNonWorkingDayFormValues,
+	) => {
+		if (!declareModalState.year) return;
+		store.declareNonWorkingDay(declareModalState.year.id, {
+			date: values.date,
+			reason: values.reason,
+			type: values.type,
+			notifySchool: values.notifySchool,
+			authorName: user ? `${user.firstName} ${user.lastName}` : 'Equipo Directivo',
+		});
+		toast.success(
+			values.notifySchool
+				? 'Día no laborable registrado y comunicado institucional publicado'
+				: 'Día no laborable registrado correctamente',
+		);
+		setDeclareModalState({ open: false, year: null });
+	};
 
 	const handleSave = (
 		_values: CreateAcademicYearFormValues & { isActive?: boolean },
@@ -76,6 +101,9 @@ export default function AcademicSettingsPage() {
 						key={ay.id}
 						academicYear={ay}
 						onEdit={(year) => setModalState({ open: true, year })}
+						onDeclareNonWorkingDay={(year) =>
+							setDeclareModalState({ open: true, year })
+						}
 						canEdit={isAdmin}
 					/>
 				))}
@@ -115,6 +143,14 @@ export default function AcademicSettingsPage() {
 					/>
 				</DialogContent>
 			</Dialog>
+
+			<DeclareNonWorkingDayDialog
+				open={declareModalState.open}
+				onOpenChange={(open) => setDeclareModalState((prev) => ({ ...prev, open }))}
+				academicYear={declareModalState.year}
+				onSubmit={handleDeclareNonWorkingDay}
+				isLoading={false}
+			/>
 		</div>
 	);
 }

@@ -6,6 +6,9 @@
  * no full Intl). Rounds only the printed value, never the count itself.
  */
 export function formatCount(value: number): string {
+	if (typeof value !== 'number' || Number.isNaN(value)) {
+		return '-';
+	}
 	const rounded = Math.round(value * 100) / 100;
 	return String(rounded).replace('.', ',');
 }

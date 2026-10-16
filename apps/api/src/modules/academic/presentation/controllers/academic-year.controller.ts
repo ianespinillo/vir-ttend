@@ -21,10 +21,13 @@ import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { RolesGuard } from '../../../../common/guard/roles.guard';
 import { CreateAcademicYearCommand } from '../../application/commands/create-academic-year/create-academic-year.command';
 import { CreateAcademicYearHandler } from '../../application/commands/create-academic-year/create-academic-year.handler';
+import { DeclareNonWorkingDayCommand } from '../../application/commands/declare-non-working-day/declare-non-working-day.command';
+import { DeclareNonWorkingDayHandler } from '../../application/commands/declare-non-working-day/declare-non-working-day.handler';
 import { UpdateAcademicYearCommand } from '../../application/commands/update-academic-year/update-academic-year.command';
 import { UpdateAcademicYearHandler } from '../../application/commands/update-academic-year/update-academic-year.handler';
 import { AcademicYearResponseDto } from '../../application/dtos/academic-year.response.dto';
 import { CreateAcademicYearRequestDto } from '../../application/dtos/create-academic-year.request.dto';
+import { DeclareNonWorkingDayRequestDto } from '../../application/dtos/declare-non-working-day.request.dto';
 import { UpdateAcademicYearRequestDto } from '../../application/dtos/update-academic-year.request.dto';
 import { GetAcademicYearsHandler } from '../../application/queries/get-academic-years/get-academic-years.handler';
 import { GetAcademicYearsQuery } from '../../application/queries/get-academic-years/get-academic-years.query';
@@ -39,6 +42,7 @@ export class AcademicYearsController {
 	constructor(
 		private readonly createAcademicYearHandler: CreateAcademicYearHandler,
 		private readonly updateAcademicYearHandler: UpdateAcademicYearHandler,
+		private readonly declareNonWorkingDayHandler: DeclareNonWorkingDayHandler,
 		private readonly getAcademicYearsHandler: GetAcademicYearsHandler,
 		private readonly getActiveAcademicYearHandler: GetActiveAcademicYearHandler,
 	) {}
@@ -165,6 +169,48 @@ export class AcademicYearsController {
 				dto.startDate,
 				dto.endDate,
 				dto.isActive,
+			),
+		);
+	}
+
+	@Post(':id/non-working-days')
+	@RolesDecorator(ROLES.ADMIN)
+	@ApiOperation({
+		summary: 'Declarar un día no laborable (suspensión de clases)',
+		description:
+			'Agrega un día no laborable al ciclo lectivo (feriado, paro, movilización) y opcionalmente dispara un comunicado escolar a toda la institución.',
+	})
+	@ApiParam({
+		name: 'id',
+		description: 'ID del ciclo lectivo.',
+		example: 'e6f5a4b3-2c1d-4e5f-8a9b-0c1d2e3f4a5b',
+	})
+	@ApiResponse({
+		status: 201,
+		description: 'Día no laborable agregado correctamente.',
+		type: AcademicYearResponseDto,
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Validación falló o fecha inválida',
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({ status: 404, description: 'Ciclo lectivo no encontrado' })
+	async declareNonWorkingDay(
+		@Param('id') id: string,
+		@Body() dto: DeclareNonWorkingDayRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.declareNonWorkingDayHandler.execute(
+			new DeclareNonWorkingDayCommand(
+				id,
+				dto.date,
+				dto.reason,
+				dto.type,
+				dto.notifySchool ?? true,
+				user.tenantId,
+				user.sub,
 			),
 		);
 	}

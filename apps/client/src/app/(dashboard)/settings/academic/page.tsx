@@ -2,17 +2,20 @@
 
 import type {
 	CreateAcademicYearFormValues,
+	DeclareNonWorkingDayFormValues,
 	IAcademicYearResponse,
 } from '@repo/common';
 import {
 	useAcademicYears,
 	useCreateAcademicYear,
+	useDeclareNonWorkingDay,
 	useUpdateAcademicYear,
 } from '@repo/hooks';
 import {
 	AcademicYearCard,
 	AcademicYearForm,
 	Button,
+	DeclareNonWorkingDayDialog,
 	Dialog,
 	DialogContent,
 	DialogHeader,
@@ -35,8 +38,14 @@ export default function AcademicSettingsPage() {
 	const { data: years, isLoading, isError, error } = useAcademicYears();
 	const createMutation = useCreateAcademicYear();
 	const updateMutation = useUpdateAcademicYear();
+	const declareMutation = useDeclareNonWorkingDay();
 
 	const [modalState, setModalState] = useState<{
+		open: boolean;
+		year: IAcademicYearResponse | null;
+	}>({ open: false, year: null });
+
+	const [declareModalState, setDeclareModalState] = useState<{
 		open: boolean;
 		year: IAcademicYearResponse | null;
 	}>({ open: false, year: null });
@@ -83,6 +92,34 @@ export default function AcademicSettingsPage() {
 		}
 	};
 
+	const handleDeclareNonWorkingDay = async (
+		values: DeclareNonWorkingDayFormValues,
+	) => {
+		if (!declareModalState.year) return;
+		try {
+			await declareMutation.mutateAsync({
+				academicYearId: declareModalState.year.id,
+				data: values,
+			});
+			toast.success(
+				values.notifySchool
+					? 'Día no laborable registrado y comunicado escolar publicado exitosamente.'
+					: 'Día no laborable registrado exitosamente.',
+			);
+			setDeclareModalState({ open: false, year: null });
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			const message =
+				errorObj?.response?.data?.message ||
+				errorObj?.message ||
+				'Ocurrió un error al registrar el día no laborable.';
+			toast.error(message);
+		}
+	};
+
 	return (
 		<div className="space-y-6 max-w-4xl">
 			<PageHeader
@@ -115,6 +152,9 @@ export default function AcademicSettingsPage() {
 							key={ay.id}
 							academicYear={ay}
 							onEdit={(year) => setModalState({ open: true, year })}
+							onDeclareNonWorkingDay={(year) =>
+								setDeclareModalState({ open: true, year })
+							}
 							canEdit={isAdmin}
 						/>
 					))}
@@ -161,6 +201,14 @@ export default function AcademicSettingsPage() {
 					/>
 				</DialogContent>
 			</Dialog>
+
+			<DeclareNonWorkingDayDialog
+				open={declareModalState.open}
+				onOpenChange={(open) => setDeclareModalState((prev) => ({ ...prev, open }))}
+				academicYear={declareModalState.year}
+				onSubmit={handleDeclareNonWorkingDay}
+				isLoading={declareMutation.isPending}
+			/>
 		</div>
 	);
 }

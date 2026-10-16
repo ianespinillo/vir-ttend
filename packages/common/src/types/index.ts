@@ -3,6 +3,7 @@ export * from './mapper.interface.js';
 export * from './tenant.types.js';
 export * from './user.types.js';
 export * from './academic/academic-year.response.type.js';
+export * from './academic/declare-non-working-day.payload.js';
 export * from './academic/course.response.type.js';
 export * from './academic/schedule-slot.response.type.js';
 export * from './academic/subject.response.type.js';

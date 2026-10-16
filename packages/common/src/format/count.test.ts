@@ -17,4 +17,8 @@ describe('formatCount', () => {
 		expect(formatCount(1 / 3)).toBe('0,33');
 		expect(formatCount(2.999)).toBe('3');
 	});
+
+	it('returns a dash for NaN or invalid numbers', () => {
+		expect(formatCount(Number.NaN)).toBe('-');
+	});
 });
