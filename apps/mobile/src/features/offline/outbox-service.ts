@@ -35,7 +35,9 @@ export const buildSubjectOutboxId = (subjectId: string, date: string): string =>
 /**
  * Distinguishes permanent 4xx validation/permission errors from transient network/5xx/401 errors.
  * - Permanent: 400 "Invalid class day", 403 Forbidden, 404, 422. Preserved for the user to fix.
- * - Transient: offline, timeouts, 5xx, 401 (automatic refresh will retry).
+ * - Transient: offline, timeouts, 5xx, 401 (automatic refresh will retry), and
+ *   409: two saves of the same attendance raced on its unique constraint; the
+ *   retry finds the stored record and updates it.
  */
 export const classifyError = (
 	error: unknown,
@@ -65,7 +67,8 @@ export const classifyError = (
 			status >= 400 &&
 			status < 500 &&
 			status !== 401 &&
-			status !== 408
+			status !== 408 &&
+			status !== 409
 		) {
 			return {
 				isPermanent: true,
@@ -74,7 +77,7 @@ export const classifyError = (
 			};
 		}
 
-		// 401 (session expired / auth), 408 (timeout), 5xx, or network disconnect
+		// 401 (session expired / auth), 408 (timeout), 409 (save race), 5xx, or network disconnect
 		const isNetworkOrTimeout =
 			!error.response || error.code === 'ECONNABORTED' || status === 408;
 		return {
