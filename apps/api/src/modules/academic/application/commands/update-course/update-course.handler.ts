@@ -14,6 +14,8 @@ export class UpdateCourseHandler {
 		if (!course) throw new NotFoundError('Curso no encontrado');
 		if (command.preceptorId) course.assignPreceptor(command.preceptorId);
 		if (command.shift) course.changeShift(command.shift);
+		if (command.division !== undefined) course.changeDivision(command.division);
+		if (command.yearNumber !== undefined) course.changeYearNumber(command.yearNumber);
 		await this.courseRepo.save(course);
 	}
 }

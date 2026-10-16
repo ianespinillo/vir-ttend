@@ -6,7 +6,7 @@ import { SubjectId } from '../value-objects/subject-id.vo';
 
 interface CreateProps {
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -16,7 +16,7 @@ interface CreateProps {
 interface ConstructorProps {
 	id: SubjectId;
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -29,7 +29,7 @@ interface ConstructorProps {
 export interface ReconstituteProps {
 	id: string;
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -42,7 +42,7 @@ export interface ReconstituteProps {
 export class Subject {
 	private readonly _id: SubjectId;
 	private readonly _courseId: string;
-	private _teacherId: string;
+	private _teacherId?: string;
 	private _name: string;
 	private _area: string;
 	private _weeklyHours: number;
@@ -93,7 +93,7 @@ export class Subject {
 	get courseId(): string {
 		return this._courseId;
 	}
-	get teacherId(): string {
+	get teacherId(): string | undefined {
 		return this._teacherId;
 	}
 	get name(): string {
@@ -123,6 +123,11 @@ export class Subject {
 
 	assignTeacher(teacherId: string): void {
 		this._teacherId = teacherId;
+		this._updatedAt = new Date();
+	}
+
+	unassignTeacher(): void {
+		this._teacherId = undefined;
 		this._updatedAt = new Date();
 	}
 

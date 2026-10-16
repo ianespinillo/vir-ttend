@@ -132,6 +132,19 @@ export class Course {
 		this._updatedAt = new Date();
 	}
 
+	changeDivision(division: string): void {
+		this._division = division;
+		this._updatedAt = new Date();
+	}
+
+	changeYearNumber(yearNumber: number): void {
+		if (yearNumber < 1 || yearNumber > 7) {
+			throw new DomainError('El año del curso debe estar entre 1 y 7.');
+		}
+		this._yearNumber = yearNumber;
+		this._updatedAt = new Date();
+	}
+
 	changeShift(shift: Shift): void {
 		this._shift = shift;
 		this._updatedAt = new Date();

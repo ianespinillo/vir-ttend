@@ -219,7 +219,7 @@ export class CoursesController {
 	@ApiResponse({ status: 404, description: 'Curso no encontrado' })
 	async update(@Param('id') id: string, @Body() dto: UpdateCourseRequestDto) {
 		return this.updateCourseHandler.execute(
-			new UpdateCourseCommand(id, dto.preceptorId, dto.shift),
+			new UpdateCourseCommand(id, dto.preceptorId, dto.shift, dto.division, dto.yearNumber),
 		);
 	}
 
