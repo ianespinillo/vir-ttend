@@ -1,6 +1,6 @@
 'use client';
 
-import type { MonthlyReportStudent } from '@repo/common';
+import { type MonthlyReportStudent, formatCount } from '@repo/common';
 import type { ColumnDef } from '@tanstack/react-table';
 import { formatPercent } from '../../../../lib/format';
 import { getAbsencePercentTone } from '../../../../lib/report-format';
@@ -32,44 +32,63 @@ const columns: ColumnDef<MonthlyReportStudent>[] = [
 	{
 		accessorKey: 'present',
 		header: 'Presentes',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('present')}
-			</span>
-		),
+		cell: ({ row }) => {
+			const val = row.getValue<number>('present');
+			return (
+				<span className="block text-center tabular-nums">
+					{typeof val === 'number' && Number.isNaN(val) ? '-' : val}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'absent',
-		header: 'Ausentes',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('absent')}
-			</span>
-		),
+		header: 'Inasistencias',
+		cell: ({ row }) => {
+			const { absent, absenceBreakdown } = row.original;
+			return (
+				<span
+					className="block text-center tabular-nums"
+					title={
+						absenceBreakdown
+							? `Turno: ${formatCount(absenceBreakdown.daily)} · Taller: ${formatCount(absenceBreakdown.workshop)}`
+							: undefined
+					}
+				>
+					{formatCount(absent)}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'late',
 		header: 'Tardanzas',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('late')}
-			</span>
-		),
+		cell: ({ row }) => {
+			const val = row.getValue<number>('late');
+			return (
+				<span className="block text-center tabular-nums">
+					{typeof val === 'number' && Number.isNaN(val) ? '-' : val}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'justified',
 		header: 'Justificadas',
-		cell: ({ row }) => (
-			<span className="block text-center tabular-nums">
-				{row.getValue('justified')}
-			</span>
-		),
+		cell: ({ row }) => {
+			const val = row.getValue<number>('justified');
+			return (
+				<span className="block text-center tabular-nums">
+					{typeof val === 'number' && Number.isNaN(val) ? '-' : val}
+				</span>
+			);
+		},
 	},
 	{
 		accessorKey: 'absencePercent',
 		header: '% Inasistencia',
 		cell: ({ row }) => {
-			const value = row.getValue<number>('absencePercent');
+			const value = row.getValue<number | null>('absencePercent');
 			return (
 				<span
 					className={`block text-center font-semibold tabular-nums ${getAbsencePercentTone(value)}`}

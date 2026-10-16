@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ISubjectResponse } from '@repo/common';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ISubjectResponse, SUBJECT_KIND, SubjectKindType } from '@repo/common';
 import { Subject } from '../../domain/entities/subject.entity';
 
 // subject.response.dto.ts
@@ -34,11 +34,25 @@ export class SubjectResponseDto implements ISubjectResponse {
 	weeklyHours: number;
 
 	@ApiProperty({
+		enum: SUBJECT_KIND,
+		description: 'Tipo de materia: teórica o de taller.',
+		example: SUBJECT_KIND.THEORY,
+	})
+	kind: SubjectKindType;
+
+	@ApiPropertyOptional({
 		type: String,
 		description: 'ID del docente a cargo de la materia.',
 		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
 	})
-	teacherId: string;
+	teacherId?: string;
+
+	@ApiPropertyOptional({
+		type: String,
+		description: 'Nombre completo del docente a cargo de la materia.',
+		example: 'Juan Pérez',
+	})
+	teacherName?: string;
 
 	@ApiProperty({
 		type: String,
@@ -47,12 +61,14 @@ export class SubjectResponseDto implements ISubjectResponse {
 	})
 	courseId: string;
 
-	constructor(subject: Subject) {
+	constructor(subject: Subject, teacherName?: string) {
 		this.id = subject.id.getRaw();
 		this.courseId = subject.courseId;
 		this.name = subject.name;
 		this.area = subject.area;
 		this.weeklyHours = subject.weeklyHours;
+		this.kind = subject.kind;
 		this.teacherId = subject.teacherId;
+		this.teacherName = teacherName;
 	}
 }

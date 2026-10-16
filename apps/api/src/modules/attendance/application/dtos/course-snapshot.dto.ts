@@ -36,8 +36,9 @@ export class CourseSnapshotDto {
 	readonly present!: number;
 
 	@ApiProperty({
-		description: 'Cantidad de estudiantes ausentes',
-		example: 3,
+		description:
+			'Total de inasistencias del curso, ponderado por día (puede ser fraccionario)',
+		example: 3.5,
 		minimum: 0,
 	})
 	readonly absent!: number;
@@ -72,7 +73,8 @@ export class CourseSnapshotDto {
 	readonly absencePercent!: number;
 
 	@ApiProperty({
-		description: 'Porcentaje de asistencia del curso (presentes + tardanzas)',
+		description:
+			'Porcentaje de asistencia del curso sobre los días con clase dada (100 menos el porcentaje de inasistencias)',
 		example: 90,
 		minimum: 0,
 		maximum: 100,

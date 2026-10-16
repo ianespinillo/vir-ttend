@@ -1,9 +1,10 @@
-import { NotFoundException } from '@nestjs/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../../src/common/errors';
 import { UpdateAcademicYearCommand } from '../../../../src/modules/academic/application/commands/update-academic-year/update-academic-year.command';
 import { UpdateAcademicYearHandler } from '../../../../src/modules/academic/application/commands/update-academic-year/update-academic-year.handler';
 import { AcademicYear } from '../../../../src/modules/academic/domain/entities/academic-year.entity';
 import { IAcademicYearRepository } from '../../../../src/modules/academic/domain/repositories/academic-year.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('UpdateAcademicYearHandler', () => {
 	let handler: UpdateAcademicYearHandler;
@@ -14,16 +15,18 @@ describe('UpdateAcademicYearHandler', () => {
 		handler = new UpdateAcademicYearHandler(academicYearRepository);
 	});
 
-	it('should throw NotFoundException when academic year does not exist', async () => {
+	it('should throw NotFoundError when academic year does not exist', async () => {
 		academicYearRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new UpdateAcademicYearCommand('non-existent', {
 					absenceThresholdPercent: 20,
 				}),
 			),
-		).rejects.toThrow(NotFoundException);
+			NotFoundError,
+			'Ciclo lectivo no encontrado',
+		);
 	});
 
 	it('should update dates, thresholds and isActive when provided', async () => {

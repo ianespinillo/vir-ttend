@@ -1,36 +1,54 @@
-import { ATTENDANCE_STATUS } from '@repo/common';
+import {
+	ATTENDANCE_STATUS,
+	ATTENDANCE_THRESHOLDS,
+	isLateStatus,
+} from '@repo/common';
+import {
+	calculateWeightedAbsences,
+	countDaysGiven,
+} from '../../../attendance/domain/services/weighted-absence';
 import { AttendanceRecord } from '../entities/attendance-record.entity';
 import { IStudentMetrics } from '../types/student-metrics.type';
 
+/**
+ * Per-student report metrics. The absence total is the institutional one:
+ * weighted and held-based (see `calculateWeightedAbsences`). The percentage is a
+ * statistic over the days effectively given, never the schedule.
+ */
 export class MetricsCalculationService {
-	calculateStudentMetrics(records: AttendanceRecord[]): IStudentMetrics {
-		const total = records.length;
-		const absent = records.filter(
-			(r) => r.status === ATTENDANCE_STATUS.ABSENT,
-		).length;
-		const late = records.filter(
-			(r) => r.status === ATTENDANCE_STATUS.LATE,
-		).length;
-		const justified = records.filter(
-			(r) => r.status === ATTENDANCE_STATUS.JUSTIFIED,
-		).length;
-		const present = records.filter(
-			(r) => r.status === ATTENDANCE_STATUS.PRESENT,
-		).length;
-
-		const absencePercent = total > 0 ? ((absent + late) / total) * 100 : 0;
+	/**
+	 * @param dailyRecords daily attendance only (no subject records)
+	 * @param workshopRecords workshop attendance of the same student and period
+	 */
+	calculateStudentMetrics(
+		dailyRecords: AttendanceRecord[],
+		workshopRecords: AttendanceRecord[] = [],
+	): IStudentMetrics {
+		const { total, breakdown } = calculateWeightedAbsences({
+			dailyRecords,
+			workshopRecords,
+		});
+		const daysGiven = countDaysGiven(dailyRecords, workshopRecords);
+		const absencePercent = daysGiven > 0 ? (total / daysGiven) * 100 : null;
 		return {
+			present: dailyRecords.filter((r) => r.status === ATTENDANCE_STATUS.PRESENT)
+				.length,
+			absent: total,
+			late: dailyRecords.filter((r) => isLateStatus(r.status)).length,
+			justified: dailyRecords.filter(
+				(r) => r.status === ATTENDANCE_STATUS.JUSTIFIED,
+			).length,
+			absenceBreakdown: breakdown,
+			daysGiven,
 			absencePercent,
-			absent,
-			late,
-			justified,
-			present,
 			status: this.getStatus(absencePercent),
 		};
 	}
-	private getStatus(absencePercent: number) {
-		if (absencePercent >= 75) return 'exceeded';
-		if (absencePercent >= 50) return 'at-risk';
+
+	getStatus(absencePercent: number | null): IStudentMetrics['status'] {
+		if (absencePercent === null) return 'ok';
+		if (absencePercent >= ATTENDANCE_THRESHOLDS.CRITICAL) return 'exceeded';
+		if (absencePercent >= ATTENDANCE_THRESHOLDS.WARNING) return 'at-risk';
 		return 'ok';
 	}
 }

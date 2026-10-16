@@ -38,7 +38,10 @@ export default function Page() {
 	};
 
 	const { data: activeYear } = useActiveAcademicYear();
-	const { data: coursesData } = useCourses({ academicYearId: activeYear?.id });
+	const { data: coursesData } = useCourses({
+		academicYearId: activeYear?.id,
+		preceptorId: isPreceptor ? user?.id : undefined,
+	});
 	const courses = coursesData ?? [];
 
 	const { data: studentsResponse, isLoading } = useStudents({

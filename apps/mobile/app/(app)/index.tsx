@@ -8,6 +8,7 @@ import {
 	Clock,
 	CloudOff,
 	Users,
+	Wrench,
 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import {
@@ -28,9 +29,11 @@ import { deriveTakenState } from '../../src/features/attendance/taken';
 import { TodayStatusBadges } from '../../src/features/attendance/today-status-badges';
 import { usePreceptorCourses } from '../../src/features/attendance/use-preceptor-courses';
 import {
+	useCommissionsTodayRecords,
 	useCoursesTodayRecords,
 	useSubjectsTodayRecords,
 } from '../../src/features/attendance/use-today-records';
+import { formatCommissionLabel } from '../../src/features/attendance/workshop';
 import { useBrand } from '../../src/features/branding/brand-context';
 import { FailedSyncBanner } from '../../src/features/offline/failed-sync-banner';
 import { preloadRoleOf } from '../../src/features/offline/preload';
@@ -46,7 +49,8 @@ export default function HomeScreen() {
 	const router = useRouter();
 	const online = useIsOnline();
 	const { preloadNow } = usePreload();
-	const { flush, getItemForCourse, getItemForSubject } = useOutbox();
+	const { flush, getItemForCourse, getItemForSubject, getItemForCommission } =
+		useOutbox();
 	const [refreshing, setRefreshing] = useState(false);
 
 	const isPreceptor = preloadRoleOf(user?.role) === 'preceptor';
@@ -67,6 +71,22 @@ export default function HomeScreen() {
 	const todaysSubjects = useMemo(
 		() => getTodaysSubjects(subjects ?? [], weekday),
 		[subjects, weekday],
+	);
+
+	// Workshop commissions (technical schools); empty for everyone else.
+	const commissionsQuery = useQuery({
+		...attendanceQueries.myWorkshopCommissions(todayStr),
+		enabled: isPreceptor,
+	});
+	const commissions = commissionsQuery.data ?? [];
+	const commissionIds = useMemo(
+		() => commissions.map((c) => c.commissionId),
+		[commissions],
+	);
+	const commissionRecords = useCommissionsTodayRecords(
+		commissionIds,
+		todayStr,
+		isPreceptor,
 	);
 
 	const courses = preceptor.courses;
@@ -99,7 +119,7 @@ export default function HomeScreen() {
 		try {
 			await Promise.all([preloadNow(), flush({ force: true })]);
 			if (isPreceptor) {
-				await preceptor.refetch();
+				await Promise.all([preceptor.refetch(), commissionsQuery.refetch()]);
 			} else {
 				await subjectsQuery.refetch();
 			}
@@ -355,6 +375,57 @@ export default function HomeScreen() {
 					})}
 				</View>
 			)}
+
+			{/* Workshop commissions (taller) */}
+			{isPreceptor && commissions.length > 0 ? (
+				<View className="pb-8">
+					<View className="mb-3 flex-row items-center">
+						<Wrench size={16} color="#475569" />
+						<Text className="ml-2 text-lg font-bold text-slate-900">Taller</Text>
+					</View>
+					{commissions.map((commission) => {
+						const label = formatCommissionLabel(commission);
+						const outboxItem = getItemForCommission(
+							commission.commissionId,
+							todayStr,
+						);
+						const taken = deriveTakenState({
+							records: commissionRecords.get(commission.commissionId),
+							outboxItem,
+						});
+
+						return (
+							<TouchableOpacity
+								key={commission.commissionId}
+								onPress={() =>
+									router.push({
+										pathname: '/(app)/attendance/workshop/[commissionId]',
+										params: { commissionId: commission.commissionId, name: label },
+									})
+								}
+								className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20"
+							>
+								<View className="flex-1 pr-3">
+									<Text className="text-base font-bold text-slate-800">{label}</Text>
+									{!commission.hasWorkshopToday ? (
+										<Text className="mt-1 text-xs text-slate-500">Hoy no hay taller</Text>
+									) : null}
+									<TodayStatusBadges taken={taken} outboxItem={outboxItem} />
+								</View>
+
+								<View className="flex-row items-center">
+									<View className="rounded-lg bg-primary-50 px-2.5 py-1.5">
+										<Text className="text-xs font-semibold text-primary-700">
+											{outboxItem || taken.kind === 'taken' ? 'Editar' : 'Pasar lista'}
+										</Text>
+									</View>
+									<ChevronRight size={18} color="#94A3B8" className="ml-1" />
+								</View>
+							</TouchableOpacity>
+						);
+					})}
+				</View>
+			) : null}
 		</ScrollView>
 	);
 }

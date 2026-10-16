@@ -1,5 +1,8 @@
 import { DAYOFWEEK } from '@repo/common';
-import { DomainError } from '../../../../src/common/errors/domain.error';
+import {
+	BusinessRuleError,
+	DomainError,
+} from '../../../../src/common/errors/domain.error';
 import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
 import { CourseService } from '../../../../src/modules/academic/domain/services/course.service';
 
@@ -117,7 +120,7 @@ describe('CourseService', () => {
 			expect(() => CourseService.validateScheduleOverlap(slots)).not.toThrow();
 		});
 
-		it('debe lanzar DomainError cuando los slots se solapan', () => {
+		it('debe lanzar BusinessRuleError en castellano cuando los slots se solapan', () => {
 			const slots = [
 				ScheduleSlot.reconstitute({
 					id: '1',
@@ -137,8 +140,10 @@ describe('CourseService', () => {
 				}),
 			];
 
-			expect(() => CourseService.validateScheduleOverlap(slots)).toThrow(
-				DomainError,
+			const validate = () => CourseService.validateScheduleOverlap(slots);
+			expect(validate).toThrow(BusinessRuleError);
+			expect(validate).toThrow(
+				'Los horarios se superponen: 08:00-10:00 y 09:00-11:00 el lunes.',
 			);
 		});
 	});

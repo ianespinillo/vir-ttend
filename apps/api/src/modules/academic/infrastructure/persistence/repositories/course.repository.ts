@@ -26,6 +26,11 @@ export class CourseRepository
 		}
 		return CourseMapper.toDomain(orm);
 	}
+	async findByIds(ids: string[]): Promise<Course[]> {
+		if (ids.length === 0) return [];
+		const orms = await this.find({ id: { $in: ids } });
+		return orms.map((orm) => CourseMapper.toDomain(orm));
+	}
 	async findByAcademicYear(
 		academicYearId: string,
 		where?: { level?: LevelType; preceptorId?: string },

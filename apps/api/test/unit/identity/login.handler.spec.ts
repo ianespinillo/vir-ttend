@@ -1,7 +1,8 @@
-// login.handler.spec.ts
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// login.handler.spec.ts
+import { UnauthorizedError } from '../../../src/common/errors';
 import { LoginCommand } from '../../../src/modules/identity/application/commands/login/login.command';
 import { LoginHandler } from '../../../src/modules/identity/application/commands/login/login.handler';
 import { Tenant } from '../../../src/modules/identity/domain/entities/tenant.entity';
@@ -109,7 +110,9 @@ describe('LoginHandler', () => {
 
 		await expect(
 			handler.execute(new LoginCommand('noexiste@test.com', 'ValidPass1!')),
-		).rejects.toThrow('Invalid credentials');
+		).rejects.toStrictEqual(
+			new UnauthorizedError('El correo o la contraseña son incorrectos.'),
+		);
 	});
 
 	it('should throw when password is incorrect', async () => {
@@ -118,7 +121,9 @@ describe('LoginHandler', () => {
 
 		await expect(
 			handler.execute(new LoginCommand('test@test.com', 'WrongPass1!')),
-		).rejects.toThrow('Invalid credentials');
+		).rejects.toStrictEqual(
+			new UnauthorizedError('El correo o la contraseña son incorrectos.'),
+		);
 	});
 
 	it('should throw when user is inactive', async () => {
@@ -138,6 +143,21 @@ describe('LoginHandler', () => {
 
 		await expect(
 			handler.execute(new LoginCommand('test@test.com', 'ValidPass1!')),
-		).rejects.toThrow('User not active');
+		).rejects.toStrictEqual(
+			new UnauthorizedError(
+				'Su cuenta está desactivada. Contacte a un administrador.',
+			),
+		);
+	});
+
+	it('should answer the generic credentials error when the password is malformed', async () => {
+		userRepo.findByEmail.mockResolvedValue(mockUser);
+
+		await expect(
+			handler.execute(new LoginCommand('test@test.com', 'short')),
+		).rejects.toStrictEqual(
+			new UnauthorizedError('El correo o la contraseña son incorrectos.'),
+		);
+		expect(passwordService.compare).not.toHaveBeenCalled();
 	});
 });

@@ -1,24 +1,33 @@
 'use client';
 
+import { StudentImportContainer } from '@/components/students/student-import-container';
 import { useAuth } from '@/lib/auth/provider';
-import type {
-	CreateCourseFormValues,
-	CreateSubjectFormValues,
-	ISubjectResponse,
-	ScheduleSlotFormValues,
+import {
+	type CreateCourseFormValues,
+	type CreateSubjectFormValues,
+	type ISubjectResponse,
+	ROLES,
+	STUDENTSTATUS,
+	type ScheduleSlotFormValues,
 } from '@repo/common';
 import {
 	useAcademicYears,
+	useAssignWorkshopPreceptor,
 	useCourse,
 	useCreateSubject,
+	useCreateWorkshopCommissions,
 	useDeleteCourse,
 	useDeleteSubject,
+	useMoveStudentToCommission,
+	useRegenerateWorkshopCommissions,
 	useSchedule,
 	useSetSchedule,
+	useStudents,
 	useSubjects,
 	useUpdateCourse,
 	useUpdateSubject,
 	useUsersByRole,
+	useWorkshopCommissions,
 } from '@repo/hooks';
 import {
 	CourseDetail,
@@ -31,6 +40,7 @@ import {
 	LoadingSpinner,
 	PageHeader,
 	SubjectForm,
+	WorkshopCommissionsPanel,
 	localizeCourseName,
 } from '@repo/ui';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -48,14 +58,24 @@ export default function CourseDetailPage() {
 	const [isEditingCourse, setIsEditingCourse] = useState(isEditQuery);
 
 	const role = user?.role?.toLowerCase();
-	const isAdmin = role === 'admin' || role === 'superadmin';
+	const isAdmin = role === ROLES.ADMIN || role === ROLES.SUPERADMIN;
+	const isPreceptor = role === ROLES.PRECEPTOR;
+	const canManageSchedule = isAdmin || isPreceptor;
+	const [isImportOpen, setIsImportOpen] = useState(false);
 
 	const { data: course, isLoading, isError, error } = useCourse(courseId);
 	const { data: subjectsData } = useSubjects(courseId);
 	const { data: scheduleData } = useSchedule(courseId);
+	const { data: studentsData, isLoading: studentsLoading } = useStudents({
+		courseId,
+		status: STUDENTSTATUS.ACTIVE,
+		limit: 100,
+	});
 	const { data: academicYears } = useAcademicYears();
-	const { data: preceptors } = useUsersByRole('preceptor');
-	const { data: teachers } = useUsersByRole('teacher');
+	const { data: preceptors } = useUsersByRole(ROLES.PRECEPTOR);
+	const { data: teachers } = useUsersByRole(ROLES.TEACHER);
+	const { data: commissions, isLoading: commissionsLoading } =
+		useWorkshopCommissions(courseId, isAdmin);
 
 	const updateCourseMutation = useUpdateCourse();
 	const deleteCourseMutation = useDeleteCourse();
@@ -63,6 +83,10 @@ export default function CourseDetailPage() {
 	const updateSubjectMutation = useUpdateSubject();
 	const deleteSubjectMutation = useDeleteSubject();
 	const setScheduleMutation = useSetSchedule();
+	const createCommissionsMutation = useCreateWorkshopCommissions();
+	const regenerateCommissionsMutation = useRegenerateWorkshopCommissions();
+	const assignPreceptorMutation = useAssignWorkshopPreceptor();
+	const moveStudentMutation = useMoveStudentToCommission();
 
 	const [subjectModalState, setSubjectModalState] = useState<{
 		open: boolean;
@@ -200,6 +224,37 @@ export default function CourseDetailPage() {
 		}
 	};
 
+	const runCommissionAction = async (
+		action: () => Promise<unknown>,
+		successMessage: string,
+		fallbackError: string,
+	) => {
+		try {
+			await action();
+			toast.success(successMessage);
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message || errorObj?.message || fallbackError,
+			);
+		}
+	};
+
+	const commissionsBusy =
+		createCommissionsMutation.isPending ||
+		regenerateCommissionsMutation.isPending ||
+		assignPreceptorMutation.isPending ||
+		moveStudentMutation.isPending;
+
+	const canImportStudents =
+		isAdmin ||
+		(role === ROLES.PRECEPTOR &&
+			Boolean(user?.id) &&
+			course?.preceptorId === user?.id);
+
 	if (isLoading) {
 		return (
 			<div className="flex h-64 items-center justify-center">
@@ -261,10 +316,74 @@ export default function CourseDetailPage() {
 				onEditSubject={(subject) => setSubjectModalState({ open: true, subject })}
 				onDeleteSubject={handleDeleteSubject}
 				onSaveSchedule={handleSaveSchedule}
+				onImportStudents={
+					canImportStudents ? () => setIsImportOpen(true) : undefined
+				}
 				canManage={isAdmin}
-				studentsPath={`/students?courseId=${course.id}`}
+				canManageSchedule={canManageSchedule}
+				students={studentsData?.items ?? []}
+				isLoadingStudents={studentsLoading}
+				studentCount={studentsData?.total}
+				onViewStudent={(id) => router.push(`/students/${id}`)}
 				attendancePath={`/attendance?courseId=${course.id}`}
+				commissionsTab={
+					isAdmin ? (
+						<WorkshopCommissionsPanel
+							commissions={commissions ?? []}
+							preceptors={preceptors?.items || []}
+							isLoading={commissionsLoading}
+							isBusy={commissionsBusy}
+							onCreate={() =>
+								runCommissionAction(
+									() => createCommissionsMutation.mutateAsync(courseId),
+									'Comisiones creadas exitosamente',
+									'Error al crear las comisiones',
+								)
+							}
+							onAssignPreceptor={(commissionId, preceptorId) =>
+								runCommissionAction(
+									() =>
+										assignPreceptorMutation.mutateAsync({
+											courseId,
+											commissionId,
+											preceptorId,
+										}),
+									'Preceptor de la comisión actualizado',
+									'Error al asignar el preceptor',
+								)
+							}
+							onMoveStudent={(commissionId, studentId) =>
+								runCommissionAction(
+									() =>
+										moveStudentMutation.mutateAsync({
+											courseId,
+											commissionId,
+											studentId,
+										}),
+									'Estudiante movido de comisión',
+									'Error al mover al estudiante',
+								)
+							}
+							onRegenerate={() =>
+								runCommissionAction(
+									() => regenerateCommissionsMutation.mutateAsync(courseId),
+									'Reparto regenerado exitosamente',
+									'Error al regenerar el reparto',
+								)
+							}
+						/>
+					) : undefined
+				}
 			/>
+
+			{canImportStudents && (
+				<StudentImportContainer
+					courseId={courseId}
+					courseName={localizeCourseName(course.fullName)}
+					open={isImportOpen}
+					onOpenChange={setIsImportOpen}
+				/>
+			)}
 
 			{isAdmin && (
 				<Dialog
@@ -292,6 +411,7 @@ export default function CourseDetailPage() {
 											area: subjectModalState.subject.area,
 											weeklyHours: subjectModalState.subject.weeklyHours,
 											teacherId: subjectModalState.subject.teacherId || '',
+											kind: subjectModalState.subject.kind,
 										}
 									: undefined
 							}

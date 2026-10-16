@@ -1,6 +1,7 @@
-// announcements.handler.spec.ts
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// announcements.handler.spec.ts
+import { BusinessRuleError, NotFoundError } from '../../../src/common/errors';
 import { CreateAnnouncementCommand } from '../../../src/modules/identity/application/commands/create-announcement/create-announcement.command';
 import { CreateAnnouncementHandler } from '../../../src/modules/identity/application/commands/create-announcement/create-announcement.handler';
 import { DeleteAnnouncementCommand } from '../../../src/modules/identity/application/commands/delete-announcement/delete-announcement.command';
@@ -161,7 +162,7 @@ describe('UpdateAnnouncementHandler', () => {
 			handler.execute(
 				new UpdateAnnouncementCommand('ann-1', 'school-1', 'user-1', ROLES.ADMIN),
 			),
-		).rejects.toThrow('Announcement not found');
+		).rejects.toStrictEqual(new NotFoundError('Comunicado no encontrado.'));
 
 		announcementRepo.findById.mockResolvedValue(draftAnnouncement());
 		await expect(
@@ -173,7 +174,7 @@ describe('UpdateAnnouncementHandler', () => {
 					ROLES.ADMIN,
 				),
 			),
-		).rejects.toThrow('Announcement not found');
+		).rejects.toStrictEqual(new NotFoundError('Comunicado no encontrado.'));
 	});
 
 	it('lanza Forbidden si no es autor ni admin', async () => {
@@ -201,7 +202,9 @@ describe('UpdateAnnouncementHandler', () => {
 					ROLES.PRECEPTOR,
 				),
 			),
-		).rejects.toThrow('Solo se pueden editar comunicados en borrador');
+		).rejects.toStrictEqual(
+			new BusinessRuleError('Solo se pueden editar comunicados en borrador.'),
+		);
 	});
 });
 
@@ -241,7 +244,9 @@ describe('PublishAnnouncementHandler', () => {
 			handler.execute(
 				new PublishAnnouncementCommand('ann-1', 'school-1', 'user-1', ROLES.ADMIN),
 			),
-		).rejects.toThrow('Solo se pueden publicar comunicados en borrador');
+		).rejects.toStrictEqual(
+			new BusinessRuleError('Solo se pueden publicar comunicados en borrador.'),
+		);
 	});
 
 	it('lanza Forbidden si no es autor ni admin', async () => {
@@ -293,7 +298,7 @@ describe('DeleteAnnouncementHandler', () => {
 			handler.execute(
 				new DeleteAnnouncementCommand('ann-1', 'school-1', ROLES.ADMIN),
 			),
-		).rejects.toThrow('Announcement not found');
+		).rejects.toStrictEqual(new NotFoundError('Comunicado no encontrado.'));
 	});
 });
 
@@ -369,7 +374,7 @@ describe('GetAnnouncementHandler', () => {
 		announcementRepo.findById.mockResolvedValue(publishedAnnouncement());
 		await expect(
 			handler.execute(new GetAnnouncementQuery('ann-1', 'school-OTRA')),
-		).rejects.toThrow('Announcement not found');
+		).rejects.toStrictEqual(new NotFoundError('Comunicado no encontrado.'));
 	});
 });
 

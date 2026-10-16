@@ -46,9 +46,33 @@ describe('allowedRolesForPathname', () => {
 		]);
 	});
 
+	it('grants /attendance/workshop to admin and preceptor', () => {
+		expect(allowedRolesForPathname('/attendance/workshop')).toEqual([
+			ROLES.ADMIN,
+			ROLES.PRECEPTOR,
+		]);
+		expect(getNavConfig(ROLES.PRECEPTOR)[0].items.map((i) => i.href)).toContain(
+			'/attendance/workshop',
+		);
+		expect(getNavConfig(ROLES.TEACHER)[0].items.map((i) => i.href)).not.toContain(
+			'/attendance/workshop',
+		);
+	});
+
 	it('grants /attendance/subject only to teacher', () => {
 		expect(allowedRolesForPathname('/attendance/subject')).toEqual([
 			ROLES.TEACHER,
+		]);
+	});
+
+	it('grants /attendance/student to admin and preceptor', () => {
+		expect(allowedRolesForPathname('/attendance/student')).toEqual([
+			ROLES.ADMIN,
+			ROLES.PRECEPTOR,
+		]);
+		expect(allowedRolesForPathname('/attendance/student/abc')).toEqual([
+			ROLES.ADMIN,
+			ROLES.PRECEPTOR,
 		]);
 	});
 

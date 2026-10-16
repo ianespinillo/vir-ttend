@@ -1,6 +1,6 @@
 import { FilterQuery } from '@mikro-orm/core';
 import { EntityRepository } from '@mikro-orm/postgresql';
-import { PaginatedResponse } from '@repo/common';
+import { PaginatedResponse, STUDENTSTATUS } from '@repo/common';
 import { Student } from '../../../domain/entities/student.entity';
 import {
 	IStudentRepository,
@@ -23,6 +23,26 @@ export class StudentRepository
 		return orms.map((o) => StudentMapper.toDomain(o));
 	}
 
+	async findActiveByCourse(courseId: string): Promise<Student[]> {
+		const orms = await this.find({ courseId, status: STUDENTSTATUS.ACTIVE });
+		return orms.map((o) => StudentMapper.toDomain(o));
+	}
+
+	async findActiveByCommission(commissionId: string): Promise<Student[]> {
+		const orms = await this.find({
+			workshopCommissionId: commissionId,
+			status: STUDENTSTATUS.ACTIVE,
+		});
+		return orms.map((o) => StudentMapper.toDomain(o));
+	}
+
+	async countActiveByCommission(commissionId: string): Promise<number> {
+		return this.count({
+			workshopCommissionId: commissionId,
+			status: STUDENTSTATUS.ACTIVE,
+		});
+	}
+
 	async findByDocument(
 		documentNumber: string,
 		tenantId: string,
@@ -33,6 +53,18 @@ export class StudentRepository
 		});
 		if (!orm) return null;
 		return StudentMapper.toDomain(orm);
+	}
+
+	async findByDocuments(
+		documentNumbers: string[],
+		tenantId: string,
+	): Promise<Student[]> {
+		if (documentNumbers.length === 0) return [];
+		const orms = await this.find({
+			documentNumber: { $in: documentNumbers },
+			tenantId,
+		});
+		return orms.map((o) => StudentMapper.toDomain(o));
 	}
 
 	async findById(id: string): Promise<Student | null> {
@@ -57,6 +89,7 @@ export class StudentRepository
 			existing.tutorPhone = student.tutorPhone;
 			existing.tutorEmail = student.tutorEmail;
 			existing.status = student.status;
+			existing.workshopCommissionId = student.workshopCommissionId;
 			existing.createdAt = student.createdAt;
 			existing.updatedAt = student.updatedAt;
 		} else {
@@ -83,6 +116,10 @@ export class StudentRepository
 
 		if (filters.courseId) {
 			where.courseId = filters.courseId;
+		} else if (filters.courseIds && filters.courseIds.length > 0) {
+			where.courseId = { $in: filters.courseIds };
+		} else if (filters.courseIds && filters.courseIds.length === 0) {
+			where.courseId = '00000000-0000-0000-0000-000000000000';
 		}
 
 		if (filters.status) {

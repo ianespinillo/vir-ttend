@@ -41,6 +41,7 @@ export * from './features/academic/use-academic-years';
 export * from './features/academic/use-active-academic-year';
 export * from './features/academic/use-create-academic-year';
 export * from './features/academic/use-update-academic-year';
+export * from './features/academic/use-declare-non-working-day';
 export * from './features/academic/use-course';
 export * from './features/academic/use-create-course';
 export * from './features/academic/use-update-course';
@@ -52,6 +53,11 @@ export * from './features/academic/use-delete-subject';
 export * from './features/academic/use-schedule';
 export * from './features/academic/use-set-schedule';
 export * from './features/academic/use-users-by-role';
+export * from './features/academic/use-workshop-commissions';
+export * from './features/academic/use-create-workshop-commissions';
+export * from './features/academic/use-assign-workshop-preceptor';
+export * from './features/academic/use-move-student-to-commission';
+export * from './features/academic/use-regenerate-workshop-commissions';
 
 // courses
 export * from './features/courses/use-courses';
@@ -66,6 +72,7 @@ export * from './features/students/use-update-student';
 export * from './features/students/use-delete-student';
 export * from './features/students/use-enroll-student';
 export * from './features/students/use-transfer-student';
+export * from './features/students/use-student-import';
 
 // attendance
 export * from './features/attendance/use-daily-attendance';
@@ -75,6 +82,10 @@ export * from './features/attendance/use-bulk-attendance';
 export * from './features/attendance/use-justify-attendance';
 export * from './features/attendance/use-attendance-history';
 export * from './features/attendance/use-teacher-subjects';
+export * from './features/attendance/use-my-workshop-commissions';
+export * from './features/attendance/use-workshop-attendance';
+export * from './features/attendance/use-register-workshop-attendance';
+export * from './features/attendance/use-bulk-workshop-attendance';
 export * from './features/attendance/use-subject-attendance';
 export * from './features/attendance/use-register-subject-attendance';
 export * from './features/attendance/use-bulk-subject-attendance';

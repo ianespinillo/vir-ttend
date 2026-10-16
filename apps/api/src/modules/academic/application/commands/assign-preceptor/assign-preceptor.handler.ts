@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { AssignPreceptorCommand } from './assign-preceptor.command';
@@ -14,18 +15,20 @@ export class AssignPreceptorHandler {
 	) {}
 	async execute(command: AssignPreceptorCommand) {
 		const course = await this.courseRepo.findById(command.courseId);
-		if (!course) throw new Error('Course not found');
+		if (!course) throw new NotFoundError('Curso no encontrado');
 		const belongs = await this.memberPort.belongsToTenant(
 			command.preceptorId,
 			course.tenantId,
 		);
-		if (!belongs) throw new Error("Preceptor doesn't belongs to tenant");
+		if (!belongs)
+			throw new DomainError('El preceptor no pertenece a la escuela.');
 		const isPreceptor = await this.memberPort.existsAndHasRole(
 			command.preceptorId,
 			course.tenantId,
 			ROLES.PRECEPTOR,
 		);
-		if (!isPreceptor) throw new Error('Invalid preceptor requested');
+		if (!isPreceptor)
+			throw new DomainError('El usuario indicado no es preceptor.');
 		course.assignPreceptor(command.preceptorId);
 		await this.courseRepo.save(course);
 	}

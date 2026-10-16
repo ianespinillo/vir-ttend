@@ -1,6 +1,6 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ConflictError, NotFoundError } from '../../../src/common/errors';
 import { CreateMembershipCommand } from '../../../src/modules/identity/application/commands/create-membership/create-membership.command';
 import { CreateMembershipHandler } from '../../../src/modules/identity/application/commands/create-membership/create-membership.handler';
 import { Tenant } from '../../../src/modules/identity/domain/entities/tenant.entity';
@@ -50,19 +50,21 @@ describe('CreateMembershipHandler', () => {
 		);
 	});
 
-	it('should throw NotFoundException when user does not exist', async () => {
+	it('should throw NotFoundError when user does not exist', async () => {
 		userRepository.findByEmail.mockResolvedValue(null);
 
 		await expect(
 			handler.execute(
 				new CreateMembershipCommand('ghost@abc.gob.ar', 'tenant-id', ROLES.TEACHER),
 			),
-		).rejects.toThrow('User with email ghost@abc.gob.ar not found');
+		).rejects.toStrictEqual(
+			new NotFoundError('No existe un usuario con el correo ghost@abc.gob.ar.'),
+		);
 
 		expect(memberRepository.save).not.toHaveBeenCalled();
 	});
 
-	it('should throw NotFoundException when tenant does not exist', async () => {
+	it('should throw NotFoundError when tenant does not exist', async () => {
 		userRepository.findByEmail.mockResolvedValue(user);
 		tenantRepository.findById.mockResolvedValue(null);
 
@@ -70,12 +72,12 @@ describe('CreateMembershipHandler', () => {
 			handler.execute(
 				new CreateMembershipCommand('tec1@abc.gob.ar', 'tenant-id', ROLES.TEACHER),
 			),
-		).rejects.toThrow('Tenant with id tenant-id not found');
+		).rejects.toStrictEqual(new NotFoundError('Institución no encontrada.'));
 
 		expect(memberRepository.save).not.toHaveBeenCalled();
 	});
 
-	it('should throw BadRequestException when the relation already exists', async () => {
+	it('should throw ConflictError when the relation already exists', async () => {
 		userRepository.findByEmail.mockResolvedValue(user);
 		tenantRepository.findById.mockResolvedValue(tenant);
 		memberRepository.findByUserAndTenant.mockResolvedValue(
@@ -93,9 +95,10 @@ describe('CreateMembershipHandler', () => {
 		const execute = handler.execute(
 			new CreateMembershipCommand('tec1@abc.gob.ar', 'tenant-id', ROLES.TEACHER),
 		);
-		await expect(execute).rejects.toBeInstanceOf(BadRequestException);
-		await expect(execute).rejects.toThrow(
-			'User with email tec1@abc.gob.ar is already a member of this tenant',
+		await expect(execute).rejects.toStrictEqual(
+			new ConflictError(
+				'El usuario tec1@abc.gob.ar ya pertenece a esta institución.',
+			),
 		);
 
 		expect(memberRepository.save).not.toHaveBeenCalled();

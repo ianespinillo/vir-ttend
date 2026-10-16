@@ -1,3 +1,4 @@
+import { DomainError } from '../../../../common/errors';
 export type AnnouncementTargetType = 'school' | 'course' | 'level';
 
 const LEVEL_TARGET_IDS = ['primary', 'secondary'] as const;
@@ -13,7 +14,9 @@ export class AnnouncementTarget {
 			targetType !== 'course' &&
 			targetType !== 'level'
 		) {
-			throw new Error(`Invalid target type: ${targetType}`);
+			throw new DomainError(
+				'El tipo de destinatario del comunicado no es válido.',
+			);
 		}
 		if (targetType === 'school') {
 			this._type = 'school';
@@ -22,14 +25,16 @@ export class AnnouncementTarget {
 		}
 		if (targetType === 'level') {
 			if (!LEVEL_TARGET_IDS.includes(targetId as LevelTargetId)) {
-				throw new Error(`Level target must be 'primary' or 'secondary'`);
+				throw new DomainError(
+					'El nivel del destinatario debe ser primario o secundario.',
+				);
 			}
 			this._type = 'level';
 			this._id = targetId;
 			return;
 		}
 		if (!targetId) {
-			throw new Error('Course target requires a targetId');
+			throw new DomainError('Debe indicar el curso destinatario del comunicado.');
 		}
 		this._type = 'course';
 		this._id = targetId;

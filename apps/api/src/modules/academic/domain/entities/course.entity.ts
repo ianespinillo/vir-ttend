@@ -1,6 +1,7 @@
 // course.entity.ts.ts
 import { randomUUID } from 'node:crypto';
 import { LEVEL as Level, SHIFT as Shift } from '@repo/common';
+import { DomainError } from '../../../../common/errors';
 import { CourseId } from '../value-objects/course-id.vo';
 
 interface CreateProps {
@@ -70,7 +71,7 @@ export class Course {
 
 	static create(props: CreateProps): Course {
 		if (props.yearNumber < 1 || props.yearNumber > 7) {
-			throw new Error('Year number must be between 1 and 7');
+			throw new DomainError('El año del curso debe estar entre 1 y 7.');
 		}
 		return new Course({
 			id: new CourseId(randomUUID()),
@@ -112,6 +113,10 @@ export class Course {
 	get shift(): Shift {
 		return this._shift;
 	}
+	/** Human label matching the UI course labels, such as 2° "A". */
+	get label(): string {
+		return `${this._yearNumber}° "${this._division}"`;
+	}
 	get isActive(): boolean {
 		return this._isActive;
 	}
@@ -124,6 +129,19 @@ export class Course {
 
 	assignPreceptor(preceptorId: string): void {
 		this._preceptorId = preceptorId;
+		this._updatedAt = new Date();
+	}
+
+	changeDivision(division: string): void {
+		this._division = division;
+		this._updatedAt = new Date();
+	}
+
+	changeYearNumber(yearNumber: number): void {
+		if (yearNumber < 1 || yearNumber > 7) {
+			throw new DomainError('El año del curso debe estar entre 1 y 7.');
+		}
+		this._yearNumber = yearNumber;
 		this._updatedAt = new Date();
 	}
 

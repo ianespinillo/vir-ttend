@@ -1,7 +1,8 @@
-// select-tenant.handler.spec.ts
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// select-tenant.handler.spec.ts
+import { ForbiddenError } from '../../../src/common/errors';
 import { SelectTenantCommand } from '../../../src/modules/identity/application/commands/select-tenant/select-tenant.command';
 import { SelectTenantHandler } from '../../../src/modules/identity/application/commands/select-tenant/select-tenant.handler';
 import { Tenant } from '../../../src/modules/identity/domain/entities/tenant.entity';
@@ -111,7 +112,9 @@ describe('SelectTenantHandler', () => {
 					'192.168.22.5',
 				),
 			),
-		).rejects.toThrow('Invalid tenant selection');
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene acceso a la institución seleccionada.'),
+		);
 	});
 
 	it('should throw when membership is inactive', async () => {
@@ -137,7 +140,9 @@ describe('SelectTenantHandler', () => {
 					'192.168.22.5',
 				),
 			),
-		).rejects.toThrow('Invalid tenant selection');
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene acceso a la institución seleccionada.'),
+		);
 	});
 
 	it('should generate access token with correct payload', async () => {
@@ -205,7 +210,9 @@ describe('SelectTenantHandler', () => {
 					'192.168.22.5',
 				),
 			),
-		).rejects.toThrow('Invalid tenant selection');
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene acceso a la institución seleccionada.'),
+		);
 	});
 
 	it('should throw when superadmin selects a non-existent tenant', async () => {
@@ -222,7 +229,9 @@ describe('SelectTenantHandler', () => {
 					'192.168.22.5',
 				),
 			),
-		).rejects.toThrow('Invalid tenant selection');
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene acceso a la institución seleccionada.'),
+		);
 	});
 
 	it('should start a global superadmin session with no tenant', async () => {

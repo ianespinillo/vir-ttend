@@ -1,4 +1,5 @@
-import { BadRequestException, Inject } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
@@ -20,7 +21,7 @@ export class GetStudentAlertsQueryHandler {
 	) {}
 	async execute(query: GetStudentAlertsQuery): Promise<AlertsListResponseDto> {
 		const year = await this.academicPort.findById(query.academicYearId);
-		if (!year) throw new BadRequestException('No year found.');
+		if (!year) throw new NotFoundError('Ciclo lectivo no encontrado');
 		const records = await this.alertRepo.findByStudentAndDateRange(
 			query.studentId,
 			year.startDate,

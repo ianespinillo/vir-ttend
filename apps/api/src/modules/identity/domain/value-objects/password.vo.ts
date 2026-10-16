@@ -1,3 +1,4 @@
+import { DomainError } from '../../../../common/errors';
 const VALID_CHARACTERS =
 	'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@$!%*?&';
 export class Password {
@@ -6,7 +7,9 @@ export class Password {
 		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 	constructor(value: string) {
 		if (!value || value.length < 8 || !this.isValidPassword(value)) {
-			throw new Error('Password must be at least 8 characters long');
+			throw new DomainError(
+				'La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&).',
+			);
 		}
 		this.value = value;
 	}

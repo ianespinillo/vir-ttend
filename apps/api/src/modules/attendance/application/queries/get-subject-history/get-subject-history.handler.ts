@@ -1,10 +1,6 @@
-import {
-	Inject,
-	Injectable,
-	InternalServerErrorException,
-	NotFoundException,
-} from '@nestjs/common';
-import { ATTENDANCE_STATUS } from '@repo/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ATTENDANCE_STATUS, isLateStatus } from '@repo/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
@@ -31,10 +27,7 @@ export class GetSubjectHistoryQueryHandler {
 		query: GetSubjectHistoryQuery,
 	): Promise<SubjectHistoryResponseDto> {
 		const subject = await this.subjectPort.getSubjectById(query.subjectId);
-		if (!subject)
-			throw new NotFoundException('Subject not found', {
-				description: `Subject with id: ${query.subjectId} not founded in database`,
-			});
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		assertCanReadSubjectAttendance(subject, {
 			userId: query.userId,
 			role: query.userRole,
@@ -59,7 +52,7 @@ export class GetSubjectHistoryQueryHandler {
 					new Date(k).toLocaleDateString(),
 					v.filter((r) => r.status === ATTENDANCE_STATUS.PRESENT).length,
 					v.filter((r) => r.status === ATTENDANCE_STATUS.ABSENT).length,
-					v.filter((r) => r.status === ATTENDANCE_STATUS.LATE).length,
+					v.filter((r) => isLateStatus(r.status)).length,
 					v.filter((r) => r.status === ATTENDANCE_STATUS.JUSTIFIED).length,
 					v.length,
 				),
@@ -73,8 +66,7 @@ export class GetSubjectHistoryQueryHandler {
 		});
 		for (const [k, v] of studentRecords.entries()) {
 			const s = await this.studentPort.findById(k);
-			if (!s)
-				throw new InternalServerErrorException('No such student record found');
+			if (!s) throw new NotFoundError('Estudiante no encontrado');
 			studentRecordInfo.push(
 				new StudentSubjectRecordDto(
 					s.id,

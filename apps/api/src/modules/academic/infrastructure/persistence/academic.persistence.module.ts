@@ -6,11 +6,13 @@ import { CourseOrmEntity } from './entities/courses.orm-entity';
 import { ScheduleSlotOrmEntity } from './entities/schedule-slot.orm-entity';
 import { StudentOrmEntity } from './entities/student.orm-entity';
 import { SubjectOrmEntity } from './entities/subject.orm-entity';
+import { WorkshopCommissionOrmEntity } from './entities/workshop-commission.orm-entity';
 import { AcademicYearRepository } from './repositories/academic-year.repository';
 import { CourseRepository } from './repositories/course.repository';
 import { ScheduleSlotRepository } from './repositories/schedule-slot.repository';
 import { StudentRepository } from './repositories/student.repository';
 import { SubjectRepository } from './repositories/subject.repository';
+import { WorkshopCommissionRepository } from './repositories/workshop-commission.repository';
 
 @Module({
 	imports: [
@@ -20,6 +22,7 @@ import { SubjectRepository } from './repositories/subject.repository';
 			ScheduleSlotOrmEntity,
 			SubjectOrmEntity,
 			StudentOrmEntity,
+			WorkshopCommissionOrmEntity,
 		]),
 	],
 	providers: [
@@ -49,6 +52,12 @@ import { SubjectRepository } from './repositories/subject.repository';
 			inject: [EntityManager],
 		},
 		{
+			provide: WorkshopCommissionRepository,
+			useFactory: (em: EntityManager) =>
+				em.getRepository(WorkshopCommissionOrmEntity),
+			inject: [EntityManager],
+		},
+		{
 			provide: 'IStudentRepository',
 			useExisting: StudentRepository,
 		},
@@ -68,6 +77,10 @@ import { SubjectRepository } from './repositories/subject.repository';
 			provide: 'ISubjectRepository',
 			useExisting: SubjectRepository,
 		},
+		{
+			provide: 'IWorkshopCommissionRepository',
+			useExisting: WorkshopCommissionRepository,
+		},
 	],
 	exports: [
 		AcademicYearRepository,
@@ -75,11 +88,13 @@ import { SubjectRepository } from './repositories/subject.repository';
 		ScheduleSlotRepository,
 		SubjectRepository,
 		StudentRepository,
+		WorkshopCommissionRepository,
 		'IStudentRepository',
 		'IAcademicYearRepository',
 		'IScheduleRepository',
 		'ICourseRepository',
 		'ISubjectRepository',
+		'IWorkshopCommissionRepository',
 	],
 })
 export class AcademicPersistenceModule {}

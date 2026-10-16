@@ -57,6 +57,12 @@ export const ALL_NAV_ITEMS: NavItemConfig[] = [
 		roles: [ROLES.ADMIN, ROLES.PRECEPTOR],
 	},
 	{
+		label: 'Asistencia de taller',
+		href: APP_ROUTES.attendanceWorkshop,
+		icon: 'Wrench',
+		roles: [ROLES.ADMIN, ROLES.PRECEPTOR],
+	},
+	{
 		label: 'Alertas',
 		href: APP_ROUTES.alerts,
 		icon: 'Bell',
@@ -140,7 +146,11 @@ export function allowedRolesForPathname(
 	if (pathname.startsWith('/students')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/attendance/daily'))
 		return [ROLES.ADMIN, ROLES.PRECEPTOR];
+	if (pathname.startsWith('/attendance/workshop'))
+		return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/attendance/subject')) return [ROLES.TEACHER];
+	if (pathname.startsWith('/attendance/student'))
+		return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/alerts')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/reports')) return [ROLES.ADMIN, ROLES.PRECEPTOR];
 	if (pathname.startsWith('/me/announcements'))

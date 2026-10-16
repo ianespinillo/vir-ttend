@@ -1,5 +1,6 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotFoundError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
@@ -29,7 +30,7 @@ export class BulkUpdateSubjectStatusHandler {
 		const subject = await this.subjectRepository.getSubjectById(
 			command.subjectId,
 		);
-		if (!subject) throw new BadRequestException('Subject not found');
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		assertCanWriteSubjectAttendance(subject, {
 			userId: command.userId,
 			role: command.userRole,

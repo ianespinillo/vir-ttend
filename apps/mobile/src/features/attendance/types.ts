@@ -1,7 +1,11 @@
 // Shapes of the API payloads used by the mobile app (already unwrapped from
 // the `{ success, data, timeStamp }` envelope by `api.ts`).
 
-export type AttendanceStatus = 'present' | 'absent' | 'late';
+export type AttendanceStatus =
+	| 'present'
+	| 'absent'
+	| 'late'
+	| 'late_beyond_tolerance';
 
 /** Statuses the API can return; mobile only edits `AttendanceStatus`. */
 export type RecordedAttendanceStatus = AttendanceStatus | 'justified';
@@ -96,6 +100,28 @@ export interface MySubject {
 	courseId: string;
 	courseName: string;
 	slots: SubjectSlot[];
+}
+
+/** One commission of `GET /attendance/workshop/my-commissions`. */
+export interface MyWorkshopCommission {
+	commissionId: string;
+	/** Commission code derived from the course, e.g. `141`. */
+	code: string;
+	number: number;
+	courseId: string;
+	/** Course name, e.g. `1° 4°`. */
+	courseName: string;
+	hasWorkshopToday: boolean;
+}
+
+/**
+ * `GET /attendance/workshop` mapped to the shapes the sheets share: the roster
+ * of the commission, `status` unset when not recorded.
+ */
+export interface WorkshopAttendance {
+	commissionId: string;
+	date: string;
+	records: AttendanceRecordItem[];
 }
 
 /** `GET /attendance/subject` (full roster, `status` unset when not recorded). */

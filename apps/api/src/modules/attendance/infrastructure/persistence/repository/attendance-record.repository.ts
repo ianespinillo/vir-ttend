@@ -136,6 +136,32 @@ export class AttendanceRecordRepository
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
 	}
 
+	async findDailyByCourseAndDateRange(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			courseId,
+			subjectId: null,
+			date: { $gte: from, $lte: to },
+		});
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async findDailyByStudentAndDateRange(
+		studentId: string,
+		from: Date,
+		to: Date,
+	): Promise<AttendanceRecord[]> {
+		const orms = await this.find({
+			studentId,
+			subjectId: null,
+			date: { $gte: from, $lte: to },
+		});
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
 	async findByCourseAndRange(
 		courseId: string,
 		from: Date,
@@ -240,7 +266,7 @@ export class AttendanceRecordRepository
             COUNT(DISTINCT ar.student_id) as "totalStudents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'present') as "presents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as "absents",
-            COUNT(ar.id) FILTER (WHERE ar.status = 'late') as "late",
+            COUNT(ar.id) FILTER (WHERE ar.status IN ('late', 'late_beyond_tolerance')) as "late",
             COUNT(ar.id) FILTER (WHERE ar.status = 'justified') as "justified"
         FROM "attendanceRecord" ar
         WHERE ar.course_id = ?
@@ -275,7 +301,7 @@ export class AttendanceRecordRepository
             COUNT(DISTINCT ar.student_id) as "totalStudents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'present') as "presents",
             COUNT(ar.id) FILTER (WHERE ar.status = 'absent') as "absents",
-            COUNT(ar.id) FILTER (WHERE ar.status = 'late') as "late",
+            COUNT(ar.id) FILTER (WHERE ar.status IN ('late', 'late_beyond_tolerance')) as "late",
             COUNT(ar.id) FILTER (WHERE ar.status = 'justified') as "justified"
         FROM "attendanceRecord" ar
         WHERE ar.course_id = ?

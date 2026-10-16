@@ -1,6 +1,6 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { DomainError, NotFoundError } from '../../../src/common/errors';
 import { ChangePasswordCommand } from '../../../src/modules/identity/application/commands/change-password/change-password.command';
 import { ChangePasswordHandler } from '../../../src/modules/identity/application/commands/change-password/change-password.handler';
 import { User } from '../../../src/modules/identity/domain/entities/user.entity';
@@ -65,7 +65,7 @@ describe('ChangePasswordHandler', () => {
 		expect(user.mustChangePassword).toBe(false);
 	});
 
-	it('should throw BadRequestException when the old password does not match', async () => {
+	it('should throw DomainError when the old password does not match', async () => {
 		userRepository.findById.mockResolvedValue(user);
 		passwordService.compare.mockResolvedValue(false);
 
@@ -73,22 +73,24 @@ describe('ChangePasswordHandler', () => {
 			new ChangePasswordCommand('user-id', oldPassword, newPassword),
 		);
 
-		await expect(execute).rejects.toBeInstanceOf(BadRequestException);
-		await expect(execute).rejects.toThrow('Password does not match');
+		await expect(execute).rejects.toStrictEqual(
+			new DomainError('La contraseña actual es incorrecta.'),
+		);
 
 		expect(userRepository.save).not.toHaveBeenCalled();
 		expect(passwordService.hashPassword).not.toHaveBeenCalled();
 	});
 
-	it('should throw NotFoundException when the user does not exist', async () => {
+	it('should throw NotFoundError when the user does not exist', async () => {
 		userRepository.findById.mockResolvedValue(null);
 
 		const execute = handler.execute(
 			new ChangePasswordCommand('user-id', oldPassword, newPassword),
 		);
 
-		await expect(execute).rejects.toBeInstanceOf(NotFoundException);
-		await expect(execute).rejects.toThrow('User with id user-id not found');
+		await expect(execute).rejects.toStrictEqual(
+			new NotFoundError('Usuario no encontrado.'),
+		);
 
 		expect(userRepository.save).not.toHaveBeenCalled();
 	});

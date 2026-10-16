@@ -39,7 +39,7 @@ export class TenantMiddleware implements NestMiddleware {
 				if (isSuperAdmin) {
 					if (!tenancy.ALLOW_SUPERADMIN) {
 						throw new ForbiddenException(
-							'Superadmin access is disabled on this single-tenant instance',
+							'El acceso de superadministrador está deshabilitado en esta instancia.',
 						);
 					}
 				} else if (
@@ -47,7 +47,7 @@ export class TenantMiddleware implements NestMiddleware {
 					tokenPayload.tenantId !== expectedTenantId
 				) {
 					throw new ForbiddenException(
-						'Token tenant does not match this single-tenant instance',
+						'Su sesión no corresponde a esta institución.',
 					);
 				}
 			}

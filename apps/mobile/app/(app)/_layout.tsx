@@ -69,6 +69,13 @@ export default function AppLayout() {
 						}}
 					/>
 					<Stack.Screen
+						name="attendance/workshop/[commissionId]"
+						options={{
+							title: 'Asistencia de Taller',
+							headerBackTitle: 'Atrás',
+						}}
+					/>
+					<Stack.Screen
 						name="settings"
 						options={{
 							title: 'Configuración',

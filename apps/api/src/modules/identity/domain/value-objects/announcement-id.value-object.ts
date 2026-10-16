@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { DomainError } from '../../../../common/errors';
 
 export class AnnouncementId {
 	private readonly value: string;
 
 	constructor(value: string) {
 		if (!value) {
-			throw new Error('Announcement id is required');
+			throw new DomainError('El identificador del comunicado es obligatorio.');
 		}
 		this.value = value;
 	}

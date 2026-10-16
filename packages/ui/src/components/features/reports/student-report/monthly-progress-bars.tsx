@@ -24,7 +24,14 @@ export function MonthlyProgressBars({ entries }: MonthlyProgressBarsProps) {
 	return (
 		<div className="space-y-3">
 			{sorted.map((entry) => {
-				const attendance = Math.min(100, Math.max(0, 100 - entry.absencePercent));
+				// No percentage when no class was given that month: an empty bar.
+				const isNaNAbsence =
+					typeof entry.absencePercent === 'number' &&
+					Number.isNaN(entry.absencePercent);
+				const attendance =
+					entry.absencePercent === null || isNaNAbsence
+						? null
+						: Math.min(100, Math.max(0, 100 - entry.absencePercent));
 
 				return (
 					<div
@@ -37,11 +44,11 @@ export function MonthlyProgressBars({ entries }: MonthlyProgressBarsProps) {
 						<div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
 							<div
 								className={`h-full rounded-full transition-all ${getAttendanceBarTone(entry.absencePercent)}`}
-								style={{ width: `${attendance}%` }}
+								style={{ width: `${attendance ?? 0}%` }}
 							/>
 						</div>
 						<span className="w-14 shrink-0 text-right text-sm font-medium tabular-nums">
-							{formatPercent(attendance)}
+							{isNaNAbsence ? '-' : formatPercent(attendance)}
 						</span>
 					</div>
 				);

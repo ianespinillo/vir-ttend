@@ -1,10 +1,6 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { STUDENTSTATUS } from '@repo/common';
+import { ConflictError, NotFoundError } from '../../../../../common/errors';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { TransferStudentCommand } from './transer-student.command';
 
@@ -16,13 +12,13 @@ export class TransferStudentHandler {
 	) {}
 	async execute(command: TransferStudentCommand) {
 		const student = await this.studentRepo.findById(command.studentId);
-		if (!student) throw new NotFoundException('Student not found');
+		if (!student) throw new NotFoundError('Estudiante no encontrado');
 
 		if (student.status === STUDENTSTATUS.INACTIVE) {
-			throw new BadRequestException('Student is already inactive');
+			throw new ConflictError('El estudiante ya está inactivo.');
 		}
 		if (student.status === STUDENTSTATUS.TRANSFERRED) {
-			throw new BadRequestException('Student is already transferred');
+			throw new ConflictError('El estudiante ya fue transferido.');
 		}
 		student.transferAway();
 		// TODO: Log transfer reason and other details

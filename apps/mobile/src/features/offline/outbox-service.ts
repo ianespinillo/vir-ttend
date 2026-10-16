@@ -4,19 +4,30 @@ import axios from 'axios';
 import { api } from '../../services/api';
 import { mergeOptimisticRecords } from '../attendance/optimistic-records';
 import { queryKeys } from '../attendance/query-keys';
-import type { DailyAttendance, SubjectAttendance } from '../attendance/types';
+import type {
+	DailyAttendance,
+	SubjectAttendance,
+	WorkshopAttendance,
+} from '../attendance/types';
 import { outboxStorageKey } from './cache-keys';
 import type {
 	DailyOutboxItem,
 	EnqueueDailyInput,
 	EnqueueSubjectInput,
+	EnqueueWorkshopInput,
 	OutboxItem,
 	OutboxRecord,
 	SubjectOutboxItem,
+	WorkshopOutboxItem,
 } from './outbox-types';
 
 export const buildDailyOutboxId = (courseId: string, date: string): string =>
 	`daily:${courseId}:${date}`;
+
+export const buildWorkshopOutboxId = (
+	commissionId: string,
+	date: string,
+): string => `workshop:${commissionId}:${date}`;
 
 export const buildSubjectOutboxId = (subjectId: string, date: string): string =>
 	`subject:${subjectId}:${date}`;
@@ -24,7 +35,9 @@ export const buildSubjectOutboxId = (subjectId: string, date: string): string =>
 /**
  * Distinguishes permanent 4xx validation/permission errors from transient network/5xx/401 errors.
  * - Permanent: 400 "Invalid class day", 403 Forbidden, 404, 422. Preserved for the user to fix.
- * - Transient: offline, timeouts, 5xx, 401 (automatic refresh will retry).
+ * - Transient: offline, timeouts, 5xx, 401 (automatic refresh will retry), and
+ *   409: two saves of the same attendance raced on its unique constraint; the
+ *   retry finds the stored record and updates it.
  */
 export const classifyError = (
 	error: unknown,
@@ -54,7 +67,8 @@ export const classifyError = (
 			status >= 400 &&
 			status < 500 &&
 			status !== 401 &&
-			status !== 408
+			status !== 408 &&
+			status !== 409
 		) {
 			return {
 				isPermanent: true,
@@ -63,7 +77,7 @@ export const classifyError = (
 			};
 		}
 
-		// 401 (session expired / auth), 408 (timeout), 5xx, or network disconnect
+		// 401 (session expired / auth), 408 (timeout), 409 (save race), 5xx, or network disconnect
 		const isNetworkOrTimeout =
 			!error.response || error.code === 'ECONNABORTED' || status === 408;
 		return {
@@ -135,6 +149,22 @@ export const applyOptimisticSubjectAttendance = (
 	);
 };
 
+export const applyOptimisticWorkshopAttendance = (
+	queryClient: QueryClient,
+	commissionId: string,
+	date: string,
+	records: OutboxRecord[],
+): void => {
+	queryClient.setQueryData<WorkshopAttendance>(
+		queryKeys.workshopAttendance(commissionId, date),
+		(prev) => ({
+			commissionId,
+			date,
+			records: mergeOptimisticRecords(prev?.records ?? [], records),
+		}),
+	);
+};
+
 export interface OutboxState {
 	items: OutboxItem[];
 	isSyncing: boolean;
@@ -149,6 +179,7 @@ export interface OutboxServiceDeps {
 	saveItems?: (scope: string, items: OutboxItem[]) => Promise<void>;
 	sendDaily?: (item: DailyOutboxItem) => Promise<void>;
 	sendSubject?: (item: SubjectOutboxItem) => Promise<void>;
+	sendWorkshop?: (item: WorkshopOutboxItem) => Promise<void>;
 	now?: () => number;
 }
 
@@ -158,6 +189,7 @@ export interface OutboxService {
 	init: () => Promise<void>;
 	enqueueDaily: (input: EnqueueDailyInput) => Promise<void>;
 	enqueueSubject: (input: EnqueueSubjectInput) => Promise<void>;
+	enqueueWorkshop: (input: EnqueueWorkshopInput) => Promise<void>;
 	flush: (options?: { force?: boolean }) => Promise<void>;
 	removeItem: (id: string) => Promise<void>;
 	/** Re-queues a failed item as pending and forces a flush. */
@@ -171,6 +203,10 @@ export interface OutboxService {
 		subjectId: string,
 		date: string,
 	) => SubjectOutboxItem | undefined;
+	getItemForCommission: (
+		commissionId: string,
+		date: string,
+	) => WorkshopOutboxItem | undefined;
 	getPendingCount: () => number;
 	getRetryingCount: () => number;
 	getErrorCount: () => number;
@@ -223,6 +259,18 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 			await api.post('/attendance/subject', {
 				subjectId: item.subjectId,
 				courseId: item.courseId,
+				date: item.date,
+				records: item.records,
+			});
+		});
+
+	// Same upsert as daily attendance: the API replaces the commission's records
+	// of the day, so resending an item after a lost response is safe.
+	const sendWorkshop =
+		deps.sendWorkshop ??
+		(async (item: WorkshopOutboxItem): Promise<void> => {
+			await api.post('/attendance/workshop', {
+				commissionId: item.commissionId,
 				date: item.date,
 				records: item.records,
 			});
@@ -337,6 +385,10 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 			deps.queryClient.invalidateQueries({
 				queryKey: queryKeys.preceptorDashboard(item.date),
 			});
+		} else if (item.type === 'workshop') {
+			deps.queryClient.invalidateQueries({
+				queryKey: queryKeys.workshopAttendance(item.commissionId, item.date),
+			});
 		} else {
 			deps.queryClient.invalidateQueries({
 				queryKey: queryKeys.subjectAttendance(item.subjectId, item.date),
@@ -432,6 +484,8 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 					try {
 						if (currentItem.type === 'daily') {
 							await sendDaily(currentItem);
+						} else if (currentItem.type === 'workshop') {
+							await sendWorkshop(currentItem);
 						} else {
 							await sendSubject(currentItem);
 						}
@@ -629,6 +683,67 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		}
 	};
 
+	const enqueueWorkshop = async (input: EnqueueWorkshopInput): Promise<void> => {
+		if (!state.initialized) await init();
+
+		const id = buildWorkshopOutboxId(input.commissionId, input.date);
+		const currentTime = now();
+		const existingIndex = state.items.findIndex((i) => i.id === id);
+
+		let nextItems: OutboxItem[];
+		if (existingIndex >= 0) {
+			const existing = state.items[existingIndex] as WorkshopOutboxItem;
+			const updated: WorkshopOutboxItem = {
+				...existing,
+				records: input.records,
+				commissionLabel: input.commissionLabel ?? existing.commissionLabel,
+				updatedAt: currentTime,
+				status: 'pending',
+				error: undefined,
+				retryCount: 0,
+				lastAttemptAt: undefined,
+			};
+			nextItems = [
+				...state.items.slice(0, existingIndex),
+				updated,
+				...state.items.slice(existingIndex + 1),
+			];
+		} else {
+			const newItem: WorkshopOutboxItem = {
+				id,
+				type: 'workshop',
+				commissionId: input.commissionId,
+				commissionLabel: input.commissionLabel,
+				date: input.date,
+				records: input.records,
+				createdAt: currentTime,
+				updatedAt: currentTime,
+				status: 'pending',
+				retryCount: 0,
+			};
+			nextItems = [...state.items, newItem];
+		}
+
+		const previousItem =
+			existingIndex >= 0 ? state.items[existingIndex] : undefined;
+		await persistStrict(nextItems, (current) =>
+			restoreItem(current, id, previousItem),
+		);
+
+		// Optimistic React Query cache update (only once the save is durable)
+		applyOptimisticWorkshopAttendance(
+			deps.queryClient,
+			input.commissionId,
+			input.date,
+			input.records,
+		);
+
+		// Trigger background flush if online
+		if (deps.isOnline()) {
+			flush().catch(() => undefined);
+		}
+	};
+
 	const removeItem = async (id: string): Promise<void> => {
 		if (!state.initialized) await init();
 		const removed = state.items.find((i) => i.id === id);
@@ -682,6 +797,15 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		return item?.type === 'subject' ? item : undefined;
 	};
 
+	const getItemForCommission = (
+		commissionId: string,
+		date: string,
+	): WorkshopOutboxItem | undefined => {
+		const id = buildWorkshopOutboxId(commissionId, date);
+		const item = state.items.find((i) => i.id === id);
+		return item?.type === 'workshop' ? item : undefined;
+	};
+
 	const getPendingCount = (): number =>
 		state.items.filter((i) => i.status === 'pending' || i.status === 'syncing')
 			.length;
@@ -712,12 +836,14 @@ export const createOutboxService = (deps: OutboxServiceDeps): OutboxService => {
 		init,
 		enqueueDaily,
 		enqueueSubject,
+		enqueueWorkshop,
 		flush,
 		removeItem,
 		retryItem,
 		getItem,
 		getItemForCourse,
 		getItemForSubject,
+		getItemForCommission,
 		getPendingCount,
 		getRetryingCount,
 		getErrorCount,

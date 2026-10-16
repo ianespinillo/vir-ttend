@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateSubjectRequestDto {
 	@IsString()
@@ -47,4 +48,13 @@ export class UpdateSubjectRequestDto {
 		example: 6,
 	})
 	weeklyHours?: number;
+
+	@IsOptional()
+	@IsEnum(SUBJECT_KIND)
+	@ApiPropertyOptional({
+		enum: SUBJECT_KIND,
+		description: 'Nuevo tipo de materia: teórica o de taller.',
+		example: SUBJECT_KIND.WORKSHOP,
+	})
+	kind?: SubjectKindType;
 }

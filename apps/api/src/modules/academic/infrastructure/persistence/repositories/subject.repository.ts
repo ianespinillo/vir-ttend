@@ -53,6 +53,7 @@ export class SubjectRepository
 			existing.name = subject.name;
 			existing.area = subject.area;
 			existing.weeklyHours = subject.weeklyHours;
+			existing.kind = subject.kind;
 			existing.updatedAt = subject.updatedAt;
 			existing.deletedAt = subject.deletedAt ?? null;
 		} else {

@@ -8,7 +8,13 @@ export function formatDate(
 	return format(new Date(date), pattern, { locale: es });
 }
 
-export function formatPercent(value: number, fractionDigits = 1): string {
+/** A null value means no class was given, so there is no percentage to show. */
+export function formatPercent(
+	value: number | null | undefined,
+	fractionDigits = 1,
+): string {
+	if (value === null) return '—';
+	if (value === undefined || Number.isNaN(value)) return '-';
 	return `${value.toFixed(fractionDigits)}%`;
 }
 

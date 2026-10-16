@@ -28,6 +28,7 @@ export interface ReconstituteProps {
 	tutorPhone: string;
 	tutorEmail?: string;
 	status: StudentStatus;
+	workshopCommissionId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -42,9 +43,16 @@ interface ConstructorProps {
 	birthDate: Date;
 	tutor: Tutor;
 	status: StudentStatus;
+	workshopCommissionId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }
+
+// First word is the first name; every remaining word is kept as the last name.
+const splitTutorName = (fullName: string): [string, string] => {
+	const [first = '', ...rest] = fullName.trim().split(/\s+/);
+	return [first, rest.join(' ')];
+};
 
 export class Student {
 	private readonly _id: string;
@@ -58,6 +66,7 @@ export class Student {
 	private _tutorPhone: string;
 	private _tutorEmail?: string;
 	private _status: StudentStatus;
+	private _workshopCommissionId: string | null;
 	private readonly _createdAt: Date;
 	private _updatedAt: Date;
 
@@ -69,10 +78,13 @@ export class Student {
 		this._lastName = props.lastName;
 		this._documentNumber = props.documentNumber;
 		this._birthDate = props.birthDate;
-		this._tutorName = props.tutor.firstName.concat(' ', props.tutor.lastName);
+		this._tutorName = [props.tutor.firstName, props.tutor.lastName]
+			.filter(Boolean)
+			.join(' ');
 		this._tutorPhone = props.tutor.phone;
 		this._tutorEmail = props.tutor.email?.getValue() ?? undefined;
 		this._status = props.status;
+		this._workshopCommissionId = props.workshopCommissionId ?? null;
 		this._createdAt = props.createdAt;
 		this._updatedAt = props.updatedAt;
 	}
@@ -86,8 +98,7 @@ export class Student {
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			tutor: new Tutor(
-				props.tutorName.split(' ')[0],
-				props.tutorName.split(' ')[1],
+				...splitTutorName(props.tutorName),
 				props.tutorPhone,
 				props.tutorEmail ? new Email(props.tutorEmail) : undefined,
 			),
@@ -99,8 +110,7 @@ export class Student {
 			...props,
 			documentNumber: new DocumentNumber(props.documentNumber),
 			tutor: new Tutor(
-				props.tutorName.split(' ')[0],
-				props.tutorName.split(' ')[1],
+				...splitTutorName(props.tutorName),
 				props.tutorPhone,
 				props.tutorEmail ? new Email(props.tutorEmail) : undefined,
 			),
@@ -143,6 +153,9 @@ export class Student {
 	}
 	get status(): StudentStatus {
 		return this._status;
+	}
+	get workshopCommissionId(): string | null {
+		return this._workshopCommissionId;
 	}
 	get createdAt(): Date {
 		return this._createdAt;
@@ -188,8 +201,20 @@ export class Student {
 	}
 
 	enrollInCourse(courseId: string): void {
+		// A workshop commission belongs to one course: changing course drops it.
+		if (courseId !== this._courseId) this._workshopCommissionId = null;
 		this._courseId = courseId;
 		this._status = STUDENTSTATUS.ACTIVE;
+		this._updatedAt = new Date();
+	}
+
+	assignWorkshopCommission(commissionId: string): void {
+		this._workshopCommissionId = commissionId;
+		this._updatedAt = new Date();
+	}
+
+	clearWorkshopCommission(): void {
+		this._workshopCommissionId = null;
 		this._updatedAt = new Date();
 	}
 

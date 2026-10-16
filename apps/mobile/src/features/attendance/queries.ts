@@ -5,10 +5,12 @@ import {
 	fetchCourseStudents,
 	fetchDailyAttendance,
 	fetchMySubjects,
+	fetchMyWorkshopCommissions,
 	fetchPreceptorCourses,
 	fetchPreceptorDashboard,
 	fetchSubjectAttendance,
 	fetchSubjectStudents,
+	fetchWorkshopAttendance,
 } from './api';
 import { queryKeys } from './query-keys';
 
@@ -61,5 +63,15 @@ export const attendanceQueries = {
 		queryOptions({
 			queryKey: queryKeys.subjectAttendance(subjectId, date),
 			queryFn: () => fetchSubjectAttendance(subjectId, date),
+		}),
+	myWorkshopCommissions: (date: string) =>
+		queryOptions({
+			queryKey: queryKeys.myWorkshopCommissions(date),
+			queryFn: () => fetchMyWorkshopCommissions(date),
+		}),
+	workshopAttendance: (commissionId: string, date: string) =>
+		queryOptions({
+			queryKey: queryKeys.workshopAttendance(commissionId, date),
+			queryFn: () => fetchWorkshopAttendance(commissionId, date),
 		}),
 };

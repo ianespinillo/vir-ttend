@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ROLES, Roles } from '@repo/common';
+import { DomainError, UnauthorizedError } from '../../../../../common/errors';
 import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
@@ -12,6 +13,22 @@ export interface LoginResult {
 	isSuperAdmin: boolean;
 	userId: string;
 	tenants: { tenantId: string; tenantName: string; role: Roles }[];
+}
+
+const INVALID_CREDENTIALS = 'El correo o la contraseña son incorrectos.';
+
+/**
+ * A password that breaks the policy can never match a stored one, so it is
+ * answered with the same generic error to avoid revealing that the email exists.
+ */
+function toPassword(raw: string): Password {
+	try {
+		return new Password(raw);
+	} catch (error) {
+		if (error instanceof DomainError)
+			throw new UnauthorizedError(INVALID_CREDENTIALS);
+		throw error;
+	}
 }
 
 @Injectable()
@@ -29,21 +46,24 @@ export class LoginHandler {
 	async execute(command: LoginCommand): Promise<LoginResult> {
 		const { email, password } = command;
 		const user = await this.userRepository.findByEmail(email);
-		if (!user) throw new Error('Invalid credentials');
-		if (!user.isActive) throw new Error('User not active');
+		if (!user) throw new UnauthorizedError(INVALID_CREDENTIALS);
+		if (!user.isActive)
+			throw new UnauthorizedError(
+				'Su cuenta está desactivada. Contacte a un administrador.',
+			);
 
 		const validPassword = await this.passwordService.compare(
-			new Password(password),
+			toPassword(password),
 			user.password,
 		);
-		if (!validPassword) throw new Error('Invalid credentials');
+		if (!validPassword) throw new UnauthorizedError(INVALID_CREDENTIALS);
 
 		const tenancy = getTenancyConfig();
 		const memberships = await this.membersRepo.findByUserId(user.id);
 
 		if (memberships.length === 0) {
 			if (tenancy.TENANCY_MODE === 'single' && !tenancy.ALLOW_SUPERADMIN) {
-				throw new Error('Invalid credentials');
+				throw new UnauthorizedError(INVALID_CREDENTIALS);
 			}
 
 			const all = await this.tenantRepo.list({ page: 1, limit: 10000 });
@@ -68,7 +88,7 @@ export class LoginHandler {
 				(m) => m.tenantId === tenancy.TENANT_ID && m.isActive,
 			);
 			if (!singleMembership) {
-				throw new Error('Invalid credentials');
+				throw new UnauthorizedError(INVALID_CREDENTIALS);
 			}
 
 			const tenant = await this.tenantRepo.findById(singleMembership.tenantId);

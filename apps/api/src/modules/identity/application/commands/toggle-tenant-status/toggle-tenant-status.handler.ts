@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { ITenantRepository } from '../../../domain/repositories/tenant.repository.interface';
 import { ToggleTenantStatusCommand } from './toggle-tenant-status.command';
 
@@ -10,7 +11,7 @@ export class ToggleTenantStatusHandler {
 	) {}
 	async execute({ tenantId, isActive }: ToggleTenantStatusCommand) {
 		const tenant = await this.tenantRepo.findById(tenantId);
-		if (!tenant) throw new Error('Tenant not founded');
+		if (!tenant) throw new NotFoundError('Institución no encontrada.');
 		if (isActive) tenant.activate();
 		tenant.deactivate();
 		await this.tenantRepo.save(tenant);

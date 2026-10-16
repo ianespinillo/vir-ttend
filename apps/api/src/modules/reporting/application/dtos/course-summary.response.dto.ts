@@ -3,7 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 export interface CourseSummaryEntry {
 	month: number;
 	year: number;
-	averageAttendance: number;
+	/** Null when no class was given that month. */
+	averageAttendance: number | null;
 }
 
 export class CourseSummaryResponseDto {
@@ -27,7 +28,7 @@ export class CourseSummaryResponseDto {
 			properties: {
 				month: { type: 'number', example: 7 },
 				year: { type: 'number', example: 2026 },
-				averageAttendance: { type: 'number', example: 87.5 },
+				averageAttendance: { type: 'number', nullable: true, example: 87.5 },
 			},
 		},
 		example: [

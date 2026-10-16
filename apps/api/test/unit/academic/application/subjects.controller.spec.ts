@@ -3,6 +3,7 @@ import { MockProxy, mock } from 'jest-mock-extended';
 import { AssignTeacherHandler } from '../../../../src/modules/academic/application/commands/assign-teaher/assign-teacher.handler';
 import { CreateSubjectHandler } from '../../../../src/modules/academic/application/commands/create-subject/create-subject.handler';
 import { DeleteSubjectHandler } from '../../../../src/modules/academic/application/commands/delete-subject/delete-subject.handler';
+import { UpdateSubjectCommand } from '../../../../src/modules/academic/application/commands/update-subject/update-subject.command';
 import { UpdateSubjectHandler } from '../../../../src/modules/academic/application/commands/update-subject/update-subject.handler';
 import { SubjectResponseDto } from '../../../../src/modules/academic/application/dtos/subject.response.dto';
 import { GetMySubjectsHandler } from '../../../../src/modules/academic/application/queries/get-my-subjects/get-my-subjects.handler';
@@ -18,6 +19,7 @@ describe('SubjectsController (teacher endpoints)', () => {
 	let controller: SubjectsController;
 	let getMySubjectsHandler: MockProxy<GetMySubjectsHandler>;
 	let getSubjectStudentsHandler: MockProxy<GetSubjectStudentsHandler>;
+	let updateSubjectHandler: MockProxy<UpdateSubjectHandler>;
 
 	const teacher: JwtPayload = {
 		sub: 'teacher-1',
@@ -29,9 +31,10 @@ describe('SubjectsController (teacher endpoints)', () => {
 	beforeEach(() => {
 		getMySubjectsHandler = mock<GetMySubjectsHandler>();
 		getSubjectStudentsHandler = mock<GetSubjectStudentsHandler>();
+		updateSubjectHandler = mock<UpdateSubjectHandler>();
 		controller = new SubjectsController(
 			mock<CreateSubjectHandler>(),
-			mock<UpdateSubjectHandler>(),
+			updateSubjectHandler,
 			mock<DeleteSubjectHandler>(),
 			mock<AssignTeacherHandler>(),
 			mock<GetSubjectsByCourseHandler>(),
@@ -39,6 +42,25 @@ describe('SubjectsController (teacher endpoints)', () => {
 			getMySubjectsHandler,
 			getSubjectStudentsHandler,
 		);
+	});
+
+	it('update maps dto.name and dto.area to the matching command fields', async () => {
+		await controller.update('sub-1', {
+			teacherId: 'teacher-2',
+			name: 'Matemática',
+			area: 'Exactas',
+			weeklyHours: 4,
+		});
+
+		const command = updateSubjectHandler.execute.mock.calls[0][0];
+		expect(command).toBeInstanceOf(UpdateSubjectCommand);
+		expect(command).toMatchObject({
+			subjectId: 'sub-1',
+			teacherId: 'teacher-2',
+			name: 'Matemática',
+			area: 'Exactas',
+			weeklyHours: 4,
+		});
 	});
 
 	it('mine scopes the query to the authenticated user and tenant', async () => {
@@ -96,5 +118,23 @@ describe('SubjectsController (teacher endpoints)', () => {
 		});
 
 		expect(new SubjectResponseDto(subject).courseId).toBe('course-1');
+	});
+
+	it('SubjectResponseDto exposes teacherName when provided', () => {
+		const subject = Subject.reconstitute({
+			id: 'sub-1',
+			courseId: 'course-1',
+			teacherId: 'teacher-1',
+			name: 'Matemática',
+			area: 'Ciencias',
+			weeklyHours: 4,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+
+		expect(new SubjectResponseDto(subject, 'Ada Lovelace').teacherName).toBe(
+			'Ada Lovelace',
+		);
+		expect(new SubjectResponseDto(subject).teacherName).toBeUndefined();
 	});
 });

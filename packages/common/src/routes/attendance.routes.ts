@@ -12,4 +12,7 @@ export const ATTENDANCE_ROUTES = {
 	history: '/attendance/history',
 	byStudent: (studentId: string) => `/attendance/student/${studentId}`,
 	teacherSubjects: '/attendance/teacher/subjects',
+	workshop: '/attendance/workshop',
+	workshopAll: '/attendance/workshop/all',
+	workshopMyCommissions: '/attendance/workshop/my-commissions',
 } as const;

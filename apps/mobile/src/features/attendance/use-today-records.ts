@@ -23,6 +23,26 @@ export const useCoursesTodayRecords = (
 	);
 };
 
+/** Same as `useCoursesTodayRecords` for a preceptor's workshop commissions. */
+export const useCommissionsTodayRecords = (
+	commissionIds: readonly string[],
+	date: string,
+	enabled: boolean,
+): Map<string, AttendanceRecordItem[] | undefined> => {
+	const results = useQueries({
+		queries: commissionIds.map((commissionId) => ({
+			...attendanceQueries.workshopAttendance(commissionId, date),
+			enabled,
+		})),
+	});
+	return new Map(
+		commissionIds.map((commissionId, index) => [
+			commissionId,
+			results[index]?.data?.records,
+		]),
+	);
+};
+
 /** Same as `useCoursesTodayRecords` for a teacher's subjects of the day. */
 export const useSubjectsTodayRecords = (
 	subjectIds: readonly string[],

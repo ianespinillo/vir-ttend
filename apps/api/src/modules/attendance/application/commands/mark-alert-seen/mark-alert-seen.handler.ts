@@ -1,4 +1,5 @@
-import { Inject, NotFoundException } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IAttendanceAlertRepository } from '../../../domain/repositories/attendance-alert.repository.interface';
 import { MarkAlertSeenCommand } from './mark-alert-seen.command';
 
@@ -9,8 +10,7 @@ export class MarkAlertSeenHandler {
 	) {}
 	async execute(command: MarkAlertSeenCommand): Promise<void> {
 		const alert = await this.alertAttendanceRepo.findById(command.alertId);
-		if (!alert)
-			throw new NotFoundException(`No alert found with id ${command.alertId}`);
+		if (!alert) throw new NotFoundError('Alerta no encontrada');
 		if (alert.seenAt || alert.seenBy) {
 			return;
 		}

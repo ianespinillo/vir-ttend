@@ -20,6 +20,11 @@ export class UserRepository
 		if (!orm) return null;
 		return UserMapper.toDomain(orm);
 	}
+	async findByIds(ids: string[]): Promise<User[]> {
+		if (ids.length === 0) return [];
+		const orms = await this.find({ id: { $in: ids } });
+		return orms.map((u) => UserMapper.toDomain(u));
+	}
 	async save(user: User): Promise<void> {
 		const existing = await this.findOne({ id: user.id });
 		if (existing) {

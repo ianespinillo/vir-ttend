@@ -1,6 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
 import { LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../src/common/errors';
 import { ExportExcelCommand } from '../../../src/modules/reporting/application/commands/export-excel/export-excel.command';
 import { ExportExcelHandler } from '../../../src/modules/reporting/application/commands/export-excel/export-excel.handler';
 import { ReportGenerationService } from '../../../src/modules/reporting/application/services/report-generation.service';
@@ -42,7 +42,8 @@ const detailedReport: IDetailedStudentReport = {
 		late: 0,
 		justified: 0,
 		totalDays: 0,
-		averageAbsencePercent: 0,
+		absenceBreakdown: { daily: 0, workshop: 0 },
+		averageAbsencePercent: null,
 	},
 	status: 'ok',
 	alerts: [],
@@ -98,12 +99,14 @@ describe('ExportExcelHandler', () => {
 		expect(reporter.generateMonthlyReport).not.toHaveBeenCalled();
 	});
 
-	it('lanza NotFoundException si el curso no existe', async () => {
+	it('lanza NotFoundError si el curso no existe', async () => {
 		coursePort.findById.mockResolvedValue(null);
 
-		await expect(
-			handler.execute(new ExportExcelCommand('course-1', 7, 2026, 'monthly')),
-		).rejects.toBeInstanceOf(NotFoundException);
+		const attempt = handler.execute(
+			new ExportExcelCommand('course-1', 7, 2026, 'monthly'),
+		);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Curso no encontrado');
 		expect(reporter.generateMonthlyReport).not.toHaveBeenCalled();
 		expect(generator.generate).not.toHaveBeenCalled();
 	});

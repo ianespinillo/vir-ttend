@@ -37,7 +37,11 @@ export const countRecords = (
 	for (const record of records) {
 		if (record.status === 'present') counts.present++;
 		else if (record.status === 'absent') counts.absent++;
-		else if (record.status === 'late') counts.late++;
+		else if (
+			record.status === 'late' ||
+			record.status === 'late_beyond_tolerance'
+		)
+			counts.late++;
 		else if (record.status === 'justified') counts.justified++;
 	}
 	return counts;

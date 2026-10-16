@@ -21,7 +21,9 @@ describe('PATCH /users/me/password ChangePasswordRequestDto validation', () => {
 		});
 		const errors = await validate(dto);
 		expect(errors).toHaveLength(1);
-		expect(errors[0].constraints?.matchConstraint).toBe('Passwords do not match');
+		expect(errors[0].constraints?.matchConstraint).toBe(
+			'Las contraseñas no coinciden.',
+		);
 	});
 
 	it('rejects when newPassword is too short', async () => {

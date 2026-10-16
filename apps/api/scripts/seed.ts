@@ -918,16 +918,17 @@ async function main(): Promise<void> {
 					r.subjectId == null,
 			);
 			if (daily.length === 0) continue;
-			const absent = daily.filter((r) => r.status === 'absent').length;
-			const percent = Math.round((absent / daily.length) * 100);
-			const type =
-				percent >= 100
-					? 'exceeded'
-					: percent >= 75
-						? 'critical'
-						: percent >= 50
-							? 'warning'
-							: null;
+			const absent = daily.filter(
+				(r) => r.status === 'absent' || r.status === 'justified',
+			).length;
+			const [type, threshold] =
+				absent >= 28
+					? (['exceeded', 28] as const)
+					: absent >= 20
+						? (['critical', 20] as const)
+						: absent >= 10
+							? (['warning', 10] as const)
+							: [null, 0];
 			if (!type) continue;
 			const alert = em.create(AttendanceAlertOrmEntity, {
 				id: randomUUID(),
@@ -936,7 +937,8 @@ async function main(): Promise<void> {
 				academicYearId: academicYear.id,
 				tenantId: tenant.id,
 				alertType: type,
-				absencePercent: percent,
+				absenceCount: absent,
+				threshold,
 				createdAt: new Date(),
 			});
 			alerts.push(alert);
@@ -1018,7 +1020,7 @@ async function main(): Promise<void> {
 				summary: {
 					averageAttendance:
 						totalRecords > 0
-							? Math.round((totalPresent / totalRecords) * 100) / 100
+							? Number(((totalPresent / totalRecords) * 100).toFixed(1))
 							: 0,
 					studentsAtRisk: students.filter((s) => s.status === 'at-risk').length,
 					studentsExceeded: students.filter((s) => s.status === 'exceeded').length,

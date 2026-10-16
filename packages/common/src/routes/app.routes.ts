@@ -6,6 +6,7 @@ export const APP_ROUTES = {
 	courses: '/courses',
 	attendanceDaily: '/attendance/daily',
 	attendanceSubject: '/attendance/subject',
+	attendanceWorkshop: '/attendance/workshop',
 	alerts: '/alerts',
 	reports: '/reports',
 	announcements: '/announcements',

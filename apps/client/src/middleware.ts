@@ -5,8 +5,11 @@ const PUBLIC_ROUTES = ['/login', '/select-tenant'];
 export function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 
+	// The access token lives 15 minutes; the refresh token keeps the session
+	// alive and the client renews the access token on its first API call.
 	const hasSession =
 		request.cookies.has('access_token') ||
+		request.cookies.has('refresh_token') ||
 		request.cookies.has('jwt') ||
 		request.cookies.has('session');
 

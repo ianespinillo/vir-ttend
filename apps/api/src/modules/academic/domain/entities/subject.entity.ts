@@ -1,22 +1,26 @@
 // subject.entity.ts
 import { randomUUID } from 'node:crypto';
+import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import { DomainError } from '../../../../common/errors';
 import { SubjectId } from '../value-objects/subject-id.vo';
 
 interface CreateProps {
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
+	kind?: SubjectKindType;
 }
 
 interface ConstructorProps {
 	id: SubjectId;
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
+	kind: SubjectKindType;
 	createdAt: Date;
 	updatedAt: Date;
 	deletedAt?: Date;
@@ -25,10 +29,11 @@ interface ConstructorProps {
 export interface ReconstituteProps {
 	id: string;
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
+	kind?: SubjectKindType;
 	createdAt: Date;
 	updatedAt: Date;
 	deletedAt?: Date;
@@ -37,10 +42,11 @@ export interface ReconstituteProps {
 export class Subject {
 	private readonly _id: SubjectId;
 	private readonly _courseId: string;
-	private _teacherId: string;
+	private _teacherId?: string;
 	private _name: string;
 	private _area: string;
 	private _weeklyHours: number;
+	private _kind: SubjectKindType;
 	private readonly _createdAt: Date;
 	private _updatedAt: Date;
 	private _deletedAt?: Date;
@@ -52,6 +58,7 @@ export class Subject {
 		this._name = props.name;
 		this._area = props.area;
 		this._weeklyHours = props.weeklyHours;
+		this._kind = props.kind;
 		this._createdAt = props.createdAt;
 		this._updatedAt = props.updatedAt;
 		this._deletedAt = props.deletedAt;
@@ -59,13 +66,14 @@ export class Subject {
 
 	static create(props: CreateProps): Subject {
 		if (props.weeklyHours < 1) {
-			throw new Error('Weekly hours must be at least 1');
+			throw new DomainError('Las horas semanales deben ser al menos 1.');
 		}
 		return new Subject({
 			id: new SubjectId(randomUUID()),
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			...props,
+			kind: props.kind ?? SUBJECT_KIND.THEORY,
 			deletedAt: undefined,
 		});
 	}
@@ -73,6 +81,7 @@ export class Subject {
 	static reconstitute(props: ReconstituteProps): Subject {
 		return new Subject({
 			...props,
+			kind: props.kind ?? SUBJECT_KIND.THEORY,
 			id: new SubjectId(props.id),
 			deletedAt: props.deletedAt,
 		});
@@ -84,7 +93,7 @@ export class Subject {
 	get courseId(): string {
 		return this._courseId;
 	}
-	get teacherId(): string {
+	get teacherId(): string | undefined {
 		return this._teacherId;
 	}
 	get name(): string {
@@ -95,6 +104,12 @@ export class Subject {
 	}
 	get weeklyHours(): number {
 		return this._weeklyHours;
+	}
+	get kind(): SubjectKindType {
+		return this._kind;
+	}
+	get isWorkshop(): boolean {
+		return this._kind === SUBJECT_KIND.WORKSHOP;
 	}
 	get createdAt(): Date {
 		return this._createdAt;
@@ -111,11 +126,23 @@ export class Subject {
 		this._updatedAt = new Date();
 	}
 
-	updateDetails(name?: string, area?: string, weeklyHours?: number): void {
+	unassignTeacher(): void {
+		this._teacherId = undefined;
+		this._updatedAt = new Date();
+	}
+
+	updateDetails(
+		name?: string,
+		area?: string,
+		weeklyHours?: number,
+		kind?: SubjectKindType,
+	): void {
 		if (name) this._name = name;
+		if (kind) this._kind = kind;
 		if (area) this._area = area;
 		if (weeklyHours !== undefined) {
-			if (weeklyHours < 1) throw new Error('Weekly hours must be at least 1');
+			if (weeklyHours < 1)
+				throw new DomainError('Las horas semanales deben ser al menos 1.');
 			this._weeklyHours = weeklyHours;
 		}
 		this._updatedAt = new Date();

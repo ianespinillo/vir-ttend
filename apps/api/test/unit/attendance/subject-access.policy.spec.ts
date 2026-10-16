@@ -1,5 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { ForbiddenError } from '../../../src/common/errors';
 import {
 	assertCanReadSubjectAttendance,
 	assertCanWriteSubjectAttendance,
@@ -31,7 +31,14 @@ describe('subject access policy', () => {
 					role: ROLES.ADMIN,
 					tenantId: 'other-tenant',
 				}),
-			).toThrow(ForbiddenException);
+			).toThrow(ForbiddenError);
+			expect(() =>
+				assertAccess(subjectIn('tenant-1'), {
+					userId: 'admin-1',
+					role: ROLES.ADMIN,
+					tenantId: 'other-tenant',
+				}),
+			).toThrow('No tiene acceso a esta materia');
 		});
 
 		it('rejects when the subject tenant is unknown (empty)', () => {
@@ -41,7 +48,7 @@ describe('subject access policy', () => {
 					role: ROLES.ADMIN,
 					tenantId: 'tenant-1',
 				}),
-			).toThrow(ForbiddenException);
+			).toThrow(ForbiddenError);
 		});
 
 		it('rejects when the subject tenant is not set', () => {
@@ -51,7 +58,7 @@ describe('subject access policy', () => {
 					role: ROLES.ADMIN,
 					tenantId: 'tenant-1',
 				}),
-			).toThrow(ForbiddenException);
+			).toThrow(ForbiddenError);
 		});
 
 		it('rejects when the actor tenant is missing', () => {
@@ -61,7 +68,7 @@ describe('subject access policy', () => {
 					role: ROLES.ADMIN,
 					tenantId: '',
 				}),
-			).toThrow(ForbiddenException);
+			).toThrow(ForbiddenError);
 		});
 
 		it('rejects when both tenants are empty', () => {
@@ -71,7 +78,7 @@ describe('subject access policy', () => {
 					role: ROLES.ADMIN,
 					tenantId: '',
 				}),
-			).toThrow(ForbiddenException);
+			).toThrow(ForbiddenError);
 		});
 	});
 
@@ -86,6 +93,6 @@ describe('subject access policy', () => {
 		).not.toThrow();
 		expect(() =>
 			assertCanWriteSubjectAttendance(subjectIn('tenant-1'), actor),
-		).toThrow(ForbiddenException);
+		).toThrow(ForbiddenError);
 	});
 });

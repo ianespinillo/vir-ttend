@@ -5,5 +5,7 @@ export class UpdateCourseCommand {
 		readonly courseId: string,
 		readonly preceptorId?: string,
 		readonly shift?: ShiftType,
+		readonly division?: string,
+		readonly yearNumber?: number,
 	) {}
 }

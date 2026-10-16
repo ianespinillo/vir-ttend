@@ -1,6 +1,7 @@
-// create-tenant.handler.spec.ts
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MockProxy, mock } from 'jest-mock-extended';
+// create-tenant.handler.spec.ts
+import { ConflictError } from '../../../src/common/errors';
 import { CreateTenantCommand } from '../../../src/modules/identity/application/commands/create-tenant/create-tenant.command';
 import { CreateTenantHandler } from '../../../src/modules/identity/application/commands/create-tenant/create-tenant.handler';
 import { Tenant } from '../../../src/modules/identity/domain/entities/tenant.entity';
@@ -51,6 +52,8 @@ describe('CreateTenantHandler', () => {
 			handler.execute(
 				new CreateTenantCommand('Escuela 1', 'escuela-1', 'contacto@escuela1.com'),
 			),
-		).rejects.toThrow();
+		).rejects.toStrictEqual(
+			new ConflictError('Ya existe una institución con ese subdominio.'),
+		);
 	});
 });

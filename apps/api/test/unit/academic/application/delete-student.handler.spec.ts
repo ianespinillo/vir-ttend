@@ -1,10 +1,12 @@
 import { STUDENTSTATUS } from '@repo/common';
 // delete-student.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ConflictError, NotFoundError } from '../../../../src/common/errors';
 import { DeleteStudentCommand } from '../../../../src/modules/academic/application/commands/delete-student/delete-student.command';
 import { DeleteStudentHandler } from '../../../../src/modules/academic/application/commands/delete-student/delete-student.handler';
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('DeleteStudentHandler', () => {
 	let handler: DeleteStudentHandler;
@@ -43,9 +45,11 @@ describe('DeleteStudentHandler', () => {
 	it('should throw when student does not exist', async () => {
 		studentRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new DeleteStudentCommand('student-id')),
-		).rejects.toThrow();
+			NotFoundError,
+			'Estudiante no encontrado',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});
@@ -67,9 +71,11 @@ describe('DeleteStudentHandler', () => {
 		});
 		studentRepository.findById.mockResolvedValue(inactiveStudent);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new DeleteStudentCommand('student-id')),
-		).rejects.toThrow();
+			ConflictError,
+			'El estudiante ya está inactivo.',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});

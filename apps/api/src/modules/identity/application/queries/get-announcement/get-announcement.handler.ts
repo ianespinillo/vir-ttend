@@ -1,4 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { IAnnouncementRepository } from '../../../domain/repositories/announcement.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { AnnouncementDtoMapper } from '../../dto/announcement-dto.mapper';
@@ -19,7 +20,7 @@ export class GetAnnouncementHandler {
 			query.announcementId,
 		);
 		if (!announcement || announcement.schoolId !== query.schoolId) {
-			throw new NotFoundException('Announcement not found');
+			throw new NotFoundError('Comunicado no encontrado.');
 		}
 		const author = await this.userRepo.findById(announcement.authorId);
 		return AnnouncementDtoMapper.toResponse(

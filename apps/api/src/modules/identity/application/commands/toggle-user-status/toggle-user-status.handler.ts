@@ -1,10 +1,6 @@
-import {
-	ForbiddenException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { ForbiddenError, NotFoundError } from '../../../../../common/errors';
 import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
@@ -27,7 +23,7 @@ export class ToggleUserStatusHandler {
 	async execute(command: ToggleUserStatusCommand): Promise<void> {
 		const user = await this.userRepository.findById(command.userId);
 		if (!user) {
-			throw new NotFoundException(`User with id ${command.userId} not found`);
+			throw new NotFoundError('Usuario no encontrado.');
 		}
 
 		const { TENANCY_MODE } = getTenancyConfig();
@@ -52,7 +48,7 @@ export class ToggleUserStatusHandler {
 					TENANCY_MODE,
 				)
 			) {
-				throw new ForbiddenException('Unauthorized action');
+				throw new ForbiddenError('No tiene permiso para gestionar a este usuario.');
 			}
 
 			if (command.isActive) {

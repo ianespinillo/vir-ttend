@@ -1,7 +1,8 @@
+import { DomainError } from '../../../../common/errors';
 export class Subdomain {
 	private readonly value: string;
 	constructor(subdomain: string) {
-		if (!subdomain) throw new Error("Subdomain can't be empty");
+		if (!subdomain) throw new DomainError('El subdominio es obligatorio.');
 		this.value = subdomain;
 	}
 
