@@ -87,16 +87,20 @@ export default function CreateUserDirectPage() {
 									});
 									toast.success('Usuario creado correctamente');
 								},
-								onError: (err: any) => {
-									const resMsg = err?.response?.data?.message;
+								onError: (err: unknown) => {
+									const errorObj = err as {
+										response?: { data?: { message?: string | string[] } };
+										message?: string;
+									};
+									const resMsg = errorObj?.response?.data?.message;
 									const detail = Array.isArray(resMsg) ? resMsg.join(', ') : resMsg;
 									const message =
 										detail?.includes('409') ||
 										detail?.includes('duplicate') ||
 										detail?.includes('belongs to tenant') ||
-										err.message?.includes('409')
+										errorObj?.message?.includes('409')
 											? 'El usuario ya pertenece a esta institución'
-											: (detail ?? err.message ?? 'Error al crear el usuario');
+											: (detail ?? errorObj?.message ?? 'Error al crear el usuario');
 									toast.error(message);
 								},
 							});
