@@ -5,6 +5,7 @@ export interface SearchStudentFilters {
 	query?: string; // busca en firstName, lastName, documentNumber
 	tenantId: string; // siempre requerido — aislamiento
 	courseId?: string; // filtrar por curso
+	courseIds?: string[]; // filtrar por múltiples cursos (ej: preceptor)
 	status?: StudentStatus; // active, inactive, transferred
 	page: number;
 	limit: number;

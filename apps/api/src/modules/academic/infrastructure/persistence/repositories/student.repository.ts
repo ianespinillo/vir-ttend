@@ -116,6 +116,10 @@ export class StudentRepository
 
 		if (filters.courseId) {
 			where.courseId = filters.courseId;
+		} else if (filters.courseIds && filters.courseIds.length > 0) {
+			where.courseId = { $in: filters.courseIds };
+		} else if (filters.courseIds && filters.courseIds.length === 0) {
+			where.courseId = '00000000-0000-0000-0000-000000000000';
 		}
 
 		if (filters.status) {
