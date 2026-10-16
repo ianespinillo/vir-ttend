@@ -34,31 +34,69 @@ export function ReportSummaryCards({
 		);
 	}
 
+	const rawAttendance = summary?.averageAttendance;
+	const isNaNAttendance =
+		typeof rawAttendance === 'number' && Number.isNaN(rawAttendance);
+	const normalizedAttendance =
+		rawAttendance === null || rawAttendance === undefined || isNaNAttendance
+			? rawAttendance
+			: rawAttendance <= 1 && rawAttendance > 0
+				? rawAttendance * 100
+				: rawAttendance;
+
+	const attendanceDisplay =
+		summary === null || summary === undefined
+			? '—'
+			: isNaNAttendance
+				? '-'
+				: formatPercent(normalizedAttendance);
+
+	const studentsAtRiskDisplay =
+		summary === null || summary === undefined
+			? 0
+			: typeof summary.studentsAtRisk === 'number' &&
+					Number.isNaN(summary.studentsAtRisk)
+				? '-'
+				: (summary.studentsAtRisk ?? 0);
+
+	const studentsExceededDisplay =
+		summary === null || summary === undefined
+			? 0
+			: typeof summary.studentsExceeded === 'number' &&
+					Number.isNaN(summary.studentsExceeded)
+				? '-'
+				: (summary.studentsExceeded ?? 0);
+
+	const workingDaysDisplay =
+		typeof workingDays === 'number' && Number.isNaN(workingDays)
+			? '-'
+			: (workingDays ?? 0);
+
 	return (
 		<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
 			<MetricCard
 				title="Asistencia promedio"
-				value={summary ? formatPercent(summary.averageAttendance) : '—'}
+				value={attendanceDisplay}
 				icon={TrendingUp}
 				variant="success"
 			/>
 			<MetricCard
 				title="Alumnos en riesgo"
-				value={summary?.studentsAtRisk ?? 0}
+				value={studentsAtRiskDisplay}
 				subtitle="umbral 75%"
 				icon={AlertTriangle}
 				variant="warning"
 			/>
 			<MetricCard
 				title="Umbral excedido"
-				value={summary?.studentsExceeded ?? 0}
+				value={studentsExceededDisplay}
 				subtitle="umbral 85%"
 				icon={ShieldAlert}
 				variant="destructive"
 			/>
 			<MetricCard
 				title="Días hábiles"
-				value={workingDays ?? 0}
+				value={workingDaysDisplay}
 				icon={CalendarDays}
 			/>
 		</div>

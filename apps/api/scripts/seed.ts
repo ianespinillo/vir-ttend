@@ -1020,7 +1020,7 @@ async function main(): Promise<void> {
 				summary: {
 					averageAttendance:
 						totalRecords > 0
-							? Math.round((totalPresent / totalRecords) * 100) / 100
+							? Number(((totalPresent / totalRecords) * 100).toFixed(1))
 							: 0,
 					studentsAtRisk: students.filter((s) => s.status === 'at-risk').length,
 					studentsExceeded: students.filter((s) => s.status === 'exceeded').length,

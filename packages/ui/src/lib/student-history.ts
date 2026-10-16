@@ -121,13 +121,14 @@ export interface ComparisonPoint {
 export function studentAttendanceFromAbsencePercent(
 	absencePercent: number | null,
 ): number | null {
-	if (absencePercent === null) return null;
+	if (absencePercent === null || Number.isNaN(absencePercent)) return null;
 	return Math.min(100, Math.max(0, 100 - absencePercent));
 }
 
 /** The course summary may deliver a ratio (0..1) or a percentage; normalize to 0..100. */
 function normalizeCourseAttendance(value: number): number {
-	return value < 1 ? value * 100 : value;
+	if (Number.isNaN(value)) return 0;
+	return value <= 1 && value > 0 ? value * 100 : value;
 }
 
 export function buildStudentCourseComparison(
@@ -146,7 +147,7 @@ export function buildStudentCourseComparison(
 			label: `${formatMonthLabel(entry.month, 'short')} ${entry.year}`,
 			alumno: studentByKey.get(`${entry.year}-${entry.month}`) ?? null,
 			curso:
-				entry.averageAttendance === null
+				entry.averageAttendance === null || Number.isNaN(entry.averageAttendance)
 					? null
 					: normalizeCourseAttendance(entry.averageAttendance),
 		}))
