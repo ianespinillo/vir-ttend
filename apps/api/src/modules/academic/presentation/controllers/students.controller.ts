@@ -172,6 +172,7 @@ export class StudentsController {
 				+limit,
 				status,
 				searchQuery,
+				user.role === ROLES.PRECEPTOR ? user.sub : undefined,
 			),
 		);
 	}
@@ -221,7 +222,13 @@ export class StudentsController {
 		@Query('limit') limit = 20,
 	) {
 		return this.searchStudentsHandler.execute(
-			new SearchStudentsQuery(query, user.tenantId, +page, +limit),
+			new SearchStudentsQuery(
+				query,
+				user.tenantId,
+				+page,
+				+limit,
+				user.role === ROLES.PRECEPTOR ? user.sub : undefined,
+			),
 		);
 	}
 

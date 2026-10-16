@@ -130,12 +130,15 @@ export class CoursesController {
 	@ApiResponse({ status: 401, description: 'No autenticado' })
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
 	async list(
+		@CurrentUser() user: JwtPayload,
 		@Query('academicYearId') academicYearId: string,
 		@Query('level', new ValidLevelPipe()) level?: LevelType,
 		@Query('preceptorId') preceptorId?: string,
 	) {
+		const effectivePreceptorId =
+			user.role === ROLES.PRECEPTOR ? user.sub : preceptorId;
 		return this.getCoursesHandler.execute(
-			new GetCoursesQuery(academicYearId, level, preceptorId),
+			new GetCoursesQuery(academicYearId, level, effectivePreceptorId),
 		);
 	}
 
