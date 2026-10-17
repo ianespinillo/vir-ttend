@@ -143,6 +143,10 @@ export default function AppDashboardLayout({
 				onSelectTenant={isSingle ? undefined : handleSelectTenant}
 				onExitImpersonation={isSingle ? undefined : handleExitImpersonation}
 				isExitingImpersonation={exitTenantMutation.isPending}
+				tour={{
+					storageKey: `${user.id}:${user.role}`,
+					enabled: !user.mustChangePassword,
+				}}
 			>
 				{isAllowed ? (
 					children

@@ -103,6 +103,7 @@ export function AcademicYearCard({
 								<Button
 									variant="outline"
 									size="sm"
+									data-tour="declare-non-working-day"
 									className="h-7 text-xs px-2 gap-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900"
 									onClick={() => onDeclareNonWorkingDay(academicYear)}
 								>

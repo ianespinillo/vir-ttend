@@ -108,15 +108,20 @@ export function DailyAttendancePage({
 				<>
 					<AttendanceSummary metrics={metrics} isLoading={isLoadingMetrics} />
 
-					<AttendanceGrid
-						students={gridStudents}
-						onStatusChange={onStatusChange}
-						onJustify={onJustify}
-						isLoading={isLoadingDaily}
-						isSaving={isSaving}
-					/>
+					<div data-tour="attendance-grid">
+						<AttendanceGrid
+							students={gridStudents}
+							onStatusChange={onStatusChange}
+							onJustify={onJustify}
+							isLoading={isLoadingDaily}
+							isSaving={isSaving}
+						/>
+					</div>
 
-					<div className="flex items-center justify-end gap-2">
+					<div
+						data-tour="attendance-confirm-actions"
+						className="flex items-center justify-end gap-2"
+					>
 						<Button
 							type="button"
 							variant="outline"
