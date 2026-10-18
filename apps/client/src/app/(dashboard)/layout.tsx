@@ -11,6 +11,7 @@ import {
 	useChangePassword,
 	useExitTenant,
 	useLogout,
+	useMyTenants,
 	usePublicConfig,
 	useSelectTenant,
 	useTenants,
@@ -54,9 +55,15 @@ export default function AppDashboardLayout({
 		!isSingle && (user?.role === ROLES.SUPERADMIN || user?.isImpersonating),
 	);
 
-	const { data: tenants } = useTenants({
+	const { data: allTenants } = useTenants({
 		enabled: isSuperAdminOrImpersonating,
 	});
+
+	const { data: myTenants } = useMyTenants({
+		enabled: Boolean(!isSingle && !isSuperAdminOrImpersonating),
+	});
+
+	const tenants = isSuperAdminOrImpersonating ? allTenants : myTenants;
 
 	useEffect(() => {
 		if (!isLoading && (!isAuthenticated || !user)) {

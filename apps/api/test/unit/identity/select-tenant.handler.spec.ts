@@ -63,6 +63,7 @@ describe('SelectTenantHandler', () => {
 		tenantRepo = mock<ITenantRepository>();
 		tokenService = mock<TokenService>();
 		eventEmitter = mock<EventEmitter2>();
+		tenantRepo.findById.mockResolvedValue(mockTenant);
 
 		handler = new SelectTenantHandler(
 			userRepo,
@@ -71,6 +72,52 @@ describe('SelectTenantHandler', () => {
 			tenantRepo,
 			tokenService,
 			eventEmitter,
+		);
+	});
+
+	it('should throw when tenant does not exist or is inactive even if membership is active', async () => {
+		membershipRepo.findByUserAndTenant.mockResolvedValue(mockMembership);
+		tenantRepo.findById.mockResolvedValue(null);
+
+		await expect(
+			handler.execute(
+				new SelectTenantCommand(
+					'user-id',
+					'tenant-id',
+					'user-agent',
+					'192.168.22.5',
+				),
+			),
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene acceso a la institución seleccionada.'),
+		);
+	});
+
+	it('should throw when tenant is inactive', async () => {
+		const inactiveTenant = Tenant.reconstitute({
+			...mockTenant,
+			id: 'tenant-id',
+			name: 'Escuela Inactiva',
+			isActive: false,
+			contactEmail: 'contact@escuela.edu.ar',
+			subdomain: 'escuela-inactiva',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		membershipRepo.findByUserAndTenant.mockResolvedValue(mockMembership);
+		tenantRepo.findById.mockResolvedValue(inactiveTenant);
+
+		await expect(
+			handler.execute(
+				new SelectTenantCommand(
+					'user-id',
+					'tenant-id',
+					'user-agent',
+					'192.168.22.5',
+				),
+			),
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene acceso a la institución seleccionada.'),
 		);
 	});
 

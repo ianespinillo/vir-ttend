@@ -50,24 +50,22 @@ export class SelectTenantHandler {
 			}
 		}
 
+		const tenant = await this.tenantRepo.findById(tenantId);
+		if (!tenant || !tenant.isActive) {
+			throw new ForbiddenError(INVALID_TENANT_SELECTION);
+		}
+
 		const membership = await this.memberRepo.findByUserAndTenant(
 			userId,
 			tenantId,
 		);
 		let role: Roles;
 		let isImpersonating = false;
-		let tenantName: string | undefined;
+		const tenantName: string = tenant.name;
 
 		if (membership?.isActive) {
 			role = membership.role;
-			const tenant = await this.tenantRepo.findById(tenantId);
-			tenantName = tenant?.name;
 		} else {
-			const tenant = await this.tenantRepo.findById(tenantId);
-			if (!tenant || !tenant.isActive) {
-				throw new ForbiddenError(INVALID_TENANT_SELECTION);
-			}
-
 			if (!command.isSuperAdminOrImpersonating) {
 				const memberships = await this.memberRepo.findByUserId(userId);
 				if (memberships.length > 0)
@@ -80,7 +78,6 @@ export class SelectTenantHandler {
 
 			role = ROLES.ADMIN;
 			isImpersonating = true;
-			tenantName = tenant.name;
 		}
 
 		return this.issueSession(

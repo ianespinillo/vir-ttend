@@ -72,13 +72,17 @@ describe('CreateUserHandler', () => {
 			expect(membershipRepo.save).toHaveBeenCalledTimes(1);
 		});
 
-		it('forbids an ADMIN from creating an ADMIN in multi mode', async () => {
+		it('allows an ADMIN to create an ADMIN in multi mode within their tenant', async () => {
 			process.env.TENANCY_MODE = 'multi';
-
-			await expect(handler.execute(createAdminCommand())).rejects.toStrictEqual(
-				new ForbiddenError('No tiene permiso para crear usuarios con ese rol.'),
+			userRepo.findByEmail.mockResolvedValue(null);
+			passwordService.hashPassword.mockResolvedValue(
+				PasswordHashed.fromHash('hashed123'),
 			);
-			expect(userRepo.save).not.toHaveBeenCalled();
+
+			const result = await handler.execute(createAdminCommand());
+
+			expect(result.role).toBe(ROLES.ADMIN);
+			expect(membershipRepo.save).toHaveBeenCalledTimes(1);
 		});
 	});
 

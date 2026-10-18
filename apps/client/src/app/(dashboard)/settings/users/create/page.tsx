@@ -70,7 +70,7 @@ export default function CreateUserDirectPage() {
 					<UserForm
 						mode="create"
 						isSuperAdmin={isSuperAdmin}
-						canAssignAdmin={publicConfig?.tenancyMode === 'single'}
+						canAssignAdmin={true}
 						tenants={tenants ?? []}
 						selectedTenantId={currentUser?.tenantId}
 						onCancel={() => router.push('/settings/users')}
