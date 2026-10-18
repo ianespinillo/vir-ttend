@@ -65,7 +65,7 @@ export function AttendanceRow({
 			<td className="py-3 px-4">
 				<div className="flex items-center gap-3">
 					<Avatar className="h-8 w-8 border border-border">
-						<AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+						<AvatarFallback className="bg-primary-ink/10 text-primary font-semibold text-xs">
 							{getInitials(student.name)}
 						</AvatarFallback>
 					</Avatar>

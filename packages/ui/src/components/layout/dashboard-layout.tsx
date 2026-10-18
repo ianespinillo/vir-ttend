@@ -3,6 +3,7 @@
 import { type CurrentUser, ROLES, type Roles, type Tenant } from '@repo/common';
 import { type ReactNode, useMemo } from 'react';
 import { SidebarInset, SidebarProvider } from '../../ui/sidebar';
+import { ThemeToggle } from '../theme';
 import {
 	TourProvider,
 	TourTriggerButton,
@@ -139,6 +140,7 @@ export function DashboardLayout({
 					actions={
 						<>
 							{tour && <TourTriggerButton />}
+							<ThemeToggle />
 							{actions ?? defaultActions}
 						</>
 					}

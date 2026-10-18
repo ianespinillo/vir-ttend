@@ -64,7 +64,7 @@ export function UserMenu({
 					className="relative h-9 rounded-full px-2 py-1 flex items-center gap-2 hover:bg-accent"
 				>
 					<Avatar className="h-8 w-8">
-						<AvatarFallback className="bg-primary/10 text-primary font-medium text-xs">
+						<AvatarFallback className="bg-primary-ink/10 text-primary font-medium text-xs">
 							{initials}
 						</AvatarFallback>
 					</Avatar>

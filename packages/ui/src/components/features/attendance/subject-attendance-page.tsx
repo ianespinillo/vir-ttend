@@ -104,7 +104,7 @@ export function SubjectAttendancePage({
 
 			{!isClassDay && (
 				<div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-900 dark:text-amber-200 text-xs">
-					<AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+					<AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
 					<span>
 						<strong>Advertencia:</strong> La materia{' '}
 						<strong>{selectedSubjectName}</strong> no tiene clase agendada para el día

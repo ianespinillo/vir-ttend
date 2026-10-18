@@ -101,7 +101,7 @@ export function UserManagementSheet({
 					{/* Perfil del Usuario */}
 					<div className="flex items-start gap-4 p-4 rounded-xl border bg-muted/20">
 						<Avatar className="h-13 w-13 shrink-0 border-2 border-background shadow-xs">
-							<AvatarFallback className="bg-primary/10 text-primary font-bold text-base">
+							<AvatarFallback className="bg-primary-ink/10 text-primary font-bold text-base">
 								{initials}
 							</AvatarFallback>
 						</Avatar>
@@ -118,7 +118,7 @@ export function UserManagementSheet({
 									className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
 								>
 									{copiedEmail ? (
-										<Check className="h-3.5 w-3.5 text-emerald-600" />
+										<Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
 									) : (
 										<Copy className="h-3.5 w-3.5" />
 									)}
@@ -155,7 +155,7 @@ export function UserManagementSheet({
 						{/* Opción 1: Mostrar / Restablecer credenciales */}
 						{onShowCredentials && (
 							<div className="p-3.5 rounded-lg border bg-card hover:bg-muted/30 transition-all flex items-start gap-3">
-								<div className="p-2 rounded-md bg-amber-500/10 text-amber-600 shrink-0 mt-0.5">
+								<div className="p-2 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
 									<KeyRound className="h-4 w-4" />
 								</div>
 								<div className="flex-1 min-w-0 space-y-1">
@@ -183,7 +183,7 @@ export function UserManagementSheet({
 						{/* Opción 2: Editar información */}
 						{onEdit && (
 							<div className="p-3.5 rounded-lg border bg-card hover:bg-muted/30 transition-all flex items-start gap-3">
-								<div className="p-2 rounded-md bg-sky-500/10 text-sky-600 shrink-0 mt-0.5">
+								<div className="p-2 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5">
 									<Pencil className="h-4 w-4" />
 								</div>
 								<div className="flex-1 min-w-0 space-y-1">
@@ -210,7 +210,7 @@ export function UserManagementSheet({
 						{/* Opción 3: Cambiar Rol */}
 						{onChangeRole && (
 							<div className="p-3.5 rounded-lg border bg-card hover:bg-muted/30 transition-all flex items-start gap-3">
-								<div className="p-2 rounded-md bg-purple-500/10 text-purple-600 shrink-0 mt-0.5">
+								<div className="p-2 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">
 									<ShieldCheck className="h-4 w-4" />
 								</div>
 								<div className="flex-1 min-w-0 space-y-1">
@@ -250,7 +250,7 @@ export function UserManagementSheet({
 										'p-2 rounded-md shrink-0 mt-0.5',
 										user.isActive
 											? 'bg-destructive/10 text-destructive'
-											: 'bg-emerald-500/10 text-emerald-600',
+											: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
 									)}
 								>
 									{user.isActive ? (

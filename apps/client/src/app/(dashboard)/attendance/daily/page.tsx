@@ -371,7 +371,7 @@ export default function AttendanceDailyPage() {
 								variant="outline"
 								size="sm"
 								onClick={() => setIsReviewJustificationsOpen(true)}
-								className="border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+								className="border-primary/40 text-primary hover:bg-primary-ink/10 shadow-xs"
 							>
 								<FileCheck className="mr-1.5 h-4 w-4 shrink-0" />
 								Revisar justificaciones

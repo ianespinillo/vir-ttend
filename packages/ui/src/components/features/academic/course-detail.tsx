@@ -144,14 +144,14 @@ export function CourseDetail({
 						<div className="space-y-2">
 							<div className="flex flex-wrap items-center gap-3">
 								<h2 className="text-2xl font-bold text-foreground">{courseTitle}</h2>
-								<Badge className="bg-primary/10 text-primary border-primary/20">
+								<Badge className="bg-primary-ink/10 text-primary border-primary/20">
 									{levelLabel}
 								</Badge>
 								<Badge variant="outline">{shiftLabel}</Badge>
 							</div>
 							<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
 								<span className="flex items-center gap-1.5">
-									<UserCheck className="h-4 w-4 text-emerald-600" />
+									<UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
 									Preceptor:{' '}
 									<strong className="text-foreground">
 										{course.preceptorName || 'Sin asignar'}
@@ -265,7 +265,7 @@ export function CourseDetail({
 						<Card>
 							<CardHeader>
 								<CardTitle className="text-lg font-semibold flex items-center gap-2">
-									<UserCheck className="h-5 w-5 text-emerald-600" />
+									<UserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
 									Equipo de Trabajo
 								</CardTitle>
 							</CardHeader>

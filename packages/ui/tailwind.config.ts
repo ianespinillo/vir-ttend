@@ -1,6 +1,17 @@
 import type { Config } from 'tailwindcss';
 import tailwindcssAnimate from 'tailwindcss-animate';
 
+/*
+ * Primary used as ink (text, icons, borders, rings, outlines, SVG paint) resolves
+ * to `--primary-ink`: identical to `--primary` in light mode, a lighter step of
+ * the same brand scale in dark mode. Solid surfaces (`bg-primary`) keep `--primary`.
+ */
+const primaryInk = {
+	DEFAULT: 'hsl(var(--primary-ink))',
+	foreground: 'hsl(var(--primary-foreground))',
+	ink: 'hsl(var(--primary-ink))',
+};
+
 const config: Config = {
 	darkMode: ['class'],
 	content: [
@@ -28,6 +39,7 @@ const config: Config = {
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
+					ink: 'hsl(var(--primary-ink))',
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -65,6 +77,17 @@ const config: Config = {
 					ring: 'hsl(var(--sidebar-ring))',
 				},
 			},
+			textColor: { primary: primaryInk },
+			borderColor: { primary: primaryInk },
+			divideColor: { primary: primaryInk },
+			outlineColor: { primary: primaryInk },
+			ringColor: { primary: primaryInk },
+			ringOffsetColor: { primary: primaryInk },
+			placeholderColor: { primary: primaryInk },
+			caretColor: { primary: primaryInk },
+			textDecorationColor: { primary: primaryInk },
+			fill: { primary: primaryInk },
+			stroke: { primary: primaryInk },
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',

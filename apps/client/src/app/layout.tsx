@@ -1,9 +1,9 @@
+import { ThemedToaster } from '@/components/themed-toaster';
 import { AuthProvider } from '@/lib/auth/provider';
 import { TanstackProvider } from '@repo/hooks';
-import { BrandProvider } from '@repo/ui';
+import { BrandProvider, ThemeProvider, ThemeScript } from '@repo/ui';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
-import { Toaster } from 'sonner';
 import '@repo/ui/tokens.css';
 import './globals.css';
 
@@ -54,16 +54,21 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="es">
+		<html lang="es" suppressHydrationWarning>
+			<head>
+				<ThemeScript />
+			</head>
 			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-				<TanstackProvider>
-					<BrandProvider>
-						<AuthProvider>
-							{children}
-							<Toaster richColors position="top-right" />
-						</AuthProvider>
-					</BrandProvider>
-				</TanstackProvider>
+				<ThemeProvider>
+					<TanstackProvider>
+						<BrandProvider>
+							<AuthProvider>
+								{children}
+								<ThemedToaster richColors position="top-right" />
+							</AuthProvider>
+						</BrandProvider>
+					</TanstackProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);

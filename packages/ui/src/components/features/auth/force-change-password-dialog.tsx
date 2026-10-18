@@ -54,7 +54,7 @@ export function ForceChangePasswordDialog({
 				onEscapeKeyDown={(e) => e.preventDefault()}
 			>
 				<DialogHeader className="text-center sm:text-left space-y-2">
-					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 mb-1">
+					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-1">
 						<KeyRound className="h-6 w-6" />
 					</div>
 					<DialogTitle className="text-xl font-bold">
