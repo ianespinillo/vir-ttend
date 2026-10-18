@@ -6,10 +6,12 @@ import { useAuth } from '../../src/context/auth-context';
 import { BrandMark } from '../../src/features/branding/brand-mark';
 import { OutboxProvider } from '../../src/features/offline/outbox-provider';
 import { PreloadProvider } from '../../src/features/offline/preload-provider';
+import { useThemeColors } from '../../src/features/theme/use-theme-colors';
 
 export default function AppLayout() {
 	const { config } = useAuth();
 	const router = useRouter();
+	const colors = useThemeColors();
 
 	return (
 		<OutboxProvider>
@@ -17,10 +19,10 @@ export default function AppLayout() {
 				<Stack
 					screenOptions={{
 						headerStyle: {
-							backgroundColor: '#FFFFFF',
+							backgroundColor: colors.card,
 						},
 						headerShadowVisible: false,
-						headerTintColor: '#0F172A',
+						headerTintColor: colors.foreground,
 						headerTitleStyle: {
 							fontWeight: '700',
 						},
@@ -33,7 +35,7 @@ export default function AppLayout() {
 								<View className="flex-row items-center space-x-2">
 									<BrandMark size="sm" />
 									<Text
-										className="ml-2 text-lg font-bold text-slate-900"
+										className="ml-2 text-lg font-bold text-foreground"
 										numberOfLines={1}
 										style={{ maxWidth: 190 }}
 									>
@@ -44,10 +46,10 @@ export default function AppLayout() {
 							headerRight: () => (
 								<TouchableOpacity
 									onPress={() => router.push('/(app)/settings')}
-									className="flex-row items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5"
+									className="flex-row items-center rounded-lg border border-border bg-background px-2.5 py-1.5"
 								>
-									<Settings size={16} color="#475569" />
-									<Text className="ml-1 text-xs font-semibold text-slate-700">
+									<Settings size={16} color={colors.neutral600} />
+									<Text className="ml-1 text-xs font-semibold text-neutral-700">
 										Ajustes
 									</Text>
 								</TouchableOpacity>

@@ -85,7 +85,7 @@ export function StudentDetail({
 					<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
 						<div className="flex items-center gap-4">
 							<Avatar className="h-16 w-16 text-lg font-bold border-2 border-primary/20">
-								<AvatarFallback className="bg-primary/10 text-primary">
+								<AvatarFallback className="bg-primary-ink/10 text-primary">
 									{initials}
 								</AvatarFallback>
 							</Avatar>
@@ -95,11 +95,11 @@ export function StudentDetail({
 										{student.lastName}, {student.firstName}
 									</h2>
 									{student.status === 'ACTIVE' ? (
-										<Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
+										<Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
 											Activo
 										</Badge>
 									) : student.status === 'TRANSFERRED' ? (
-										<Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300">
+										<Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
 											Transferido
 										</Badge>
 									) : (

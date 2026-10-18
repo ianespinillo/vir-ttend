@@ -10,8 +10,8 @@ import {
 	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBrand } from '../branding/brand-context';
 import { useIsOnline } from '../offline/use-is-online';
+import { useThemeColors } from '../theme/use-theme-colors';
 import {
 	formatRecordDate,
 	monthRangeOf,
@@ -60,7 +60,7 @@ export function MonthlyJustificationsModal({
 	courseName,
 	date,
 }: Props) {
-	const { tokens } = useBrand();
+	const theme = useThemeColors();
 	const online = useIsOnline();
 	const { from, to } = useMemo(() => monthRangeOf(date), [date]);
 	const monthLabel = monthLabelOf(date);
@@ -80,32 +80,32 @@ export function MonthlyJustificationsModal({
 			presentationStyle="pageSheet"
 			onRequestClose={onClose}
 		>
-			<SafeAreaView className="flex-1 bg-slate-50">
-				<View className="flex-row items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
+			<SafeAreaView className="flex-1 bg-background">
+				<View className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
 					<View className="flex-1 pr-3">
 						<View className="flex-row items-center">
-							<FileCheck size={18} color={tokens.primary} />
-							<Text className="ml-2 text-lg font-bold text-slate-900">
+							<FileCheck size={18} color={theme.primaryInk} />
+							<Text className="ml-2 text-lg font-bold text-foreground">
 								Justificaciones del mes
 							</Text>
 						</View>
-						<Text className="mt-0.5 text-xs text-slate-500">
+						<Text className="mt-0.5 text-xs text-muted-foreground">
 							{courseName ? `${courseName} · ` : ''}
 							{monthLabel}
 						</Text>
 					</View>
 					<TouchableOpacity
 						onPress={onClose}
-						className="h-9 w-9 items-center justify-center rounded-full bg-slate-100"
+						className="h-9 w-9 items-center justify-center rounded-full bg-muted"
 					>
-						<X size={18} color="#475569" />
+						<X size={18} color={theme.neutral600} />
 					</TouchableOpacity>
 				</View>
 
 				{!online && data !== undefined ? (
-					<View className="mx-5 mt-3 flex-row items-center rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-						<CloudOff size={14} color="#B45309" />
-						<Text className="ml-2 flex-1 text-xs text-amber-800">
+					<View className="mx-5 mt-3 flex-row items-center rounded-xl border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/15 px-3 py-2">
+						<CloudOff size={14} color={theme.status.warning.text} />
+						<Text className="ml-2 flex-1 text-xs text-amber-800 dark:text-amber-300">
 							Sin conexión. Mostrando datos guardados en el dispositivo.
 						</Text>
 					</View>
@@ -113,32 +113,32 @@ export function MonthlyJustificationsModal({
 
 				{isLoading && !offlineWithoutData ? (
 					<View className="flex-1 items-center justify-center">
-						<ActivityIndicator size="large" color={tokens.primary} />
-						<Text className="mt-3 text-sm text-slate-500">
+						<ActivityIndicator size="large" color={theme.primaryInk} />
+						<Text className="mt-3 text-sm text-muted-foreground">
 							Cargando justificaciones del mes...
 						</Text>
 					</View>
 				) : offlineWithoutData ? (
 					<View className="flex-1 items-center justify-center px-6">
-						<CloudOff size={36} color="#94A3B8" />
-						<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+						<CloudOff size={36} color={theme.neutral400} />
+						<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 							Sin conexión. Todavía no hay justificaciones descargadas para este mes.
 						</Text>
 					</View>
 				) : isError && data === undefined ? (
 					<View className="flex-1 items-center justify-center px-6">
-						<AlertCircle size={36} color="#EF4444" />
-						<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+						<AlertCircle size={36} color={theme.destructive} />
+						<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 							No se pudieron cargar las justificaciones.
 						</Text>
 					</View>
 				) : justified.length === 0 ? (
 					<View className="flex-1 items-center justify-center px-6">
-						<FileCheck size={36} color="#94A3B8" />
-						<Text className="mt-2 text-base font-semibold text-slate-700">
+						<FileCheck size={36} color={theme.neutral400} />
+						<Text className="mt-2 text-base font-semibold text-neutral-700">
 							Sin justificaciones
 						</Text>
-						<Text className="mt-1 text-center text-xs text-slate-500">
+						<Text className="mt-1 text-center text-xs text-muted-foreground">
 							No se encontraron asistencias justificadas para este curso en{' '}
 							{monthLabel}.
 						</Text>
@@ -148,22 +148,22 @@ export function MonthlyJustificationsModal({
 						{justified.map((record, index) => (
 							<View
 								key={record.id ?? `${record.studentId}-${index}`}
-								className="mb-2.5 rounded-xl border border-slate-200 bg-white p-3.5"
+								className="mb-2.5 rounded-xl border border-border bg-card p-3.5"
 							>
-								<Text className="text-sm font-semibold text-slate-900">
+								<Text className="text-sm font-semibold text-foreground">
 									{record.studentName ?? 'Alumno'}
 								</Text>
-								<Text className="mt-0.5 text-xs text-slate-500">
+								<Text className="mt-0.5 text-xs text-muted-foreground">
 									Fecha de inasistencia: {formatRecordDate(record.date)}
 								</Text>
-								<Text className="mt-2 text-xs font-semibold text-slate-800">
+								<Text className="mt-2 text-xs font-semibold text-neutral-800">
 									Motivo:{' '}
-									<Text className="font-normal text-slate-600">
+									<Text className="font-normal text-neutral-600">
 										{record.justification?.reason || 'No especificado'}
 									</Text>
 								</Text>
 								{record.justification?.notes ? (
-									<Text className="mt-1.5 rounded-md bg-slate-100 p-2 text-xs italic text-slate-600">
+									<Text className="mt-1.5 rounded-md bg-muted p-2 text-xs italic text-neutral-600">
 										"{record.justification.notes}"
 									</Text>
 								) : null}

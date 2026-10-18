@@ -16,7 +16,7 @@ import { Skeleton } from '../../../../ui/skeleton';
 const chartConfig = {
 	asistencia: {
 		label: 'Asistencia',
-		color: 'hsl(var(--primary))',
+		color: 'hsl(var(--primary-ink))',
 	},
 } satisfies ChartConfig;
 

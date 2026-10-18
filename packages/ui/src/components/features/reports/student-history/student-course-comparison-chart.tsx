@@ -18,7 +18,7 @@ import { Skeleton } from '../../../../ui/skeleton';
 const chartConfig = {
 	alumno: {
 		label: 'Alumno',
-		color: 'hsl(var(--primary))',
+		color: 'hsl(var(--primary-ink))',
 	},
 	curso: {
 		label: 'Promedio del curso',

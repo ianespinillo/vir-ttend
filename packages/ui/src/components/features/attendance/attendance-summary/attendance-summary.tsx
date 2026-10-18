@@ -73,7 +73,7 @@ export function AttendanceSummary({
 
 			{metrics.studentsAtRisk && metrics.studentsAtRisk.length > 0 && (
 				<div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-900 dark:text-amber-200 text-xs">
-					<AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+					<AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
 					<span>
 						<strong>Atención:</strong> {metrics.studentsAtRisk.length} alumno(s)
 						superan el umbral de inasistencias en este curso.

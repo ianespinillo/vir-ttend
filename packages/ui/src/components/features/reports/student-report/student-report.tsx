@@ -79,7 +79,7 @@ export function StudentReport({ report, isLoading }: StudentReportProps) {
 			<Card>
 				<CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
 					<Avatar className="h-12 w-12 border border-border">
-						<AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+						<AvatarFallback className="bg-primary-ink/10 text-sm font-semibold text-primary">
 							{getInitials(report.fullName)}
 						</AvatarFallback>
 					</Avatar>

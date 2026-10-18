@@ -131,7 +131,7 @@ export function TenantsPage({
 										key={tenant.id}
 										className={`flex flex-col justify-between rounded-lg border p-4 text-left transition-colors ${
 											isCurrent
-												? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30'
+												? 'border-primary/60 bg-primary-ink/5 ring-1 ring-primary/30'
 												: 'hover:bg-muted/40'
 										}`}
 									>

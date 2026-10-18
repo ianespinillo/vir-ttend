@@ -40,7 +40,7 @@ export function CourseCard({
 					<CardTitle className="text-lg font-bold text-foreground">
 						{titleName}
 					</CardTitle>
-					<Badge variant="outline" className="shrink-0 bg-primary/5">
+					<Badge variant="outline" className="shrink-0 bg-primary-ink/5">
 						{shiftLabel}
 					</Badge>
 				</div>
@@ -55,7 +55,7 @@ export function CourseCard({
 					</div>
 
 					<div className="flex items-center gap-2">
-						<UserCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+						<UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
 						<span>
 							Preceptor:{' '}
 							<strong className="text-foreground">
