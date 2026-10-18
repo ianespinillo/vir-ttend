@@ -160,6 +160,65 @@ describe('TourProvider', () => {
 		await flushAutoStart();
 		expect(screen.queryByRole('dialog')).toBeNull();
 	});
+
+	it('supports selecting a specific tutorial from the dropdown menu', async () => {
+		const storage = memoryStorage(['u-1:admin']);
+		const onNavigate = vi.fn();
+		render(
+			<TourProvider
+				tutorials={[
+					{
+						id: 'onboarding',
+						title: 'Tour general',
+						description: 'Recorrido inicial',
+						badge: 'General',
+						roles: [],
+						steps: STEPS,
+					},
+					{
+						id: 'attendance-daily',
+						title: 'Toma de asistencia diaria',
+						description: 'Guía para tomar lista',
+						badge: 'Asistencia',
+						roles: [],
+						steps: [
+							{
+								id: 'daily:intro',
+								title: 'Registro de Asistencia Diaria',
+								body: 'Explicación del registro',
+								route: '/attendance/daily',
+							},
+						],
+					},
+				]}
+				storageKey="u-1:admin"
+				storage={storage}
+				autoStartDelayMs={0}
+				currentPath="/dashboard"
+				onNavigate={onNavigate}
+			>
+				<TourTriggerButton />
+			</TourProvider>,
+		);
+		await flushAutoStart();
+
+		// Trigger opens dropdown menu
+		const trigger = screen.getByRole('button', { name: 'Ver tutorial' });
+		fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+		fireEvent.keyDown(trigger, { key: 'Enter' });
+
+		expect(screen.getByText('Tutoriales y Guías')).toBeInTheDocument();
+		expect(screen.getByText('Toma de asistencia diaria')).toBeInTheDocument();
+
+		// Clicking the tutorial starts it
+		fireEvent.click(screen.getByText('Toma de asistencia diaria'));
+
+		expect(
+			screen.getByRole('dialog', { name: 'Registro de Asistencia Diaria' }),
+		).toBeInTheDocument();
+		expect(screen.getByText('Asistencia')).toBeInTheDocument();
+		expect(onNavigate).toHaveBeenCalledWith('/attendance/daily');
+	});
 });
 
 describe('TourTriggerButton', () => {

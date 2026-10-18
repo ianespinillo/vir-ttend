@@ -225,3 +225,262 @@ export function getNavTourCopy(href: string, role: Roles): TourCopy | null {
 	if (!copy) return null;
 	return copy.byRole?.[role] ?? copy;
 }
+
+export interface SpecificTourStep {
+	id: string;
+	title: string;
+	body: string;
+	tips?: string[];
+	target?: string;
+	route?: string;
+}
+
+export const TUTORIAL_ATTENDANCE_DAILY_STEPS: SpecificTourStep[] = [
+	{
+		id: 'daily:intro',
+		title: 'Asistencia Diaria por Curso',
+		body:
+			'En este panel preceptores y administradores registran el presentismo diario de cada división.',
+		route: APP_ROUTES.attendanceDaily,
+	},
+	{
+		id: 'daily:toolbar',
+		title: 'Selección de Curso y Fecha',
+		body:
+			'Elegí la división y la fecha que vas a cargar o consultar. El selector muestra las divisiones asignadas.',
+		tips: [
+			'Podés consultar o editar fechas anteriores navegando en el calendario.',
+			'Si el día es feriado o no laborable institucional, el sistema te lo indicará.',
+		],
+		route: APP_ROUTES.attendanceDaily,
+		target: '[data-tour="attendance-toolbar"]',
+	},
+	{
+		id: 'daily:quick-actions',
+		title: 'Acciones Rápidas de Marcado',
+		body:
+			'Acelerá el registro masivo marcando a todos los alumnos con un solo clic.',
+		tips: [
+			'«Todos Presentes» marca el aula completa; luego modificás solo las excepciones.',
+			'«Copiar del día anterior» duplica el registro previo si no hubo novedades.',
+		],
+		route: APP_ROUTES.attendanceDaily,
+		target: '[data-tour="attendance-quick-actions"]',
+	},
+	{
+		id: 'daily:grid',
+		title: 'Grilla de Alumnos y Justificaciones',
+		body: 'Alterná entre Presente (P), Ausente (A) y Tarde (T) en cada fila.',
+		tips: [
+			'Al marcar Ausente o Tarde, tocá «Justificar» para adjuntar certificado o motivo.',
+			'Las justificaciones impactan en el cálculo de las alertas institucionales.',
+		],
+		route: APP_ROUTES.attendanceDaily,
+		target: '[data-tour="attendance-grid"]',
+	},
+	{
+		id: 'daily:confirm',
+		title: 'Confirmar y Guardar',
+		body: 'Los cambios permanecen en borrador hasta que presionás «Confirmar».',
+		tips: [
+			'Si necesitás descartar cambios no guardados, presioná «Cancelar».',
+			'Al confirmar se recalculan las estadísticas y se disparan las alertas por inasistencia.',
+		],
+		route: APP_ROUTES.attendanceDaily,
+		target: '[data-tour="attendance-confirm-actions"]',
+	},
+];
+
+export const TUTORIAL_ATTENDANCE_SUBJECT_STEPS: SpecificTourStep[] = [
+	{
+		id: 'subject:intro',
+		title: 'Asistencia de Cátedra',
+		body:
+			'Como docente, desde acá tomás la lista hora por hora para cada materia que tenés a cargo.',
+		route: APP_ROUTES.attendanceSubject,
+	},
+	{
+		id: 'subject:selection',
+		title: 'Materia y Día de Cursada',
+		body: 'Seleccioná la asignatura y la fecha de la clase a registrar.',
+		tips: [
+			'Solo vas a ver las materias que tenés asignadas en tu horario escolar.',
+			'Si no hay clase ese día (feriado o día no lectivo), el sistema te avisará.',
+		],
+		route: APP_ROUTES.attendanceSubject,
+		target: '[data-tour="attendance-toolbar"]',
+	},
+	{
+		id: 'subject:marking',
+		title: 'Marcado de Estados',
+		body: 'Marcá a cada estudiante presente, ausente o tarde en tu módulo.',
+		tips: [
+			'Podés usar las acciones rápidas para agilizar la carga del curso.',
+			'Registrá tardanzas en base a la tolerancia de horario de tu institución.',
+		],
+		route: APP_ROUTES.attendanceSubject,
+		target: '[data-tour="attendance-grid"]',
+	},
+	{
+		id: 'subject:confirm',
+		title: 'Confirmar Asistencia',
+		body:
+			'Al terminar la clase, presioná «Confirmar» para asentar la asistencia en el libro de aula virtual.',
+		tips: [
+			'El presentismo queda registrado de inmediato en el historial de la materia.',
+		],
+		route: APP_ROUTES.attendanceSubject,
+		target: '[data-tour="attendance-confirm-actions"]',
+	},
+];
+
+export const TUTORIAL_STUDENTS_IMPORT_STEPS: SpecificTourStep[] = [
+	{
+		id: 'students:intro',
+		title: 'Padrón de Estudiantes',
+		body:
+			'En esta sección gestionás a todos los alumnos matriculados en la institución, organizados por división y turno.',
+		route: APP_ROUTES.students,
+	},
+	{
+		id: 'students:create',
+		title: 'Alta Individual de Alumno',
+		body:
+			'El botón «Nuevo Estudiante» abre el formulario para dar de alta a un estudiante particular.',
+		tips: [
+			'Cargá nombre, apellido, DNI, fecha de nacimiento y contacto del adulto responsable.',
+			'Podés asignarlo de inmediato a su curso y división.',
+		],
+		route: APP_ROUTES.students,
+		target: '[data-tour="new-student-button"]',
+	},
+	{
+		id: 'students:import',
+		title: 'Importación Masiva por Planilla',
+		body:
+			'Para cargar divisiones completas desde un archivo Excel o CSV para ahorrar tiempo.',
+		tips: [
+			'Entrá a «Cursos», abrí la división deseada y andá a la pestaña «Estudiantes».',
+			'Tocá «Importar alumnos» y descargá la plantilla oficial con el formato requerido.',
+			'El sistema validará el archivo y te advertirá sobre duplicados antes de confirmar.',
+		],
+		route: APP_ROUTES.courses,
+		target: '[data-tour="nav:/courses"]',
+	},
+	{
+		id: 'students:records',
+		title: 'Legajo y Acciones Académicas',
+		body:
+			'Desde el menú de cada alumno podés gestionar su matrícula, registrar traslados o consultar su historial.',
+		tips: [
+			'Podés cambiar de división a un estudiante en cualquier momento del ciclo lectivo.',
+			'Las transferencias conservan el historial de presentismo previo del alumno.',
+		],
+		route: APP_ROUTES.students,
+	},
+];
+
+export const TUTORIAL_STUDENT_HISTORY_STEPS: SpecificTourStep[] = [
+	{
+		id: 'history:intro',
+		title: 'Centro de Reportes y Auditoría',
+		body:
+			'Monitoreá los indicadores de presentismo escolar, alumnos en riesgo y tendencias mensuales.',
+		route: APP_ROUTES.reports,
+	},
+	{
+		id: 'history:monthly',
+		title: 'Planilla Mensual Consolidada',
+		body:
+			'Seleccioná el curso y el mes correspondiente para ver la sábana de asistencia.',
+		tips: [
+			'El porcentaje de asistencia se calcula automáticamente por estudiante y curso.',
+			'Identificá rápidamente a los alumnos en alerta por acumulación de inasistencias.',
+		],
+		route: APP_ROUTES.reports,
+	},
+	{
+		id: 'history:metrics',
+		title: 'Métricas e Historial del Alumno',
+		body:
+			'Cada estudiante cuenta con una vista métrica detallada de su trayectoria de asistencia.',
+		tips: [
+			'Gráfico comparativo del presentismo del alumno respecto a la media de su división.',
+			'Desglose del porcentaje de asistencia materia por materia.',
+			'Cronología de inasistencias acumuladas y justificaciones cargadas.',
+		],
+		route: APP_ROUTES.reports,
+	},
+	{
+		id: 'history:export',
+		title: 'Exportación a PDF y Excel',
+		body:
+			'Generá planillas oficiales listas para imprimir o enviar a supervisión con un solo clic.',
+		tips: [
+			'Podés exportar tanto el resumen del curso como el detalle individual por alumno.',
+		],
+		route: APP_ROUTES.reports,
+	},
+];
+
+export const TUTORIAL_ACADEMIC_CONFIG_STEPS: SpecificTourStep[] = [
+	{
+		id: 'academic:intro',
+		title: 'Configuración del Ciclo Lectivo',
+		body:
+			'Establecé las fechas del año escolar, los umbrales de inasistencias y las reglas de presentismo.',
+		route: APP_ROUTES.settingsAcademic,
+	},
+	{
+		id: 'academic:rules',
+		title: 'Umbrales y Tolerancia de Tardanzas',
+		body:
+			'Configurá los límites de faltas que disparan las alertas automáticas en la institución.',
+		tips: [
+			'Definí cuándo un alumno pasa a estado de Advertencia, Crítico o Excedido.',
+			'Ajustá los minutos de tolerancia para el cómputo de tardanzas.',
+		],
+		route: APP_ROUTES.settingsAcademic,
+	},
+	{
+		id: 'academic:non-working-days',
+		title: 'Declaración de Días No Laborables',
+		body: 'Registrá feriados, jornadas pedagógicas o asuetos institucionales.',
+		tips: [
+			'Tocá «Suspender clases / Feriado» e indicá la fecha y motivo.',
+			'Podés optar por publicar automáticamente un comunicado a toda la escuela.',
+			'En los días no laborables no se exige toma de lista ni se computan inasistencias.',
+		],
+		route: APP_ROUTES.settingsAcademic,
+		target: '[data-tour="declare-non-working-day"]',
+	},
+];
+
+export const TUTORIAL_ANNOUNCEMENTS_STEPS: SpecificTourStep[] = [
+	{
+		id: 'announcements:intro',
+		title: 'Cartelera de Comunicados',
+		body:
+			'Mantené informada a la comunidad escolar mediante avisos, circulares institucionales y novedades.',
+		route: APP_ROUTES.announcements,
+	},
+	{
+		id: 'announcements:create',
+		title: 'Redactar un Comunicado',
+		body:
+			'Tocá «Nuevo comunicado» para escribir el título, cuerpo del anuncio y configurar su visibilidad.',
+		route: APP_ROUTES.announcements,
+		target: '[data-tour="new-announcement-button"]',
+	},
+	{
+		id: 'announcements:audience',
+		title: 'Segmentación y Programación',
+		body: 'Elegí el alcance de la publicación según los destinatarios previstos.',
+		tips: [
+			'Alcance institucional, por nivel (Inicial, Primario, Secundario) o por curso específico.',
+			'Podés publicar inmediatamente o programar la fecha y hora de emisión.',
+			'Los usuarios verán una notificación y el aviso en su bandeja «Para mí».',
+		],
+		route: APP_ROUTES.announcements,
+	},
+];

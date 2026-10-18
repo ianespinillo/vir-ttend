@@ -18,12 +18,24 @@ import { useIsomorphicLayoutEffect } from '../../hooks/use-isomorphic-layout-eff
 import { cn } from '../../lib/utils';
 import { Button } from '../../ui/button';
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '../../ui/dropdown-menu';
+import {
 	type Rect,
 	type Size,
 	computeCardPosition,
 	padRect,
 } from './tour-geometry';
-import { type TourStep, isOnRoute } from './tour-steps';
+import {
+	type TourStep,
+	type TutorialDefinition,
+	isOnRoute,
+} from './tour-steps';
 import {
 	type TourStorage,
 	defaultTourStorage,
@@ -31,9 +43,12 @@ import {
 	markTourSeen,
 } from './tour-storage';
 
-interface TourContextValue {
+export interface TourContextValue {
 	isOpen: boolean;
-	start: () => void;
+	activeTutorialId: string | null;
+	tutorials: TutorialDefinition[];
+	start: (tutorialId?: string) => void;
+	close: () => void;
 }
 
 const TourContext = createContext<TourContextValue | null>(null);
@@ -44,7 +59,9 @@ export function useTour(): TourContextValue | null {
 }
 
 export interface TourProviderProps {
-	steps: TourStep[];
+	steps?: TourStep[];
+	tutorials?: TutorialDefinition[];
+	defaultTutorialId?: string;
 	/** Identifies whose "tour seen" flag this is (e.g. user id + role). */
 	storageKey: string;
 	/** While false the tour neither starts nor stays open. */
@@ -59,7 +76,9 @@ export interface TourProviderProps {
 }
 
 export function TourProvider({
-	steps,
+	steps: fallbackSteps = [],
+	tutorials = [],
+	defaultTutorialId,
 	storageKey,
 	enabled = true,
 	autoStart = true,
@@ -69,6 +88,9 @@ export function TourProvider({
 	storage,
 	children,
 }: TourProviderProps) {
+	const [activeTutorialId, setActiveTutorialId] = useState<string | null>(
+		defaultTutorialId ?? tutorials[0]?.id ?? null,
+	);
 	const [index, setIndex] = useState<number | null>(null);
 	const currentPathRef = useRef(currentPath);
 	const startPathRef = useRef<string | null>(null);
@@ -81,11 +103,38 @@ export function TourProvider({
 		[storage],
 	);
 
-	const start = useCallback(() => {
-		if (steps.length === 0) return;
-		startPathRef.current = currentPathRef.current;
-		setIndex(0);
-	}, [steps.length]);
+	const activeTutorial = useMemo(() => {
+		if (!activeTutorialId) return tutorials[0] ?? null;
+		return (
+			tutorials.find((t) => t.id === activeTutorialId) ?? tutorials[0] ?? null
+		);
+	}, [activeTutorialId, tutorials]);
+
+	const currentSteps = useMemo(() => {
+		if (activeTutorial) return activeTutorial.steps;
+		return fallbackSteps;
+	}, [activeTutorial, fallbackSteps]);
+
+	const start = useCallback(
+		(tutorialId?: string) => {
+			const targetId = tutorialId ?? defaultTutorialId ?? tutorials[0]?.id ?? null;
+			const targetTutorial = targetId
+				? tutorials.find((t) => t.id === targetId)
+				: null;
+			const targetSteps = targetTutorial
+				? targetTutorial.steps
+				: fallbackSteps.length > 0
+					? fallbackSteps
+					: (tutorials[0]?.steps ?? []);
+
+			if (targetSteps.length === 0) return;
+
+			if (targetId) setActiveTutorialId(targetId);
+			startPathRef.current = currentPathRef.current;
+			setIndex(0);
+		},
+		[defaultTutorialId, fallbackSteps, tutorials],
+	);
 
 	const close = useCallback(() => {
 		markTourSeen(resolveStorage(), storageKey);
@@ -100,7 +149,7 @@ export function TourProvider({
 	// A new user/role (e.g. the demo's role switcher) gets its own tour.
 	useEffect(() => {
 		setIndex(null);
-		if (!enabled || !autoStart || steps.length === 0) return;
+		if (!enabled || !autoStart || currentSteps.length === 0) return;
 		if (hasSeenTour(resolveStorage(), storageKey)) return;
 		const timer = window.setTimeout(() => {
 			startPathRef.current = currentPathRef.current;
@@ -111,9 +160,9 @@ export function TourProvider({
 		// restart a tour that is already running.
 	}, [enabled, autoStart, autoStartDelayMs, storageKey, resolveStorage]);
 
-	const lastIndex = steps.length - 1;
+	const lastIndex = currentSteps.length - 1;
 	const activeIndex = index === null ? null : Math.min(index, lastIndex);
-	const step = activeIndex === null ? null : steps[activeIndex];
+	const step = activeIndex === null ? null : currentSteps[activeIndex];
 
 	// Each step opens its page; the sidebar entry stays in place meanwhile.
 	useEffect(() => {
@@ -123,8 +172,14 @@ export function TourProvider({
 	}, [step?.route]);
 
 	const contextValue = useMemo<TourContextValue>(
-		() => ({ isOpen: step !== null, start }),
-		[step, start],
+		() => ({
+			isOpen: step !== null,
+			activeTutorialId,
+			tutorials,
+			start,
+			close,
+		}),
+		[step, activeTutorialId, tutorials, start, close],
 	);
 
 	return (
@@ -134,7 +189,8 @@ export function TourProvider({
 				<TourOverlay
 					step={step}
 					index={activeIndex}
-					total={steps.length}
+					total={currentSteps.length}
+					tutorialTitle={activeTutorial?.badge ?? activeTutorial?.title}
 					onPrev={() => setIndex(Math.max(activeIndex - 1, 0))}
 					onNext={() =>
 						activeIndex >= lastIndex ? close() : setIndex(activeIndex + 1)
@@ -146,23 +202,75 @@ export function TourProvider({
 	);
 }
 
-/** Topbar button that replays the tour; also the anchor of its last step. */
+/** Topbar button that replays or selects a tour; also the anchor of its last step. */
 export function TourTriggerButton({ className }: { className?: string }) {
 	const tour = useTour();
 	if (!tour) return null;
+
+	const hasMultipleTours = tour.tutorials && tour.tutorials.length > 1;
+
+	if (!hasMultipleTours) {
+		return (
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon"
+				data-tour="tour-trigger"
+				aria-label="Ver tutorial"
+				title="Ver tutorial"
+				onClick={() => tour.start()}
+				className={cn('h-9 w-9 rounded-full text-muted-foreground', className)}
+			>
+				<CircleHelp />
+			</Button>
+		);
+	}
+
 	return (
-		<Button
-			type="button"
-			variant="ghost"
-			size="icon"
-			data-tour="tour-trigger"
-			aria-label="Ver tutorial"
-			title="Ver tutorial"
-			onClick={tour.start}
-			className={cn('h-9 w-9 rounded-full text-muted-foreground', className)}
-		>
-			<CircleHelp />
-		</Button>
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon"
+					data-tour="tour-trigger"
+					aria-label="Ver tutorial"
+					title="Ver tutoriales y guías"
+					className={cn('h-9 w-9 rounded-full text-muted-foreground', className)}
+				>
+					<CircleHelp />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-80 p-1.5">
+				<DropdownMenuLabel className="font-semibold text-xs text-muted-foreground uppercase tracking-wider px-2 py-1.5">
+					Tutoriales y Guías
+				</DropdownMenuLabel>
+				<DropdownMenuSeparator className="my-1" />
+				<div className="flex flex-col gap-1">
+					{tour.tutorials.map((tutorial) => (
+						<DropdownMenuItem
+							key={tutorial.id}
+							onClick={() => tour.start(tutorial.id)}
+							className="flex flex-col items-start gap-1 p-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent"
+						>
+							<div className="flex items-center justify-between w-full gap-2">
+								<span className="font-medium text-sm text-foreground">
+									{tutorial.title}
+								</span>
+								{tutorial.badge && (
+									<span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+										{tutorial.badge}
+									</span>
+								)}
+							</div>
+							<p className="text-xs text-muted-foreground leading-snug line-clamp-2">
+								{tutorial.description}
+							</p>
+						</DropdownMenuItem>
+					))}
+				</div>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
@@ -275,6 +383,7 @@ interface TourOverlayProps {
 	step: TourStep;
 	index: number;
 	total: number;
+	tutorialTitle?: string;
 	onPrev: () => void;
 	onNext: () => void;
 	onSkip: () => void;
@@ -284,6 +393,7 @@ function TourOverlay({
 	step,
 	index,
 	total,
+	tutorialTitle,
 	onPrev,
 	onNext,
 	onSkip,
@@ -391,9 +501,16 @@ function TourOverlay({
 					className="flex flex-col gap-4 p-5 animate-in fade-in-0 slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
 				>
 					<div className="flex flex-col gap-2">
-						<span className="text-xs font-medium tabular-nums text-muted-foreground">
-							Paso {index + 1} de {total}
-						</span>
+						<div className="flex items-center justify-between gap-2">
+							<span className="text-xs font-medium tabular-nums text-muted-foreground">
+								Paso {index + 1} de {total}
+							</span>
+							{tutorialTitle && (
+								<span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+									{tutorialTitle}
+								</span>
+							)}
+						</div>
 						<div
 							aria-hidden="true"
 							className="h-1 w-full overflow-hidden rounded-full bg-muted"

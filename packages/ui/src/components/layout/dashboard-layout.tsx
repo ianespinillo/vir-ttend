@@ -3,7 +3,12 @@
 import { type CurrentUser, ROLES, type Roles, type Tenant } from '@repo/common';
 import { type ReactNode, useMemo } from 'react';
 import { SidebarInset, SidebarProvider } from '../../ui/sidebar';
-import { TourProvider, TourTriggerButton, buildTourSteps } from '../tour';
+import {
+	TourProvider,
+	TourTriggerButton,
+	buildTourSteps,
+	getTutorialsForRole,
+} from '../tour';
 import { AlertBadgePlaceholder } from './alert-badge-placeholder';
 import { AppSidebar } from './app-sidebar';
 import { ImpersonationBanner } from './impersonation-banner';
@@ -91,6 +96,15 @@ export function DashboardLayout({
 		[role, tenancyMode, excludeKey],
 	);
 
+	const tutorials = useMemo(
+		() =>
+			getTutorialsForRole(role, {
+				tenancyMode,
+				excludeHrefs: excludeKey ? excludeKey.split('|') : [],
+			}),
+		[role, tenancyMode, excludeKey],
+	);
+
 	const activeTenantId =
 		currentTenantId ??
 		('tenantId' in user ? (user.tenantId ?? undefined) : undefined);
@@ -141,6 +155,7 @@ export function DashboardLayout({
 	return (
 		<TourProvider
 			steps={tourSteps}
+			tutorials={tutorials}
 			storageKey={tour.storageKey}
 			enabled={tour.enabled ?? true}
 			currentPath={currentPath}

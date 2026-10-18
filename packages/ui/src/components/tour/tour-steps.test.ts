@@ -4,6 +4,7 @@ import { TOUR_NAV_COPY } from './tour-content';
 import {
 	TOUR_TRIGGER_SELECTOR,
 	buildTourSteps,
+	getTutorialsForRole,
 	isOnRoute,
 	navTourSelector,
 } from './tour-steps';
@@ -89,5 +90,79 @@ describe('isOnRoute', () => {
 	it('treats the dashboard as an exact match', () => {
 		expect(isOnRoute('/dashboard', '/dashboard')).toBe(true);
 		expect(isOnRoute('/dashboard/other', '/dashboard')).toBe(false);
+	});
+});
+
+describe('getTutorialsForRole', () => {
+	it('always provides the onboarding tour for all roles', () => {
+		for (const role of ALL_ROLES) {
+			const tutorials = getTutorialsForRole(role);
+			expect(tutorials.length).toBeGreaterThanOrEqual(1);
+			expect(tutorials[0]?.id).toBe('onboarding');
+			expect(tutorials[0]?.title).toBe('Tour general de la plataforma');
+			expect(tutorials[0]?.steps.length).toBeGreaterThan(0);
+		}
+	});
+
+	it('provides comprehensive functional guides for admin', () => {
+		const adminTutorials = getTutorialsForRole(ROLES.ADMIN);
+		const ids = adminTutorials.map((t) => t.id);
+
+		expect(ids).toContain('onboarding');
+		expect(ids).toContain('attendance-daily');
+		expect(ids).toContain('students-import');
+		expect(ids).toContain('student-history');
+		expect(ids).toContain('academic-config');
+		expect(ids).toContain('announcements');
+	});
+
+	it('provides relevant guides for preceptor without academic config', () => {
+		const preceptorTutorials = getTutorialsForRole(ROLES.PRECEPTOR);
+		const ids = preceptorTutorials.map((t) => t.id);
+
+		expect(ids).toContain('onboarding');
+		expect(ids).toContain('attendance-daily');
+		expect(ids).toContain('students-import');
+		expect(ids).toContain('student-history');
+		expect(ids).toContain('announcements');
+		expect(ids).not.toContain('academic-config');
+		expect(ids).not.toContain('attendance-subject');
+	});
+
+	it('provides subject attendance guide for teacher only', () => {
+		const teacherTutorials = getTutorialsForRole(ROLES.TEACHER);
+		const ids = teacherTutorials.map((t) => t.id);
+
+		expect(ids).toContain('onboarding');
+		expect(ids).toContain('attendance-subject');
+		expect(ids).not.toContain('attendance-daily');
+		expect(ids).not.toContain('academic-config');
+	});
+
+	it('filters out tutorials whose primary route is in excludeHrefs', () => {
+		const withoutDaily = getTutorialsForRole(ROLES.ADMIN, {
+			excludeHrefs: [APP_ROUTES.attendanceDaily, APP_ROUTES.announcements],
+		});
+		const ids = withoutDaily.map((t) => t.id);
+
+		expect(ids).not.toContain('attendance-daily');
+		expect(ids).not.toContain('announcements');
+		expect(ids).toContain('students-import');
+	});
+
+	it('ensures all steps in each tutorial have id, title, and body', () => {
+		for (const role of ALL_ROLES) {
+			const tutorials = getTutorialsForRole(role);
+			for (const tutorial of tutorials) {
+				expect(tutorial.title).toBeTruthy();
+				expect(tutorial.description).toBeTruthy();
+				expect(tutorial.steps.length).toBeGreaterThan(0);
+				for (const step of tutorial.steps) {
+					expect(step.id).toBeTruthy();
+					expect(step.title).toBeTruthy();
+					expect(step.body).toBeTruthy();
+				}
+			}
+		}
 	});
 });
