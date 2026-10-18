@@ -286,7 +286,7 @@ export default function HomeScreen() {
 										params: { id: course.courseId, name: course.courseName },
 									})
 								}
-								className="mb-3 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20"
+								className="mb-3 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20 dark:active:bg-primary-ink/10"
 							>
 								<View className="flex-1 pr-3">
 									<View className="flex-row items-center space-x-2">
@@ -348,7 +348,7 @@ export default function HomeScreen() {
 										},
 									})
 								}
-								className="mb-3 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20"
+								className="mb-3 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20 dark:active:bg-primary-ink/10"
 							>
 								<View className="flex-1 pr-3">
 									<Text className="text-base font-bold text-neutral-800">
@@ -409,7 +409,7 @@ export default function HomeScreen() {
 										params: { commissionId: commission.commissionId, name: label },
 									})
 								}
-								className="mb-3 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20"
+								className="mb-3 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400 active:bg-primary-50/20 dark:active:bg-primary-ink/10"
 							>
 								<View className="flex-1 pr-3">
 									<Text className="text-base font-bold text-neutral-800">{label}</Text>

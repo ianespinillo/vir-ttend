@@ -123,7 +123,7 @@ export default function LoginScreen() {
 							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-600">
 								Correo Electrónico
 							</Text>
-							<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary">
+							<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary dark:focus:border-primary-ink">
 								<Mail size={18} color={theme.mutedForeground} />
 								<TextInput
 									className="ml-2.5 flex-1 text-base text-foreground"
@@ -142,7 +142,7 @@ export default function LoginScreen() {
 							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-600">
 								Contraseña
 							</Text>
-							<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary">
+							<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary dark:focus:border-primary-ink">
 								<Lock size={18} color={theme.mutedForeground} />
 								<TextInput
 									className="ml-2.5 flex-1 text-base text-foreground"
