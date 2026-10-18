@@ -158,4 +158,43 @@ describe('AttendanceGrid', () => {
 			screen.getByRole('button', { name: /justificar/i }),
 		).toBeInTheDocument();
 	});
+
+	it('renders justified status correctly and disables select when record is justified', () => {
+		const justifiedStudents: StudentRowItem[] = [
+			{
+				id: 's-4',
+				name: 'Kevin Aguirre',
+				attendanceRecord: {
+					id: 'rec-4',
+					studentId: 's-4',
+					studentName: 'Kevin Aguirre',
+					status: ATTENDANCE_STATUS.JUSTIFIED,
+					justification: {
+						id: 'just-1',
+						reason: 'Certificado médico',
+						notes: 'Reposo 48hs',
+						createdBy: 'u-1',
+						createdAt: new Date(),
+					},
+				},
+				originalStatus: ATTENDANCE_STATUS.JUSTIFIED,
+			},
+		];
+
+		render(
+			<AttendanceGrid
+				students={justifiedStudents}
+				onStatusChange={vi.fn()}
+				onJustify={vi.fn()}
+			/>,
+		);
+
+		// Badge and select label should be visible
+		const justifiedElements = screen.getAllByText('Justificado');
+		expect(justifiedElements.length).toBeGreaterThanOrEqual(1);
+
+		// Combobox/Select should be disabled
+		const combobox = screen.getByRole('combobox');
+		expect(combobox).toBeDisabled();
+	});
 });

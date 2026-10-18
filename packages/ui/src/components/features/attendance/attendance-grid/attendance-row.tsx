@@ -81,7 +81,11 @@ export function AttendanceRow({
 					<AttendanceStatusSelect
 						value={currentStatus}
 						onValueChange={(status) => onStatusChange(student.id, status)}
-						disabled={isSaving}
+						disabled={
+							isSaving ||
+							Boolean(justification) ||
+							currentStatus === ATTENDANCE_STATUS.JUSTIFIED
+						}
 					/>
 					{hasChanged && (
 						<span
@@ -97,13 +101,15 @@ export function AttendanceRow({
 						<TooltipProvider>
 							<Tooltip>
 								<TooltipTrigger asChild>
-									<Badge
-										variant="outline"
-										className="bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30 gap-1 cursor-help"
-									>
-										<FileText className="h-3 w-3" />
-										Justificado
-									</Badge>
+									<span className="inline-flex cursor-help">
+										<Badge
+											variant="outline"
+											className="bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30 gap-1"
+										>
+											<FileText className="h-3 w-3" />
+											Justificado
+										</Badge>
+									</span>
 								</TooltipTrigger>
 								<TooltipContent>
 									<p className="font-semibold">{justification.reason}</p>
