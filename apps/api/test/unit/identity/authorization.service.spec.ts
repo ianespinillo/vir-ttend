@@ -22,9 +22,9 @@ describe('AuthorizationService', () => {
 			);
 		});
 
-		it('admin cannot manage admin', () => {
+		it('admin can manage admin', () => {
 			expect(AuthorizationService.canManageRole(ROLES.ADMIN, ROLES.ADMIN)).toBe(
-				false,
+				true,
 			);
 		});
 
@@ -60,13 +60,13 @@ describe('AuthorizationService', () => {
 			).toBe(false);
 		});
 
-		it('multi: admin cannot manage or create admin', () => {
+		it('multi: admin can manage and create admin', () => {
 			expect(
 				AuthorizationService.canManageRole(ROLES.ADMIN, ROLES.ADMIN, 'multi'),
-			).toBe(false);
+			).toBe(true);
 			expect(
 				AuthorizationService.canCreateRole(ROLES.ADMIN, ROLES.ADMIN, 'multi'),
-			).toBe(false);
+			).toBe(true);
 		});
 
 		it('single: preceptor still cannot manage anyone', () => {

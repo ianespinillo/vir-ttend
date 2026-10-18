@@ -40,10 +40,13 @@ import { UpdateUserHandler } from '../../application/commands/update-user/update
 import { ChangePasswordRequestDto } from '../../application/dto/change-password.request.dto';
 import { ChangeRoleRequestDto } from '../../application/dto/change-role.request.dto';
 import { CreateUserRequestDto } from '../../application/dto/create-user.request.dto';
+import { TenantResponseDto } from '../../application/dto/tenant.response.dto';
 import { UpdateUserRequestDto } from '../../application/dto/update-user.request.dto';
 import { UserResponseDto } from '../../application/dto/user.response.dto';
 import { GetCurrentUserHandler } from '../../application/queries/get-current-user/get-current-user.handler';
 import { GetCurrentUserQuery } from '../../application/queries/get-current-user/get-current-user.query';
+import { GetMyTenantsHandler } from '../../application/queries/get-my-tenants/get-my-tenants.handler';
+import { GetMyTenantsQuery } from '../../application/queries/get-my-tenants/get-my-tenants.query';
 import { ListUsersByTenantHandler } from '../../application/queries/list-users-by-tenant/list-users-by-tenant.handler';
 import { ListUsersByTenantQuery } from '../../application/queries/list-users-by-tenant/list-users-by-tenant.query';
 import { Email } from '../../domain/value-objects/email.vo';
@@ -65,6 +68,7 @@ export class UsersController {
 		private readonly updateUserHandler: UpdateUserHandler,
 		private readonly toggleUserStatusHandler: ToggleUserStatusHandler,
 		private readonly resetUserPasswordHandler: ResetUserPasswordHandler,
+		private readonly getMyTenantsHandler: GetMyTenantsHandler,
 	) {}
 
 	@Post()
@@ -106,6 +110,24 @@ export class UsersController {
 	async me(@CurrentUser() user: JwtPayload) {
 		return this.getCurrentUserHandler.execute(
 			new GetCurrentUserQuery(user.sub, user.tenantId),
+		);
+	}
+
+	@Get('me/tenants')
+	@ApiOperation({
+		summary: 'Obtener los tenants del usuario actual',
+		description:
+			'Devuelve la lista de instituciones (tenants) activas a las que el usuario autenticado tiene acceso.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Lista de instituciones accesibles para el usuario.',
+		type: [TenantResponseDto],
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	async myTenants(@CurrentUser() user: JwtPayload) {
+		return this.getMyTenantsHandler.execute(
+			new GetMyTenantsQuery(user.sub, user.role),
 		);
 	}
 	// users.controller.ts — endpoints nuevos a agregar

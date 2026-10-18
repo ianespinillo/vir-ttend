@@ -104,7 +104,7 @@ export default function AnnouncementsPage() {
 				title="Comunicados"
 				description="Anuncios de la institución"
 				actions={
-					<Button asChild>
+					<Button asChild data-tour="new-announcement-button">
 						<Link href="/announcements/create">
 							<Plus className="h-4 w-4" />
 							Nuevo comunicado

@@ -16,7 +16,7 @@ export function QuickActions({
 	isLoading,
 }: QuickActionsProps) {
 	return (
-		<div className="flex items-center gap-2">
+		<div data-tour="attendance-quick-actions" className="flex items-center gap-2">
 			<Button
 				type="button"
 				variant="outline"

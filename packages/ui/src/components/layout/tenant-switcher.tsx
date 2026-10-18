@@ -46,10 +46,16 @@ export function TenantSwitcher({
 	const resolvedBrandName = brandName ?? branding.shortName;
 	const canSwitch = Boolean(
 		tenancyMode !== 'single' &&
-			(isSuperAdmin || isImpersonating) &&
 			tenants &&
-			tenants.length > 0,
+			tenants.length > 0 &&
+			(isSuperAdmin || isImpersonating || tenants.length > 1),
 	);
+
+	const subtitle = isImpersonating
+		? 'Modo Institución'
+		: isSuperAdmin
+			? 'Vista Global'
+			: 'Mis Instituciones';
 
 	if (!canSwitch) {
 		return (
@@ -82,7 +88,7 @@ export function TenantSwitcher({
 									{resolvedBrandName}
 								</span>
 								<span className="truncate text-xs text-muted-foreground">
-									{isImpersonating ? 'Modo Institución' : 'Vista Global'}
+									{subtitle}
 								</span>
 							</div>
 							<ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />

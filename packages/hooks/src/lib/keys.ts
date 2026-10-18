@@ -42,6 +42,7 @@ export const queryKeys = {
 		list: (filters?: Record<string, unknown>) =>
 			['users', 'list', filters ?? {}] as const,
 		profile: () => ['users', 'profile'] as const,
+		myTenants: () => ['users', 'me', 'tenants'] as const,
 	},
 	attendance: {
 		daily: (courseId: string, date: string) =>

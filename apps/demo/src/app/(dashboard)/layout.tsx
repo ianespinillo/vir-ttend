@@ -58,6 +58,10 @@ export default function DashboardLayoutRoute({
 			currentTenantId={tenantId ?? undefined}
 			tenantName={tenant?.name}
 			actions={<DemoSessionControls />}
+			tour={{
+				storageKey: `demo:${user.id}`,
+				excludeHrefs: [APP_ROUTES.attendanceWorkshop],
+			}}
 		>
 			{canOpenPath ? (
 				children

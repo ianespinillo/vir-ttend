@@ -673,6 +673,22 @@ async function main(): Promise<void> {
 		contactEmail: 'contacto@colegiodemo.edu',
 		isActive: true,
 	});
+
+	const tenant2 = em.create(TenantOrmEntity, {
+		id: randomUUID(),
+		name: 'Instituto Belgrano Day',
+		subdomain: 'instituto-belgrano',
+		contactEmail: 'contacto@belgranoday.edu',
+		isActive: true,
+	});
+
+	const tenantInactive = em.create(TenantOrmEntity, {
+		id: randomUUID(),
+		name: 'Colegio Demo Inactivo',
+		subdomain: 'colegio-inactivo',
+		contactEmail: 'contacto@inactivo.edu',
+		isActive: false,
+	});
 	await em.flush();
 
 	const userById = new Map<UserKey, UserOrmEntity>();
@@ -702,11 +718,66 @@ async function main(): Promise<void> {
 			isActive: true,
 		});
 	}
+
+	// Admin dedicado para el segundo colegio
+	const admin2PasswordHash = await bcryptHash(USER_PASSWORD, 10);
+	const admin2User = em.create(UserOrmEntity, {
+		id: randomUUID(),
+		email: 'admin2@colegio.demo',
+		passwordHash: admin2PasswordHash,
+		firstName: 'Martín',
+		lastName: 'Fierro',
+		isActive: true,
+		mustChangePassword: false,
+	});
+	await em.flush();
+
+	em.create(UserTenantMembershipOrmEntity, {
+		userId: admin2User.id,
+		tenantId: tenant2.id,
+		role: ROLES.ADMIN,
+		isActive: true,
+	});
+
+	// Usuarios con membresía múltiple (cross-tenant): teacher1 y preceptor1
+	em.create(UserTenantMembershipOrmEntity, {
+		userId: userById.get('teacher1')?.id,
+		tenantId: tenant2.id,
+		role: ROLES.TEACHER,
+		isActive: true,
+	});
+	em.create(UserTenantMembershipOrmEntity, {
+		userId: userById.get('preceptor1')?.id,
+		tenantId: tenant2.id,
+		role: ROLES.PRECEPTOR,
+		isActive: true,
+	});
+
+	// Membresía en colegio inactivo para teacher1 (prueba rechazo por tenant inactivo)
+	em.create(UserTenantMembershipOrmEntity, {
+		userId: userById.get('teacher1')?.id,
+		tenantId: tenantInactive.id,
+		role: ROLES.TEACHER,
+		isActive: true,
+	});
 	await em.flush();
 
 	const academicYear = em.create(AcademicYearOrmEntity, {
 		id: randomUUID(),
 		schoolId: tenant.id,
+		year: 2026,
+		startDate: new Date(2026, 2, 2),
+		endDate: new Date(2026, 11, 18),
+		isActive: true,
+		nonWorkingDays: HOLIDAYS_2026.map((d) => new Date(d)),
+		absenceThresholdPercent: 75,
+		lateCountAbscenseAfterMinutes: 15,
+	});
+
+	// Año lectivo para el segundo colegio
+	em.create(AcademicYearOrmEntity, {
+		id: randomUUID(),
+		schoolId: tenant2.id,
 		year: 2026,
 		startDate: new Date(2026, 2, 2),
 		endDate: new Date(2026, 11, 18),
@@ -1122,12 +1193,23 @@ async function main(): Promise<void> {
 	);
 	console.log(`Comunicados: ${announcements.length} (3 publicados, 1 draft)`);
 	console.log('─────────────────────────────────────────────');
+	console.log(`Institución 1: ${tenant.name} (subdomain: ${tenant.subdomain})`);
+	console.log(
+		`Institución 2: ${tenant2.name} (subdomain: ${tenant2.subdomain})`,
+	);
+	console.log(
+		`Institución Inactiva: ${tenantInactive.name} (subdomain: ${tenantInactive.subdomain})`,
+	);
 	console.log('Credenciales demo:');
 	for (const user of USERS) {
 		console.log(
 			`   ${user.email} / ${user.password} (${user.role ?? 'superadmin'})`,
 		);
 	}
+	console.log(`   admin2@colegio.demo / DemoPass1! (admin en ${tenant2.name})`);
+	console.log(
+		'   (Multi-tenancy: teacher1 y preceptor1 pertenecen a Colegio Demo San Martín e Instituto Belgrano Day)',
+	);
 }
 
 main().catch((error) => {
