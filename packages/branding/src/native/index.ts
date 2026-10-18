@@ -2,11 +2,23 @@ import { hexToRgbTriplet } from '../color.js';
 import { VIRTTEND_BRANDING } from '../defaults.js';
 import { type BrandTokens, SCALE, deriveBrandTokens } from '../tokens.js';
 
-/** CSS variables for NativeWind `vars()`, values as "R G B". */
-export const toNativeWindVars = (t: BrandTokens): Record<string, string> => {
+export type ColorScheme = 'light' | 'dark';
+
+/**
+ * CSS variables for NativeWind `vars()`, values as "R G B". The palette is the
+ * same in both schemes; only `--brand-primary-ink` (text and icons in the
+ * primary color) moves to the 200 step in dark mode to stay legible.
+ */
+export const toNativeWindVars = (
+	t: BrandTokens,
+	scheme: ColorScheme = 'light',
+): Record<string, string> => {
 	const vars: Record<string, string> = {
 		'--brand-primary': hexToRgbTriplet(t.primary),
 		'--brand-on-primary': hexToRgbTriplet(t.onPrimary),
+		'--brand-primary-ink': hexToRgbTriplet(
+			scheme === 'dark' ? t.scale[200] : t.primary,
+		),
 	};
 	for (const step of SCALE) {
 		vars[`--brand-primary-${step}`] = hexToRgbTriplet(t.scale[step]);
@@ -23,6 +35,7 @@ export const nativewindPrimaryColors = {
 	primary: {
 		DEFAULT: rgbVar('brand-primary'),
 		foreground: rgbVar('brand-on-primary'),
+		ink: rgbVar('brand-primary-ink'),
 		50: rgbVar('brand-primary-50'),
 		100: rgbVar('brand-primary-100'),
 		200: rgbVar('brand-primary-200'),

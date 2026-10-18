@@ -18,6 +18,8 @@
 
 	--primary: 221 50.6% 15.9%; /* Azul noche Vir-ttend (#14213D) */
 	--primary-foreground: 0 0% 100%;
+	/* Primary used as text/icon color; same as --primary in light mode */
+	--primary-ink: 221 50.6% 15.9%;
 
 	--secondary: 214.3 31.8% 91.4%; /* Azul grisáceo claro */
 	--secondary-foreground: 222.2 47.4% 11.2%;
@@ -56,48 +58,55 @@
 }
 
 .dark {
-	--background: 145 20% 12%;
-	--foreground: 145 25% 90%;
+	/*
+	 * Neutrals switch to dark slate; the brand palette does not change.
+	 * Brand variables below are the Vir-ttend defaults of `toShadcnDarkVars`
+	 * (`BrandProvider` overrides them per instance): surfaces keep the exact
+	 * primary, ink/rings/chart-1 use lighter steps of the same scale.
+	 */
+	--background: 222 47% 7%;
+	--foreground: 210 40% 96%;
 
-	--card: 145 20% 15%;
-	--card-foreground: 145 25% 90%;
+	--card: 222 40% 10%;
+	--card-foreground: 210 40% 96%;
 
-	--popover: 145 20% 15%;
-	--popover-foreground: 145 25% 90%;
+	--popover: 222 40% 10%;
+	--popover-foreground: 210 40% 96%;
 
-	--primary: 145 60% 60%;
-	--primary-foreground: 145 20% 12%;
+	--primary: 221 50.6% 15.9%;
+	--primary-foreground: 0 0% 100%;
+	--primary-ink: 221.5 9.5% 73.1%;
 
-	--secondary: 145 20% 22%;
-	--secondary-foreground: 145 25% 90%;
+	--secondary: 217.2 32.6% 17.5%;
+	--secondary-foreground: 210 40% 96%;
 
-	--muted: 145 15% 25%;
-	--muted-foreground: 145 15% 65%;
+	--muted: 217.2 32.6% 15%;
+	--muted-foreground: 215 20.2% 65.1%;
 
-	--accent: 145 55% 55%;
-	--accent-foreground: 145 20% 12%;
+	--accent: 217.2 32.6% 17.5%;
+	--accent-foreground: 210 40% 96%;
 
-	--destructive: 0 62.8% 30.6%;
+	--destructive: 0 72.2% 50.6%;
 	--destructive-foreground: 0 0% 98%;
 
-	--border: 145 15% 25%;
-	--input: 145 15% 25%;
-	--ring: 145 60% 60%;
+	--border: 217.2 32.6% 18%;
+	--input: 217.2 32.6% 22%;
+	--ring: 222 9.3% 58%;
 
-	/* Charts oscuro */
-	--chart-1: 145 55% 62%;
-	--chart-2: 145 45% 72%;
-	--chart-3: 145 30% 80%;
-	--chart-4: 170 45% 60%;
-	--chart-5: 100 40% 65%;
+	/* Charts */
+	--chart-1: 221.5 9.5% 73.1%;
+	--chart-2: 74.2 89.8% 57.6%;
+	--chart-3: 217 91% 65%;
+	--chart-4: 262 83% 68%;
+	--chart-5: 160 84% 45%;
 
-	/* Sidebar oscuro */
-	--sidebar-background: 145 20% 15%;
-	--sidebar-foreground: 145 25% 90%;
-	--sidebar-primary: 145 60% 60%;
-	--sidebar-primary-foreground: 145 20% 12%;
-	--sidebar-accent: 145 20% 22%;
-	--sidebar-accent-foreground: 145 65% 75%;
-	--sidebar-border: 145 15% 25%;
-	--sidebar-ring: 145 60% 60%;
+	/* Sidebar */
+	--sidebar-background: 222 40% 10%;
+	--sidebar-foreground: 210 40% 96%;
+	--sidebar-primary: 221 50.6% 15.9%;
+	--sidebar-primary-foreground: 0 0% 100%;
+	--sidebar-accent: 217.2 32.6% 17.5%;
+	--sidebar-accent-foreground: 210 40% 96%;
+	--sidebar-border: 217.2 32.6% 18%;
+	--sidebar-ring: 222 9.3% 58%;
 }
