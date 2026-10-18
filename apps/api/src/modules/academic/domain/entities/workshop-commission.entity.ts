@@ -1,6 +1,7 @@
 // workshop-commission.entity.ts
 import { randomUUID } from 'node:crypto';
 import { COMMISSION_NUMBERS, CommissionNumber } from '@repo/common';
+import { DomainError } from '../../../../common/errors';
 import { Course } from './course.entity';
 
 interface CreateProps {
@@ -66,7 +67,7 @@ export class WorkshopCommission {
 
 	private static assertValidNumber(number: number): void {
 		if (!(COMMISSION_NUMBERS as readonly number[]).includes(number)) {
-			throw new Error('Commission number must be 1 or 2');
+			throw new DomainError('La comisión debe ser 1 o 2.');
 		}
 	}
 

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
@@ -16,7 +17,7 @@ export class DeleteCourseHandler {
 	) {}
 	async execute(command: DeleteCourseCommand) {
 		const course = await this.courseRepo.findById(command.courseId);
-		if (!course) throw new Error('Course not found');
+		if (!course) throw new NotFoundError('Curso no encontrado');
 		// TODO: Sprint 05 — verificar que no tenga asistencias antes de eliminar
 		// await attendanceRepository.existsByCourse(courseId)
 		course.deactivate();

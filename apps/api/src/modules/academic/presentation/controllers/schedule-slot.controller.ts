@@ -56,11 +56,11 @@ export class ScheduleController {
 	}
 
 	@Post()
-	@RolesDecorator(ROLES.ADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
-		summary: 'Asignar horario a una materia',
+		summary: 'Asignar horario a una materia o curso',
 		description:
-			'Reemplaza el horario completo de la materia indicada, validando que no haya superposición con los horarios del curso. Roles permitidos: admin. ' +
+			'Reemplaza el horario completo del curso o materia indicado, validando que no haya superposición con los horarios del curso. Roles permitidos: admin, preceptor. ' +
 			'Body de ejemplo: {"subjectId": "550e8400-e29b-41d4-a716-446655440000", "slots": [{"dayOfWeek": "monday", "startTime": "08:00", "endTime": "09:00"}, {"dayOfWeek": "wednesday", "startTime": "08:00", "endTime": "09:00"}]}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})

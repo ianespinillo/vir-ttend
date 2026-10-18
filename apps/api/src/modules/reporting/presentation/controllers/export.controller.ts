@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import {
 	ApiCookieAuth,
 	ApiOperation,
@@ -17,25 +17,10 @@ import { ExportPdfCommand } from '../../application/commands/export-pdf/export-p
 import { ExportPdfHandler } from '../../application/commands/export-pdf/export-pdf.handler';
 import { ExportExcelRequestDto } from '../../application/dtos/export-excel.request.dto';
 import { ExportPdfRequestDto } from '../../application/dtos/export-pdf.request.dto';
-import { ICoursePort } from '../../domain/ports/course.port.interface';
+import { ExportFilenameService } from '../../domain/services/export-filename.service';
 
 const EXCEL_CONTENT_TYPE =
 	'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-const MONTHS = [
-	'enero',
-	'febrero',
-	'marzo',
-	'abril',
-	'mayo',
-	'junio',
-	'julio',
-	'agosto',
-	'septiembre',
-	'octubre',
-	'noviembre',
-	'diciembre',
-];
 
 @ApiTags('Export')
 @ApiCookieAuth('access_token')
@@ -45,7 +30,7 @@ export class ExportController {
 	constructor(
 		private readonly exportExcelHandler: ExportExcelHandler,
 		private readonly exportPdfHandler: ExportPdfHandler,
-		@Inject('ICoursePort') private readonly coursePort: ICoursePort,
+		private readonly exportFilenameService: ExportFilenameService,
 	) {}
 
 	@Post('excel')
@@ -96,12 +81,14 @@ export class ExportController {
 				dto.studentId,
 			),
 		);
-		const filename = await this.buildFilename(
-			dto.courseId,
-			dto.month,
-			dto.year,
-			'xlsx',
-		);
+		const filename = await this.exportFilenameService.build({
+			courseId: dto.courseId,
+			month: dto.month,
+			year: dto.year,
+			extension: 'xlsx',
+			type: dto.type,
+			studentId: dto.studentId,
+		});
 		res.setHeader('Content-Type', EXCEL_CONTENT_TYPE);
 		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 		res.send(buffer);
@@ -153,29 +140,16 @@ export class ExportController {
 				dto.studentId,
 			),
 		);
-		const filename = await this.buildFilename(
-			dto.courseId,
-			dto.month,
-			dto.year,
-			'pdf',
-		);
+		const filename = await this.exportFilenameService.build({
+			courseId: dto.courseId,
+			month: dto.month,
+			year: dto.year,
+			extension: 'pdf',
+			type: dto.type,
+			studentId: dto.studentId,
+		});
 		res.setHeader('Content-Type', 'application/pdf');
 		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 		res.send(buffer);
-	}
-
-	private async buildFilename(
-		courseId: string,
-		month: number,
-		year: number,
-		extension: 'xlsx' | 'pdf',
-	): Promise<string> {
-		const course = await this.coursePort.findById(courseId);
-		const courseSlug =
-			(course?.name ?? 'curso')
-				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, '-')
-				.replace(/^-+|-+$/g, '') || 'curso';
-		return `asistencia-${courseSlug}-${MONTHS[month - 1]}-${year}.${extension}`;
 	}
 }

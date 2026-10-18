@@ -3,7 +3,7 @@ export class SubjectCreatedEvent {
 	constructor(
 		readonly subjectId: string,
 		readonly courseId: string,
-		readonly teacherId: string,
+		readonly teacherId: string | undefined,
 		readonly name: string,
 		readonly area: string,
 		readonly weeklyHours: number,

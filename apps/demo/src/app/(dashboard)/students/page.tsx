@@ -15,6 +15,7 @@
  * Rossi 12% WARNING, Díaz 18% CRITICAL) stay on the first page of the demo.
  */
 
+import { getScopedCourseIds } from '@/lib/academic/academic-mappings';
 import { useDemo } from '@/lib/session/demo-provider';
 import {
 	DEMO_STUDENT_ROUTES,
@@ -34,18 +35,58 @@ export default function StudentsListPage() {
 
 	const { filters, page } = parseStudentListParams(searchParams);
 
-	const courses = selectors.getCourses(state);
-	const students = selectors.getStudents(state, {
-		search: filters.search,
-		courseId: filters.courseId,
-		status: filters.status,
-		page,
-		limit: STUDENTS_PAGE_SIZE,
-	});
-
 	const user = session.user;
 	const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.SUPERADMIN;
 	const isPreceptor = user?.role === ROLES.PRECEPTOR;
+
+	const allCourses = selectors.getCourses(state);
+	const allSubjects = selectors.getSubjects(state);
+	const scopedCourseIds = getScopedCourseIds(
+		allCourses,
+		allSubjects,
+		user?.id,
+		user?.role,
+	);
+	const courses = selectors.getCourses(state, scopedCourseIds);
+
+	const effectiveCourseId = filters.courseId;
+	let shouldReturnEmpty = false;
+	if (scopedCourseIds) {
+		if (filters.courseId) {
+			if (!scopedCourseIds.includes(filters.courseId)) {
+				shouldReturnEmpty = true;
+			}
+		} else if (scopedCourseIds.length === 0) {
+			shouldReturnEmpty = true;
+		}
+	}
+
+	const rawStudents = shouldReturnEmpty
+		? { items: [], total: 0, page, limit: STUDENTS_PAGE_SIZE, totalPages: 0 }
+		: selectors.getStudents(state, {
+				search: filters.search,
+				courseId: effectiveCourseId,
+				status: filters.status,
+				page: scopedCourseIds && !filters.courseId ? 1 : page,
+				limit: scopedCourseIds && !filters.courseId ? 1000 : STUDENTS_PAGE_SIZE,
+			});
+
+	const students =
+		scopedCourseIds && !filters.courseId && !shouldReturnEmpty
+			? (() => {
+					const filteredItems = rawStudents.items.filter(
+						(s) => s.courseId && scopedCourseIds.includes(s.courseId),
+					);
+					const offset = (page - 1) * STUDENTS_PAGE_SIZE;
+					return {
+						items: filteredItems.slice(offset, offset + STUDENTS_PAGE_SIZE),
+						total: filteredItems.length,
+						page,
+						limit: STUDENTS_PAGE_SIZE,
+						totalPages: Math.ceil(filteredItems.length / STUDENTS_PAGE_SIZE) || 1,
+					};
+				})()
+			: rawStudents;
 
 	const updateQueryParams = useCallback(
 		(newParams: Record<string, string | number | undefined>) => {

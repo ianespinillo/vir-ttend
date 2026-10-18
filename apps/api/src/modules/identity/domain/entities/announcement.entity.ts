@@ -1,3 +1,4 @@
+import { BusinessRuleError } from '../../../../common/errors';
 import { AnnouncementId } from '../value-objects/announcement-id.value-object';
 import {
 	AnnouncementTarget,
@@ -161,7 +162,9 @@ export class Announcement {
 		target?: AnnouncementTarget;
 	}): void {
 		if (this._status !== 'draft') {
-			throw new Error('Only draft announcements can be updated');
+			throw new BusinessRuleError(
+				'Solo se pueden editar comunicados en borrador.',
+			);
 		}
 		if (props.title !== undefined) this._title = props.title;
 		if (props.body !== undefined) this._body = props.body;

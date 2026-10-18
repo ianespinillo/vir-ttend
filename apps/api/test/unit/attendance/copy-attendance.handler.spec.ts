@@ -1,6 +1,10 @@
-import { ForbiddenException } from '@nestjs/common';
 import { ATTENDANCE_STATUS, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import {
+	DomainError,
+	ForbiddenError,
+	NotFoundError,
+} from '../../../src/common/errors';
 import { CopyAttendanceCommand } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.command';
 import { CopyAttendanceHandler } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.handler';
 import { AttendanceCopyService } from '../../../src/modules/attendance/application/services/attendance-copy.service';
@@ -41,8 +45,10 @@ describe('CopyAttendanceHandler', () => {
 			undefined,
 		);
 
-		await expect(handler.execute(command)).rejects.toThrow(
-			'No records found for the source date',
+		const attempt = handler.execute(command);
+		await expect(attempt).rejects.toBeInstanceOf(DomainError);
+		await expect(attempt).rejects.toThrow(
+			'No se encontraron registros de asistencia para la fecha de origen',
 		);
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 	});
@@ -151,7 +157,7 @@ describe('CopyAttendanceHandler', () => {
 			undefined,
 		);
 
-		await expect(handler.execute(command)).rejects.toThrow(ForbiddenException);
+		await expect(handler.execute(command)).rejects.toThrow(ForbiddenError);
 		expect(copyAttendanceService.getLastClassRecords).not.toHaveBeenCalled();
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 	});
@@ -166,7 +172,7 @@ describe('CopyAttendanceHandler', () => {
 			undefined,
 		);
 
-		await expect(handler.execute(command)).rejects.toThrow(ForbiddenException);
+		await expect(handler.execute(command)).rejects.toThrow(ForbiddenError);
 	});
 
 	it('should allow an admin on a subject taught by someone else', async () => {
@@ -199,6 +205,8 @@ describe('CopyAttendanceHandler', () => {
 			undefined,
 		);
 
-		await expect(handler.execute(command)).rejects.toThrow('Invalid subject id');
+		const attempt = handler.execute(command);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Materia no encontrada');
 	});
 });

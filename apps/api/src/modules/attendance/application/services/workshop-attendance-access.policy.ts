@@ -1,5 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
 import { ROLES, Roles } from '@repo/common';
+import { ForbiddenError } from '../../../../common/errors';
 import { WorkshopCommissionInfo } from '../../domain/ports/workshop-commission.port.interface';
 
 export interface WorkshopActor {
@@ -22,7 +22,7 @@ export function assertCanManageWorkshopAttendance(
 		!actor.tenantId ||
 		commission.tenantId !== actor.tenantId
 	) {
-		throw new ForbiddenException('Commission does not belong to your tenant');
+		throw new ForbiddenError('No tiene acceso a esta comisión');
 	}
 	if (actor.role === ROLES.ADMIN) return;
 	if (
@@ -31,7 +31,7 @@ export function assertCanManageWorkshopAttendance(
 		commission.preceptorId === actor.userId
 	)
 		return;
-	throw new ForbiddenException(
-		'You are not allowed to manage attendance for this commission',
+	throw new ForbiddenError(
+		'No tiene permiso para gestionar la asistencia de esta comisión',
 	);
 }

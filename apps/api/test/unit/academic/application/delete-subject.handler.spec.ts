@@ -1,9 +1,11 @@
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../../src/common/errors';
 import { DeleteSubjectCommand } from '../../../../src/modules/academic/application/commands/delete-subject/delete-subject.command';
 import { DeleteSubjectHandler } from '../../../../src/modules/academic/application/commands/delete-subject/delete-subject.handler';
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 // delete-subject.handler.spec.ts
 describe('DeleteSubjectHandler', () => {
@@ -43,9 +45,11 @@ describe('DeleteSubjectHandler', () => {
 	it('no borra slots cuando la materia no existe', async () => {
 		subjectRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new DeleteSubjectCommand('sub-1')),
-		).rejects.toThrow('Subject not found');
+			NotFoundError,
+			'Materia no encontrada',
+		);
 
 		expect(subjectRepository.save).not.toHaveBeenCalled();
 		expect(scheduleRepository.deleteBySubject).not.toHaveBeenCalled();

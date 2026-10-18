@@ -1,6 +1,7 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AttendanceStatus, DAYOFWEEK } from '@repo/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
 import { ISchedulePort } from '../../../domain/ports/schedule.port.interface';
@@ -25,21 +26,21 @@ export class RegisterSubjectAttendanceHandler {
 	) {}
 	async execute(command: RegisterSubjectAttendanceCommand): Promise<void> {
 		const subject = await this.subjectPort.getSubjectById(command.subjectId);
-		if (!subject) throw new BadRequestException('Invalid subject id');
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		assertCanWriteSubjectAttendance(subject, {
 			userId: command.userId,
 			role: command.userRole,
 			tenantId: command.tenantId,
 		});
 		if (command.courseId && command.courseId !== subject.courseId) {
-			throw new BadRequestException('Course does not match subject');
+			throw new DomainError('El curso no corresponde a la materia');
 		}
 		const slots = await this.schedulePort.findBySubject(command.subjectId);
 		const validDays = slots.filter(
 			(s) => s.dayOfWeek === this.getDayOfWeek(command.date),
 		);
 		if (validDays.length === 0)
-			throw new BadRequestException('Invalid class day for this subject');
+			throw new DomainError('La materia no tiene clases el día seleccionado');
 		// Idempotent: replaying the same payload saves nothing and emits no event.
 		const changedRecords = await this.unitOfWork.run(async () => {
 			const existingRecords = await this.attendanceRecordRepo.findBySubjectAndDate(

@@ -1,12 +1,13 @@
-import { BadRequestException } from '@nestjs/common';
 import { DAYOFWEEK, SUBJECT_KIND, SubjectKindType } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { BusinessRuleError } from '../../../../src/common/errors';
 import { UpdateSubjectCommand } from '../../../../src/modules/academic/application/commands/update-subject/update-subject.command';
 import { UpdateSubjectHandler } from '../../../../src/modules/academic/application/commands/update-subject/update-subject.handler';
 import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('UpdateSubjectHandler', () => {
 	let handler: UpdateSubjectHandler;
@@ -69,9 +70,11 @@ describe('UpdateSubjectHandler', () => {
 		subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.WORKSHOP));
 		scheduleRepo.findBySubject.mockResolvedValue([makeSlot(null), makeSlot(1)]);
 
-		await expect(
+		await expectRejection(
 			handler.execute(kindOnly(SUBJECT_KIND.THEORY)),
-		).rejects.toBeInstanceOf(BadRequestException);
+			BusinessRuleError,
+			'La materia tiene horarios asignados a una comisión; quite la comisión de esos horarios antes de cambiarla a teoría.',
+		);
 		expect(subjectRepo.save).not.toHaveBeenCalled();
 	});
 

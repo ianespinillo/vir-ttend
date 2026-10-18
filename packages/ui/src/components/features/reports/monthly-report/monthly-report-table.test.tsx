@@ -53,4 +53,20 @@ describe('MonthlyReportTable', () => {
 
 		expect(screen.getByText('—')).toBeTruthy();
 	});
+
+	it('muestra un guion cuando los valores son NaN', () => {
+		renderTable([
+			student({
+				present: Number.NaN,
+				absent: Number.NaN,
+				late: Number.NaN,
+				justified: Number.NaN,
+				absencePercent: Number.NaN,
+			}),
+		]);
+
+		const dashes = screen.getAllByText('-');
+		// present, absent, late, justified, absencePercent should all display '-'
+		expect(dashes.length).toBeGreaterThanOrEqual(5);
+	});
 });

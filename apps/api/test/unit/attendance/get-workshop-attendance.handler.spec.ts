@@ -1,5 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
 import { ATTENDANCE_STATUS, DAYOFWEEK, ROLES } from '@repo/common';
+import { ForbiddenError } from '../../../src/common/errors';
 import { GetMyWorkshopCommissionsQueryHandler } from '../../../src/modules/attendance/application/queries/get-my-workshop-commissions/get-my-workshop-commissions.handler';
 import { GetMyWorkshopCommissionsQuery } from '../../../src/modules/attendance/application/queries/get-my-workshop-commissions/get-my-workshop-commissions.query';
 import { GetWorkshopAttendanceQueryHandler } from '../../../src/modules/attendance/application/queries/get-workshop-attendance/get-workshop-attendance.handler';
@@ -46,9 +46,7 @@ describe('GetWorkshopAttendanceQueryHandler', () => {
 			buildPort(commission()),
 			buildRepo(),
 		);
-		await expect(handler.execute(query('other'))).rejects.toThrow(
-			ForbiddenException,
-		);
+		await expect(handler.execute(query('other'))).rejects.toThrow(ForbiddenError);
 	});
 });
 

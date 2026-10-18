@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { AssignTeacherCommand } from './assign-teacher.command';
@@ -14,13 +15,14 @@ export class AssignTeacherHandler {
 	) {}
 	async execute(command: AssignTeacherCommand) {
 		const subject = await this.subjectRepo.findById(command.subjectId);
-		if (!subject) throw new Error('Subject not found');
+		if (!subject) throw new NotFoundError('Materia no encontrada');
 		const belongs = await this.memberRepo.existsAndHasRole(
 			command.teacherId,
 			command.tenantId,
 			ROLES.TEACHER,
 		);
-		if (!belongs) throw new Error('Invalid teacher selection');
+		if (!belongs)
+			throw new DomainError('El usuario indicado no es docente de la escuela.');
 		subject.assignTeacher(command.teacherId);
 		await this.subjectRepo.save(subject);
 	}

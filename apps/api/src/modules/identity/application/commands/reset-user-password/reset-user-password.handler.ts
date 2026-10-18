@@ -1,10 +1,6 @@
-import {
-	ForbiddenException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { ForbiddenError, NotFoundError } from '../../../../../common/errors';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { AuthorizationService } from '../../../domain/services/authorization.service';
@@ -35,7 +31,7 @@ export class ResetUserPasswordHandler {
 	): Promise<ResetUserPasswordResult> {
 		const user = await this.userRepository.findById(command.userId);
 		if (!user) {
-			throw new NotFoundException(`User with id ${command.userId} not found`);
+			throw new NotFoundError('Usuario no encontrado.');
 		}
 
 		let membership = command.tenantId
@@ -51,10 +47,10 @@ export class ResetUserPasswordHandler {
 			if (
 				!AuthorizationService.canManageRole(command.actorRole, membership.role)
 			) {
-				throw new ForbiddenException('Unauthorized action');
+				throw new ForbiddenError('No tiene permiso para gestionar a este usuario.');
 			}
 		} else if (command.actorRole !== ROLES.SUPERADMIN) {
-			throw new ForbiddenException('User does not belong to your institution');
+			throw new ForbiddenError('El usuario no pertenece a su institución.');
 		}
 
 		const rawPassword = Password.generateRandomPassword(8);

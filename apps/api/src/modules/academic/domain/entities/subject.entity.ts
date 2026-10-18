@@ -1,11 +1,12 @@
 // subject.entity.ts
 import { randomUUID } from 'node:crypto';
 import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import { DomainError } from '../../../../common/errors';
 import { SubjectId } from '../value-objects/subject-id.vo';
 
 interface CreateProps {
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -15,7 +16,7 @@ interface CreateProps {
 interface ConstructorProps {
 	id: SubjectId;
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -28,7 +29,7 @@ interface ConstructorProps {
 export interface ReconstituteProps {
 	id: string;
 	courseId: string;
-	teacherId: string;
+	teacherId?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -41,7 +42,7 @@ export interface ReconstituteProps {
 export class Subject {
 	private readonly _id: SubjectId;
 	private readonly _courseId: string;
-	private _teacherId: string;
+	private _teacherId?: string;
 	private _name: string;
 	private _area: string;
 	private _weeklyHours: number;
@@ -65,7 +66,7 @@ export class Subject {
 
 	static create(props: CreateProps): Subject {
 		if (props.weeklyHours < 1) {
-			throw new Error('Weekly hours must be at least 1');
+			throw new DomainError('Las horas semanales deben ser al menos 1.');
 		}
 		return new Subject({
 			id: new SubjectId(randomUUID()),
@@ -92,7 +93,7 @@ export class Subject {
 	get courseId(): string {
 		return this._courseId;
 	}
-	get teacherId(): string {
+	get teacherId(): string | undefined {
 		return this._teacherId;
 	}
 	get name(): string {
@@ -125,6 +126,11 @@ export class Subject {
 		this._updatedAt = new Date();
 	}
 
+	unassignTeacher(): void {
+		this._teacherId = undefined;
+		this._updatedAt = new Date();
+	}
+
 	updateDetails(
 		name?: string,
 		area?: string,
@@ -135,7 +141,8 @@ export class Subject {
 		if (kind) this._kind = kind;
 		if (area) this._area = area;
 		if (weeklyHours !== undefined) {
-			if (weeklyHours < 1) throw new Error('Weekly hours must be at least 1');
+			if (weeklyHours < 1)
+				throw new DomainError('Las horas semanales deben ser al menos 1.');
 			this._weeklyHours = weeklyHours;
 		}
 		this._updatedAt = new Date();

@@ -1,11 +1,6 @@
-import {
-	BadRequestException,
-	ForbiddenException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ROLES } from '@repo/common';
+import { BusinessRuleError, NotFoundError } from '../../../../../common/errors';
 import { IAnnouncementRepository } from '../../../domain/repositories/announcement.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { AnnouncementTarget } from '../../../domain/value-objects/announcement-target.value-object';
@@ -29,7 +24,7 @@ export class UpdateAnnouncementHandler {
 			command.announcementId,
 		);
 		if (!announcement || announcement.schoolId !== command.schoolId) {
-			throw new NotFoundException('Announcement not found');
+			throw new NotFoundError('Comunicado no encontrado.');
 		}
 		if (
 			command.actorRole !== ROLES.ADMIN &&
@@ -40,8 +35,8 @@ export class UpdateAnnouncementHandler {
 			);
 		}
 		if (announcement.status !== 'draft') {
-			throw new BadRequestException(
-				'Solo se pueden editar comunicados en borrador',
+			throw new BusinessRuleError(
+				'Solo se pueden editar comunicados en borrador.',
 			);
 		}
 

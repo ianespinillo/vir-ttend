@@ -1,4 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../common/errors';
 import { IAcademicYearPort } from '../../domain/ports/academic-year.port.interface';
 import { IWorkshopCommissionPort } from '../../domain/ports/workshop-commission.port.interface';
 import { IAttendanceRecordRepository } from '../../domain/repositories/attendance-record.repository.interface';
@@ -81,7 +82,7 @@ export class StudentWeightedAbsencesService {
 		triggerDate?: string,
 	): Promise<StudentWeightedAbsences> {
 		const academicYear = await this.academicYearPort.findById(academicYearId);
-		if (!academicYear) throw new NotFoundException('Academic year not found');
+		if (!academicYear) throw new NotFoundError('Ciclo lectivo no encontrado');
 		const { from, to } = period ?? {
 			from: academicYear.startDate,
 			to: academicYear.endDate,

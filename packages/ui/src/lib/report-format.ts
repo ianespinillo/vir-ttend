@@ -75,13 +75,13 @@ const BAR_TONES: Record<Tone, string> = {
 
 /** A null percentage (no class given) has no risk tone. */
 export function getAbsencePercentTone(absencePercent: number | null): string {
-	return absencePercent === null
+	return absencePercent === null || Number.isNaN(absencePercent)
 		? 'text-muted-foreground'
 		: TEXT_TONES[getTone(absencePercent)];
 }
 
 export function getAttendanceBarTone(absencePercent: number | null): string {
-	return absencePercent === null
+	return absencePercent === null || Number.isNaN(absencePercent)
 		? 'bg-muted'
 		: BAR_TONES[getTone(absencePercent)];
 }
@@ -98,9 +98,13 @@ export function getStatusTooltip(
 				: `Ausencias por encima del umbral crítico (${ATTENDANCE_THRESHOLDS.CRITICAL}%).`;
 
 	if (absencePercent === undefined) return base;
-	return absencePercent === null
-		? `${base} Todavía no hay clases dadas en el período.`
-		: `${base} Actual: ${absencePercent.toFixed(1)}%.`;
+	if (absencePercent === null) {
+		return `${base} Todavía no hay clases dadas en el período.`;
+	}
+	if (Number.isNaN(absencePercent)) {
+		return `${base} Actual: -.`;
+	}
+	return `${base} Actual: ${absencePercent.toFixed(1)}%.`;
 }
 
 export function buildTrendChartData(
@@ -110,13 +114,13 @@ export function buildTrendChartData(
 	return [...months]
 		.filter(
 			(entry): entry is CourseSummaryEntry & { averageAttendance: number } =>
-				entry.averageAttendance !== null,
+				entry.averageAttendance !== null && !Number.isNaN(entry.averageAttendance),
 		)
 		.sort((a, b) => a.year - b.year || a.month - b.month)
 		.map((entry) => ({
 			label: `${formatMonthLabel(entry.month, 'short')} ${entry.year}`,
 			asistencia:
-				entry.averageAttendance < 1
+				entry.averageAttendance <= 1 && entry.averageAttendance > 0
 					? entry.averageAttendance * 100
 					: entry.averageAttendance,
 		}));

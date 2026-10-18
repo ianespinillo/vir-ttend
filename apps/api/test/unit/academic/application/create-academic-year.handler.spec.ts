@@ -1,11 +1,13 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
 // create-academic-year.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ConflictError } from '../../../../src/common/errors';
 import { CreateAcademicYearCommand } from '../../../../src/modules/academic/application/commands/create-academic-year/create-academic-year.command';
 import { CreateAcademicYearHandler } from '../../../../src/modules/academic/application/commands/create-academic-year/create-academic-year.handler';
 import { AcademicYear } from '../../../../src/modules/academic/domain/entities/academic-year.entity';
 import { IAcademicYearRepository } from '../../../../src/modules/academic/domain/repositories/academic-year.repository.interface';
 import { AcademicYearCreatedEvent } from '../../../../src/modules/academic/events/academic-year-created.event';
+import { expectRejection } from '../expect-rejection';
 
 describe('CreateAcademicYearHandler', () => {
 	let handler: CreateAcademicYearHandler;
@@ -60,7 +62,7 @@ describe('CreateAcademicYearHandler', () => {
 			}),
 		);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new CreateAcademicYearCommand(
 					'tenant-id',
@@ -72,7 +74,9 @@ describe('CreateAcademicYearHandler', () => {
 					15,
 				),
 			),
-		).rejects.toThrow();
+			ConflictError,
+			'Ya existe un ciclo lectivo para ese año.',
+		);
 
 		expect(academicYearRepository.save).not.toHaveBeenCalled();
 	});

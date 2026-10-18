@@ -1,7 +1,7 @@
-// refresh-token.handler.spec.ts
-import { UnauthorizedException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// refresh-token.handler.spec.ts
+import { UnauthorizedError } from '../../../src/common/errors';
 import { RefreshTokenCommand } from '../../../src/modules/identity/application/commands/refresh-token/refresh-token.command';
 import { RefreshTokenHandler } from '../../../src/modules/identity/application/commands/refresh-token/refresh-token.handler';
 import { RefreshToken } from '../../../src/modules/identity/domain/entities/refresh-token.entity';
@@ -84,16 +84,20 @@ describe('RefreshTokenHandler', () => {
 
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
-		).rejects.toThrow('Invalid token');
+		).rejects.toStrictEqual(
+			new UnauthorizedError(
+				'Su sesión expiró o no es válida. Inicie sesión nuevamente.',
+			),
+		);
 	});
 
-	it('should throw UnauthorizedException when token does not exist', async () => {
+	it('should throw UnauthorizedError when token does not exist', async () => {
 		tokenService.hashToken.mockReturnValue('hashed-token');
 		refreshTokenRepo.findByHash.mockResolvedValue(null);
 
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
-		).rejects.toBeInstanceOf(UnauthorizedException);
+		).rejects.toBeInstanceOf(UnauthorizedError);
 	});
 
 	it('should throw when token is revoked', async () => {
@@ -111,10 +115,14 @@ describe('RefreshTokenHandler', () => {
 
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
-		).rejects.toThrow('Invalid token');
+		).rejects.toStrictEqual(
+			new UnauthorizedError(
+				'Su sesión expiró o no es válida. Inicie sesión nuevamente.',
+			),
+		);
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
-		).rejects.toBeInstanceOf(UnauthorizedException);
+		).rejects.toBeInstanceOf(UnauthorizedError);
 	});
 
 	it('should throw when token is expired', async () => {
@@ -132,10 +140,14 @@ describe('RefreshTokenHandler', () => {
 
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
-		).rejects.toThrow('Invalid token');
+		).rejects.toStrictEqual(
+			new UnauthorizedError(
+				'Su sesión expiró o no es válida. Inicie sesión nuevamente.',
+			),
+		);
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
-		).rejects.toBeInstanceOf(UnauthorizedException);
+		).rejects.toBeInstanceOf(UnauthorizedError);
 	});
 
 	it('should throw when the user belongs to other tenants but not the token tenant', async () => {
@@ -146,8 +158,10 @@ describe('RefreshTokenHandler', () => {
 		membershipRepo.findByUserId.mockResolvedValue([mockMembership]);
 
 		const promise = handler.execute(new RefreshTokenCommand('raw-token'));
-		await expect(promise).rejects.toBeInstanceOf(UnauthorizedException);
-		await expect(promise).rejects.toThrow("User doesn't belong to tenant");
+		await expect(promise).rejects.toBeInstanceOf(UnauthorizedError);
+		await expect(promise).rejects.toThrow(
+			'Ya no tiene acceso a esta institución.',
+		);
 	});
 
 	it('should throw when membership is inactive', async () => {
@@ -168,6 +182,8 @@ describe('RefreshTokenHandler', () => {
 
 		await expect(
 			handler.execute(new RefreshTokenCommand('raw-token')),
-		).rejects.toThrow('User not active in tenant');
+		).rejects.toStrictEqual(
+			new UnauthorizedError('Su cuenta está desactivada en esta institución.'),
+		);
 	});
 });

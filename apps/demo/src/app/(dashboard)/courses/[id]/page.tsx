@@ -17,7 +17,6 @@ import {
 	type CreateCourseFormValues,
 	type CreateSubjectFormValues,
 	ROLES,
-	STUDENT_ROUTES,
 } from '@repo/common';
 import {
 	CourseDetail,
@@ -55,6 +54,8 @@ export default function CourseDetailPage() {
 		: (params.id ?? '');
 	const user = session.user;
 	const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.SUPERADMIN;
+	const isPreceptor = user?.role === ROLES.PRECEPTOR;
+	const canManageSchedule = isAdmin || isPreceptor;
 	const courseIds = getScopedCourseIds(
 		selectors.getCourses(state),
 		selectors.getSubjects(state),
@@ -175,7 +176,7 @@ export default function CourseDetailPage() {
 						: undefined
 				}
 				canManage={isAdmin}
-				studentsPath={`${STUDENT_ROUTES.students}?courseId=${course.id}`}
+				canManageSchedule={canManageSchedule}
 				attendancePath={`${ATTENDANCE_ROUTES.daily}?courseId=${course.id}`}
 			/>
 

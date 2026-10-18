@@ -17,7 +17,29 @@ export class SearchStudentsHandler {
 	async execute(
 		query: SearchStudentsQuery,
 	): Promise<PaginatedResponse<StudentDetailResponseDto>> {
-		const students = await this.studentsRepo.search(query);
+		let scopedCourseIds: string[] | undefined;
+
+		if (query.preceptorId) {
+			const preceptorCourses = await this.courseRepo.findByPreceptor(
+				query.preceptorId,
+			);
+			const allowedCourseIds = preceptorCourses.map((c) => c.id.getRaw());
+			if (allowedCourseIds.length === 0) {
+				return {
+					items: [],
+					total: 0,
+					page: query.page,
+					limit: query.limit,
+					totalPages: 0,
+				};
+			}
+			scopedCourseIds = allowedCourseIds;
+		}
+
+		const students = await this.studentsRepo.search({
+			...query,
+			courseIds: scopedCourseIds,
+		});
 		const courseIds = [
 			...new Set(students.items.map((s) => s.courseId).filter(Boolean)),
 		];

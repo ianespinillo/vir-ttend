@@ -134,6 +134,18 @@ export interface DemoStore {
 	publishAnnouncement(announcementId: string): Announcement;
 	deleteAnnouncement(announcementId: string): void;
 	markAnnouncementRead(announcementId: string, userId: string): void;
+
+	// Academic
+	declareNonWorkingDay(
+		academicYearId: string,
+		input: {
+			date: string;
+			reason: string;
+			type?: string;
+			notifySchool?: boolean;
+			authorName?: string;
+		},
+	): void;
 }
 
 export function createDemoStore(
@@ -767,6 +779,50 @@ export function createDemoStore(
 		commit(next);
 	}
 
+	function declareNonWorkingDay(
+		academicYearId: string,
+		input: {
+			date: string;
+			reason: string;
+			type?: string;
+			notifySchool?: boolean;
+			authorName?: string;
+		},
+	): void {
+		const targetDate = new Date(input.date);
+		const next = structuredClone(state);
+		next.academicYears = next.academicYears.map((ay) => {
+			if (ay.id !== academicYearId) return ay;
+			const exists = (ay.nonWorkingDays ?? []).some(
+				(d) => new Date(d).getTime() === targetDate.getTime(),
+			);
+			return {
+				...ay,
+				nonWorkingDays: exists
+					? ay.nonWorkingDays
+					: [...(ay.nonWorkingDays ?? []), targetDate],
+			};
+		});
+		commit(next);
+
+		if (input.notifySchool !== false) {
+			const formattedDate = targetDate.toLocaleDateString('es-AR', {
+				day: '2-digit',
+				month: '2-digit',
+				year: 'numeric',
+				timeZone: 'UTC',
+			});
+			const announcement = createAnnouncement({
+				title: `Suspensión de actividades — ${input.reason}`,
+				body: `Se informa a toda la comunidad educativa que el día ${formattedDate} no habrá dictado de clases ni actividades escolares debido a: ${input.reason}. El día ha sido registrado como no laborable en el calendario académico institucional.`,
+				targetType: 'school',
+				targetId: '',
+				authorName: input.authorName ?? 'Equipo Directivo',
+			});
+			publishAnnouncement(announcement.id);
+		}
+	}
+
 	// -------------------------------------------------------------------------
 	// Internal helpers
 	// -------------------------------------------------------------------------
@@ -880,6 +936,7 @@ export function createDemoStore(
 		publishAnnouncement,
 		deleteAnnouncement,
 		markAnnouncementRead,
+		declareNonWorkingDay,
 	};
 }
 

@@ -10,10 +10,12 @@ export function formatDate(
 
 /** A null value means no class was given, so there is no percentage to show. */
 export function formatPercent(
-	value: number | null,
+	value: number | null | undefined,
 	fractionDigits = 1,
 ): string {
-	return value === null ? '—' : `${value.toFixed(fractionDigits)}%`;
+	if (value === null) return '—';
+	if (value === undefined || Number.isNaN(value)) return '-';
+	return `${value.toFixed(fractionDigits)}%`;
 }
 
 export function formatFullName(firstName: string, lastName?: string): string {

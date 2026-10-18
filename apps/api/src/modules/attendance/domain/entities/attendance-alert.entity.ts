@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ConflictError } from '../../../../common/errors';
 import { AlertType } from '../value-objects/alert-type.vo';
 
 interface ConstructorProperties {
@@ -67,7 +68,8 @@ export class AttendanceAlert {
 		return new AttendanceAlert(props);
 	}
 	markAsSeen(userId: string): void {
-		if (this._seenBy) throw new Error('Attendance alert already seen');
+		if (this._seenBy)
+			throw new ConflictError('La alerta ya fue marcada como vista');
 		this._seenBy = userId;
 		this._seenAt = new Date();
 	}

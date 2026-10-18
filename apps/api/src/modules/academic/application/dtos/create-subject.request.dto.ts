@@ -19,16 +19,16 @@ export class CreateSubjectRequestDto {
 	})
 	courseId!: string;
 
-	@IsNotEmpty()
+	@IsOptional()
 	@IsString()
-	@ApiProperty({
+	@ApiPropertyOptional({
 		type: String,
-		description: 'ID del docente a cargo de la materia.',
+		description: 'ID del docente a cargo de la materia (opcional).',
 		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
 	})
-	teacherId!: string;
+	teacherId?: string;
 
-	@IsNotEmpty()
+	@IsNotEmpty({ message: 'El nombre de la materia es obligatorio.' })
 	@IsString()
 	@ApiProperty({
 		type: String,
@@ -37,7 +37,7 @@ export class CreateSubjectRequestDto {
 	})
 	name!: string;
 
-	@IsNotEmpty()
+	@IsNotEmpty({ message: 'El área o departamento es obligatorio.' })
 	@IsString()
 	@ApiProperty({
 		type: String,
@@ -46,9 +46,9 @@ export class CreateSubjectRequestDto {
 	})
 	area!: string;
 
-	@IsNotEmpty()
-	@IsNumber()
-	@Min(1)
+	@IsNotEmpty({ message: 'La carga horaria semanal es obligatoria.' })
+	@IsNumber({}, { message: 'Las horas semanales deben ser un número.' })
+	@Min(1, { message: 'Las horas semanales deben ser al menos 1.' })
 	@ApiProperty({
 		type: Number,
 		minimum: 1,

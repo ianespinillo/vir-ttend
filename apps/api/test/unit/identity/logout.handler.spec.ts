@@ -1,6 +1,6 @@
-// logout.handler.spec.ts
-import { UnauthorizedException } from '@nestjs/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// logout.handler.spec.ts
+import { UnauthorizedError } from '../../../src/common/errors';
 import { LogoutCommand } from '../../../src/modules/identity/application/commands/logout/logout.command';
 import { LogoutHandler } from '../../../src/modules/identity/application/commands/logout/logout.handler';
 import { RefreshToken } from '../../../src/modules/identity/domain/entities/refresh-token.entity';
@@ -44,12 +44,16 @@ describe('LogoutHandler', () => {
 		tokenService.hashToken.mockReturnValue('hashed-token');
 		refreshTokenRepo.findByHash.mockResolvedValue(null);
 
-		await expect(handler.execute(new LogoutCommand('raw-token'))).rejects.toThrow(
-			'Invalid refresh token',
+		await expect(
+			handler.execute(new LogoutCommand('raw-token')),
+		).rejects.toStrictEqual(
+			new UnauthorizedError(
+				'Su sesión expiró o no es válida. Inicie sesión nuevamente.',
+			),
 		);
 		await expect(
 			handler.execute(new LogoutCommand('raw-token')),
-		).rejects.toBeInstanceOf(UnauthorizedException);
+		).rejects.toBeInstanceOf(UnauthorizedError);
 		expect(refreshTokenRepo.save).not.toHaveBeenCalled();
 	});
 

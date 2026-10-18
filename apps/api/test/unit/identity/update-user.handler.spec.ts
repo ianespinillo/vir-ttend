@@ -1,7 +1,7 @@
-// update-user.handler.spec.ts
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// update-user.handler.spec.ts
+import { ConflictError, NotFoundError } from '../../../src/common/errors';
 import { UpdateUserCommand } from '../../../src/modules/identity/application/commands/update-user/update-user.command';
 import { UpdateUserHandler } from '../../../src/modules/identity/application/commands/update-user/update-user.handler';
 import { UserTenantMembership } from '../../../src/modules/identity/domain/entities/user-tenant-membership.entity';
@@ -43,7 +43,7 @@ describe('UpdateUserHandler', () => {
 		handler = new UpdateUserHandler(userRepo, memberRepo);
 	});
 
-	it('should throw BadRequestException when email is already used by another user', async () => {
+	it('should throw ConflictError when email is already used by another user', async () => {
 		userRepo.findById.mockResolvedValue(mockUser);
 		const otherUser = User.reconstitute({
 			id: 'other-user-id',
@@ -65,12 +65,14 @@ describe('UpdateUserHandler', () => {
 					email: new Email('taken@test.com'),
 				}),
 			),
-		).rejects.toThrow(new BadRequestException('Email already in use'));
+		).rejects.toStrictEqual(
+			new ConflictError('El correo electrónico ya está en uso.'),
+		);
 
 		expect(userRepo.save).not.toHaveBeenCalled();
 	});
 
-	it('should throw NotFoundException when target user has no membership in tenant', async () => {
+	it('should throw NotFoundError when target user has no membership in tenant', async () => {
 		userRepo.findById.mockResolvedValue(mockUser);
 		userRepo.findByEmail.mockResolvedValue(null);
 		memberRepo.findByUserAndTenant.mockResolvedValue(null);
@@ -79,7 +81,9 @@ describe('UpdateUserHandler', () => {
 			handler.execute(
 				new UpdateUserCommand('user-id', 'other-tenant-id', { firstName: 'New' }),
 			),
-		).rejects.toThrow(new NotFoundException('User not found in this tenant'));
+		).rejects.toStrictEqual(
+			new NotFoundError('El usuario no pertenece a esta institución.'),
+		);
 
 		expect(userRepo.save).not.toHaveBeenCalled();
 	});

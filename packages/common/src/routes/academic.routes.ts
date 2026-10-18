@@ -1,6 +1,8 @@
 export const ACADEMIC_ROUTES = {
 	academicYears: '/academic-years',
 	academicYear: (id: string) => `/academic-years/${id}`,
+	academicYearNonWorkingDays: (id: string) =>
+		`/academic-years/${id}/non-working-days`,
 	courses: '/courses',
 	coursesByPreceptor: '/courses/by-preceptor',
 	course: (id: string) => `/courses/${id}`,

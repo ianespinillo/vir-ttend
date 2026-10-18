@@ -1,5 +1,6 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_STATUS } from '@repo/common';
+import { NotFoundError } from '../../../../common/errors';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { ICoursePort } from '../../domain/ports/courses.port.interface';
 import { IAttendanceRecordRepository } from '../../domain/repositories/attendance-record.repository.interface';
@@ -25,7 +26,7 @@ export class CourseSnapshotBuilderService {
 		to?: Date,
 	): Promise<CourseSnapshot> {
 		const course = await this.coursePort.findById(courseId);
-		if (!course) throw new NotFoundException('Course not found');
+		if (!course) throw new NotFoundError('Curso no encontrado');
 
 		const isRange = to !== undefined && to.getTime() !== from.getTime();
 		const end = isRange ? to : from;

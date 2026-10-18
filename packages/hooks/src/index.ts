@@ -41,6 +41,7 @@ export * from './features/academic/use-academic-years';
 export * from './features/academic/use-active-academic-year';
 export * from './features/academic/use-create-academic-year';
 export * from './features/academic/use-update-academic-year';
+export * from './features/academic/use-declare-non-working-day';
 export * from './features/academic/use-course';
 export * from './features/academic/use-create-course';
 export * from './features/academic/use-update-course';

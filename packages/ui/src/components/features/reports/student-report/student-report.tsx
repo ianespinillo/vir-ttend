@@ -117,7 +117,12 @@ export function StudentReport({ report, isLoading }: StudentReportProps) {
 			<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
 				<MetricCard
 					title="Presentes"
-					value={report.totals.present}
+					value={
+						typeof report.totals.present === 'number' &&
+						Number.isNaN(report.totals.present)
+							? '-'
+							: report.totals.present
+					}
 					icon={CheckCircle2}
 					variant="success"
 				/>
@@ -134,14 +139,23 @@ export function StudentReport({ report, isLoading }: StudentReportProps) {
 				/>
 				<MetricCard
 					title="Tardanzas"
-					value={report.totals.late}
+					value={
+						typeof report.totals.late === 'number' && Number.isNaN(report.totals.late)
+							? '-'
+							: report.totals.late
+					}
 					icon={Clock}
 					variant="warning"
 				/>
 				<MetricCard
 					title="Promedio de inasistencia"
 					value={formatPercent(report.totals.averageAbsencePercent)}
-					subtitle={`de ${report.totals.totalDays} días`}
+					subtitle={
+						typeof report.totals.totalDays === 'number' &&
+						Number.isNaN(report.totals.totalDays)
+							? undefined
+							: `de ${report.totals.totalDays} días`
+					}
 					icon={Percent}
 				/>
 			</div>

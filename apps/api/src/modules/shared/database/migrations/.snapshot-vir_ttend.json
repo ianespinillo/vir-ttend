@@ -137,6 +137,151 @@
 					"autoincrement": false,
 					"primary": false,
 					"nullable": false,
+					"default": "gen_random_uuid()",
+					"mappedType": "uuid"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"school_id": {
+					"name": "school_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"tenant_id": {
+					"name": "tenant_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"author_id": {
+					"name": "author_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"title": {
+					"name": "title",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"body": {
+					"name": "body",
+					"type": "text",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "text"
+				},
+				"target_type": {
+					"name": "target_type",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"target_id": {
+					"name": "target_id",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"status": {
+					"name": "status",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"publish_at": {
+					"name": "publish_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"length": 6,
+					"mappedType": "datetime"
+				}
+			},
+			"name": "announcements",
+			"schema": "public",
+			"indexes": [
+				{
+					"keyName": "announcements_school_id_status_publish_at_index",
+					"columnNames": ["school_id", "status", "publish_at"],
+					"composite": true,
+					"constraint": false,
+					"primary": false,
+					"unique": false
+				},
+				{
+					"keyName": "announcements_pkey",
+					"columnNames": ["id"],
+					"composite": false,
+					"constraint": true,
+					"primary": true,
+					"unique": true
+				}
+			],
+			"checks": [],
+			"foreignKeys": {},
+			"nativeEnums": {}
+		},
+		{
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
 					"mappedType": "uuid"
 				},
 				"student_id": {
@@ -185,13 +330,31 @@
 					"length": 255,
 					"mappedType": "string"
 				},
+				"absence_count": {
+					"name": "absence_count",
+					"type": "real",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "float"
+				},
+				"threshold": {
+					"name": "threshold",
+					"type": "int",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "integer"
+				},
 				"absence_percent": {
 					"name": "absence_percent",
 					"type": "real",
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
-					"nullable": false,
+					"nullable": true,
 					"mappedType": "float"
 				},
 				"seen_by": {
@@ -237,12 +400,12 @@
 					"unique": false
 				},
 				{
-					"keyName": "attendance_alerts_student_id_academic_year_id_alert_type_index",
+					"keyName": "attendance_alerts_student_year_type_unique",
 					"columnNames": ["student_id", "academic_year_id", "alert_type"],
 					"composite": true,
-					"constraint": false,
+					"constraint": true,
 					"primary": false,
-					"unique": false
+					"unique": true
 				},
 				{
 					"keyName": "attendance_alerts_pkey",
@@ -366,6 +529,15 @@
 					"unique": false
 				},
 				{
+					"keyName": "attendanceRecord_daily_unique",
+					"columnNames": [],
+					"composite": false,
+					"constraint": true,
+					"primary": false,
+					"unique": true,
+					"expression": "create unique index \"attendanceRecord_daily_unique\" on \"attendanceRecord\" (\"course_id\", \"student_id\", \"date\") where \"subject_id\" is null"
+				},
+				{
 					"keyName": "attendanceRecord_course_id_student_id_subject_id_date_unique",
 					"columnNames": ["course_id", "student_id", "subject_id", "date"],
 					"composite": true,
@@ -444,7 +616,7 @@
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
-					"nullable": false,
+					"nullable": true,
 					"mappedType": "uuid"
 				},
 				"level": {
@@ -477,12 +649,13 @@
 				},
 				"division": {
 					"name": "division",
-					"type": "int",
+					"type": "varchar(255)",
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
 					"nullable": false,
-					"mappedType": "integer"
+					"length": 255,
+					"mappedType": "string"
 				},
 				"shift": {
 					"name": "shift",
@@ -995,6 +1168,15 @@
 					"length": 255,
 					"mappedType": "string"
 				},
+				"workshop_commission_id": {
+					"name": "workshop_commission_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"mappedType": "uuid"
+				},
 				"courseId": {
 					"name": "courseId",
 					"type": "uuid",
@@ -1080,7 +1262,7 @@
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
-					"nullable": false,
+					"nullable": true,
 					"length": 255,
 					"mappedType": "string"
 				},
@@ -1113,14 +1295,16 @@
 					"nullable": false,
 					"mappedType": "integer"
 				},
-				"courseId": {
-					"name": "courseId",
-					"type": "uuid",
+				"kind": {
+					"name": "kind",
+					"type": "varchar(255)",
 					"unsigned": false,
 					"autoincrement": false,
 					"primary": false,
 					"nullable": false,
-					"mappedType": "uuid"
+					"length": 255,
+					"default": "'theory'",
+					"mappedType": "string"
 				},
 				"deleted_at": {
 					"name": "deleted_at",
@@ -1131,6 +1315,15 @@
 					"nullable": true,
 					"length": 6,
 					"mappedType": "datetime"
+				},
+				"courseId": {
+					"name": "courseId",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
 				}
 			},
 			"name": "subjects",
@@ -1219,7 +1412,7 @@
 					"autoincrement": false,
 					"primary": false,
 					"nullable": false,
-					"mappedType": "enum"
+					"mappedType": "unknown"
 				},
 				"start_time": {
 					"name": "start_time",
@@ -1240,6 +1433,15 @@
 					"nullable": false,
 					"length": 255,
 					"mappedType": "string"
+				},
+				"commission_number": {
+					"name": "commission_number",
+					"type": "smallint",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"mappedType": "smallint"
 				},
 				"subjectId": {
 					"name": "subjectId",
@@ -1274,13 +1476,7 @@
 					"updateRule": "cascade"
 				}
 			},
-			"nativeEnums": {
-				"DAYOFWEEK": {
-					"name": "DAYOFWEEK",
-					"schema": "public",
-					"items": ["monday", "tuesday", "wednesday", "thursday", "friday"]
-				}
-			}
+			"nativeEnums": {}
 		},
 		{
 			"columns": {
@@ -1578,13 +1774,245 @@
 			"checks": [],
 			"foreignKeys": {},
 			"nativeEnums": {}
+		},
+		{
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"default": "gen_random_uuid()",
+					"mappedType": "uuid"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"tenant_id": {
+					"name": "tenant_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"workshop_commission_id": {
+					"name": "workshop_commission_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"course_id": {
+					"name": "course_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"student_id": {
+					"name": "student_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"date": {
+					"name": "date",
+					"type": "date",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 0,
+					"mappedType": "date"
+				},
+				"status": {
+					"name": "status",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"edited_by": {
+					"name": "edited_by",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"edited_at": {
+					"name": "edited_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"mappedType": "datetime"
+				}
+			},
+			"name": "workshop_attendance_records",
+			"schema": "public",
+			"indexes": [
+				{
+					"keyName": "workshop_attendance_records_workshop_commission_id_date_index",
+					"columnNames": ["workshop_commission_id", "date"],
+					"composite": true,
+					"constraint": false,
+					"primary": false,
+					"unique": false
+				},
+				{
+					"keyName": "workshop_attendance_records_commission_student_date_unique",
+					"columnNames": ["workshop_commission_id", "student_id", "date"],
+					"composite": true,
+					"constraint": true,
+					"primary": false,
+					"unique": true
+				},
+				{
+					"keyName": "workshop_attendance_records_pkey",
+					"columnNames": ["id"],
+					"composite": false,
+					"constraint": true,
+					"primary": true,
+					"unique": true
+				}
+			],
+			"checks": [],
+			"foreignKeys": {},
+			"nativeEnums": {}
+		},
+		{
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"default": "gen_random_uuid()",
+					"mappedType": "uuid"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamptz",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 6,
+					"default": "now()",
+					"mappedType": "datetime"
+				},
+				"tenant_id": {
+					"name": "tenant_id",
+					"type": "varchar(255)",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"length": 255,
+					"mappedType": "string"
+				},
+				"course_id": {
+					"name": "course_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "uuid"
+				},
+				"number": {
+					"name": "number",
+					"type": "smallint",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": false,
+					"mappedType": "smallint"
+				},
+				"preceptor_id": {
+					"name": "preceptor_id",
+					"type": "uuid",
+					"unsigned": false,
+					"autoincrement": false,
+					"primary": false,
+					"nullable": true,
+					"mappedType": "uuid"
+				}
+			},
+			"name": "workshop_commissions",
+			"schema": "public",
+			"indexes": [
+				{
+					"keyName": "workshop_commissions_course_id_number_unique",
+					"columnNames": ["course_id", "number"],
+					"composite": true,
+					"constraint": true,
+					"primary": false,
+					"unique": true
+				},
+				{
+					"keyName": "workshop_commissions_pkey",
+					"columnNames": ["id"],
+					"composite": false,
+					"constraint": true,
+					"primary": true,
+					"unique": true
+				}
+			],
+			"checks": [],
+			"foreignKeys": {},
+			"nativeEnums": {}
 		}
 	],
-	"nativeEnums": {
-		"DAYOFWEEK": {
-			"name": "DAYOFWEEK",
-			"schema": "public",
-			"items": ["monday", "tuesday", "wednesday", "thursday", "friday"]
-		}
-	}
+	"nativeEnums": {}
 }

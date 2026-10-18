@@ -1,6 +1,13 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+	CanActivate,
+	ExecutionContext,
+	ForbiddenException,
+	Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES, Roles } from '@repo/common';
+
+const FORBIDDEN_MESSAGE = 'No tiene permiso para realizar esta acción.';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -12,10 +19,13 @@ export class RolesGuard implements CanActivate {
 		]);
 		if (!requiredRoles || requiredRoles.length === 0) return true;
 		const { user } = context.switchToHttp().getRequest();
-		if (!user) return false;
+		if (!user) throw new ForbiddenException(FORBIDDEN_MESSAGE);
 		if (user.isImpersonating && requiredRoles.includes(ROLES.SUPERADMIN)) {
 			return true;
 		}
-		return requiredRoles.includes(user.role);
+		if (!requiredRoles.includes(user.role)) {
+			throw new ForbiddenException(FORBIDDEN_MESSAGE);
+		}
+		return true;
 	}
 }

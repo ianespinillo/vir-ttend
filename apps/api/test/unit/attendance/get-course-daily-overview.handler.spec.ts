@@ -1,6 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
 import { ATTENDANCE_STATUS, LEVEL } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../src/common/errors';
 import { AttendanceRecordResponseDto } from '../../../src/modules/attendance/application/dtos/attendance-record.response.dto';
 import { GetCourseDailyOverviewQueryHandler } from '../../../src/modules/attendance/application/queries/get-course-daily-overview/get-course-daily-overview.handler';
 import { GetCourseDailyOverviewQuery } from '../../../src/modules/attendance/application/queries/get-course-daily-overview/get-course-daily-overview.query';
@@ -43,11 +43,11 @@ describe('GetCourseDailyOverviewQueryHandler', () => {
 	it('lanza NotFoundException si el curso no existe', async () => {
 		coursePort.findById.mockResolvedValue(null);
 
-		await expect(
-			handler.execute(
-				new GetCourseDailyOverviewQuery('course-999', new Date('2026-07-01')),
-			),
-		).rejects.toThrow(NotFoundException);
+		const attempt = handler.execute(
+			new GetCourseDailyOverviewQuery('course-999', new Date('2026-07-01')),
+		);
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		await expect(attempt).rejects.toThrow('Curso no encontrado');
 	});
 
 	it('retorna records y snapshot del curso para la fecha dada', async () => {

@@ -6,7 +6,6 @@ import {
 	createContext,
 	useCallback,
 	useContext,
-	useEffect,
 	useMemo,
 	useState,
 } from 'react';
@@ -36,13 +35,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		refetch,
 	} = useCurrentUser();
 
-	useEffect(() => {
+	// Sync during render, not in an effect: an effect leaves one committed render
+	// where the query is done but `user` is still null, and the dashboard layout
+	// treats that as "logged out" and redirects away from the requested page.
+	const [syncedUser, setSyncedUser] = useState(fetchedUser);
+	const [syncedError, setSyncedError] = useState(isError);
+	if (fetchedUser !== syncedUser || isError !== syncedError) {
+		setSyncedUser(fetchedUser);
+		setSyncedError(isError);
 		if (fetchedUser) {
 			setUser(fetchedUser);
 		} else if (isError) {
 			setUser(null);
 		}
-	}, [fetchedUser, isError]);
+	}
 
 	const handleSetUser = useCallback((next: CurrentUser | null) => {
 		setUser(next);

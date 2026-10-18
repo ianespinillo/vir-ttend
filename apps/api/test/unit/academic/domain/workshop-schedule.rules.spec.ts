@@ -26,9 +26,9 @@ describe('Workshop schedule rules', () => {
 		});
 
 		it('rejects a commission number other than 1 or 2', () => {
-			expect(() => slot('w', '08:00', '09:00', 3 as unknown as 1)).toThrow(
-				'Commission number must be 1 or 2',
-			);
+			const create = () => slot('w', '08:00', '09:00', 3 as unknown as 1);
+			expect(create).toThrow(DomainError);
+			expect(create).toThrow('La comisión debe ser 1 o 2.');
 		});
 	});
 

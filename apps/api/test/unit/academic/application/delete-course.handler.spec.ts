@@ -1,5 +1,6 @@
 import { LEVEL, SHIFT } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { NotFoundError } from '../../../../src/common/errors';
 import { DeleteCourseCommand } from '../../../../src/modules/academic/application/commands/delete-course/delete-course.command';
 import { DeleteCourseHandler } from '../../../../src/modules/academic/application/commands/delete-course/delete-course.handler';
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
@@ -7,6 +8,7 @@ import { Subject } from '../../../../src/modules/academic/domain/entities/subjec
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 // delete-course.handler.spec.ts
 describe('DeleteCourseHandler', () => {
@@ -83,9 +85,11 @@ describe('DeleteCourseHandler', () => {
 	it('no cascadea nada cuando el curso no existe', async () => {
 		courseRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new DeleteCourseCommand('course-1')),
-		).rejects.toThrow('Course not found');
+			NotFoundError,
+			'Curso no encontrado',
+		);
 
 		expect(courseRepository.save).not.toHaveBeenCalled();
 		expect(subjectRepository.findByCourse).not.toHaveBeenCalled();

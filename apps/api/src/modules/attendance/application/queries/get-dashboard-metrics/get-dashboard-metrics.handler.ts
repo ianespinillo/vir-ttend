@@ -1,5 +1,6 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ATTENDANCE_THRESHOLDS, COURSE_RISK_STATUS, LEVEL } from '@repo/common';
+import { NotFoundError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
@@ -25,7 +26,7 @@ export class GetDashboardMetricsQueryHandler {
 		query: GetDashboardMetricsQuery,
 	): Promise<DashboardMetricsResponseDto> {
 		const year = await this.academicYearPort.findById(query.academicYearId);
-		if (!year) throw new NotFoundException('Cannot find a academic year');
+		if (!year) throw new NotFoundError('Ciclo lectivo no encontrado');
 		const preceptorCourses = await this.coursePort.findByPreceptorId(
 			query.preceptorId,
 		);

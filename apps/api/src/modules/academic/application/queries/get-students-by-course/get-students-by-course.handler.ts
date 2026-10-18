@@ -17,10 +17,44 @@ export class GetStudentsByCourseHandler {
 	async execute(
 		query: GetStudentsByCourseQuery,
 	): Promise<PaginatedResponse<StudentResponseDto>> {
+		let scopedCourseIds: string[] | undefined;
+
+		if (query.preceptorId) {
+			const preceptorCourses = await this.courseRepo.findByPreceptor(
+				query.preceptorId,
+			);
+			const allowedCourseIds = preceptorCourses.map((c) => c.id.getRaw());
+
+			if (query.courseId) {
+				if (!allowedCourseIds.includes(query.courseId)) {
+					return {
+						items: [],
+						total: 0,
+						page: query.page,
+						limit: query.limit,
+						totalPages: 0,
+					};
+				}
+				scopedCourseIds = [query.courseId];
+			} else {
+				if (allowedCourseIds.length === 0) {
+					return {
+						items: [],
+						total: 0,
+						page: query.page,
+						limit: query.limit,
+						totalPages: 0,
+					};
+				}
+				scopedCourseIds = allowedCourseIds;
+			}
+		}
+
 		const { items, ...rest } = await this.studentRepo.search({
 			tenantId: query.tenantId,
 			query: query.search,
-			courseId: query.courseId,
+			courseId: query.preceptorId ? undefined : query.courseId,
+			courseIds: scopedCourseIds,
 			status: query.status as STUDENTSTATUS,
 			page: query.page,
 			limit: query.limit,

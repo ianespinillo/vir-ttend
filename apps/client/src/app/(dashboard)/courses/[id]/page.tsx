@@ -2,11 +2,13 @@
 
 import { StudentImportContainer } from '@/components/students/student-import-container';
 import { useAuth } from '@/lib/auth/provider';
-import type {
-	CreateCourseFormValues,
-	CreateSubjectFormValues,
-	ISubjectResponse,
-	ScheduleSlotFormValues,
+import {
+	type CreateCourseFormValues,
+	type CreateSubjectFormValues,
+	type ISubjectResponse,
+	ROLES,
+	STUDENTSTATUS,
+	type ScheduleSlotFormValues,
 } from '@repo/common';
 import {
 	useAcademicYears,
@@ -20,6 +22,7 @@ import {
 	useRegenerateWorkshopCommissions,
 	useSchedule,
 	useSetSchedule,
+	useStudents,
 	useSubjects,
 	useUpdateCourse,
 	useUpdateSubject,
@@ -55,15 +58,22 @@ export default function CourseDetailPage() {
 	const [isEditingCourse, setIsEditingCourse] = useState(isEditQuery);
 
 	const role = user?.role?.toLowerCase();
-	const isAdmin = role === 'admin' || role === 'superadmin';
+	const isAdmin = role === ROLES.ADMIN || role === ROLES.SUPERADMIN;
+	const isPreceptor = role === ROLES.PRECEPTOR;
+	const canManageSchedule = isAdmin || isPreceptor;
 	const [isImportOpen, setIsImportOpen] = useState(false);
 
 	const { data: course, isLoading, isError, error } = useCourse(courseId);
 	const { data: subjectsData } = useSubjects(courseId);
 	const { data: scheduleData } = useSchedule(courseId);
+	const { data: studentsData, isLoading: studentsLoading } = useStudents({
+		courseId,
+		status: STUDENTSTATUS.ACTIVE,
+		limit: 100,
+	});
 	const { data: academicYears } = useAcademicYears();
-	const { data: preceptors } = useUsersByRole('preceptor');
-	const { data: teachers } = useUsersByRole('teacher');
+	const { data: preceptors } = useUsersByRole(ROLES.PRECEPTOR);
+	const { data: teachers } = useUsersByRole(ROLES.TEACHER);
 	const { data: commissions, isLoading: commissionsLoading } =
 		useWorkshopCommissions(courseId, isAdmin);
 
@@ -241,7 +251,7 @@ export default function CourseDetailPage() {
 
 	const canImportStudents =
 		isAdmin ||
-		(role === 'preceptor' &&
+		(role === ROLES.PRECEPTOR &&
 			Boolean(user?.id) &&
 			course?.preceptorId === user?.id);
 
@@ -310,7 +320,11 @@ export default function CourseDetailPage() {
 					canImportStudents ? () => setIsImportOpen(true) : undefined
 				}
 				canManage={isAdmin}
-				studentsPath={`/students?courseId=${course.id}`}
+				canManageSchedule={canManageSchedule}
+				students={studentsData?.items ?? []}
+				isLoadingStudents={studentsLoading}
+				studentCount={studentsData?.total}
+				onViewStudent={(id) => router.push(`/students/${id}`)}
 				attendancePath={`/attendance?courseId=${course.id}`}
 				commissionsTab={
 					isAdmin ? (

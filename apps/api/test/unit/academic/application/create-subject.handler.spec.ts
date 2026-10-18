@@ -1,7 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { LEVEL, SHIFT } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ConflictError } from '../../../../src/common/errors';
 import { CreateSubjectCommand } from '../../../../src/modules/academic/application/commands/create-subject/create-subject.command';
 import { CreateSubjectHandler } from '../../../../src/modules/academic/application/commands/create-subject/create-subject.handler';
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
@@ -9,6 +9,7 @@ import { Subject } from '../../../../src/modules/academic/domain/entities/subjec
 import { IMembershipPort } from '../../../../src/modules/academic/domain/ports/membership.port.interface';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('CreateSubjectHandler', () => {
 	let handler: CreateSubjectHandler;
@@ -67,7 +68,7 @@ describe('CreateSubjectHandler', () => {
 		);
 	});
 
-	it('debe lanzar BadRequestException cuando la materia ya existe', async () => {
+	it('debe lanzar ConflictError cuando la materia ya existe', async () => {
 		courseRepository.findById.mockResolvedValue(mockCourse);
 		membershipPort.belongsToTenant.mockResolvedValue(true);
 		subjectRepository.findByCourse.mockResolvedValue([
@@ -83,9 +84,10 @@ describe('CreateSubjectHandler', () => {
 			}),
 		]);
 
-		await expect(handler.execute(command)).rejects.toThrow(BadRequestException);
-		await expect(handler.execute(command)).rejects.toThrow(
-			'Subject already exists',
+		await expectRejection(
+			handler.execute(command),
+			ConflictError,
+			'Ya existe esa materia en el curso.',
 		);
 		expect(subjectRepository.save).not.toHaveBeenCalled();
 	});

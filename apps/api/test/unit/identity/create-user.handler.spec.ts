@@ -1,8 +1,8 @@
-// create-user.handler.spec.ts
-import { ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// create-user.handler.spec.ts
+import { ConflictError, ForbiddenError } from '../../../src/common/errors';
 import { CreateUserCommand } from '../../../src/modules/identity/application/commands/create-user/create-user.command';
 import { CreateUserHandler } from '../../../src/modules/identity/application/commands/create-user/create-user.handler';
 import { Tenant } from '../../../src/modules/identity/domain/entities/tenant.entity';
@@ -75,8 +75,8 @@ describe('CreateUserHandler', () => {
 		it('forbids an ADMIN from creating an ADMIN in multi mode', async () => {
 			process.env.TENANCY_MODE = 'multi';
 
-			await expect(handler.execute(createAdminCommand())).rejects.toThrow(
-				ForbiddenException,
+			await expect(handler.execute(createAdminCommand())).rejects.toStrictEqual(
+				new ForbiddenError('No tiene permiso para crear usuarios con ese rol.'),
 			);
 			expect(userRepo.save).not.toHaveBeenCalled();
 		});
@@ -244,7 +244,9 @@ describe('CreateUserHandler', () => {
 					'tenant-id',
 				),
 			),
-		).rejects.toThrow('User already belongs to tenant');
+		).rejects.toStrictEqual(
+			new ConflictError('El usuario ya pertenece a esta institución.'),
+		);
 	});
 
 	it('should throw when actor cannot create target role', async () => {

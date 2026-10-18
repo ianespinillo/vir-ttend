@@ -1,12 +1,7 @@
-import {
-	BadRequestException,
-	ConflictException,
-	ForbiddenException,
-	Inject,
-	Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { type CreateUserResponse, ROLES } from '@repo/common';
+import { ConflictError, ForbiddenError } from '../../../../../common/errors';
 import { getTenancyConfig } from '../../../../shared/config/tenancy.config';
 import { UserTenantMembership } from '../../../domain/entities/user-tenant-membership.entity';
 import { User } from '../../../domain/entities/user.entity';
@@ -43,7 +38,9 @@ export class CreateUserHandler {
 				TENANCY_MODE,
 			)
 		) {
-			throw new ForbiddenException('Insufficient permissions to create this role');
+			throw new ForbiddenError(
+				'No tiene permiso para crear usuarios con ese rol.',
+			);
 		}
 
 		// 2. si el rol no es SUPERADMIN, el tenant es obligatorio
@@ -91,7 +88,8 @@ export class CreateUserHandler {
 					user.id,
 					command.tenantId,
 				);
-				if (exists) throw new ConflictException('User already belongs to tenant');
+				if (exists)
+					throw new ConflictError('El usuario ya pertenece a esta institución.');
 				const membership = UserTenantMembership.create(
 					user.id,
 					command.tenantId,

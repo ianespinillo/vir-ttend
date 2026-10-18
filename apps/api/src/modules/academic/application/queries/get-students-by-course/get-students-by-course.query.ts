@@ -8,5 +8,6 @@ export class GetStudentsByCourseQuery {
 		public readonly limit: number = 10,
 		public readonly status?: StudentStatus,
 		public readonly search?: string,
+		public readonly preceptorId?: string,
 	) {}
 }

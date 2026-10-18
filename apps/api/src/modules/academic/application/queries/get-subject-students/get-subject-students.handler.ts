@@ -1,10 +1,6 @@
-import {
-	ForbiddenException,
-	Inject,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ROLES, STUDENTSTATUS } from '@repo/common';
+import { ForbiddenError, NotFoundError } from '../../../../../common/errors';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
@@ -30,17 +26,17 @@ export class GetSubjectStudentsHandler {
 	async execute(query: GetSubjectStudentsQuery): Promise<StudentResponseDto[]> {
 		const subject = await this.subjectRepo.findById(query.subjectId);
 		if (!subject || subject.deletedAt) {
-			throw new NotFoundException('Subject not found');
+			throw new NotFoundError('Materia no encontrada');
 		}
 		const course = await this.courseRepo.findById(subject.courseId);
 		if (!course || (query.tenantId && course.tenantId !== query.tenantId)) {
-			throw new ForbiddenException('Subject does not belong to your tenant');
+			throw new ForbiddenError('La materia no pertenece a su escuela.');
 		}
 		if (
 			query.requesterRole === ROLES.TEACHER &&
 			subject.teacherId !== query.requesterId
 		) {
-			throw new ForbiddenException('Subject does not belong to the teacher');
+			throw new ForbiddenError('La materia no está asignada a este docente.');
 		}
 
 		const students = (await this.studentRepo.findByCourse(subject.courseId))

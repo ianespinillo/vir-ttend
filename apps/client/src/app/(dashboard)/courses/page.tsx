@@ -39,7 +39,11 @@ export default function CoursesPage() {
 	);
 	const filterParams =
 		selectedAYId && selectedAYId !== 'ALL'
-			? { academicYearId: selectedAYId, level: selectedLevel }
+			? {
+					academicYearId: selectedAYId,
+					level: selectedLevel,
+					preceptorId: isPreceptor ? user?.id : undefined,
+				}
 			: undefined;
 
 	const { data: coursesData, isLoading } = useCourses(filterParams);

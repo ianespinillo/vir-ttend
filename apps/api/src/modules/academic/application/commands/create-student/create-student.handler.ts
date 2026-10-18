@@ -1,5 +1,6 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConflictError } from '../../../../../common/errors';
 import { Student } from '../../../domain/entities/student.entity';
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { WorkshopPlacementService } from '../../services/workshop-placement.service';
@@ -19,8 +20,8 @@ export class CreateStudentHandler {
 			command.tenantId,
 		);
 		if (student)
-			throw new BadRequestException(
-				'Student with this document number already exists',
+			throw new ConflictError(
+				'Ya existe un estudiante con ese número de documento.',
 			);
 		const newStudent = Student.create({
 			firstName: command.firstName,

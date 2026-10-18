@@ -1,6 +1,11 @@
 import { LEVEL, SHIFT, STUDENTSTATUS } from '@repo/common';
 // enroll-student.handler.spec.ts
 import { MockProxy, mock } from 'jest-mock-extended';
+import {
+	BusinessRuleError,
+	ConflictError,
+	NotFoundError,
+} from '../../../../src/common/errors';
 import { EnrollStudentCommand } from '../../../../src/modules/academic/application/commands/enroll-student/enroll-student.command';
 import { EnrollStudentHandler } from '../../../../src/modules/academic/application/commands/enroll-student/enroll-student.handler';
 import { WorkshopPlacementService } from '../../../../src/modules/academic/application/services/workshop-placement.service';
@@ -8,6 +13,7 @@ import { Course } from '../../../../src/modules/academic/domain/entities/course.
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
+import { expectRejection } from '../expect-rejection';
 
 describe('EnrollStudentHandler', () => {
 	let handler: EnrollStudentHandler;
@@ -128,9 +134,11 @@ describe('EnrollStudentHandler', () => {
 	it('should throw when student does not exist', async () => {
 		studentRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new EnrollStudentCommand('student-id', 'new-course-id')),
-		).rejects.toThrow();
+			NotFoundError,
+			'Estudiante no encontrado',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});
@@ -139,9 +147,11 @@ describe('EnrollStudentHandler', () => {
 		studentRepository.findById.mockResolvedValue(mockStudent);
 		courseRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new EnrollStudentCommand('student-id', 'new-course-id')),
-		).rejects.toThrow();
+			NotFoundError,
+			'Curso no encontrado',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});
@@ -164,9 +174,11 @@ describe('EnrollStudentHandler', () => {
 		studentRepository.findById.mockResolvedValue(studentInSameCourse);
 		courseRepository.findById.mockResolvedValue(mockCourse);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new EnrollStudentCommand('student-id', 'new-course-id')),
-		).rejects.toThrow('Student is already enrolled in this course');
+			ConflictError,
+			'El estudiante ya está inscripto en este curso.',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});
@@ -189,9 +201,11 @@ describe('EnrollStudentHandler', () => {
 		studentRepository.findById.mockResolvedValue(transferredStudent);
 		courseRepository.findById.mockResolvedValue(mockCourse);
 
-		await expect(
+		await expectRejection(
 			handler.execute(new EnrollStudentCommand('student-id', 'new-course-id')),
-		).rejects.toThrow('Cannot enroll a transferred student');
+			BusinessRuleError,
+			'No se puede inscribir a un estudiante transferido.',
+		);
 
 		expect(studentRepository.save).not.toHaveBeenCalled();
 	});

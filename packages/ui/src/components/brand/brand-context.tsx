@@ -61,16 +61,21 @@ const writeCachedBranding = (branding: PublicBranding) => {
 };
 
 const applyFavicon = (href: string) => {
-	let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
-	if (!link) {
-		link = document.createElement('link');
+	const links = document.querySelectorAll<HTMLLinkElement>(
+		'link[rel~="icon"], link[rel~="shortcut"]',
+	);
+	if (links.length === 0) {
+		const link = document.createElement('link');
 		link.rel = 'icon';
+		link.href = href;
 		document.head.appendChild(link);
+		return;
 	}
-	// The default icon declares its own type/sizes; a school favicon may be a different format.
-	link.removeAttribute('type');
-	link.removeAttribute('sizes');
-	link.href = href;
+	links.forEach((link) => {
+		link.removeAttribute('type');
+		link.removeAttribute('sizes');
+		link.href = href;
+	});
 };
 
 const syncBrandStyle = (branding: PublicBranding, tokens: BrandTokens) => {
@@ -108,23 +113,38 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 	// so route-level titles set by Next metadata are not overwritten.
 	const appliedTitle = useRef<string | null>(null);
 
+	const isSingle =
+		data?.tenancyMode === 'single' || branding.source === 'instance';
+	const schoolShortName = (
+		(branding.source === 'instance' ? branding.shortName : null) ||
+		(data?.tenancyMode === 'single' ? data?.tenantName : null)
+	)?.trim();
+	const targetTitle =
+		isSingle && schoolShortName ? `Virttend | ${schoolShortName}` : 'Virttend';
+
 	useIsomorphicLayoutEffect(() => {
 		syncBrandStyle(branding, tokens);
 		if (
+			!document.title ||
+			document.title === 'Virttend' ||
+			document.title === 'Vir-ttend' ||
 			document.title === VIRTTEND_BRANDING.shortName ||
-			document.title === appliedTitle.current
+			document.title === appliedTitle.current ||
+			document.title.startsWith('Virttend | ')
 		) {
-			document.title = branding.shortName;
-			appliedTitle.current = branding.shortName;
+			document.title = targetTitle;
+			appliedTitle.current = targetTitle;
 		}
-		if (branding.assets.favicon) {
-			const href = resolveAssetUrl(
-				branding.assets.favicon,
-				apiClient.defaults.baseURL ?? '',
-			);
-			if (href) applyFavicon(href);
-		}
-	}, [branding, tokens]);
+		const faviconAsset = isSingle
+			? branding.assets.favicon ||
+				branding.assets.crestSmall ||
+				branding.assets.crest
+			: null;
+		const faviconHref = faviconAsset
+			? resolveAssetUrl(faviconAsset, apiClient.defaults.baseURL ?? '')
+			: '/icon.svg';
+		if (faviconHref) applyFavicon(faviconHref);
+	}, [branding, tokens, targetTitle, isSingle]);
 
 	useIsomorphicLayoutEffect(() => {
 		if (fresh) writeCachedBranding(fresh);

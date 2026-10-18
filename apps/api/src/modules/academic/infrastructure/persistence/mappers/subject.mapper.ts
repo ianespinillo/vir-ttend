@@ -13,7 +13,7 @@ export class SubjectMapper {
 		ormEntity.kind = entity.kind;
 		ormEntity.courseId = entity.courseId;
 		ormEntity.course = em.getReference(CourseOrmEntity, entity.courseId);
-		ormEntity.teacherId = entity.teacherId;
+		ormEntity.teacherId = entity.teacherId ?? null;
 		ormEntity.deletedAt = entity.deletedAt ?? null;
 		return ormEntity;
 	}
@@ -21,7 +21,7 @@ export class SubjectMapper {
 		return Subject.reconstitute({
 			id: ormEntity.id,
 			courseId: ormEntity.courseId,
-			teacherId: ormEntity.teacherId,
+			teacherId: ormEntity.teacherId ?? undefined,
 			name: ormEntity.name,
 			area: ormEntity.area,
 			weeklyHours: ormEntity.weeklyHours,

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../../common/errors';
 import { IAcademicYearRepository } from '../../../academic/domain/repositories/academic-year.repository.interface';
 import { IScheduleRepository } from '../../../academic/domain/repositories/schedule.repository.interface';
 import { ScheduleService } from '../../../academic/domain/services/schedule.service';
@@ -21,7 +22,7 @@ export class ScheduleAdapter implements ISchedulePort {
 	): Promise<Date[]> {
 		const academicYear =
 			await this.academicYearRepository.findById(academicYearId);
-		if (!academicYear) throw new Error('Academic Year not found');
+		if (!academicYear) throw new NotFoundError('Ciclo lectivo no encontrado');
 		return this.scheduleService.getWorkingDaysOnPeriod(from, to, academicYear);
 	}
 	async findByCourse(courseId: string): Promise<ScheduleSlot[]> {

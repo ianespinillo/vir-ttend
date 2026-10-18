@@ -1,11 +1,7 @@
 import { UniqueConstraintViolationException } from '@mikro-orm/core';
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	Logger,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { AttendanceAlert } from '../../../domain/entities/attendance-alert.entity';
 import { IAcademicYearPort } from '../../../domain/ports/academic-year.port.interface';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
@@ -34,13 +30,11 @@ export class GenerateAlertHandler {
 	) {}
 	async execute(command: GenerateAlertCommand): Promise<void> {
 		const year = await this.academicPort.findById(command.academicYearId);
-		if (!year) throw new BadRequestException('No academic year found.');
+		if (!year) throw new NotFoundError('Ciclo lectivo no encontrado');
 		const course = await this.coursePort.findById(command.courseId);
-		if (!course) throw new BadRequestException('No course found.');
+		if (!course) throw new NotFoundError('Curso no encontrado');
 		if (course.academicYearId !== command.academicYearId)
-			throw new BadRequestException(
-				'No match between course and academic year id found.',
-			);
+			throw new DomainError('El curso no pertenece al ciclo lectivo indicado');
 		const { total, cap } =
 			await this.weightedAbsences.getStudentWeightedAbsencesForAlert(
 				command.studentId,

@@ -9,6 +9,7 @@ import { CreateCourseHandler } from './application/commands/create-course/create
 import { CreateStudentHandler } from './application/commands/create-student/create-student.handler';
 import { CreateSubjectHandler } from './application/commands/create-subject/create-subject.handler';
 import { CreateWorkshopCommissionsHandler } from './application/commands/create-workshop-commissions/create-workshop-commissions.handler';
+import { DeclareNonWorkingDayHandler } from './application/commands/declare-non-working-day/declare-non-working-day.handler';
 import { DeleteCourseHandler } from './application/commands/delete-course/delete-course.handler';
 import { DeleteStudentHandler } from './application/commands/delete-student/delete-student.handler';
 import { DeleteSubjectHandler } from './application/commands/delete-subject/delete-subject.handler';
@@ -72,6 +73,7 @@ import { WorkshopCommissionsController } from './presentation/controllers/worksh
 		AssignPreceptorHandler,
 		AssignTeacherHandler,
 		CreateAcademicYearHandler,
+		DeclareNonWorkingDayHandler,
 		CreateCourseHandler,
 		CreateSubjectHandler,
 		DeleteCourseHandler,

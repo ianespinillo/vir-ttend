@@ -2,6 +2,11 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 // create-course.handler.spec.ts
 import { LEVEL, SHIFT } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+import {
+	BusinessRuleError,
+	ConflictError,
+	NotFoundError,
+} from '../../../../src/common/errors';
 import { CreateCourseCommand } from '../../../../src/modules/academic/application/commands/create-course/create-course.command';
 import { CreateCourseHandler } from '../../../../src/modules/academic/application/commands/create-course/create-course.handler';
 import { AcademicYear } from '../../../../src/modules/academic/domain/entities/academic-year.entity';
@@ -9,6 +14,7 @@ import { Course } from '../../../../src/modules/academic/domain/entities/course.
 import { IAcademicYearRepository } from '../../../../src/modules/academic/domain/repositories/academic-year.repository.interface';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { CourseCreatedEvent } from '../../../../src/modules/academic/events/course-created.event';
+import { expectRejection } from '../expect-rejection';
 
 describe('CreateCourseHandler', () => {
 	let handler: CreateCourseHandler;
@@ -70,7 +76,7 @@ describe('CreateCourseHandler', () => {
 	it('should throw when academic year does not exist', async () => {
 		academicYearRepository.findById.mockResolvedValue(null);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new CreateCourseCommand(
 					'tenant-id',
@@ -82,7 +88,9 @@ describe('CreateCourseHandler', () => {
 					'preceptor-id',
 				),
 			),
-		).rejects.toThrow();
+			NotFoundError,
+			'Ciclo lectivo no encontrado',
+		);
 
 		expect(courseRepository.save).not.toHaveBeenCalled();
 	});
@@ -105,7 +113,7 @@ describe('CreateCourseHandler', () => {
 			}),
 		);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new CreateCourseCommand(
 					'tenant-id',
@@ -117,7 +125,9 @@ describe('CreateCourseHandler', () => {
 					'preceptor-id',
 				),
 			),
-		).rejects.toThrow();
+			BusinessRuleError,
+			'El ciclo lectivo no está activo.',
+		);
 
 		expect(courseRepository.save).not.toHaveBeenCalled();
 	});
@@ -140,7 +150,7 @@ describe('CreateCourseHandler', () => {
 			}),
 		);
 
-		await expect(
+		await expectRejection(
 			handler.execute(
 				new CreateCourseCommand(
 					'tenant-id',
@@ -152,7 +162,9 @@ describe('CreateCourseHandler', () => {
 					'preceptor-id',
 				),
 			),
-		).rejects.toThrow();
+			ConflictError,
+			'Ya existe un curso con ese año, división y turno en el ciclo lectivo.',
+		);
 
 		expect(courseRepository.save).not.toHaveBeenCalled();
 	});

@@ -25,8 +25,11 @@ vir-ttend/
 ├── apps/
 │   ├── api/                 # Backend REST modular (NestJS 10, MikroORM 6, PostgreSQL, Redis)
 │   ├── client/              # Frontend web de producción (Next.js 16 App Router, React 19, Tailwind)
-│   └── demo/                # App de demostración comercial interactiva (desconectada, estado en localStorage)
+│   ├── demo/                # App de demostración comercial interactiva (desconectada, estado en localStorage)
+│   ├── mobile/              # App móvil nativa (Expo SDK 57, NativeWind) para preceptores y docentes
+│   └── site/                # Landing pública estática (Next.js, Vercel) con páginas de descarga
 ├── packages/
+│   ├── branding/            # Lógica de branding agnóstica de framework (Zod schemas, tokens, assets)
 │   ├── common/              # DTOs, schemas Zod, interfaces de dominio, enums de roles y utilidades
 │   ├── hooks/               # Custom hooks de React con TanStack Query y cliente HTTP Axios
 │   ├── ui/                  # Design System (Radix UI, Tailwind CSS, layouts y componentes de presentación)
@@ -81,19 +84,55 @@ vir-ttend/
   - Botón "Reset demo" para restaurar el estado canónico al instante.
   - Simulación completa de todas las pantallas y flujos visuales del MVP.
 
-### 3.4 `packages/common`
+### 3.4 `apps/mobile` (App Móvil Nativa)
+- **Tecnología:** Expo SDK 57 + React Native, NativeWind.
+- **Destinatarios:** Preceptores y docentes.
+- **Variantes:** Un único codebase, dos variantes controladas por la variable de entorno `APP_VARIANT`:
+  - `general` → `com.virttend.app` / Vir-ttend (servidor compartido, aún no desplegado).
+  - `eest3` → `com.virttend.eest3` / EEST Nº3 Eva Perón — API: `https://eest3.virttend.app/api`.
+- **Precedencia de URL de API:** `EXPO_PUBLIC_API_URL` > `extra.apiUrl` de la variante > `http://localhost:3001`.
+- **Desarrollo sobre USB:** `pnpm --filter mobile android:usb` (flujo ADB reverse).
+- **Builds:** EAS vía `.github/workflows/mobile-release.yaml` → APKs publicados en GitHub Releases en cada push a `main` que toque la app.
+- **Funcionalidades implementadas:** Asistencia (diaria + por materia), branding, soporte offline y configuración.
+- **Autenticación:** `src/config/app-config.ts`; la información de tenant proviene de `GET /config/public`, nunca hardcodeada.
+
+### 3.5 `apps/site` (Landing Pública)
+- **Tecnología:** Next.js (App Router, Server Components), desplegado en Vercel (`pnpm --filter site dev` → puerto 3002).
+- **Propósito:** Landing pública estática: presentación del producto, planes, app móvil, FAQ, contacto, páginas de descarga y política de privacidad.
+- **Sin backend.** JavaScript del lado cliente mínimo, únicamente para `PlatformScope` (detecta Android/iOS para priorizar el botón de descarga).
+- **Dependencias internas:** Branding de `@repo/branding` y tokens de `@repo/ui/tokens.css`.
+- **Páginas:**
+  - `/` — Landing principal.
+  - `/descargar` — Descarga general + listado de colegios.
+  - `/descargar/[slug]` — Página de descarga por colegio con QR.
+  - `/privacidad` — Política de privacidad (borrador, `noindex`).
+- **Fuente de verdad de configuración de descarga:** `src/config/mobile-apps.ts`.
+- **Variables de entorno clave:** `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_DEMO_URL` (default: `https://demo.virttend.app`), `NEXT_PUBLIC_APP_URL` (instancia compartida, oculta si no está definida), `NEXT_PUBLIC_CONTACT_EMAIL`.
+
+### 3.6 `packages/branding`
+- **Responsabilidad:** Lógica de branding agnóstica de framework, compartida por la API, `@repo/ui` y la app móvil.
+- **Implementación:** Funciones puras + schemas Zod, sin dependencia de ningún framework.
+- **Subpaths exportados:**
+  - `@repo/branding` — Tipos, schemas, `VIRTTEND_BRANDING`, `resolveBranding`, `deriveBrandTokens`, utilidades de color, `resolveAssetUrl`.
+  - `@repo/branding/web` — `toShadcnVars`, `brandStyleSheet` (CSS vars de shadcn).
+  - `@repo/branding/native` — `toNativeWindVars`, `nativewindPrimaryColors`, `NATIVE_DEFAULT_VARS`.
+  - `@repo/branding/marks` — Geometría y paleta del sello de Vir-ttend.
+- **Schema (`brandingFileSchema`):** Valida `version`, `displayName`, `shortName`, `colors` (`primary`, `accent`, `highlight` en `#RRGGBB`), `assets` (`crest`, `crestSmall`, `crestSmallPng`, `favicon`).
+- **Build:** `pnpm --filter @repo/branding build` (tsup).
+
+### 3.7 `packages/common`
 - **Responsabilidad:** Núcleo de tipos y validación agnóstico de framework.
 - **Exportaciones clave:**
   - Enums de roles: `ROLES = { SUPERADMIN: 'SUPERADMIN', ADMIN: 'ADMIN', PRECEPTOR: 'PRECEPTOR', TEACHER: 'TEACHER' }`.
   - Predicados de autorización: `isPathAllowedForRole(role, pathname)`.
   - Schemas Zod y DTOs para autenticación, estudiantes, asistencia, alertas, cursos y comunicados.
 
-### 3.5 `packages/hooks`
+### 3.8 `packages/hooks`
 - **Responsabilidad:** Capa de datos reactiva para el frontend.
 - **Tecnología:** TanStack Query (`@tanstack/react-query`) + Axios con `withCredentials: true`.
 - **Contenido:** Claves de consulta centralizadas (`keys.ts`) y hooks como `useAuth`, `useStudents`, `useAttendance`, `useAlerts`, `useReports`, etc.
 
-### 3.6 `packages/ui`
+### 3.9 `packages/ui`
 - **Responsabilidad:** Design System y componentes de presentación.
 - **Componentes:** Componentes base accesibles inspirados en Radix UI / shadcn (Button, Dialog, Table, Form, Select, Toaster, etc.) y layouts integrados (`DashboardLayout`, `Sidebar`, `Forbidden`, `LoadingSpinner`).
 
@@ -159,6 +198,8 @@ pnpm dev                       # Todas las apps vía Turborepo
 pnpm --filter api dev          # Solo Backend
 pnpm --filter client dev       # Solo Frontend Client
 pnpm --filter demo dev         # Solo Demo Comercial
+pnpm --filter site dev         # Solo Landing Pública
+pnpm --filter mobile android:usb  # App móvil sobre USB (ADB reverse)
 
 # Base de datos (MikroORM)
 cd apps/api

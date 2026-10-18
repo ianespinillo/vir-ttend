@@ -105,9 +105,11 @@ export function absencePercent(
 	late: number,
 	totalSlots: number,
 ): number {
-	if (totalSlots <= 0) return 0;
+	if (totalSlots <= 0 || Number.isNaN(totalSlots)) return 0;
+	const safeAbsent = Number.isNaN(absent) ? 0 : absent;
+	const safeLate = Number.isNaN(late) ? 0 : late;
 	return Number(
-		((effectiveAbsenceCount(absent, late) / totalSlots) * 100).toFixed(1),
+		((effectiveAbsenceCount(safeAbsent, safeLate) / totalSlots) * 100).toFixed(1),
 	);
 }
 
@@ -946,10 +948,14 @@ export function getMonthlyReport(
 		averageAttendance: reportStudents.length
 			? Number(
 					(
-						reportStudents.reduce(
-							(sum, student) => sum + (100 - (student.absencePercent ?? 0)),
-							0,
-						) / reportStudents.length
+						reportStudents.reduce((sum, student) => {
+							const absence =
+								typeof student.absencePercent === 'number' &&
+								!Number.isNaN(student.absencePercent)
+									? student.absencePercent
+									: 0;
+							return sum + (100 - absence);
+						}, 0) / reportStudents.length
 					).toFixed(1),
 				)
 			: 0,

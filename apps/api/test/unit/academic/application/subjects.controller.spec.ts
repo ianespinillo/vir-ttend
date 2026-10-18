@@ -119,4 +119,22 @@ describe('SubjectsController (teacher endpoints)', () => {
 
 		expect(new SubjectResponseDto(subject).courseId).toBe('course-1');
 	});
+
+	it('SubjectResponseDto exposes teacherName when provided', () => {
+		const subject = Subject.reconstitute({
+			id: 'sub-1',
+			courseId: 'course-1',
+			teacherId: 'teacher-1',
+			name: 'Matemática',
+			area: 'Ciencias',
+			weeklyHours: 4,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+
+		expect(new SubjectResponseDto(subject, 'Ada Lovelace').teacherName).toBe(
+			'Ada Lovelace',
+		);
+		expect(new SubjectResponseDto(subject).teacherName).toBeUndefined();
+	});
 });

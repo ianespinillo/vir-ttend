@@ -1,7 +1,12 @@
-// deactivate-membership.handler.spec.ts
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
+// deactivate-membership.handler.spec.ts
+import {
+	ConflictError,
+	ForbiddenError,
+	NotFoundError,
+} from '../../../src/common/errors';
 import { DeactivateMembershipCommand } from '../../../src/modules/identity/application/commands/deactivate-membership/deactivate-membership.command';
 import { DeactivateMembershipHandler } from '../../../src/modules/identity/application/commands/deactivate-membership/deactivate-membership.handler';
 import { UserTenantMembership } from '../../../src/modules/identity/domain/entities/user-tenant-membership.entity';
@@ -122,6 +127,8 @@ describe('DeactivateMembershipHandler', () => {
 	});
 
 	it('should throw when actor lacks permission', async () => {
+		membershipRepository.findByUserAndTenant.mockResolvedValue(mockMembership);
+
 		await expect(
 			handler.execute(
 				new DeactivateMembershipCommand(
@@ -131,7 +138,9 @@ describe('DeactivateMembershipHandler', () => {
 					'actor-id',
 				),
 			),
-		).rejects.toThrow();
+		).rejects.toStrictEqual(
+			new ForbiddenError('No tiene permiso para gestionar a este usuario.'),
+		);
 
 		expect(membershipRepository.save).not.toHaveBeenCalled();
 	});
@@ -148,7 +157,9 @@ describe('DeactivateMembershipHandler', () => {
 					'actor-id',
 				),
 			),
-		).rejects.toThrow();
+		).rejects.toStrictEqual(
+			new NotFoundError('El usuario no pertenece a esta institución.'),
+		);
 
 		expect(membershipRepository.save).not.toHaveBeenCalled();
 	});
@@ -176,7 +187,9 @@ describe('DeactivateMembershipHandler', () => {
 					'actor-id',
 				),
 			),
-		).rejects.toThrow();
+		).rejects.toStrictEqual(
+			new ConflictError('El usuario ya está desactivado en esta institución.'),
+		);
 
 		expect(membershipRepository.save).not.toHaveBeenCalled();
 	});
@@ -214,7 +227,7 @@ describe('DeactivateMembershipHandler', () => {
 		expect(saved.isActive).toBe(false);
 	});
 
-	it('should throw NotFoundException when email has no matching user', async () => {
+	it('should throw NotFoundError when email has no matching user', async () => {
 		userRepository.findByEmail.mockResolvedValue(null);
 
 		await expect(
@@ -227,8 +240,8 @@ describe('DeactivateMembershipHandler', () => {
 					'unknown@tenant.com',
 				),
 			),
-		).rejects.toThrow(
-			new NotFoundException('User with email unknown@tenant.com not found'),
+		).rejects.toStrictEqual(
+			new NotFoundError('No existe un usuario con el correo unknown@tenant.com.'),
 		);
 
 		expect(membershipRepository.findByUserAndTenant).not.toHaveBeenCalled();
