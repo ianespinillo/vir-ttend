@@ -54,7 +54,7 @@ export default function CreateUserInterceptedModal() {
 					<UserForm
 						mode="create"
 						isSuperAdmin={isSuperAdmin}
-						canAssignAdmin={publicConfig?.tenancyMode === 'single'}
+						canAssignAdmin={true}
 						tenants={tenants ?? []}
 						selectedTenantId={currentUser?.tenantId}
 						onCancel={() => handleOpenChange(false)}

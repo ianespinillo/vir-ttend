@@ -121,13 +121,14 @@ describe('ChangeMembershipRoleHandler', () => {
 			expect(membershipRepository.save).not.toHaveBeenCalled();
 		});
 
-		it('keeps multi mode unchanged: admin cannot assign admin', async () => {
+		it('in multi mode: admin can assign admin within tenant', async () => {
 			process.env.TENANCY_MODE = 'multi';
-
-			await expect(change('teacher-id', ROLES.ADMIN)).rejects.toStrictEqual(
-				new ForbiddenError('No tiene permiso para asignar ese rol.'),
+			membershipRepository.findByUserAndTenant.mockResolvedValue(
+				membershipOf('teacher-id', ROLES.TEACHER),
 			);
-			expect(membershipRepository.save).not.toHaveBeenCalled();
+
+			await change('teacher-id', ROLES.ADMIN);
+			expect(membershipRepository.save).toHaveBeenCalled();
 		});
 	});
 

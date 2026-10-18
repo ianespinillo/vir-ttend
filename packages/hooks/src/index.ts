@@ -35,6 +35,7 @@ export * from './features/users/use-update-user';
 export * from './features/users/use-change-password';
 export * from './features/users/use-reset-user-password';
 export * from './features/users/use-profile';
+export * from './features/users/use-my-tenants';
 
 // academic
 export * from './features/academic/use-academic-years';

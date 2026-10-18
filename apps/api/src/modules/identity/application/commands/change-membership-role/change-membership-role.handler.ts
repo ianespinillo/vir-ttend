@@ -18,7 +18,6 @@ export class ChangeMembershipRoleHandler {
 	) {}
 	async execute(command: ChangeMembershipRoleCommand) {
 		const { TENANCY_MODE } = getTenancyConfig();
-		const isSingle = TENANCY_MODE === 'single';
 		if (
 			!AuthorizationService.canManageRole(
 				command.actorRole,
@@ -27,7 +26,10 @@ export class ChangeMembershipRoleHandler {
 			)
 		)
 			throw new ForbiddenError('No tiene permiso para asignar ese rol.');
-		if (isSingle && command.userId === command.actorUserId)
+		if (
+			command.actorRole === ROLES.ADMIN &&
+			command.userId === command.actorUserId
+		)
 			throw new ForbiddenException(SELF_ROLE_CHANGE_MESSAGE);
 		let membership = command.tenantId
 			? await this.memberRepo.findByUserAndTenant(command.userId, command.tenantId)
@@ -40,18 +42,19 @@ export class ChangeMembershipRoleHandler {
 
 		if (!membership)
 			throw new NotFoundError('El usuario no pertenece a esta institución.');
-		if (isSingle) {
-			if (
-				!AuthorizationService.canManageRole(
-					command.actorRole,
-					membership.role,
-					TENANCY_MODE,
-				)
+
+		if (
+			!AuthorizationService.canManageRole(
+				command.actorRole,
+				membership.role,
+				TENANCY_MODE,
 			)
-				throw new ForbiddenError('No tiene permiso para gestionar a este usuario.');
-			if (command.newRole !== ROLES.ADMIN)
-				await assertNotLastActiveAdmin(this.memberRepo, membership);
-		}
+		)
+			throw new ForbiddenError('No tiene permiso para gestionar a este usuario.');
+
+		if (command.actorRole === ROLES.ADMIN && command.newRole !== ROLES.ADMIN)
+			await assertNotLastActiveAdmin(this.memberRepo, membership);
+
 		membership.changeRole(command.newRole);
 		await this.memberRepo.save(membership);
 	}

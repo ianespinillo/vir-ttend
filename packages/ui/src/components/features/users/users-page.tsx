@@ -130,7 +130,7 @@ export function UsersPage({
 	});
 
 	const { data: publicConfig } = usePublicConfig();
-	const canAssignAdmin = publicConfig?.tenancyMode === 'single';
+	const canAssignAdmin = true;
 
 	const createUser = useCreateUser();
 	const updateUser = useUpdateUser();
