@@ -143,7 +143,7 @@ const config: ExpoConfig = {
 	version: '1.2.0',
 	orientation: 'portrait',
 	icon: `${variantConfig.assetsDir}/icon.png`,
-	userInterfaceStyle: 'light',
+	userInterfaceStyle: 'automatic',
 	ios: {
 		supportsTablet: true,
 		bundleIdentifier: variantConfig.appId,

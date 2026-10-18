@@ -1,20 +1,13 @@
 import { AlertCircle, ChevronDown, ChevronUp } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { useThemeColors } from '../theme/use-theme-colors';
 import {
 	type FailedItemInfo,
 	describeFailedItem,
 	selectPermanentFailures,
 } from './outbox-display';
 import { useOutbox } from './use-outbox';
-
-// NativeWind: className stays static, colors go through inline style.
-const RED = {
-	background: '#FEF2F2',
-	border: '#FECACA',
-	title: '#991B1B',
-	text: '#B91C1C',
-};
 
 /**
  * Lists attendance saves that the server rejected permanently, for ANY date
@@ -24,6 +17,9 @@ export function FailedSyncBanner() {
 	const { items, retryItem, removeItem } = useOutbox();
 	const [expanded, setExpanded] = useState(false);
 	const [busyId, setBusyId] = useState<string | null>(null);
+	// NativeWind: className stays static, colors go through inline style.
+	const danger = useThemeColors().status.danger;
+	const RED = { ...danger, title: danger.strongText };
 
 	const failures = useMemo(
 		() => selectPermanentFailures(items).map(describeFailedItem),
@@ -106,20 +102,22 @@ export function FailedSyncBanner() {
 								<TouchableOpacity
 									disabled={busyId !== null}
 									onPress={() => void runAction(failure.id, () => retryItem(failure.id))}
-									className="mr-2 rounded-lg bg-white px-3 py-1.5 active:bg-red-100"
+									className="mr-2 rounded-lg bg-card px-3 py-1.5 active:bg-red-100 dark:active:bg-red-500/25"
 									style={{ opacity: busyId === null ? 1 : 0.5 }}
 								>
-									<Text className="text-xs font-semibold text-primary-700">
+									<Text className="text-xs font-semibold text-primary-700 dark:text-primary-ink">
 										Reintentar
 									</Text>
 								</TouchableOpacity>
 								<TouchableOpacity
 									disabled={busyId !== null}
 									onPress={() => confirmDiscard(failure)}
-									className="rounded-lg bg-white px-3 py-1.5 active:bg-red-100"
+									className="rounded-lg bg-card px-3 py-1.5 active:bg-red-100 dark:active:bg-red-500/25"
 									style={{ opacity: busyId === null ? 1 : 0.5 }}
 								>
-									<Text className="text-xs font-semibold text-red-700">Descartar</Text>
+									<Text className="text-xs font-semibold text-red-700 dark:text-red-300">
+										Descartar
+									</Text>
 								</TouchableOpacity>
 							</View>
 						</View>

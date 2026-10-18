@@ -16,9 +16,11 @@ import { useAuth } from '../../src/context/auth-context';
 import { useBrand } from '../../src/features/branding/brand-context';
 import { BrandMark } from '../../src/features/branding/brand-mark';
 import { PoweredBy } from '../../src/features/branding/powered-by';
+import { useThemeColors } from '../../src/features/theme/use-theme-colors';
 
 export default function LoginScreen() {
-	const { tokens, branding } = useBrand();
+	const { branding } = useBrand();
+	const theme = useThemeColors();
 	const { login, config } = useAuth();
 	const router = useRouter();
 
@@ -63,7 +65,7 @@ export default function LoginScreen() {
 	};
 
 	return (
-		<SafeAreaView className="flex-1 bg-slate-50">
+		<SafeAreaView className="flex-1 bg-background">
 			<KeyboardAvoidingView
 				behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 				className="flex-1"
@@ -78,53 +80,55 @@ export default function LoginScreen() {
 						<View className="mb-3">
 							<BrandMark size="lg" />
 						</View>
-						<Text className="text-2xl font-bold tracking-tight text-slate-900">
+						<Text className="text-2xl font-bold tracking-tight text-foreground">
 							{config.appName}
 						</Text>
 
 						{config.schoolName ? (
-							<View className="mt-2 flex-row items-center rounded-full bg-primary-50 px-3 py-1 border border-primary-100">
-								<School size={14} color={tokens.primary} />
-								<Text className="ml-1.5 text-xs font-semibold text-primary-700">
+							<View className="mt-2 flex-row items-center rounded-full bg-primary-50 dark:bg-primary-ink/15 px-3 py-1 border border-primary-100 dark:border-primary-ink/25">
+								<School size={14} color={theme.primaryInk} />
+								<Text className="ml-1.5 text-xs font-semibold text-primary-700 dark:text-primary-ink">
 									{config.schoolName}
 								</Text>
 							</View>
 						) : (
-							<Text className="mt-1 text-center text-sm text-slate-500">
+							<Text className="mt-1 text-center text-sm text-muted-foreground">
 								Gestión de asistencia escolar
 							</Text>
 						)}
 
-						<View className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1 border border-amber-200">
-							<Text className="text-[11px] font-semibold text-amber-800">
+						<View className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-2.5 py-1 border border-amber-200 dark:border-amber-500/40">
+							<Text className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
 								Exclusivo para Preceptores y Docentes
 							</Text>
 						</View>
 					</View>
 
 					{/* Form Card */}
-					<View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-						<Text className="mb-6 text-xl font-semibold text-slate-800">
+					<View className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+						<Text className="mb-6 text-xl font-semibold text-neutral-800">
 							Iniciar Sesión
 						</Text>
 
 						{errorMessage && (
-							<View className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
-								<Text className="text-sm font-medium text-red-700">{errorMessage}</Text>
+							<View className="mb-4 rounded-xl border border-red-200 dark:border-red-500/40 bg-red-50 dark:bg-red-500/15 p-3">
+								<Text className="text-sm font-medium text-red-700 dark:text-red-300">
+									{errorMessage}
+								</Text>
 							</View>
 						)}
 
 						{/* Email input */}
 						<View className="mb-4">
-							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
+							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-600">
 								Correo Electrónico
 							</Text>
-							<View className="flex-row items-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3 focus:border-primary">
-								<Mail size={18} color="#64748B" />
+							<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary">
+								<Mail size={18} color={theme.mutedForeground} />
 								<TextInput
-									className="ml-2.5 flex-1 text-base text-slate-900"
+									className="ml-2.5 flex-1 text-base text-foreground"
 									placeholder="tu.correo@escuela.edu.ar"
-									placeholderTextColor="#94A3B8"
+									placeholderTextColor={theme.neutral400}
 									autoCapitalize="none"
 									keyboardType="email-address"
 									value={email}
@@ -135,15 +139,15 @@ export default function LoginScreen() {
 
 						{/* Password input */}
 						<View className="mb-6">
-							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
+							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-600">
 								Contraseña
 							</Text>
-							<View className="flex-row items-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3 focus:border-primary">
-								<Lock size={18} color="#64748B" />
+							<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary">
+								<Lock size={18} color={theme.mutedForeground} />
 								<TextInput
-									className="ml-2.5 flex-1 text-base text-slate-900"
+									className="ml-2.5 flex-1 text-base text-foreground"
 									placeholder="••••••••"
-									placeholderTextColor="#94A3B8"
+									placeholderTextColor={theme.neutral400}
 									secureTextEntry
 									value={password}
 									onChangeText={setPassword}
@@ -169,7 +173,7 @@ export default function LoginScreen() {
 
 					{/* Server config status */}
 					<View className="mt-8 items-center">
-						<Text className="text-xs text-slate-400">
+						<Text className="text-xs text-neutral-400">
 							{config.tenancyMode === 'single' && 'Modo: Una escuela'}
 							{config.tenancyMode === 'multi' && 'Modo: Varias escuelas'}
 							{config.tenancyMode === null &&

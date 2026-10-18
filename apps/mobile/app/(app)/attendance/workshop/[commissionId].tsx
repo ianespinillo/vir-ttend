@@ -34,10 +34,10 @@ import {
 	type AttendanceDateNav,
 	useAttendanceDate,
 } from '../../../../src/features/attendance/use-attendance-date';
-import { useBrand } from '../../../../src/features/branding/brand-context';
 import { useIsOnline } from '../../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../../src/features/offline/use-outbox';
 import { useServerReachability } from '../../../../src/features/offline/use-server-reachability';
+import { useThemeColors } from '../../../../src/features/theme/use-theme-colors';
 
 export default function WorkshopAttendanceScreen() {
 	const params = useLocalSearchParams();
@@ -84,7 +84,7 @@ function WorkshopSheet({
 	nav,
 	hasUserEdits,
 }: WorkshopSheetProps) {
-	const { tokens } = useBrand();
+	const theme = useThemeColors();
 	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueWorkshop, getItemForCommission } = useOutbox();
@@ -211,22 +211,22 @@ function WorkshopSheet({
 	};
 
 	return (
-		<SafeAreaView edges={['bottom']} className="flex-1 bg-slate-50">
+		<SafeAreaView edges={['bottom']} className="flex-1 bg-background">
 			{/* Top Bar / Commission Header */}
-			<View className="border-b border-slate-200 bg-white px-5 py-4">
+			<View className="border-b border-border bg-card px-5 py-4">
 				<View className="flex-row items-center justify-between">
 					<View className="flex-1 pr-2">
-						<Text className="text-xl font-bold text-slate-900">
+						<Text className="text-xl font-bold text-foreground">
 							{commissionLabel}
 						</Text>
 					</View>
 
 					<TouchableOpacity
 						onPress={markAllPresent}
-						className="flex-row items-center rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 active:bg-emerald-100"
+						className="flex-row items-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 px-3 py-2 active:bg-emerald-100 dark:active:bg-emerald-500/25"
 					>
-						<CheckCheck size={16} color="#059669" />
-						<Text className="ml-1.5 text-xs font-bold text-emerald-700">
+						<CheckCheck size={16} color={theme.status.success.icon} />
+						<Text className="ml-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
 							Todos presentes
 						</Text>
 					</TouchableOpacity>
@@ -235,9 +235,9 @@ function WorkshopSheet({
 				<AttendanceDateBar nav={nav} />
 
 				{hasNoWorkshop ? (
-					<View className="mt-3 flex-row items-center rounded-lg border border-slate-200 bg-slate-100 px-3 py-2">
-						<Info size={13} color="#64748B" />
-						<Text className="ml-2 flex-1 text-xs text-slate-600">
+					<View className="mt-3 flex-row items-center rounded-lg border border-border bg-muted px-3 py-2">
+						<Info size={13} color={theme.mutedForeground} />
+						<Text className="ml-2 flex-1 text-xs text-neutral-600">
 							Esta comisión no tiene taller en esta fecha.
 						</Text>
 					</View>
@@ -245,19 +245,23 @@ function WorkshopSheet({
 
 				{/* Summary badges */}
 				<View className="mt-3.5 flex-row space-x-2">
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 py-1.5 border border-emerald-100">
-						<Text className="text-xs font-bold text-emerald-700">
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/15 py-1.5 border border-emerald-100 dark:border-emerald-500/25">
+						<Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
 							{counts.present} P
 						</Text>
 					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 py-1.5 border border-red-100">
-						<Text className="text-xs font-bold text-red-700">{counts.absent} A</Text>
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/15 py-1.5 border border-red-100 dark:border-red-500/25">
+						<Text className="text-xs font-bold text-red-700 dark:text-red-300">
+							{counts.absent} A
+						</Text>
 					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 py-1.5 border border-amber-100">
-						<Text className="text-xs font-bold text-amber-700">{counts.late} T</Text>
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/15 py-1.5 border border-amber-100 dark:border-amber-500/25">
+						<Text className="text-xs font-bold text-amber-700 dark:text-amber-300">
+							{counts.late} T
+						</Text>
 					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-slate-100 py-1.5">
-						<Text className="text-xs font-bold text-slate-600">
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-muted py-1.5">
+						<Text className="text-xs font-bold text-neutral-600">
 							{counts.total} Total
 						</Text>
 					</View>
@@ -270,20 +274,28 @@ function WorkshopSheet({
 					className="mx-5 mt-4 rounded-xl p-3 border"
 					style={
 						outboxItem.error?.isPermanent
-							? { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }
-							: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }
+							? {
+									backgroundColor: theme.status.danger.background,
+									borderColor: theme.status.danger.border,
+								}
+							: {
+									backgroundColor: theme.status.warning.background,
+									borderColor: theme.status.warning.border,
+								}
 					}
 				>
 					<View className="flex-row items-center">
 						{outboxItem.error?.isPermanent ? (
-							<AlertCircle size={15} color="#DC2626" />
+							<AlertCircle size={15} color={theme.status.danger.icon} />
 						) : (
-							<Clock size={15} color="#D97706" />
+							<Clock size={15} color={theme.status.warning.icon} />
 						)}
 						<Text
 							className="ml-2 font-bold text-xs"
 							style={{
-								color: outboxItem.error?.isPermanent ? '#991B1B' : '#92400E',
+								color: outboxItem.error?.isPermanent
+									? theme.status.danger.strongText
+									: theme.status.warning.strongText,
 							}}
 						>
 							{outboxItem.error?.isPermanent
@@ -296,14 +308,16 @@ function WorkshopSheet({
 						</Text>
 					</View>
 					{outboxItem.error?.message ? (
-						<Text className="mt-1 text-xs text-red-700">
+						<Text className="mt-1 text-xs text-red-700 dark:text-red-300">
 							{outboxItem.error.message}
 						</Text>
 					) : null}
 					<Text
 						className="mt-0.5 text-[11px]"
 						style={{
-							color: outboxItem.error?.isPermanent ? '#B91C1C' : '#B45309',
+							color: outboxItem.error?.isPermanent
+								? theme.status.danger.text
+								: theme.status.warning.text,
 						}}
 					>
 						{outboxItem.error?.isPermanent
@@ -316,35 +330,37 @@ function WorkshopSheet({
 			{/* Student Roster */}
 			{dayState === 'loading' ? (
 				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color={tokens.primary} />
-					<Text className="mt-3 text-sm text-slate-500">
+					<ActivityIndicator size="large" color={theme.primaryInk} />
+					<Text className="mt-3 text-sm text-muted-foreground">
 						Cargando asistencia del {nav.label}...
 					</Text>
 				</View>
 			) : dayState === 'offline-empty' ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<CloudOff size={36} color="#94A3B8" />
-					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+					<CloudOff size={36} color={theme.neutral400} />
+					<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 						Sin conexión. La lista de alumnos de esta comisión todavía no se descargó.
 					</Text>
 				</View>
 			) : dayState === 'error' ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<AlertCircle size={36} color="#EF4444" />
-					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+					<AlertCircle size={36} color={theme.destructive} />
+					<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 						No se pudo cargar la asistencia de esta fecha.
 					</Text>
 					<TouchableOpacity
 						onPress={() => refetch()}
-						className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 active:bg-primary-100"
+						className="mt-3 rounded-xl border border-primary-200 dark:border-primary-ink/40 bg-primary-50 dark:bg-primary-ink/15 px-4 py-2 active:bg-primary-100 dark:active:bg-primary-ink/25"
 					>
-						<Text className="text-xs font-bold text-primary-700">Reintentar</Text>
+						<Text className="text-xs font-bold text-primary-700 dark:text-primary-ink">
+							Reintentar
+						</Text>
 					</TouchableOpacity>
 				</View>
 			) : students.length === 0 ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<Users size={36} color="#94A3B8" />
-					<Text className="mt-2 text-base font-semibold text-slate-700">
+					<Users size={36} color={theme.neutral400} />
+					<Text className="mt-2 text-base font-semibold text-neutral-700">
 						Comisión sin alumnos registrados
 					</Text>
 				</View>
@@ -353,16 +369,16 @@ function WorkshopSheet({
 					{students.map((student, index) => (
 						<View
 							key={student.studentId}
-							className="mb-2.5 flex-row items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"
+							className="mb-2.5 flex-row items-center justify-between rounded-xl border border-border bg-card p-3.5 shadow-sm"
 						>
 							{/* Student Info */}
 							<View className="flex-1 pr-2">
 								<View className="flex-row items-center">
-									<Text className="mr-2 text-xs font-bold text-slate-400">
+									<Text className="mr-2 text-xs font-bold text-neutral-400">
 										#{index + 1}
 									</Text>
 									<Text
-										className="text-sm font-semibold text-slate-900"
+										className="text-sm font-semibold text-foreground"
 										numberOfLines={1}
 									>
 										{student.studentName}
@@ -383,7 +399,7 @@ function WorkshopSheet({
 
 			{/* Sticky Bottom Confirmation Bar */}
 			{students.length > 0 && dayState === 'ready' && (
-				<View className="border-t border-slate-200 bg-white px-5 py-4 shadow-lg">
+				<View className="border-t border-border bg-card px-5 py-4 shadow-lg">
 					<TouchableOpacity
 						onPress={handleSave}
 						disabled={isSaving}

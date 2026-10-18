@@ -3,30 +3,13 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { describeOutboxBadge } from '../offline/outbox-display';
 import type { OutboxItem } from '../offline/outbox-types';
+import { useThemeColors } from '../theme/use-theme-colors';
 import {
 	type TakenState,
 	dayAttendancePercent,
 	formatDayCounts,
 	formatPercent,
 } from './taken';
-
-// NativeWind: className stays static, the tone is applied through inline style.
-const TAKEN = { background: '#ECFDF5', border: '#A7F3D0', text: '#047857' };
-const PENDING_TAKE = {
-	background: '#F1F5F9',
-	border: '#E2E8F0',
-	text: '#475569',
-};
-const OUTBOX_PENDING = {
-	background: '#FFFBEB',
-	border: '#FDE68A',
-	text: '#B45309',
-};
-const OUTBOX_ERROR = {
-	background: '#FEF2F2',
-	border: '#FECACA',
-	text: '#B91C1C',
-};
 
 interface Props {
 	taken: TakenState;
@@ -38,6 +21,12 @@ interface Props {
  * P/A/T counts) or "Pendiente de toma", plus the outbox sync badge.
  */
 export function TodayStatusBadges({ taken, outboxItem }: Props) {
+	// NativeWind: className stays static, the tone is applied through inline style.
+	const theme = useThemeColors();
+	const TAKEN = theme.status.success;
+	const PENDING_TAKE = theme.neutralTone;
+	const OUTBOX_PENDING = theme.status.warning;
+	const OUTBOX_ERROR = theme.status.danger;
 	const outbox = outboxItem ? describeOutboxBadge(outboxItem) : null;
 	const outboxColors = outbox?.tone === 'error' ? OUTBOX_ERROR : OUTBOX_PENDING;
 
@@ -103,7 +92,7 @@ export function TodayStatusBadges({ taken, outboxItem }: Props) {
 			</View>
 
 			{todayPercent !== null ? (
-				<Text className="text-[11px] text-slate-500">
+				<Text className="text-[11px] text-muted-foreground">
 					Asistencia de hoy: {formatPercent(todayPercent)}
 				</Text>
 			) : null}

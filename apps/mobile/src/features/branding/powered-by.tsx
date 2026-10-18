@@ -7,6 +7,6 @@ const SEAL = require('../../../assets/brand/virttend-mark.png');
 export const PoweredBy: React.FC = () => (
 	<View className="flex-row items-center justify-center">
 		<Image source={SEAL} style={{ width: 14, height: 14 }} />
-		<Text className="ml-1.5 text-xs text-slate-500">con vir-ttend</Text>
+		<Text className="ml-1.5 text-xs text-muted-foreground">con vir-ttend</Text>
 	</View>
 );
