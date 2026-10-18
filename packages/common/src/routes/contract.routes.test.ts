@@ -18,6 +18,7 @@ describe('Contrato de rutas vs apps/api/README.md', () => {
 	it('USER_ROUTES cubre los endpoints de usuarios', () => {
 		expect(USER_ROUTES.users).toBe('/users');
 		expect(USER_ROUTES.me).toBe('/users/me');
+		expect(USER_ROUTES.myTenants).toBe('/users/me/tenants');
 		expect(USER_ROUTES.changeRole('u1')).toBe('/users/u1/role');
 	});
 

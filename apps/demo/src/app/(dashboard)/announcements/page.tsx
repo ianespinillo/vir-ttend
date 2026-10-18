@@ -110,7 +110,12 @@ export default function AnnouncementsPage() {
 				description="Anuncios de la institución"
 				actions={
 					isManager ? (
-						<Button onClick={() => setShowCreateForm(true)}>Nuevo comunicado</Button>
+						<Button
+							data-tour="new-announcement-button"
+							onClick={() => setShowCreateForm(true)}
+						>
+							Nuevo comunicado
+						</Button>
 					) : undefined
 				}
 			/>

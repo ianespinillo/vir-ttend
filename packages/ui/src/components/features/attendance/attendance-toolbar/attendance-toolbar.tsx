@@ -49,7 +49,10 @@ export function AttendanceToolbar({
 	const hasActiveSelection = selectedCourseId || selectedSubjectId;
 
 	return (
-		<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between p-4 bg-card/60 backdrop-blur-md rounded-xl border border-border/80 shadow-xs">
+		<div
+			data-tour="attendance-toolbar"
+			className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between p-4 bg-card/60 backdrop-blur-md rounded-xl border border-border/80 shadow-xs"
+		>
 			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
 				{courses && onCourseChange && (
 					<CourseSelector

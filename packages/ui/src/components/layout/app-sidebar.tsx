@@ -59,7 +59,10 @@ export function AppSidebar({
 
 	return (
 		<Sidebar collapsible="icon">
-			<SidebarHeader className="border-b border-sidebar-border px-3 py-2 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+			<SidebarHeader
+				data-tour="tenant-switcher"
+				className="border-b border-sidebar-border px-3 py-2 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center"
+			>
 				<TenantSwitcher
 					tenants={tenants}
 					currentTenantId={currentTenantId}

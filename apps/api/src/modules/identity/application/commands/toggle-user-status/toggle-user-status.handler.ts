@@ -27,8 +27,11 @@ export class ToggleUserStatusHandler {
 		}
 
 		const { TENANCY_MODE } = getTenancyConfig();
-		const isSingle = TENANCY_MODE === 'single';
-		if (isSingle && !command.isActive && command.userId === command.actorUserId)
+		if (
+			command.actorRole === ROLES.ADMIN &&
+			!command.isActive &&
+			command.userId === command.actorUserId
+		)
 			throw new ForbiddenException(SELF_DEACTIVATION_MESSAGE);
 
 		let membership = command.tenantId
@@ -54,7 +57,8 @@ export class ToggleUserStatusHandler {
 			if (command.isActive) {
 				membership.activate();
 			} else {
-				if (isSingle) await assertNotLastActiveAdmin(this.memberRepo, membership);
+				if (command.actorRole === ROLES.ADMIN)
+					await assertNotLastActiveAdmin(this.memberRepo, membership);
 				membership.deactivate();
 			}
 			await this.memberRepo.save(membership);

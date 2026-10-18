@@ -103,7 +103,11 @@ export function StudentsPage({
 				description="Gestión del alumnado, matriculación y transferencias"
 				actions={
 					(isAdmin || isPreceptor) && (
-						<Button onClick={onCreate} className="gap-2">
+						<Button
+							data-tour="new-student-button"
+							onClick={onCreate}
+							className="gap-2"
+						>
 							<UserPlus className="h-4 w-4" />
 							Nuevo Estudiante
 						</Button>

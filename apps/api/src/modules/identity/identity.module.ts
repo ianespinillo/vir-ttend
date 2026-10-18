@@ -27,6 +27,7 @@ import { GetAnnouncementHandler } from './application/queries/get-announcement/g
 import { GetAnnouncementsForUserHandler } from './application/queries/get-announcements-for-user/get-announcements-for-user.handler';
 import { GetAnnouncementsHandler } from './application/queries/get-announcements/get-announcements.handler';
 import { GetCurrentUserHandler } from './application/queries/get-current-user/get-current-user.handler';
+import { GetMyTenantsHandler } from './application/queries/get-my-tenants/get-my-tenants.handler';
 import { GetTenantHandler } from './application/queries/get-tenant/get-tenant.handler';
 import { GetUserWithMembershipHandler } from './application/queries/get-user-with-membership/get-user-with-membership.handler';
 import { ListTenantsHandler } from './application/queries/list-tenants/list-tenants.handler';
@@ -88,6 +89,7 @@ import { UsersController } from './presentation/controllers/users.controller';
 
 		// Handlers de queries
 		GetCurrentUserHandler,
+		GetMyTenantsHandler,
 		GetTenantHandler,
 		GetUserWithMembershipHandler,
 		ListTenantsHandler,

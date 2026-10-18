@@ -11,6 +11,7 @@ import {
 	FileBarChart,
 	GraduationCap,
 	HelpCircle,
+	Inbox,
 	LayoutDashboard,
 	Megaphone,
 	User,
@@ -27,6 +28,7 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
 	LayoutDashboard,
 	BookOpen,
 	GraduationCap,
+	Inbox,
 	Users,
 	Calendar,
 	CalendarCheck,
@@ -71,7 +73,7 @@ export function NavItem({
 
 	if (LinkComponent) {
 		return (
-			<SidebarMenuItem>
+			<SidebarMenuItem data-tour={`nav:${item.href}`}>
 				<LinkComponent href={item.href} className="w-full block">
 					{content}
 				</LinkComponent>
@@ -79,5 +81,7 @@ export function NavItem({
 		);
 	}
 
-	return <SidebarMenuItem>{content}</SidebarMenuItem>;
+	return (
+		<SidebarMenuItem data-tour={`nav:${item.href}`}>{content}</SidebarMenuItem>
+	);
 }

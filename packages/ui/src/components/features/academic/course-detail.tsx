@@ -204,18 +204,34 @@ export function CourseDetail({
 			</Card>
 
 			<Tabs defaultValue="overview" className="w-full">
-				<TabsList
-					className={`grid w-full max-w-xl ${showCommissions ? 'grid-cols-6' : 'grid-cols-5'}`}
-				>
-					<TabsTrigger value="overview">Resumen</TabsTrigger>
-					<TabsTrigger value="subjects">Materias</TabsTrigger>
-					<TabsTrigger value="schedule">Horario</TabsTrigger>
-					<TabsTrigger value="students">Estudiantes</TabsTrigger>
-					<TabsTrigger value="attendance">Asistencia</TabsTrigger>
-					{showCommissions && (
-						<TabsTrigger value="commissions">Comisiones</TabsTrigger>
-					)}
-				</TabsList>
+				<div className="w-full overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+					<TabsList
+						className={`inline-flex w-auto min-w-full justify-start gap-1 p-1 sm:grid sm:w-full sm:max-w-xl ${
+							showCommissions ? 'sm:grid-cols-6' : 'sm:grid-cols-5'
+						}`}
+					>
+						<TabsTrigger value="overview" className="shrink-0 px-3">
+							Resumen
+						</TabsTrigger>
+						<TabsTrigger value="subjects" className="shrink-0 px-3">
+							Materias
+						</TabsTrigger>
+						<TabsTrigger value="schedule" className="shrink-0 px-3">
+							Horario
+						</TabsTrigger>
+						<TabsTrigger value="students" className="shrink-0 px-3">
+							Estudiantes
+						</TabsTrigger>
+						<TabsTrigger value="attendance" className="shrink-0 px-3">
+							Asistencia
+						</TabsTrigger>
+						{showCommissions && (
+							<TabsTrigger value="commissions" className="shrink-0 px-3">
+								Comisiones
+							</TabsTrigger>
+						)}
+					</TabsList>
+				</div>
 
 				<TabsContent value="overview" className="pt-4 space-y-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">

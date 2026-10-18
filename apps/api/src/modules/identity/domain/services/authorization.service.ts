@@ -4,7 +4,7 @@ export type AuthorizationTenancyMode = 'multi' | 'single';
 
 const canManage: Record<Roles, Roles[]> = {
 	[ROLES.SUPERADMIN]: [ROLES.ADMIN],
-	[ROLES.ADMIN]: [ROLES.PRECEPTOR, ROLES.TEACHER],
+	[ROLES.ADMIN]: [ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER],
 	[ROLES.PRECEPTOR]: [],
 	[ROLES.TEACHER]: [],
 };
@@ -16,13 +16,12 @@ const canCreate: Record<Roles, Roles[]> = {
 		ROLES.PRECEPTOR,
 		ROLES.TEACHER,
 	],
-	[ROLES.ADMIN]: [ROLES.PRECEPTOR, ROLES.TEACHER],
+	[ROLES.ADMIN]: [ROLES.ADMIN, ROLES.PRECEPTOR, ROLES.TEACHER],
 	[ROLES.PRECEPTOR]: [],
 	[ROLES.TEACHER]: [],
 };
 
-// En modo single-tenant el ADMIN administra a otros ADMIN del colegio.
-const SINGLE_TENANT_ADMIN_ROLES: Roles[] = [
+const ADMIN_MANAGED_ROLES: Roles[] = [
 	ROLES.ADMIN,
 	ROLES.PRECEPTOR,
 	ROLES.TEACHER,
@@ -32,20 +31,20 @@ export class AuthorizationService {
 	static canManageRole(
 		actorRole: Roles,
 		targetRole: Roles,
-		mode: AuthorizationTenancyMode = 'multi',
+		_mode: AuthorizationTenancyMode = 'multi',
 	): boolean {
-		if (mode === 'single' && actorRole === ROLES.ADMIN) {
-			return SINGLE_TENANT_ADMIN_ROLES.includes(targetRole);
+		if (actorRole === ROLES.ADMIN) {
+			return ADMIN_MANAGED_ROLES.includes(targetRole);
 		}
-		return canManage[actorRole].includes(targetRole);
+		return canManage[actorRole]?.includes(targetRole) ?? false;
 	}
 	static canCreateRole(
 		actorRole: Roles,
 		role: Roles,
-		mode: AuthorizationTenancyMode = 'multi',
+		_mode: AuthorizationTenancyMode = 'multi',
 	): boolean {
-		if (mode === 'single' && actorRole === ROLES.ADMIN) {
-			return SINGLE_TENANT_ADMIN_ROLES.includes(role);
+		if (actorRole === ROLES.ADMIN) {
+			return ADMIN_MANAGED_ROLES.includes(role);
 		}
 		return canCreate[actorRole]?.includes(role) ?? false;
 	}

@@ -1,7 +1,7 @@
 'use client';
 
 import { ATTENDANCE_STATUS, type AttendanceStatus } from '@repo/common';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, XCircle } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import {
 	Select,
@@ -55,7 +55,7 @@ export function AttendanceStatusSelect({
 			case ATTENDANCE_STATUS.JUSTIFIED:
 				return {
 					label: 'Justificado',
-					icon: CheckCircle2,
+					icon: FileText,
 					className:
 						'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30 font-medium',
 				};
@@ -116,6 +116,17 @@ export function AttendanceStatusSelect({
 						<span>Tarde (fuera de tolerancia)</span>
 					</div>
 				</SelectItem>
+				{value === ATTENDANCE_STATUS.JUSTIFIED && (
+					<SelectItem
+						key={ATTENDANCE_STATUS.JUSTIFIED}
+						value={ATTENDANCE_STATUS.JUSTIFIED}
+					>
+						<div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-medium">
+							<FileText className="h-4 w-4 shrink-0" />
+							<span>Justificado</span>
+						</div>
+					</SelectItem>
+				)}
 			</SelectContent>
 		</Select>
 	);

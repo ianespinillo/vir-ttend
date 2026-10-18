@@ -33,8 +33,7 @@ export class DeactivateMembershipHandler {
 			userId = user.id;
 		}
 		const { TENANCY_MODE } = getTenancyConfig();
-		const isSingle = TENANCY_MODE === 'single';
-		if (isSingle && userId === command.actorUserId)
+		if (command.actorRole === ROLES.ADMIN && userId === command.actorUserId)
 			throw new ForbiddenException(SELF_DEACTIVATION_MESSAGE);
 		let membership = command.tenantId
 			? await this.memberRepo.findByUserAndTenant(userId, command.tenantId)
@@ -59,7 +58,8 @@ export class DeactivateMembershipHandler {
 			throw new ConflictError(
 				'El usuario ya está desactivado en esta institución.',
 			);
-		if (isSingle) await assertNotLastActiveAdmin(this.memberRepo, membership);
+		if (command.actorRole === ROLES.ADMIN)
+			await assertNotLastActiveAdmin(this.memberRepo, membership);
 		membership.deactivate();
 		await this.memberRepo.save(membership);
 
