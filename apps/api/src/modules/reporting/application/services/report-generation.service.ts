@@ -66,6 +66,7 @@ export class ReportGenerationService {
 					id,
 					dailyPerStudent.get(id) ?? [],
 					workshopPerStudent.get(id) ?? [],
+					course.isWorkshopOnly,
 				),
 			),
 		);
@@ -104,16 +105,22 @@ export class ReportGenerationService {
 			),
 		]);
 
+		const courseId = (dailyRecords[0] ?? workshopRecords[0])?.courseId;
+		const course = courseId ? await this.coursePort.findById(courseId) : null;
+		const workshopOnly = course?.isWorkshopOnly ?? false;
+
 		const basic = await this.buildStudentReport(
 			studentId,
 			dailyRecords,
 			workshopRecords,
+			workshopOnly,
 		);
 
-		const courseId = (dailyRecords[0] ?? workshopRecords[0])?.courseId;
-		const course = courseId ? await this.coursePort.findById(courseId) : null;
-
-		const months = this.buildMonthlyBreakdown(dailyRecords, workshopRecords);
+		const months = this.buildMonthlyBreakdown(
+			dailyRecords,
+			workshopRecords,
+			workshopOnly,
+		);
 		const totals = this.aggregateMonthlyTotals(months);
 
 		return {
@@ -137,6 +144,7 @@ export class ReportGenerationService {
 		id: string,
 		dailyRecords: AttendanceRecord[],
 		workshopRecords: AttendanceRecord[],
+		workshopOnly: boolean,
 	): Promise<StudentReportEntry> {
 		const student = await this.studentPort.findStudent(id);
 		if (!student) throw new NotFoundError('Estudiante no encontrado');
@@ -145,6 +153,7 @@ export class ReportGenerationService {
 		const metrics = this.metrics.calculateStudentMetrics(
 			dailyRecords,
 			workshopRecords,
+			{ workshopOnly },
 		);
 
 		return {
@@ -183,6 +192,7 @@ export class ReportGenerationService {
 	private buildMonthlyBreakdown(
 		dailyRecords: AttendanceRecord[],
 		workshopRecords: AttendanceRecord[],
+		workshopOnly: boolean,
 	): StudentMonthlyEntry[] {
 		const keys = new Set(
 			[...dailyRecords, ...workshopRecords].map((r) => this.monthKeyOf(r)),
@@ -195,6 +205,7 @@ export class ReportGenerationService {
 				const metrics = this.metrics.calculateStudentMetrics(
 					dailyRecords.filter((r) => this.monthKeyOf(r) === key),
 					workshopRecords.filter((r) => this.monthKeyOf(r) === key),
+					{ workshopOnly },
 				);
 
 				return {

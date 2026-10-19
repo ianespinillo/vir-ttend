@@ -19,6 +19,7 @@ export class CourseAdapter implements ICoursePort {
 				academicYearId,
 				c.isActive,
 				c.level,
+				c.yearNumber,
 			),
 		);
 	}
@@ -31,6 +32,7 @@ export class CourseAdapter implements ICoursePort {
 			course.academicYearId,
 			course.isActive,
 			course.level,
+			course.yearNumber,
 		);
 	}
 	async findByPreceptorId(preceptorId: string): Promise<Course[]> {
@@ -42,6 +44,7 @@ export class CourseAdapter implements ICoursePort {
 				c.academicYearId,
 				c.isActive,
 				c.level,
+				c.yearNumber,
 			),
 		);
 	}

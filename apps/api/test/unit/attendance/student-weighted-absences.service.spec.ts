@@ -151,7 +151,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
-				noonOf(MON),
+				{ now: noonOf(MON) },
 			);
 
 			expect(result.total).toBe(0.5);
@@ -168,7 +168,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-10',
-				noonOf(TUE),
+				{ now: noonOf(TUE) },
 			);
 
 			expect(result.total).toBe(1);
@@ -185,7 +185,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
-				noonOf(MON),
+				{ now: noonOf(MON) },
 			);
 
 			expect(result.total).toBe(1);
@@ -203,7 +203,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
-				noonOf(MON),
+				{ now: noonOf(MON) },
 			);
 
 			expect(result.total).toBe(1);
@@ -240,7 +240,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
-				noonOf(MON),
+				{ now: noonOf(MON) },
 			);
 
 			expect(result.total).toBe(0.5);
@@ -257,7 +257,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
-				noonOf(TUE),
+				{ now: noonOf(TUE) },
 			);
 
 			expect(result.total).toBe(0.5);
@@ -274,7 +274,7 @@ describe('StudentWeightedAbsencesService', () => {
 				'student-1',
 				'year-1',
 				'2026-03-09',
-				noonOf(utc('2026-03-12')),
+				{ now: noonOf(utc('2026-03-12')) },
 			);
 
 			expect(result.total).toBe(1);
@@ -294,6 +294,55 @@ describe('StudentWeightedAbsencesService', () => {
 			);
 
 			expect(result.total).toBe(1);
+		});
+	});
+
+	describe('workshop-only course (7th year technical)', () => {
+		it('weighs a workshop absence 1 in the report total', async () => {
+			const { service } = build({
+				workshop: [workshopRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+			});
+
+			const result = await service.getStudentWeightedAbsences(
+				'student-1',
+				'year-1',
+				undefined,
+				{ workshopOnly: true },
+			);
+
+			expect(result.total).toBe(1);
+			expect(result.breakdown).toEqual({ daily: 0, workshop: 1 });
+		});
+
+		it('weighs a workshop absence 1 in the alert total and skips the expected contraturno', async () => {
+			const { service, commissionPort } = build({
+				workshop: [workshopRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission: { courseId: 'course-1', number: 1 },
+				workshopDays: [DAYOFWEEK.MONDAY],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+				'2026-03-09',
+				{ now: new Date(MON.getTime() + 12 * 3600_000), workshopOnly: true },
+			);
+
+			expect(result.total).toBe(1);
+			expect(commissionPort.findByStudent).not.toHaveBeenCalled();
+		});
+
+		it('keeps the halved weight for a regular course', async () => {
+			const { service } = build({
+				workshop: [workshopRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+			});
+
+			const result = await service.getStudentWeightedAbsences(
+				'student-1',
+				'year-1',
+			);
+
+			expect(result.total).toBe(0.5);
 		});
 	});
 

@@ -8,6 +8,7 @@ import { dayOfWeekOf } from '../../domain/services/day-of-week.util';
 import {
 	INSTITUTIONAL_ABSENCE_CAP,
 	WeightedAbsenceBreakdown,
+	WeightedAbsenceOptions,
 	calculateWeightedAbsences,
 	toDateKey,
 } from '../../domain/services/weighted-absence';
@@ -17,6 +18,11 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export interface AbsencePeriod {
 	from: Date;
 	to: Date;
+}
+
+export interface AlertAbsenceOptions extends WeightedAbsenceOptions {
+	/** Reference time bounding how recent the trigger date must be. */
+	now?: Date;
 }
 
 export interface StudentWeightedAbsences {
@@ -41,14 +47,16 @@ export class StudentWeightedAbsencesService {
 
 	/**
 	 * Purely held-based total (reports): a contraturno day is one with a workshop
-	 * record. The period defaults to the whole academic year.
+	 * record. The period defaults to the whole academic year. `workshopOnly`
+	 * flags the student's course as workshop-only (no contraturno halving).
 	 */
 	getStudentWeightedAbsences(
 		studentId: string,
 		academicYearId: string,
 		period?: AbsencePeriod,
+		options: WeightedAbsenceOptions = {},
 	): Promise<StudentWeightedAbsences> {
-		return this.compute(studentId, academicYearId, period);
+		return this.compute(studentId, academicYearId, period, undefined, options);
 	}
 
 	/**
@@ -61,25 +69,31 @@ export class StudentWeightedAbsencesService {
 	 * UTC, yesterday covering the evening-shift rollover): an edit of an older day
 	 * stays held-based, since its workshop either was taken already or never will
 	 * be. The day itself comes from the stored record; `now` only bounds how
-	 * recent it must be.
+	 * recent it must be. A workshop-only course has no contraturno, so the
+	 * exception never applies there.
 	 */
 	getStudentWeightedAbsencesForAlert(
 		studentId: string,
 		academicYearId: string,
 		triggerDate?: string,
-		now: Date = new Date(),
+		{ now = new Date(), workshopOnly }: AlertAbsenceOptions = {},
 	): Promise<StudentWeightedAbsences> {
 		const yesterday = toDateKey(new Date(now.getTime() - MS_PER_DAY));
 		const recentTrigger =
-			triggerDate && toDateKey(triggerDate) >= yesterday ? triggerDate : undefined;
-		return this.compute(studentId, academicYearId, undefined, recentTrigger);
+			!workshopOnly && triggerDate && toDateKey(triggerDate) >= yesterday
+				? triggerDate
+				: undefined;
+		return this.compute(studentId, academicYearId, undefined, recentTrigger, {
+			workshopOnly,
+		});
 	}
 
 	private async compute(
 		studentId: string,
 		academicYearId: string,
 		period: AbsencePeriod | undefined,
-		triggerDate?: string,
+		triggerDate: string | undefined,
+		{ workshopOnly }: WeightedAbsenceOptions,
 	): Promise<StudentWeightedAbsences> {
 		const academicYear = await this.academicYearPort.findById(academicYearId);
 		if (!academicYear) throw new NotFoundError('Ciclo lectivo no encontrado');
@@ -103,6 +117,7 @@ export class StudentWeightedAbsencesService {
 			dailyRecords,
 			workshopRecords,
 			expectedContraturnoDays,
+			workshopOnly,
 		});
 		return { total, cap, breakdown };
 	}

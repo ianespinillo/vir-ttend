@@ -10,6 +10,7 @@ import { AttendanceRecord } from '../../../src/modules/attendance/domain/entitie
 import { ScheduleSlot } from '../../../src/modules/attendance/domain/entities/schedule-slot.entity';
 import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
+import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { ISchedulePort } from '../../../src/modules/attendance/domain/ports/schedule.port.interface';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
@@ -67,6 +68,7 @@ describe('daily and subject attendance coexistence', () => {
 			repo,
 			unitOfWork,
 			eventEmitter,
+			mock<ICoursePort>(),
 		);
 		subjectHandler = new RegisterSubjectAttendanceHandler(
 			repo,

@@ -6,6 +6,7 @@ import { BulkRegisterAttendanceCommand } from '../../../src/modules/attendance/a
 import { BulkRegisterAttendanceHandler } from '../../../src/modules/attendance/application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
+import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 
@@ -29,6 +30,7 @@ describe('BulkRegisterAttendanceHandler', () => {
 			attendanceRepo,
 			eventEmitter,
 			studentPort,
+			mock<ICoursePort>(),
 		);
 	});
 

@@ -29,6 +29,16 @@ export interface WeightedAbsenceInput {
 	 * record exists yet (today, while the workshop has not been taken).
 	 */
 	expectedContraturnoDays?: readonly string[];
+	/**
+	 * Workshop-only course (7th year technical, see `isWorkshopOnlyCourse`):
+	 * attendance is a single shift, so there is no contraturno halving. A
+	 * workshop absence weighs 1 and legacy daily records keep their full weight.
+	 */
+	workshopOnly?: boolean;
+}
+
+export interface WeightedAbsenceOptions {
+	workshopOnly?: boolean;
 }
 
 export interface WeightedAbsenceBreakdown {
@@ -91,22 +101,31 @@ function sumByDay(
  * a daily absence weighs 1/2. With no workshop record (not held, or not
  * scheduled) the student had a single shift and a daily absence weighs 1, unless
  * the caller lists the date in `expectedContraturnoDays`. Each
- * date is capped at 1, the daily shift being counted first.
+ * date is capped at 1, the daily shift being counted first. In a workshop-only
+ * course (`workshopOnly`) every shift is the only one of the day: absences weigh
+ * 1 whether daily (legacy) or workshop.
  */
 export function calculateWeightedAbsences(
 	input: WeightedAbsenceInput,
 ): WeightedAbsenceResult {
-	const contraturnoDays = new Set([
-		...input.workshopRecords.map((record) => toDateKey(record.date)),
-		...(input.expectedContraturnoDays ?? []),
-	]);
+	const contraturnoDays = new Set(
+		input.workshopOnly
+			? []
+			: [
+					...input.workshopRecords.map((record) => toDateKey(record.date)),
+					...(input.expectedContraturnoDays ?? []),
+				],
+	);
+	const workshopAbsentWeight = input.workshopOnly
+		? DAILY_ABSENT_WEIGHT
+		: CONTRATURNO_SHIFT_WEIGHT;
 
 	const dailyByDay = sumByDay(input.dailyRecords, (day) =>
 		contraturnoDays.has(day) ? CONTRATURNO_SHIFT_WEIGHT : DAILY_ABSENT_WEIGHT,
 	);
 	const workshopByDay = sumByDay(
 		input.workshopRecords,
-		() => CONTRATURNO_SHIFT_WEIGHT,
+		() => workshopAbsentWeight,
 	);
 
 	let daily = 0;
@@ -152,6 +171,7 @@ export function countDaysGiven(
 export function calculateWeightedAbsencesByStudent(
 	dailyRecords: readonly WeightedStudentRecord[],
 	workshopRecords: readonly WeightedStudentRecord[],
+	options: WeightedAbsenceOptions = {},
 ): Map<string, WeightedAbsenceSummary> {
 	const byStudent = new Map<
 		string,
@@ -175,6 +195,7 @@ export function calculateWeightedAbsencesByStudent(
 			...calculateWeightedAbsences({
 				dailyRecords: daily,
 				workshopRecords: workshop,
+				workshopOnly: options.workshopOnly,
 			}),
 			daysGiven: countDaysGiven(daily, workshop),
 		});

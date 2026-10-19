@@ -130,7 +130,21 @@ describe('GenerateAlertHandler', () => {
 		);
 		expect(
 			weightedAbsences.getStudentWeightedAbsencesForAlert,
-		).toHaveBeenCalledWith('student-1', 'year-1', '2026-03-09');
+		).toHaveBeenCalledWith('student-1', 'year-1', '2026-03-09', {
+			workshopOnly: false,
+		});
+	});
+
+	it('flags a 7th-year secondary course as workshop-only when counting', async () => {
+		coursePort.findById.mockResolvedValue(
+			Course.reconstitute('course-1', '7° A', 'year-1', true, LEVEL.SECONDARY, 7),
+		);
+		await handler.execute(cmd);
+		expect(
+			weightedAbsences.getStudentWeightedAbsencesForAlert,
+		).toHaveBeenCalledWith('student-1', 'year-1', undefined, {
+			workshopOnly: true,
+		});
 	});
 
 	it.each([0, 4.5, 9.75])(

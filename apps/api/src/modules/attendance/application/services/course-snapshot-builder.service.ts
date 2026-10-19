@@ -43,7 +43,7 @@ export class CourseSnapshotBuilderService {
 				courseId,
 				course.academicYearId,
 			),
-			this.weightedTotals(courseId, from, end),
+			this.weightedTotals(courseId, from, end, course.isWorkshopOnly),
 		]);
 		return new CourseSnapshot(
 			courseId,
@@ -55,17 +55,20 @@ export class CourseSnapshotBuilderService {
 			Number.parseInt(late),
 			Number.parseInt(justified),
 			weighted,
+			course.isWorkshopOnly,
 		);
 	}
 
 	/**
 	 * Weighted, held-based absence total of the course and the student-days it is
 	 * measured over, from two bulk reads and the pure weighting per student.
+	 * `workshopOnly` marks a 7th-year technical course (no contraturno halving).
 	 */
 	private async weightedTotals(
 		courseId: string,
 		from: Date,
 		to: Date,
+		workshopOnly: boolean,
 	): Promise<{ absences: number; studentDays: number }> {
 		const [dailyRecords, workshopRecords] = await Promise.all([
 			this.attendanceRepo.findDailyByCourseAndDateRange(courseId, from, to),
@@ -76,6 +79,7 @@ export class CourseSnapshotBuilderService {
 		for (const student of calculateWeightedAbsencesByStudent(
 			dailyRecords,
 			workshopRecords,
+			{ workshopOnly },
 		).values()) {
 			absences += student.total;
 			studentDays += student.daysGiven;

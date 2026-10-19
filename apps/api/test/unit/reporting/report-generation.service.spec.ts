@@ -26,11 +26,12 @@ const makeRecord = (
 	status: AttendanceStatus,
 	studentId: string,
 	date: Date,
+	courseId = 'course-1',
 ): AttendanceRecord =>
 	AttendanceRecord.reconstitute({
 		id: `rec-${Math.random().toString(36).slice(2)}`,
 		studentId,
-		courseId: 'course-1',
+		courseId,
 		date,
 		status,
 	});
@@ -55,6 +56,15 @@ const course = Course.reconstitute({
 	id: 'course-1',
 	name: '3° A',
 	level: LEVEL.PRIMARY,
+	academicYearId: 'ay-1',
+	tenantId: 'tenant-1',
+});
+
+const workshopOnlyCourse = Course.reconstitute({
+	id: 'course-7',
+	name: '7° A',
+	level: LEVEL.SECONDARY,
+	yearNumber: 7,
 	academicYearId: 'ay-1',
 	tenantId: 'tenant-1',
 });
@@ -166,6 +176,19 @@ describe('ReportGenerationService', () => {
 			expect(entry.absent).toBe(1);
 			expect(entry.absenceBreakdown).toEqual({ daily: 0.5, workshop: 0.5 });
 			expect(entry.daysGiven).toBe(1);
+		});
+
+		it('weighs a workshop absence 1 in a workshop-only course (7th year technical)', async () => {
+			coursePort.findById.mockResolvedValue(workshopOnlyCourse);
+			attendanceRecordPort.findWorkshopByCourseAndDateRange.mockResolvedValue([
+				makeRecord(ATTENDANCE_STATUS.ABSENT, 'student-1', jul1),
+				makeRecord(ATTENDANCE_STATUS.LATE, 'student-1', jul2),
+			]);
+
+			const entry = await entryOf('student-1');
+
+			expect(entry.absent).toBe(1.25);
+			expect(entry.absenceBreakdown).toEqual({ daily: 0, workshop: 1.25 });
 		});
 
 		it('weighs a daily absence 1 on a day without a workshop record', async () => {
@@ -299,6 +322,23 @@ describe('ReportGenerationService', () => {
 				}),
 			);
 			coursePort.findById.mockResolvedValue(course);
+		});
+
+		it('weighs workshop absences 1 for a student of a workshop-only course', async () => {
+			coursePort.findById.mockResolvedValue(workshopOnlyCourse);
+			attendanceRecordPort.findDailyByStudentAndDateRange.mockResolvedValue([]);
+			attendanceRecordPort.findWorkshopByStudentAndDateRange.mockResolvedValue([
+				makeRecord(ATTENDANCE_STATUS.ABSENT, 'student-1', aug1, 'course-7'),
+			]);
+
+			const report = await service.generateDetailedStudentReport(
+				'student-1',
+				'ay-1',
+			);
+
+			expect(report.totals.absent).toBe(1);
+			expect(report.months[0].absent).toBe(1);
+			expect(coursePort.findById).toHaveBeenCalledWith('course-7');
 		});
 
 		it('answers not found when the academic year does not exist', async () => {

@@ -139,10 +139,21 @@ export const fetchWorkshopAttendance = async (
 export const fetchMySubjects = async (): Promise<MySubject[]> =>
 	asArray<MySubject>(unwrap(await api.get('/subjects/mine')));
 
+/**
+ * Roster of a subject. `date` (`YYYY-MM-DD`) scopes a mixed-slot workshop
+ * subject to the commission of that weekday; without it, the union.
+ */
 export const fetchSubjectStudents = async (
 	subjectId: string,
+	date?: string,
 ): Promise<StudentItem[]> =>
-	asArray<StudentItem>(unwrap(await api.get(`/subjects/${subjectId}/students`)));
+	asArray<StudentItem>(
+		unwrap(
+			await api.get(`/subjects/${subjectId}/students`, {
+				params: date ? { date } : undefined,
+			}),
+		),
+	);
 
 export const fetchSubjectAttendance = async (
 	subjectId: string,
