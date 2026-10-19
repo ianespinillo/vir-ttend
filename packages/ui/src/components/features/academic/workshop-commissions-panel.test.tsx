@@ -41,8 +41,43 @@ describe('WorkshopCommissionsPanel', () => {
 		expect(screen.getByText(/Las comisiones son opcionales/)).toBeTruthy();
 		expect(screen.queryByText(/Regenerar reparto/)).toBeNull();
 
-		fireEvent.click(screen.getByRole('button', { name: 'Crear comisiones' }));
-		expect(h.onCreate).toHaveBeenCalledTimes(1);
+		fireEvent.click(screen.getByRole('button', { name: 'Crear 2 comisiones' }));
+		expect(h.onCreate).toHaveBeenCalledWith(2);
+	});
+
+	it('lets the admin create a single commission', () => {
+		const h = handlers();
+		render(<WorkshopCommissionsPanel commissions={[]} {...h} />);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Crear 1 comisión' }));
+		expect(h.onCreate).toHaveBeenCalledWith(1);
+	});
+
+	it('shows one card without moves or regeneration when there is a single commission', () => {
+		render(
+			<WorkshopCommissionsPanel
+				commissions={[
+					commission({
+						studentCount: 2,
+						students: [
+							{ id: 's-1', lastName: 'Alvarez', firstName: 'Ana' },
+							{ id: 's-2', lastName: 'Zapata', firstName: 'Zoe' },
+						],
+					}),
+				]}
+				{...handlers()}
+			/>,
+		);
+
+		expect(screen.getAllByText(/^Comisión 14\d/)).toHaveLength(1);
+		expect(screen.getByText(/una sola comisión/)).toBeTruthy();
+		expect(
+			screen.getByRole('combobox', { name: 'Preceptor de la comisión 141' }),
+		).toBeTruthy();
+		expect(screen.queryByRole('button', { name: /Mover a/ })).toBeNull();
+		expect(
+			screen.queryByRole('button', { name: /Regenerar reparto/ }),
+		).toBeNull();
 	});
 
 	it('shows the derived code of each commission with its students', () => {
@@ -52,7 +87,7 @@ describe('WorkshopCommissionsPanel', () => {
 		expect(screen.getByText(/Comisión 142/)).toBeTruthy();
 		expect(screen.getByText('Alvarez, Ana')).toBeTruthy();
 		expect(screen.getByText('Zapata, Zoe')).toBeTruthy();
-		expect(screen.queryByRole('button', { name: 'Crear comisiones' })).toBeNull();
+		expect(screen.queryByRole('button', { name: /Crear/ })).toBeNull();
 	});
 
 	it('orders the commissions by number regardless of response order', () => {

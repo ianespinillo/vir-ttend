@@ -75,4 +75,86 @@ describe('ScheduleForm commissions', () => {
 		await screen.findByText(/se solapa/);
 		expect(onSubmit).not.toHaveBeenCalled();
 	});
+
+	it('hides the selector and submits null when the course has a single commission', async () => {
+		const onSubmit = vi.fn();
+		render(
+			<ScheduleForm
+				subjects={[subject({ kind: SUBJECT_KIND.WORKSHOP })]}
+				commissionNumbers={[1]}
+				onSubmit={onSubmit}
+			/>,
+		);
+		expect(screen.queryByText('Comisión')).toBeNull();
+		fireEvent.click(screen.getByRole('button', { name: 'Agregar Franja' }));
+		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+		expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ commissionNumber: null });
+	});
+
+	it('hides the selector when the course has no commissions', () => {
+		render(
+			<ScheduleForm
+				subjects={[subject({ kind: SUBJECT_KIND.WORKSHOP })]}
+				commissionNumbers={[]}
+				onSubmit={vi.fn()}
+			/>,
+		);
+		expect(screen.queryByText('Comisión')).toBeNull();
+	});
+
+	it('shows the selector when the course has two commissions', () => {
+		render(
+			<ScheduleForm
+				subjects={[subject({ kind: SUBJECT_KIND.WORKSHOP })]}
+				commissionNumbers={[1, 2]}
+				onSubmit={vi.fn()}
+			/>,
+		);
+		expect(screen.getByText('Comisión')).toBeTruthy();
+	});
+
+	it('checks weekly hours only for the commissions the course has', async () => {
+		const onSubmit = vi.fn();
+		render(
+			<ScheduleForm
+				subjects={[subject({ kind: SUBJECT_KIND.WORKSHOP, weeklyHours: 4 })]}
+				// A stale slot for commission 2 must not count: the course only has commission 1.
+				existingSlots={[
+					slot({
+						dayOfWeek: DAYOFWEEK.TUESDAY,
+						startTime: '08:00',
+						endTime: '11:00',
+						commissionNumber: 2,
+					}),
+				]}
+				commissionNumbers={[1]}
+				onSubmit={onSubmit}
+			/>,
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Agregar Franja' }));
+		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+	});
+
+	it('still checks weekly hours per commission when both exist', async () => {
+		const onSubmit = vi.fn();
+		render(
+			<ScheduleForm
+				subjects={[subject({ kind: SUBJECT_KIND.WORKSHOP, weeklyHours: 2 })]}
+				existingSlots={[
+					slot({
+						dayOfWeek: DAYOFWEEK.TUESDAY,
+						startTime: '08:00',
+						endTime: '09:00',
+						commissionNumber: 2,
+					}),
+				]}
+				commissionNumbers={[1, 2]}
+				onSubmit={onSubmit}
+			/>,
+		);
+		// New slot (08:00-09:20, both) pushes commission 2 to 2h20 > 2h.
+		fireEvent.click(screen.getByRole('button', { name: 'Agregar Franja' }));
+		await screen.findByText(/supere sus horas semanales/);
+		expect(onSubmit).not.toHaveBeenCalled();
+	});
 });

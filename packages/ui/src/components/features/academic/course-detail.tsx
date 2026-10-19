@@ -1,6 +1,7 @@
 'use client';
 
 import type {
+	CommissionNumber,
 	DAYOFWEEK,
 	ICourseDetailResponse,
 	IScheduleSlotResponse,
@@ -54,6 +55,11 @@ export interface CourseDetailProps {
 	attendancePath?: string;
 	/** Optional "Comisiones" tab content (workshop commissions); shown only to managers. */
 	commissionsTab?: ReactNode;
+	/**
+	 * Workshop commission numbers of the course, used by the slot form to hide
+	 * the commission selector with one or none. Undefined = unknown.
+	 */
+	commissionNumbers?: readonly CommissionNumber[];
 }
 
 export function CourseDetail({
@@ -76,6 +82,7 @@ export function CourseDetail({
 	canManageSchedule,
 	attendancePath,
 	commissionsTab,
+	commissionNumbers,
 }: CourseDetailProps) {
 	const [scheduleModalState, setScheduleModalState] = useState<{
 		open: boolean;
@@ -378,6 +385,7 @@ export function CourseDetail({
 					existingSlots={schedule}
 					defaultDay={scheduleModalState.day}
 					onSubmit={handleAddSlot}
+					commissionNumbers={commissionNumbers}
 				/>
 			)}
 		</div>

@@ -4,6 +4,7 @@ import { ScheduleSlot } from '../../../domain/entities/schedule-slot.entity';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
+import { IWorkshopCommissionRepository } from '../../../domain/repositories/workshop-commission.repository.interface';
 import { CourseService } from '../../../domain/services/course.service';
 import { ScheduleService } from '../../../domain/services/schedule.service';
 import { SetScheduleCommand } from './set-schedule.command';
@@ -17,6 +18,8 @@ export class SetScheduleHandler {
 		private readonly subjetRepo: ISubjectRepository,
 		@Inject('ICourseRepository')
 		private readonly courseRepo: ICourseRepository,
+		@Inject('IWorkshopCommissionRepository')
+		private readonly commissionRepo: IWorkshopCommissionRepository,
 	) {}
 	async execute(command: SetScheduleCommand) {
 		const { courseId, subjectId } = command;
@@ -42,11 +45,14 @@ export class SetScheduleHandler {
 			const workshopSubjectIds = new Set(
 				courseSubjects.filter((s) => s.isWorkshop).map((s) => s.id.getRaw()),
 			);
+			const commissionNumbers = await this.commissionNumbersOf(courseId);
 			CourseService.validateCommissionSlots(newSlots, workshopSubjectIds);
+			CourseService.validateExistingCommissions(newSlots, commissionNumbers);
 			CourseService.validateWeeklyHours(
 				newSlots,
 				new Map(courseSubjects.map((s) => [s.id.getRaw(), s.weeklyHours])),
 				workshopSubjectIds,
+				commissionNumbers,
 			);
 			CourseService.validateScheduleOverlap(newSlots);
 			await this.scheduleRepo.deleteByCourse(courseId);
@@ -74,16 +80,25 @@ export class SetScheduleHandler {
 		const workshopSubjectIds = new Set(
 			subject.isWorkshop ? [subject.id.getRaw()] : [],
 		);
+		const commissionNumbers = await this.commissionNumbersOf(subject.courseId);
 		CourseService.validateCommissionSlots(newSlots, workshopSubjectIds);
+		CourseService.validateExistingCommissions(newSlots, commissionNumbers);
 		CourseService.validateWeeklyHours(
 			newSlots,
 			new Map([[subject.id.getRaw(), subject.weeklyHours]]),
 			workshopSubjectIds,
+			commissionNumbers,
 		);
 		CourseService.validateScheduleOverlap([...filtered, ...newSlots]);
 		await this.scheduleRepo.deleteBySubject(subjectId);
 		if (newSlots.length > 0) {
 			await this.scheduleRepo.saveMany(newSlots);
 		}
+	}
+
+	/** Numbers of the course's workshop commissions; empty when it has none. */
+	private async commissionNumbersOf(courseId: string) {
+		const commissions = await this.commissionRepo.findByCourse(courseId);
+		return commissions.map((c) => c.number);
 	}
 }
