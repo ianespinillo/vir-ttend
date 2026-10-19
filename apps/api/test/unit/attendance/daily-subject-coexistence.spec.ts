@@ -5,12 +5,16 @@ import { RegisterDailyAttendanceCommand } from '../../../src/modules/attendance/
 import { RegisterDailyAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-daily-attendance/register-daily-attendance.handler';
 import { RegisterSubjectAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.command';
 import { RegisterSubjectAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.handler';
+import { SubjectRosterService } from '../../../src/modules/attendance/application/services/subject-roster.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { ScheduleSlot } from '../../../src/modules/attendance/domain/entities/schedule-slot.entity';
+import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
 import { ISchedulePort } from '../../../src/modules/attendance/domain/ports/schedule.port.interface';
+import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
+import { IWorkshopCommissionPort } from '../../../src/modules/attendance/domain/ports/workshop-commission.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 
 /**
@@ -54,6 +58,10 @@ describe('daily and subject attendance coexistence', () => {
 		schedulePort.findBySubject.mockResolvedValue([
 			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '09:00'),
 		]);
+		const studentPort = mock<IStudentPort>();
+		studentPort.getActiveByCourseId.mockResolvedValue([
+			Student.reconstitute('student-1', 'Ana'),
+		]);
 		eventEmitter = mock<EventEmitter2>();
 		dailyHandler = new RegisterDailyAttendanceHandler(
 			repo,
@@ -64,6 +72,11 @@ describe('daily and subject attendance coexistence', () => {
 			repo,
 			schedulePort,
 			subjectPort,
+			new SubjectRosterService(
+				schedulePort,
+				mock<IWorkshopCommissionPort>(),
+				studentPort,
+			),
 			unitOfWork,
 			eventEmitter,
 		);

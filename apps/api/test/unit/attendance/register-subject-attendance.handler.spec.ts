@@ -8,13 +8,18 @@ import {
 } from '../../../src/common/errors';
 import { RegisterSubjectAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.command';
 import { RegisterSubjectAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-subject-attendance/register-subject-attendance.handler';
+import { SubjectRosterService } from '../../../src/modules/attendance/application/services/subject-roster.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { ScheduleSlot } from '../../../src/modules/attendance/domain/entities/schedule-slot.entity';
+import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
 import { ISchedulePort } from '../../../src/modules/attendance/domain/ports/schedule.port.interface';
+import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
+import { IWorkshopCommissionPort } from '../../../src/modules/attendance/domain/ports/workshop-commission.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
+import { buildCommissionInfo } from './subject-roster.fixtures';
 
 describe('RegisterSubjectAttendanceHandler', () => {
 	let handler: RegisterSubjectAttendanceHandler;
@@ -23,6 +28,8 @@ describe('RegisterSubjectAttendanceHandler', () => {
 	let subjectPort: MockProxy<ISubjectPort>;
 	let unitOfWork: MockProxy<IUnitOfWorkPort>;
 	let eventEmitter: MockProxy<EventEmitter2>;
+	let studentPort: MockProxy<IStudentPort>;
+	let commissionPort: MockProxy<IWorkshopCommissionPort>;
 
 	const mondayDate = new Date('2026-07-06T12:00:00Z');
 	const buildCommand = (
@@ -64,12 +71,28 @@ describe('RegisterSubjectAttendanceHandler', () => {
 		unitOfWork = mock<IUnitOfWorkPort>();
 		unitOfWork.run.mockImplementation(async (work) => work());
 		eventEmitter = mock<EventEmitter2>();
+		studentPort = mock<IStudentPort>();
+		commissionPort = mock<IWorkshopCommissionPort>();
 		handler = new RegisterSubjectAttendanceHandler(
 			attendanceRepo,
 			schedulePort,
 			subjectPort,
+			new SubjectRosterService(schedulePort, commissionPort, studentPort),
 			unitOfWork,
 			eventEmitter,
+		);
+		studentPort.getActiveByCourseId.mockResolvedValue([
+			Student.reconstitute('student-1', 'Ana'),
+			Student.reconstitute('student-2', 'Beto'),
+		]);
+		commissionPort.findByCourse.mockResolvedValue([
+			buildCommissionInfo(1),
+			buildCommissionInfo(2),
+		]);
+		commissionPort.getActiveStudents.mockImplementation(async (id) =>
+			id === 'commission-1'
+				? [Student.reconstitute('student-1', 'Ana')]
+				: [Student.reconstitute('student-2', 'Beto')],
 		);
 		schedulePort.findBySubject.mockResolvedValue([
 			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '09:00'),
@@ -282,5 +305,51 @@ describe('RegisterSubjectAttendanceHandler', () => {
 				),
 			).rejects.toThrow('La materia no tiene clases el día seleccionado');
 		});
+	});
+
+	it('should accept students of the whole course for a theory subject', async () => {
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+
+		await handler.execute(
+			buildCommand([
+				{ studentId: 'student-1', status: ATTENDANCE_STATUS.PRESENT },
+				{ studentId: 'student-2', status: ATTENDANCE_STATUS.ABSENT },
+			]),
+		);
+
+		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
+		expect(saved.map((r) => r.studentId)).toEqual(['student-1', 'student-2']);
+	});
+
+	it('should reject students outside the subject roster and save nothing', async () => {
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '12:00', 1),
+		]);
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+
+		const attempt = handler.execute(
+			buildCommand([
+				{ studentId: 'student-1', status: ATTENDANCE_STATUS.PRESENT },
+				{ studentId: 'student-2', status: ATTENDANCE_STATUS.PRESENT },
+			]),
+		);
+
+		await expect(attempt).rejects.toBeInstanceOf(DomainError);
+		await expect(attempt).rejects.toThrow(
+			'Hay alumnos que no pertenecen a la materia',
+		);
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+		expect(eventEmitter.emit).not.toHaveBeenCalled();
+	});
+
+	it('should reject inactive students, who are not in the roster', async () => {
+		const attempt = handler.execute(
+			buildCommand([
+				{ studentId: 'student-9', status: ATTENDANCE_STATUS.PRESENT },
+			]),
+		);
+
+		await expect(attempt).rejects.toBeInstanceOf(DomainError);
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 	});
 });

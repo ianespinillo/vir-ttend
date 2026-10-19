@@ -45,6 +45,13 @@ export class WorkshopCommissionAdapter implements IWorkshopCommissionPort {
 			: null;
 	}
 
+	async findByCourse(courseId: string): Promise<WorkshopCommissionInfo[]> {
+		const commissions = await this.commissionRepository.findByCourse(courseId);
+		if (commissions.length === 0) return [];
+		const course = await this.courseRepository.findById(courseId);
+		return course ? commissions.map((c) => this.toInfo(c, course)) : [];
+	}
+
 	findByPreceptor(preceptorId: string): Promise<WorkshopCommissionInfo[]> {
 		return this.withActiveCourses(
 			this.commissionRepository.findByPreceptor(preceptorId),

@@ -91,6 +91,18 @@ describe('SubjectsController (teacher endpoints)', () => {
 		});
 	});
 
+	it('students forwards the optional date as a Date', async () => {
+		getSubjectStudentsHandler.execute.mockResolvedValue([]);
+
+		await controller.students('sub-1', teacher, '2026-03-02');
+		await controller.students('sub-1', teacher);
+
+		const [withDate] = getSubjectStudentsHandler.execute.mock.calls[0];
+		const [withoutDate] = getSubjectStudentsHandler.execute.mock.calls[1];
+		expect(withDate.date).toEqual(new Date('2026-03-02'));
+		expect(withoutDate.date).toBeUndefined();
+	});
+
 	it('declares mine before any parameterised route and restricts roles', () => {
 		const routes = Object.getOwnPropertyNames(SubjectsController.prototype);
 		expect(routes.indexOf('mine')).toBeLessThan(routes.indexOf('students'));

@@ -1,26 +1,33 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ATTENDANCE_STATUS, ROLES } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { ForbiddenError } from '../../../src/common/errors';
 import { BulkUpdateSubjectStatusCommand } from '../../../src/modules/attendance/application/commands/bulk-update-subject-status/bulk-update-subject-status.command';
 import { BulkUpdateSubjectStatusHandler } from '../../../src/modules/attendance/application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
+import { SubjectRosterService } from '../../../src/modules/attendance/application/services/subject-roster.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { ScheduleSlot } from '../../../src/modules/attendance/domain/entities/schedule-slot.entity';
 import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
+import { ISchedulePort } from '../../../src/modules/attendance/domain/ports/schedule.port.interface';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
+import { IWorkshopCommissionPort } from '../../../src/modules/attendance/domain/ports/workshop-commission.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
+import { buildCommissionInfo } from './subject-roster.fixtures';
 
 describe('BulkUpdateSubjectStatusHandler', () => {
 	let handler: BulkUpdateSubjectStatusHandler;
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let subjectPort: MockProxy<ISubjectPort>;
 	let studentPort: MockProxy<IStudentPort>;
+	let schedulePort: MockProxy<ISchedulePort>;
+	let commissionPort: MockProxy<IWorkshopCommissionPort>;
 	let unitOfWork: MockProxy<IUnitOfWorkPort>;
 	let eventEmitter: MockProxy<EventEmitter2>;
 
-	const date = new Date('2026-07-06T12:00:00Z');
+	const date = new Date('2026-07-06T12:00:00Z'); // Monday
 	const command = new BulkUpdateSubjectStatusCommand(
 		'user-1',
 		ROLES.TEACHER,
@@ -47,23 +54,67 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		subjectPort = mock<ISubjectPort>();
 		studentPort = mock<IStudentPort>();
+		schedulePort = mock<ISchedulePort>();
+		commissionPort = mock<IWorkshopCommissionPort>();
 		unitOfWork = mock<IUnitOfWorkPort>();
 		unitOfWork.run.mockImplementation(async (work) => work());
 		eventEmitter = mock<EventEmitter2>();
 		handler = new BulkUpdateSubjectStatusHandler(
 			attendanceRepo,
 			subjectPort,
-			studentPort,
+			new SubjectRosterService(schedulePort, commissionPort, studentPort),
 			unitOfWork,
 			eventEmitter,
 		);
 		subjectPort.getSubjectById.mockResolvedValue(
 			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1', 'tenant-1'),
 		);
-		studentPort.getByCourseId.mockResolvedValue([
+		// Theory subject: its slots target the whole course.
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '09:00'),
+		]);
+		studentPort.getActiveByCourseId.mockResolvedValue([
 			Student.reconstitute('student-1', 'Ana'),
 			Student.reconstitute('student-2', 'Beto'),
 		]);
+		studentPort.getByCourseId.mockResolvedValue([
+			Student.reconstitute('student-1', 'Ana'),
+			Student.reconstitute('student-2', 'Beto'),
+			Student.reconstitute('student-3', 'Inactive Carla'),
+		]);
+		commissionPort.findByCourse.mockResolvedValue([
+			buildCommissionInfo(1),
+			buildCommissionInfo(2),
+		]);
+		commissionPort.getActiveStudents.mockImplementation(async (id) =>
+			id === 'commission-1'
+				? [Student.reconstitute('student-1', 'Ana')]
+				: [Student.reconstitute('student-2', 'Beto')],
+		);
+	});
+
+	it('should only mark ACTIVE students of the course for a theory subject', async () => {
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+
+		await handler.execute(command);
+
+		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
+		expect(saved.map((r) => r.studentId)).toEqual(['student-1', 'student-2']);
+		expect(eventEmitter.emit).toHaveBeenCalledTimes(2);
+	});
+
+	it('should only mark the students of the commission the date slot targets', async () => {
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '12:00', 2),
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.TUESDAY, '08:00', '12:00', 1),
+		]);
+
+		await handler.execute(command);
+
+		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
+		expect(saved.map((r) => r.studentId)).toEqual(['student-2']);
+		expect(eventEmitter.emit).toHaveBeenCalledTimes(1);
 	});
 
 	it('should create missing subject records and update changed ones without duplicating', async () => {
