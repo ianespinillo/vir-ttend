@@ -69,10 +69,14 @@ export function ScheduleForm({
 		},
 	});
 
-	const availableCommissions = commissionNumbers ?? COMMISSION_NUMBERS;
+	// Commissions a slot can target. A course without commissions yet still
+	// offers both (the backend allows it); only a single commission hides the select.
+	const availableCommissions =
+		commissionNumbers && commissionNumbers.length > 0
+			? commissionNumbers
+			: COMMISSION_NUMBERS;
 	// Commissions a slot for the whole course counts towards.
-	const courseCommissions =
-		availableCommissions.length > 0 ? availableCommissions : COMMISSION_NUMBERS;
+	const courseCommissions = availableCommissions;
 	const canPickCommission = availableCommissions.length > 1;
 	const isWorkshopSubject = (subjectId: string) =>
 		subjects.find((sub) => sub.id === subjectId)?.kind === SUBJECT_KIND.WORKSHOP;

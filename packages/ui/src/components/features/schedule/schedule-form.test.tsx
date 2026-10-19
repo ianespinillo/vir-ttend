@@ -91,7 +91,7 @@ describe('ScheduleForm commissions', () => {
 		expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ commissionNumber: null });
 	});
 
-	it('hides the selector when the course has no commissions', () => {
+	it('keeps the selector when the course has no commissions yet', () => {
 		render(
 			<ScheduleForm
 				subjects={[subject({ kind: SUBJECT_KIND.WORKSHOP })]}
@@ -99,7 +99,7 @@ describe('ScheduleForm commissions', () => {
 				onSubmit={vi.fn()}
 			/>,
 		);
-		expect(screen.queryByText('Comisión')).toBeNull();
+		expect(screen.getByText('Comisión')).toBeTruthy();
 	});
 
 	it('shows the selector when the course has two commissions', () => {
