@@ -61,6 +61,7 @@ export default function CourseDetailPage() {
 	const isAdmin = role === ROLES.ADMIN || role === ROLES.SUPERADMIN;
 	const isPreceptor = role === ROLES.PRECEPTOR;
 	const canManageSchedule = isAdmin || isPreceptor;
+	const canManageSubjects = isAdmin || isPreceptor;
 	const [isImportOpen, setIsImportOpen] = useState(false);
 
 	const { data: course, isLoading, isError, error } = useCourse(courseId);
@@ -72,10 +73,15 @@ export default function CourseDetailPage() {
 		limit: 100,
 	});
 	const { data: academicYears } = useAcademicYears();
-	const { data: preceptors } = useUsersByRole(ROLES.PRECEPTOR);
+	// Only admins edit the course; preceptors may list teachers only.
+	const { data: preceptors } = useUsersByRole(
+		isAdmin ? ROLES.PRECEPTOR : undefined,
+	);
 	const { data: teachers } = useUsersByRole(ROLES.TEACHER);
+	// Also read by schedule editors: the slot form hides the commission selector
+	// when the course has a single commission (or none).
 	const { data: commissions, isLoading: commissionsLoading } =
-		useWorkshopCommissions(courseId, isAdmin);
+		useWorkshopCommissions(courseId, canManageSchedule);
 
 	const updateCourseMutation = useUpdateCourse();
 	const deleteCourseMutation = useDeleteCourse();
@@ -249,11 +255,12 @@ export default function CourseDetailPage() {
 		assignPreceptorMutation.isPending ||
 		moveStudentMutation.isPending;
 
-	const canImportStudents =
-		isAdmin ||
-		(role === ROLES.PRECEPTOR &&
-			Boolean(user?.id) &&
-			course?.preceptorId === user?.id);
+	const isCoursePreceptor =
+		isPreceptor && Boolean(user?.id) && course?.preceptorId === user?.id;
+	const canImportStudents = isAdmin || isCoursePreceptor;
+	// The course preceptor reorganizes commissions; assigning their preceptors
+	// stays admin-only.
+	const canManageCommissions = isAdmin || isCoursePreceptor;
 
 	if (isLoading) {
 		return (
@@ -314,43 +321,48 @@ export default function CourseDetailPage() {
 				onDelete={handleDeleteCourse}
 				onAddSubject={() => setSubjectModalState({ open: true, subject: null })}
 				onEditSubject={(subject) => setSubjectModalState({ open: true, subject })}
-				onDeleteSubject={handleDeleteSubject}
+				onDeleteSubject={isAdmin ? handleDeleteSubject : undefined}
 				onSaveSchedule={handleSaveSchedule}
 				onImportStudents={
 					canImportStudents ? () => setIsImportOpen(true) : undefined
 				}
 				canManage={isAdmin}
 				canManageSchedule={canManageSchedule}
+				canManageSubjects={canManageSubjects}
 				students={studentsData?.items ?? []}
 				isLoadingStudents={studentsLoading}
 				studentCount={studentsData?.total}
 				onViewStudent={(id) => router.push(`/students/${id}`)}
 				attendancePath={`/attendance?courseId=${course.id}`}
+				commissionNumbers={commissions?.map((c) => c.number)}
 				commissionsTab={
-					isAdmin ? (
+					canManageCommissions ? (
 						<WorkshopCommissionsPanel
 							commissions={commissions ?? []}
 							preceptors={preceptors?.items || []}
 							isLoading={commissionsLoading}
 							isBusy={commissionsBusy}
-							onCreate={() =>
+							onCreate={(count) =>
 								runCommissionAction(
-									() => createCommissionsMutation.mutateAsync(courseId),
+									() => createCommissionsMutation.mutateAsync({ courseId, count }),
 									'Comisiones creadas exitosamente',
 									'Error al crear las comisiones',
 								)
 							}
-							onAssignPreceptor={(commissionId, preceptorId) =>
-								runCommissionAction(
-									() =>
-										assignPreceptorMutation.mutateAsync({
-											courseId,
-											commissionId,
-											preceptorId,
-										}),
-									'Preceptor de la comisión actualizado',
-									'Error al asignar el preceptor',
-								)
+							onAssignPreceptor={
+								isAdmin
+									? (commissionId, preceptorId) =>
+											runCommissionAction(
+												() =>
+													assignPreceptorMutation.mutateAsync({
+														courseId,
+														commissionId,
+														preceptorId,
+													}),
+												'Preceptor de la comisión actualizado',
+												'Error al asignar el preceptor',
+											)
+									: undefined
 							}
 							onMoveStudent={(commissionId, studentId) =>
 								runCommissionAction(
@@ -385,7 +397,7 @@ export default function CourseDetailPage() {
 				/>
 			)}
 
-			{isAdmin && (
+			{canManageSubjects && (
 				<Dialog
 					open={subjectModalState.open}
 					onOpenChange={(open) =>
@@ -411,6 +423,9 @@ export default function CourseDetailPage() {
 											area: subjectModalState.subject.area,
 											weeklyHours: subjectModalState.subject.weeklyHours,
 											teacherId: subjectModalState.subject.teacherId || '',
+											teacherName: subjectModalState.subject.teacherId
+												? ''
+												: subjectModalState.subject.teacherName || '',
 											kind: subjectModalState.subject.kind,
 										}
 									: undefined

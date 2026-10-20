@@ -35,6 +35,15 @@ describe('WorkshopSplitService', () => {
 		expect(second).toHaveLength(0);
 	});
 
+	it('puts every student in commission 1 when there is a single commission', () => {
+		const groups = WorkshopSplitService.split(
+			[s('C', 'a'), s('A', 'a'), s('B', 'a')],
+			1,
+		);
+		expect(groups).toHaveLength(1);
+		expect(names(groups[0])).toEqual(['A a', 'B a', 'C a']);
+	});
+
 	it('does not mutate the input', () => {
 		const input = [s('B', 'a'), s('A', 'a')];
 		WorkshopSplitService.split(input);

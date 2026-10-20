@@ -190,7 +190,7 @@ export function UsersTable({
 													<Button
 														variant="outline"
 														size="sm"
-														className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+														className="text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
 														onClick={(e) => {
 															e.stopPropagation();
 															onToggleStatus(user, true);

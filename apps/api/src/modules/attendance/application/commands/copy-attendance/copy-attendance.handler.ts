@@ -5,6 +5,7 @@ import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceCopyService } from '../../services/attendance-copy.service';
 import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import { SubjectRosterService } from '../../services/subject-roster.service';
 import { CopyAttendanceCommand } from './copy-attendance.command';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class CopyAttendanceHandler {
 		private readonly copyAttendanceService: AttendanceCopyService,
 		@Inject('ISubjectPort')
 		private readonly subjectPort: ISubjectPort,
+		private readonly rosterService: SubjectRosterService,
 	) {}
 	async execute(command: CopyAttendanceCommand): Promise<void> {
 		const subject = await this.subjectPort.getSubjectById(command.subjectId);
@@ -40,8 +42,15 @@ export class CopyAttendanceHandler {
 		const existingsIds = new Set(
 			existingRecords.map((record) => record.studentId),
 		);
+		// Only students who attend the subject on the target date: the source class
+		// may belong to the other commission of a mixed-slot workshop subject.
+		const roster = await this.rosterService.getActiveRoster(
+			subject,
+			command.targetDate,
+		);
+		const rosterIds = new Set(roster.map((student) => student.id));
 		for (const record of sourceRecords) {
-			if (!existingsIds.has(record.studentId)) {
+			if (rosterIds.has(record.studentId) && !existingsIds.has(record.studentId)) {
 				result.push(
 					AttendanceRecord.create({
 						tenantId: command.tenantId,

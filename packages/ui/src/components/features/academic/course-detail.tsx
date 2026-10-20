@@ -1,6 +1,7 @@
 'use client';
 
 import type {
+	CommissionNumber,
 	DAYOFWEEK,
 	ICourseDetailResponse,
 	IScheduleSlotResponse,
@@ -51,9 +52,16 @@ export interface CourseDetailProps {
 	onImportStudents?: () => void;
 	canManage?: boolean;
 	canManageSchedule?: boolean;
+	/** Create/edit subjects; defaults to canManage. */
+	canManageSubjects?: boolean;
 	attendancePath?: string;
 	/** Optional "Comisiones" tab content (workshop commissions); shown only to managers. */
 	commissionsTab?: ReactNode;
+	/**
+	 * Workshop commission numbers of the course, used by the slot form to hide
+	 * the commission selector with one or none. Undefined = unknown.
+	 */
+	commissionNumbers?: readonly CommissionNumber[];
 }
 
 export function CourseDetail({
@@ -74,8 +82,10 @@ export function CourseDetail({
 	onImportStudents,
 	canManage = false,
 	canManageSchedule,
+	canManageSubjects,
 	attendancePath,
 	commissionsTab,
+	commissionNumbers,
 }: CourseDetailProps) {
 	const [scheduleModalState, setScheduleModalState] = useState<{
 		open: boolean;
@@ -144,14 +154,14 @@ export function CourseDetail({
 						<div className="space-y-2">
 							<div className="flex flex-wrap items-center gap-3">
 								<h2 className="text-2xl font-bold text-foreground">{courseTitle}</h2>
-								<Badge className="bg-primary/10 text-primary border-primary/20">
+								<Badge className="bg-primary-ink/10 text-primary border-primary/20">
 									{levelLabel}
 								</Badge>
 								<Badge variant="outline">{shiftLabel}</Badge>
 							</div>
 							<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
 								<span className="flex items-center gap-1.5">
-									<UserCheck className="h-4 w-4 text-emerald-600" />
+									<UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
 									Preceptor:{' '}
 									<strong className="text-foreground">
 										{course.preceptorName || 'Sin asignar'}
@@ -265,7 +275,7 @@ export function CourseDetail({
 						<Card>
 							<CardHeader>
 								<CardTitle className="text-lg font-semibold flex items-center gap-2">
-									<UserCheck className="h-5 w-5 text-emerald-600" />
+									<UserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
 									Equipo de Trabajo
 								</CardTitle>
 							</CardHeader>
@@ -297,7 +307,7 @@ export function CourseDetail({
 						onAddSubject={onAddSubject}
 						onEditSubject={onEditSubject}
 						onDeleteSubject={onDeleteSubject}
-						canManage={canManage}
+						canManage={canManageSubjects ?? canManage}
 					/>
 				</TabsContent>
 
@@ -305,6 +315,7 @@ export function CourseDetail({
 					<ScheduleGrid
 						slots={schedule}
 						subjects={subjects}
+						course={course}
 						onAddSlot={(day) => setScheduleModalState({ open: true, day })}
 						onDeleteSlot={handleDeleteSlot}
 						canManage={isScheduleEditable}
@@ -378,6 +389,7 @@ export function CourseDetail({
 					existingSlots={schedule}
 					defaultDay={scheduleModalState.day}
 					onSubmit={handleAddSlot}
+					commissionNumbers={commissionNumbers}
 				/>
 			)}
 		</div>

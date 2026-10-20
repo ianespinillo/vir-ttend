@@ -140,10 +140,10 @@ const config: ExpoConfig = {
 	slug: 'vir-ttend',
 	owner: 'ianespi',
 	scheme: variantConfig.scheme,
-	version: '1.2.0',
+	version: '1.3.0',
 	orientation: 'portrait',
 	icon: `${variantConfig.assetsDir}/icon.png`,
-	userInterfaceStyle: 'light',
+	userInterfaceStyle: 'automatic',
 	ios: {
 		supportsTablet: true,
 		bundleIdentifier: variantConfig.appId,

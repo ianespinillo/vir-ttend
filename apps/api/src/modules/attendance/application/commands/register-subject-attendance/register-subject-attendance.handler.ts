@@ -9,6 +9,7 @@ import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import { SubjectRosterService } from '../../services/subject-roster.service';
 import { RegisterSubjectAttendanceCommand } from './register-subject-attendance.command';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class RegisterSubjectAttendanceHandler {
 		private readonly schedulePort: ISchedulePort,
 		@Inject('ISubjectPort')
 		private readonly subjectPort: ISubjectPort,
+		private readonly subjectRoster: SubjectRosterService,
 		@Inject('IUnitOfWorkPort')
 		private readonly unitOfWork: IUnitOfWorkPort,
 		private readonly em: EventEmitter2,
@@ -41,6 +43,13 @@ export class RegisterSubjectAttendanceHandler {
 		);
 		if (validDays.length === 0)
 			throw new DomainError('La materia no tiene clases el día seleccionado');
+		const roster = new Set(
+			(await this.subjectRoster.getActiveRoster(subject, command.date, slots)).map(
+				(student) => student.id,
+			),
+		);
+		if (command.records.some((record) => !roster.has(record.studentId)))
+			throw new DomainError('Hay alumnos que no pertenecen a la materia');
 		// Idempotent: replaying the same payload saves nothing and emits no event.
 		const changedRecords = await this.unitOfWork.run(async () => {
 			const existingRecords = await this.attendanceRecordRepo.findBySubjectAndDate(

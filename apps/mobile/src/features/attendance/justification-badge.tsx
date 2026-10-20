@@ -1,10 +1,8 @@
 import { FileText } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { useThemeColors } from '../theme/use-theme-colors';
 import type { AttendanceJustification } from './types';
-
-// NativeWind: className stays static, the tone is applied through inline style.
-const TONE = { background: '#EEF2FF', border: '#C7D2FE', text: '#4338CA' };
 
 interface Props {
 	/** Absent when the read does not embed it (e.g. subject attendance). */
@@ -18,6 +16,8 @@ interface Props {
 export function JustificationBadge({ justification }: Props) {
 	const [expanded, setExpanded] = useState(false);
 	const notes = justification?.notes;
+	// NativeWind: className stays static, the tone is applied through inline style.
+	const TONE = useThemeColors().status.justified;
 
 	return (
 		<TouchableOpacity
@@ -38,7 +38,7 @@ export function JustificationBadge({ justification }: Props) {
 				</Text>
 			</View>
 			{expanded && notes ? (
-				<Text className="mt-1 text-[11px] italic text-slate-600">{notes}</Text>
+				<Text className="mt-1 text-[11px] italic text-neutral-600">{notes}</Text>
 			) : null}
 		</TouchableOpacity>
 	);

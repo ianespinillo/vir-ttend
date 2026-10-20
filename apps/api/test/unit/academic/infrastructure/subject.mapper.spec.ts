@@ -64,4 +64,23 @@ describe('SubjectMapper', () => {
 
 		expect(domain.deletedAt).toEqual(deletedAt);
 	});
+
+	it('maps the manual teacher name both ways', () => {
+		const domain = Subject.create({
+			courseId: 'course-uuid-1',
+			teacherName: 'Laura Gómez',
+			name: 'Historia',
+			area: 'Sociales',
+			weeklyHours: 3,
+		});
+		const em = {
+			getReference: jest.fn((_entity: unknown, id: string) => ({ id })),
+		} as unknown as EntityManager;
+
+		const orm = SubjectMapper.toOrm(domain, em);
+
+		expect(orm.teacherId).toBeNull();
+		expect(orm.teacherName).toBe('Laura Gómez');
+		expect(SubjectMapper.toDomain(orm).teacherName).toBe('Laura Gómez');
+	});
 });

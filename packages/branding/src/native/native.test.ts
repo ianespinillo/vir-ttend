@@ -9,11 +9,11 @@ import {
 } from './index.js';
 
 describe('toNativeWindVars', () => {
-	it('returns 14 variables, all as "R G B"', () => {
+	it('returns 15 variables, all as "R G B"', () => {
 		const vars = toNativeWindVars(
 			deriveBrandTokens({ primary: '#023064', accent: '#0195EF' }),
 		);
-		expect(Object.keys(vars)).toHaveLength(14);
+		expect(Object.keys(vars)).toHaveLength(15);
 		for (const value of Object.values(vars)) {
 			expect(value).toMatch(/^\d+ \d+ \d+$/);
 		}
@@ -36,8 +36,26 @@ describe('toNativeWindVars', () => {
 			  "--brand-primary-700": "17 28 52",
 			  "--brand-primary-800": "14 23 43",
 			  "--brand-primary-900": "11 18 34",
+			  "--brand-primary-ink": "20 33 61",
 			}
 		`);
+	});
+});
+
+describe('toNativeWindVars in dark mode', () => {
+	const t = deriveBrandTokens(VIRTTEND_BRANDING.colors);
+	const light = toNativeWindVars(t);
+	const dark = toNativeWindVars(t, 'dark');
+
+	it('keeps every palette variable unchanged', () => {
+		const { '--brand-primary-ink': _l, ...lightRest } = light;
+		const { '--brand-primary-ink': _d, ...darkRest } = dark;
+		expect(darkRest).toEqual(lightRest);
+	});
+
+	it('switches only the ink to the 200 step', () => {
+		expect(light['--brand-primary-ink']).toBe(light['--brand-primary']);
+		expect(dark['--brand-primary-ink']).toBe(light['--brand-primary-200']);
 	});
 });
 
@@ -48,6 +66,12 @@ describe('nativewindPrimaryColors', () => {
 			JSON.stringify(nativewindPrimaryColors).match(/--brand-[a-z0-9-]+/g) ?? [];
 		expect(used.length).toBeGreaterThan(0);
 		for (const name of used) expect(defined.has(name)).toBe(true);
+	});
+
+	it('exposes the ink color', () => {
+		expect(nativewindPrimaryColors.primary.ink).toBe(
+			'rgb(var(--brand-primary-ink) / <alpha-value>)',
+		);
 	});
 
 	it('keeps the alpha-value placeholder', () => {

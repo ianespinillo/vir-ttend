@@ -114,7 +114,7 @@ export function StudentHistoryPage({
 						<ArrowLeft className="h-4 w-4" />
 					</Button>
 					<Avatar className="h-12 w-12 border border-border">
-						<AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+						<AvatarFallback className="bg-primary-ink/10 text-sm font-semibold text-primary">
 							{student ? getInitials(student.fullName) : '—'}
 						</AvatarFallback>
 					</Avatar>

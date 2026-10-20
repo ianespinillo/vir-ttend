@@ -78,7 +78,7 @@ function StepIndicator({ currentStep }: StepIndicatorProps) {
 								aria-hidden="true"
 								className={cn(
 									'h-px flex-1',
-									index <= currentStep ? 'bg-primary/40' : 'bg-border',
+									index <= currentStep ? 'bg-primary-ink/40' : 'bg-border',
 								)}
 							/>
 						)}
@@ -89,7 +89,7 @@ function StepIndicator({ currentStep }: StepIndicatorProps) {
 							<span
 								className={cn(
 									'flex h-6 w-6 items-center justify-center rounded-full border text-xs font-medium',
-									isCompleted && 'border-primary/40 bg-primary/10 text-primary',
+									isCompleted && 'border-primary/40 bg-primary-ink/10 text-primary',
 									isActive && 'border-primary bg-primary text-primary-foreground',
 									!isCompleted && !isActive && 'border-border text-muted-foreground',
 								)}

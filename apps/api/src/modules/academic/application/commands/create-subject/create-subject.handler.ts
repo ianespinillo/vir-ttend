@@ -39,7 +39,11 @@ export class CreateSubjectHandler {
 				throw new DomainError('El profesor no pertenece a la institución.');
 		}
 		const subjects = await this.subjectRepo.findByCourse(command.courseId);
-		const newSubject = Subject.create({ ...command, teacherId });
+		const newSubject = Subject.create({
+			...command,
+			teacherId,
+			teacherName: teacherId ? undefined : command.teacherName,
+		});
 		const exist = subjects.some((s) => newSubject.equals(s));
 		if (exist) throw new ConflictError('Ya existe esa materia en el curso.');
 		await this.subjectRepo.save(newSubject);

@@ -15,4 +15,6 @@ export interface CourseSnapshot {
 	attendancePercent: number;
 	statusColor: COURSE_RISK_STATUS;
 	lastUpdated: Date;
+	/** 7th year technical: no daily attendance, only workshop attendance. */
+	workshopOnly?: boolean;
 }

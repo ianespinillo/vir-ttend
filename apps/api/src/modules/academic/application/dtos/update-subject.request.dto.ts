@@ -1,16 +1,34 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+	IsEnum,
+	IsNumber,
+	IsOptional,
+	IsString,
+	MaxLength,
+} from 'class-validator';
 
 export class UpdateSubjectRequestDto {
 	@IsString()
 	@IsOptional()
 	@ApiPropertyOptional({
 		type: String,
-		description: 'ID del nuevo docente a cargo de la materia.',
+		description:
+			'ID del nuevo docente a cargo de la materia. "NONE" quita el docente con usuario.',
 		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
 	})
 	teacherId?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(255)
+	@ApiPropertyOptional({
+		type: String,
+		description:
+			'Nombre del docente cuando no tiene usuario en el sistema. Reemplaza al docente con usuario; vacío deja la materia sin docente. Se ignora si se envía un teacherId real.',
+		example: 'Laura Gómez',
+	})
+	teacherName?: string;
 
 	@IsString()
 	@IsOptional()

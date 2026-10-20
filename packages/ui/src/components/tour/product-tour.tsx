@@ -258,7 +258,7 @@ export function TourTriggerButton({ className }: { className?: string }) {
 									{tutorial.title}
 								</span>
 								{tutorial.badge && (
-									<span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+									<span className="text-[10px] font-semibold text-primary bg-primary-ink/10 px-1.5 py-0.5 rounded shrink-0">
 										{tutorial.badge}
 									</span>
 								)}
@@ -506,7 +506,7 @@ function TourOverlay({
 								Paso {index + 1} de {total}
 							</span>
 							{tutorialTitle && (
-								<span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+								<span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary-ink/10 px-2 py-0.5 rounded-full border border-primary/20">
 									{tutorialTitle}
 								</span>
 							)}
@@ -541,7 +541,7 @@ function TourOverlay({
 									>
 										<span
 											aria-hidden="true"
-											className="mt-[0.55rem] size-1 shrink-0 rounded-full bg-primary/60"
+											className="mt-[0.55rem] size-1 shrink-0 rounded-full bg-primary-ink/60"
 										/>
 										<span>{tip}</span>
 									</li>

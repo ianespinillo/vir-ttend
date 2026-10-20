@@ -3,15 +3,17 @@ interface Named {
 	firstName: string;
 }
 
-/** Suggests the 50/50 split of a course into its two workshop commissions. */
+/** Suggests how a course is split into its workshop commissions. */
 export class WorkshopSplitService {
 	/**
 	 * Sorts alphabetically (last name, then first name; case and accent
-	 * insensitive) and cuts at ceil(n/2): the first half goes to commission 1,
-	 * the rest to commission 2.
+	 * insensitive) and returns one group per commission, in commission order.
+	 * With two commissions it cuts at ceil(n/2): the first half goes to
+	 * commission 1, the rest to commission 2. With one, everyone goes to it.
 	 */
-	static split<T extends Named>(students: T[]): [T[], T[]] {
+	static split<T extends Named>(students: T[], count: 1 | 2 = 2): T[][] {
 		const sorted = WorkshopSplitService.sortAlphabetically(students);
+		if (count === 1) return [sorted];
 		const cut = Math.ceil(sorted.length / 2);
 		return [sorted.slice(0, cut), sorted.slice(cut)];
 	}

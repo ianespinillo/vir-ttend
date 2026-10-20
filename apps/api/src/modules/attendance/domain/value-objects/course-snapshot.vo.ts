@@ -20,6 +20,8 @@ export class CourseSnapshot {
 	private readonly _justified: number;
 	private readonly _notRecorded: number;
 	private readonly _weighted?: WeightedCourseTotals;
+	/** 7th year technical: no daily attendance, the workshop is the only shift. */
+	private readonly _workshopOnly: boolean;
 
 	constructor(
 		courseId: string,
@@ -31,6 +33,7 @@ export class CourseSnapshot {
 		late: number,
 		justified: number,
 		weighted?: WeightedCourseTotals,
+		workshopOnly = false,
 	) {
 		this._courseId = courseId;
 		this._courseName = courseName;
@@ -40,6 +43,7 @@ export class CourseSnapshot {
 		this._late = late;
 		this._justified = justified;
 		this._weighted = weighted;
+		this._workshopOnly = workshopOnly;
 		this._notRecorded =
 			expectedClasses * totalStudents - (presents + late + absents + justified);
 	}
@@ -100,6 +104,7 @@ export class CourseSnapshot {
 			notRecorded: this._notRecorded,
 			absencePercent: this.absencePercent,
 			attendancePercent: this.presentsPercent,
+			workshopOnly: this._workshopOnly,
 		};
 	}
 

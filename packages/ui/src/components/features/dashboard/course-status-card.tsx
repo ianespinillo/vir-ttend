@@ -16,11 +16,18 @@ export function CourseStatusCard({
 	onClick,
 }: Readonly<CourseStatusCardProps>) {
 	const attendancePercent = course.attendancePercent ?? 0;
+	// Workshop-only courses (7th year technical) have no daily attendance, so
+	// the card does not open it.
+	const opensDailyAttendance = !course.workshopOnly;
 
 	return (
 		<Card
-			className="shadow-xs border border-border/80 transition-colors hover:bg-muted/40 cursor-pointer"
-			onClick={() => onClick?.(course.courseId)}
+			className={
+				opensDailyAttendance
+					? 'shadow-xs border border-border/80 transition-colors hover:bg-muted/40 cursor-pointer'
+					: 'shadow-xs border border-border/80'
+			}
+			onClick={opensDailyAttendance ? () => onClick?.(course.courseId) : undefined}
 		>
 			<CardContent className="p-4">
 				<div className="flex items-start justify-between gap-3">
@@ -32,6 +39,7 @@ export function CourseStatusCard({
 							</h3>
 							<p className="text-xs text-muted-foreground">
 								{course.totalStudents} alumnos
+								{course.workshopOnly && ' · Solo taller'}
 							</p>
 						</div>
 					</div>

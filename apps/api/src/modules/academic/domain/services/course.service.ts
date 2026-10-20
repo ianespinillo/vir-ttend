@@ -1,4 +1,4 @@
-import { COMMISSION_NUMBERS, DAYOFWEEK } from '@repo/common';
+import { COMMISSION_NUMBERS, CommissionNumber, DAYOFWEEK } from '@repo/common';
 import {
 	BusinessRuleError,
 	DomainError,
@@ -47,15 +47,43 @@ export class CourseService {
 	}
 
 	/**
+	 * Once a course has commissions, a slot can only target one of them (or
+	 * both, with null). Courses without commissions yet are not restricted.
+	 */
+	static validateExistingCommissions(
+		slots: ScheduleSlot[],
+		existingCommissionNumbers: readonly CommissionNumber[],
+	): void {
+		if (existingCommissionNumbers.length === 0) return;
+		for (const slot of slots) {
+			if (
+				slot.commissionNumber !== null &&
+				!existingCommissionNumbers.includes(slot.commissionNumber)
+			) {
+				throw new DomainError(
+					existingCommissionNumbers.length === 1
+						? `El curso no tiene la comisión ${slot.commissionNumber}: tiene una sola comisión de taller.`
+						: `El curso no tiene la comisión ${slot.commissionNumber}.`,
+				);
+			}
+		}
+	}
+
+	/**
 	 * Theory subjects: total minutes must fit in weeklyHours. Workshop subjects:
-	 * the check applies per commission (slots for that commission plus slots for
-	 * both), since each commission only attends its own slots.
+	 * the check applies per existing commission (slots for that commission plus
+	 * slots for both), since each commission only attends its own slots.
+	 * `commissionNumbers` lists the course's commissions; empty means none yet,
+	 * which checks both possible numbers.
 	 */
 	static validateWeeklyHours(
 		slots: ScheduleSlot[],
 		weeklyHoursBySubjectId: Map<string, number>,
 		workshopSubjectIds: ReadonlySet<string> = new Set(),
+		commissionNumbers: readonly CommissionNumber[] = COMMISSION_NUMBERS,
 	): void {
+		const checkedCommissions =
+			commissionNumbers.length > 0 ? commissionNumbers : COMMISSION_NUMBERS;
 		const slotsBySubjectId = new Map<string, ScheduleSlot[]>();
 		for (const slot of slots) {
 			const list = slotsBySubjectId.get(slot.subjectId) ?? [];
@@ -78,7 +106,7 @@ export class CourseService {
 				continue;
 			}
 
-			for (const commission of COMMISSION_NUMBERS) {
+			for (const commission of checkedCommissions) {
 				const minutes = CourseService.sumMinutes(
 					subjectSlots.filter(
 						(s) => s.commissionNumber === null || s.commissionNumber === commission,

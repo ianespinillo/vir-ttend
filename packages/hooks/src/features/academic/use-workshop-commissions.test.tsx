@@ -76,18 +76,25 @@ describe('workshop commission hooks', () => {
 		expect(mock.history.get).toHaveLength(0);
 	});
 
-	it('creates the commissions with a POST', async () => {
+	it('creates the commissions with a POST sending the count', async () => {
+		const bodies: unknown[] = [];
 		mock
 			.onPost(ACADEMIC_ROUTES.workshopCommissions('course-1'))
-			.reply(201, { data: commissions });
+			.reply((config) => {
+				bodies.push(JSON.parse(config.data));
+				return [201, { data: commissions }];
+			});
 
 		const { result } = renderHook(() => useCreateWorkshopCommissions(), {
 			wrapper: createWrapper(),
 		});
-		result.current.mutate('course-1');
-
+		result.current.mutate({ courseId: 'course-1', count: 2 });
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 		expect(result.current.data).toEqual(commissions);
+
+		result.current.mutate({ courseId: 'course-1', count: 1 });
+		await waitFor(() => expect(bodies).toHaveLength(2));
+		expect(bodies).toEqual([{ count: 2 }, { count: 1 }]);
 	});
 
 	it('assigns a preceptor, and null removes it', async () => {
@@ -164,7 +171,7 @@ describe('workshop commission hooks', () => {
 		const { result } = renderHook(() => useCreateWorkshopCommissions(), {
 			wrapper: createWrapper(),
 		});
-		result.current.mutate('course-1');
+		result.current.mutate({ courseId: 'course-1', count: 2 });
 
 		await waitFor(() => expect(result.current.isError).toBe(true));
 	});

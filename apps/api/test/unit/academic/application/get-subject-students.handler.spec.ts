@@ -1,4 +1,6 @@
 import {
+	CommissionNumber,
+	DAYOFWEEK,
 	LEVEL,
 	ROLES,
 	SHIFT,
@@ -10,11 +12,15 @@ import { ForbiddenError, NotFoundError } from '../../../../src/common/errors';
 import { GetSubjectStudentsHandler } from '../../../../src/modules/academic/application/queries/get-subject-students/get-subject-students.handler';
 import { GetSubjectStudentsQuery } from '../../../../src/modules/academic/application/queries/get-subject-students/get-subject-students.query';
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
+import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
 import { Student } from '../../../../src/modules/academic/domain/entities/student.entity';
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
+import { WorkshopCommission } from '../../../../src/modules/academic/domain/entities/workshop-commission.entity';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
+import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { IStudentRepository } from '../../../../src/modules/academic/domain/repositories/student.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { IWorkshopCommissionRepository } from '../../../../src/modules/academic/domain/repositories/workshop-commission.repository.interface';
 import { expectRejection } from '../expect-rejection';
 
 describe('GetSubjectStudentsHandler', () => {
@@ -22,7 +28,32 @@ describe('GetSubjectStudentsHandler', () => {
 	let subjectRepo: MockProxy<ISubjectRepository>;
 	let studentRepo: MockProxy<IStudentRepository>;
 	let courseRepo: MockProxy<ICourseRepository>;
+	let scheduleRepo: MockProxy<IScheduleRepository>;
+	let commissionRepo: MockProxy<IWorkshopCommissionRepository>;
 
+	const buildSlot = (
+		dayOfWeek: DAYOFWEEK,
+		commissionNumber: CommissionNumber | null,
+	) =>
+		ScheduleSlot.reconstitute({
+			id: `slot-${dayOfWeek}-${commissionNumber}`,
+			subjectId: 'sub-1',
+			courseId: 'course-1',
+			dayOfWeek,
+			startTime: '08:00',
+			endTime: '12:00',
+			commissionNumber,
+			createdAt: new Date(),
+		});
+	const buildCommission = (number: CommissionNumber) =>
+		WorkshopCommission.reconstitute({
+			id: `commission-${number}`,
+			tenantId: 'tenant-1',
+			courseId: 'course-1',
+			number,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
 	const buildSubject = (deletedAt?: Date) =>
 		Subject.reconstitute({
 			id: 'sub-1',
@@ -74,7 +105,31 @@ describe('GetSubjectStudentsHandler', () => {
 		subjectRepo = mock<ISubjectRepository>();
 		studentRepo = mock<IStudentRepository>();
 		courseRepo = mock<ICourseRepository>();
-		handler = new GetSubjectStudentsHandler(subjectRepo, studentRepo, courseRepo);
+		scheduleRepo = mock<IScheduleRepository>();
+		commissionRepo = mock<IWorkshopCommissionRepository>();
+		handler = new GetSubjectStudentsHandler(
+			subjectRepo,
+			studentRepo,
+			courseRepo,
+			scheduleRepo,
+			commissionRepo,
+		);
+		// Theory subject: its slots target the whole course.
+		scheduleRepo.findBySubject.mockResolvedValue([
+			buildSlot(DAYOFWEEK.MONDAY, null),
+		]);
+		commissionRepo.findByCourse.mockResolvedValue([
+			buildCommission(1),
+			buildCommission(2),
+		]);
+		studentRepo.findActiveByCommission.mockImplementation(async (id) =>
+			id === 'commission-1'
+				? [buildStudent('s-1', 'Garcia', 'Ana')]
+				: [
+						buildStudent('s-2', 'Perez', 'Zoe'),
+						buildStudent('s-4', 'Ruiz', 'Eva', STUDENTSTATUS.ACTIVE, 'other-tenant'),
+					],
+		);
 		subjectRepo.findById.mockResolvedValue(buildSubject());
 		courseRepo.findById.mockResolvedValue(course);
 		studentRepo.findByCourse.mockResolvedValue([
@@ -107,6 +162,61 @@ describe('GetSubjectStudentsHandler', () => {
 			});
 		},
 	);
+
+	it('should return only the students of the commission a workshop subject targets', async () => {
+		scheduleRepo.findBySubject.mockResolvedValue([
+			buildSlot(DAYOFWEEK.MONDAY, 2),
+			buildSlot(DAYOFWEEK.THURSDAY, 2),
+		]);
+
+		const result = await handler.execute(
+			new GetSubjectStudentsQuery('sub-1', 'tenant-1', 'teacher-1', ROLES.TEACHER),
+		);
+
+		expect(studentRepo.findActiveByCommission).toHaveBeenCalledWith(
+			'commission-2',
+		);
+		expect(studentRepo.findByCourse).not.toHaveBeenCalled();
+		expect(result.map((s) => s.id)).toEqual(['s-2']);
+		expect(result[0]).toMatchObject({ courseName: '2° C - AFTERNOON' });
+	});
+
+	it('should use the date weekday when slots are mixed, and the union without a date', async () => {
+		scheduleRepo.findBySubject.mockResolvedValue([
+			buildSlot(DAYOFWEEK.MONDAY, 1),
+			buildSlot(DAYOFWEEK.WEDNESDAY, 2),
+		]);
+		const query = (date?: Date) =>
+			new GetSubjectStudentsQuery(
+				'sub-1',
+				'tenant-1',
+				'teacher-1',
+				ROLES.TEACHER,
+				date,
+			);
+
+		const monday = await handler.execute(query(new Date('2026-07-06')));
+		const friday = await handler.execute(query(new Date('2026-07-10')));
+		const noDate = await handler.execute(query());
+
+		expect(monday.map((s) => s.id)).toEqual(['s-1']);
+		expect(friday.map((s) => s.id)).toEqual(['s-1', 's-2']);
+		expect(noDate.map((s) => s.id)).toEqual(['s-1', 's-2']);
+	});
+
+	it('should fall back to the whole course when the course has no commissions', async () => {
+		scheduleRepo.findBySubject.mockResolvedValue([
+			buildSlot(DAYOFWEEK.MONDAY, 1),
+		]);
+		commissionRepo.findByCourse.mockResolvedValue([]);
+
+		const result = await handler.execute(
+			new GetSubjectStudentsQuery('sub-1', 'tenant-1', 'admin-1', ROLES.ADMIN),
+		);
+
+		expect(studentRepo.findByCourse).toHaveBeenCalledWith('course-1');
+		expect(result.map((s) => s.id)).toEqual(['s-1', 's-2']);
+	});
 
 	it('should throw ForbiddenError when a teacher asks for another teacher subject', async () => {
 		await expectRejection(

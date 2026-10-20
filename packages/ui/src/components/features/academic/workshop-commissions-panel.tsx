@@ -1,6 +1,10 @@
 'use client';
 
-import type { IUserResponse, IWorkshopCommissionResponse } from '@repo/common';
+import type {
+	CommissionCount,
+	IUserResponse,
+	IWorkshopCommissionResponse,
+} from '@repo/common';
 import { ArrowRightLeft, RefreshCw, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -31,8 +35,10 @@ export interface WorkshopCommissionsPanelProps {
 	isLoading?: boolean;
 	/** Disables every action while a request is in flight. */
 	isBusy?: boolean;
-	onCreate: () => void;
-	onAssignPreceptor: (commissionId: string, preceptorId: string | null) => void;
+	/** Creates the course's commissions: 1 (everyone together) or 2 (50/50). */
+	onCreate: (count: CommissionCount) => void;
+	/** Omitted when the viewer may not assign commission preceptors (admin-only). */
+	onAssignPreceptor?: (commissionId: string, preceptorId: string | null) => void;
 	/** Moves the student to the commission identified by `commissionId`. */
 	onMoveStudent: (commissionId: string, studentId: string) => void;
 	onRegenerate: () => void;
@@ -68,45 +74,59 @@ export function WorkshopCommissionsPanel({
 				<CardContent className="space-y-4">
 					<p className="text-sm text-muted-foreground">
 						Las comisiones son opcionales. Solo se usan en cursos con taller en
-						contraturno, donde el curso se divide en dos grupos que asisten al taller
-						por separado. Los cursos sin esa modalidad, como el 7.° año de las
-						escuelas técnicas, no necesitan comisiones.
+						contraturno, que asisten al taller en una o dos comisiones, cada una con
+						su preceptor de taller.
 					</p>
 					<p className="text-sm text-muted-foreground">
-						Al crearlas, los estudiantes se reparten en orden alfabético por apellido
-						(mitad y mitad). Después puede mover estudiantes y asignar un preceptor a
-						cada comisión.
+						Con dos comisiones, los estudiantes se reparten en orden alfabético por
+						apellido (mitad y mitad) y después puede moverlos entre comisiones. Con
+						una sola comisión, todos los estudiantes del curso pertenecen a ella.
 					</p>
-					<Button onClick={onCreate} disabled={isBusy}>
-						Crear comisiones
-					</Button>
+					<div className="flex flex-wrap gap-2">
+						<Button onClick={() => onCreate(2)} disabled={isBusy}>
+							Crear 2 comisiones
+						</Button>
+						<Button variant="outline" onClick={() => onCreate(1)} disabled={isBusy}>
+							Crear 1 comisión
+						</Button>
+					</div>
 				</CardContent>
 			</Card>
 		);
 	}
 
 	const sorted = [...commissions].sort((a, b) => a.number - b.number);
+	const isSingle = sorted.length === 1;
 
 	return (
 		<div className="space-y-4">
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+			{isSingle ? (
 				<p className="text-sm text-muted-foreground">
-					Cada estudiante pertenece a una sola comisión. El reparto inicial es
-					alfabético y no cambia solo cuando llegan nuevos estudiantes.
+					El curso tiene una sola comisión de taller: todos sus estudiantes
+					pertenecen a ella, incluidos los que se incorporen después.
 				</p>
-				<Button
-					variant="outline"
-					size="sm"
-					className="gap-1.5 shrink-0"
-					onClick={() => setConfirmingRegenerate(true)}
-					disabled={isBusy}
-				>
-					<RefreshCw className="h-4 w-4" />
-					Regenerar reparto
-				</Button>
-			</div>
+			) : (
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+					<p className="text-sm text-muted-foreground">
+						Cada estudiante pertenece a una sola comisión. El reparto inicial es
+						alfabético y no cambia solo cuando llegan nuevos estudiantes.
+					</p>
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1.5 shrink-0"
+						onClick={() => setConfirmingRegenerate(true)}
+						disabled={isBusy}
+					>
+						<RefreshCw className="h-4 w-4" />
+						Regenerar reparto
+					</Button>
+				</div>
+			)}
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+			<div
+				className={`grid grid-cols-1 gap-6 ${isSingle ? '' : 'md:grid-cols-2'}`}
+			>
 				{sorted.map((commission) => {
 					const other = sorted.find((c) => c.id !== commission.id);
 					return (
@@ -121,35 +141,37 @@ export function WorkshopCommissionsPanel({
 								</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-4">
-								<div className="space-y-1">
-									<span className="text-xs text-muted-foreground uppercase font-medium">
-										Preceptor de taller
-									</span>
-									<Select
-										value={commission.preceptorId ?? NO_PRECEPTOR}
-										onValueChange={(value) =>
-											onAssignPreceptor(
-												commission.id,
-												value === NO_PRECEPTOR ? null : value,
-											)
-										}
-										disabled={isBusy}
-									>
-										<SelectTrigger
-											aria-label={`Preceptor de la comisión ${commission.code}`}
+								{onAssignPreceptor && (
+									<div className="space-y-1">
+										<span className="text-xs text-muted-foreground uppercase font-medium">
+											Preceptor de taller
+										</span>
+										<Select
+											value={commission.preceptorId ?? NO_PRECEPTOR}
+											onValueChange={(value) =>
+												onAssignPreceptor(
+													commission.id,
+													value === NO_PRECEPTOR ? null : value,
+												)
+											}
+											disabled={isBusy}
 										>
-											<SelectValue placeholder="Seleccione preceptor" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value={NO_PRECEPTOR}>Sin preceptor asignado</SelectItem>
-											{preceptors.map((p) => (
-												<SelectItem key={p.id} value={p.id}>
-													{p.firstName} {p.lastName} ({p.email})
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
+											<SelectTrigger
+												aria-label={`Preceptor de la comisión ${commission.code}`}
+											>
+												<SelectValue placeholder="Seleccione preceptor" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value={NO_PRECEPTOR}>Sin preceptor asignado</SelectItem>
+												{preceptors.map((p) => (
+													<SelectItem key={p.id} value={p.id}>
+														{p.firstName} {p.lastName} ({p.email})
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+								)}
 
 								{commission.students.length === 0 ? (
 									<p className="text-sm text-muted-foreground">

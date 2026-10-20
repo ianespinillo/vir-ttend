@@ -11,6 +11,7 @@ import { Subject } from '../../../../src/modules/academic/domain/entities/subjec
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { IWorkshopCommissionRepository } from '../../../../src/modules/academic/domain/repositories/workshop-commission.repository.interface';
 import { expectRejection } from '../expect-rejection';
 
 describe('SetScheduleHandler', () => {
@@ -18,6 +19,7 @@ describe('SetScheduleHandler', () => {
 	let scheduleRepository: MockProxy<IScheduleRepository>;
 	let subjectRepository: MockProxy<ISubjectRepository>;
 	let courseRepository: MockProxy<ICourseRepository>;
+	let commissionRepository: MockProxy<IWorkshopCommissionRepository>;
 
 	const mockCourse = Course.reconstitute({
 		id: 'course-1',
@@ -59,11 +61,14 @@ describe('SetScheduleHandler', () => {
 		scheduleRepository = mock<IScheduleRepository>();
 		subjectRepository = mock<ISubjectRepository>();
 		courseRepository = mock<ICourseRepository>();
+		commissionRepository = mock<IWorkshopCommissionRepository>();
+		commissionRepository.findByCourse.mockResolvedValue([]);
 
 		handler = new SetScheduleHandler(
 			scheduleRepository,
 			subjectRepository,
 			courseRepository,
+			commissionRepository,
 		);
 	});
 

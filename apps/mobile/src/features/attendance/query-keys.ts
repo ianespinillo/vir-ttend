@@ -18,8 +18,16 @@ export const queryKeys = {
 	courseHistory: (courseId: string, from: string, to: string) =>
 		['attendance', 'history', courseId, from, to] as const,
 	mySubjects: () => ['subjects', 'mine'] as const,
-	subjectStudents: (subjectId: string) =>
-		['subjects', subjectId, 'students'] as const,
+	/**
+	 * Roster of a subject. Without a date it is the union of every commission
+	 * the subject targets (what the offline preload caches); with a date it is
+	 * the roster of that weekday (mixed-slot workshop subjects). The dated key
+	 * extends the undated one, so invalidating the undated key covers both.
+	 */
+	subjectStudents: (subjectId: string, date?: string) =>
+		date
+			? (['subjects', subjectId, 'students', date] as const)
+			: (['subjects', subjectId, 'students'] as const),
 	subjectAttendance: (subjectId: string, date: string) =>
 		['attendance', 'subject', subjectId, date] as const,
 	myWorkshopCommissions: (date: string) =>

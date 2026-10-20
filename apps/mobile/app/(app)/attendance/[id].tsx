@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE } from '@repo/common/constants';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
@@ -10,6 +11,7 @@ import {
 	FileCheck,
 	FileText,
 	Users,
+	Wrench,
 	X,
 } from 'lucide-react-native';
 import React, {
@@ -30,6 +32,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/context/auth-context';
 import { AttendanceDateBar } from '../../../src/features/attendance/attendance-date-bar';
+import { isCachedWorkshopOnlyCourse } from '../../../src/features/attendance/course-list';
 import { resolveDayDataState } from '../../../src/features/attendance/date-nav';
 import {
 	getJustifyBlockHint,
@@ -42,9 +45,12 @@ import { JustificationBadge } from '../../../src/features/attendance/justificati
 import { JustifySheet } from '../../../src/features/attendance/justify-sheet';
 import { MonthlyJustificationsModal } from '../../../src/features/attendance/monthly-justifications-modal';
 import { attendanceQueries } from '../../../src/features/attendance/queries';
+import { queryKeys } from '../../../src/features/attendance/query-keys';
 import { StatusPicker } from '../../../src/features/attendance/status-picker';
 import type {
 	AttendanceStatus,
+	CourseListItem,
+	PreceptorCourse,
 	RecordedAttendanceStatus,
 	StudentItem,
 } from '../../../src/features/attendance/types';
@@ -53,12 +59,55 @@ import {
 	useAttendanceDate,
 } from '../../../src/features/attendance/use-attendance-date';
 import { useJustifyAttendance } from '../../../src/features/attendance/use-justify-attendance';
-import { useBrand } from '../../../src/features/branding/brand-context';
 import { useIsOnline } from '../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../src/features/offline/use-outbox';
 import { useServerReachability } from '../../../src/features/offline/use-server-reachability';
+import { useThemeColors } from '../../../src/features/theme/use-theme-colors';
 
 const NO_STUDENTS: StudentItem[] = [];
+
+/** Workshop-only (7th year technical) per the course rows already cached. */
+function useIsWorkshopOnlyCourse(courseId: string): boolean {
+	const queryClient = useQueryClient();
+	return useMemo(() => {
+		const dashboards = queryClient
+			.getQueriesData<CourseListItem[]>({
+				queryKey: queryKeys.preceptorDashboard('').slice(0, 1),
+			})
+			.map(([, data]) => data);
+		const assigned = queryClient
+			.getQueriesData<PreceptorCourse[]>({
+				queryKey: queryKeys.preceptorCourses('').slice(0, 2),
+			})
+			.map(([, data]) => data);
+		return isCachedWorkshopOnlyCourse(courseId, dashboards, assigned);
+	}, [queryClient, courseId]);
+}
+
+/** Daily attendance does not exist for a workshop-only course. */
+function WorkshopOnlyNotice({ courseName }: { courseName: string }) {
+	const theme = useThemeColors();
+	const router = useRouter();
+	return (
+		<SafeAreaView className="flex-1 bg-background">
+			<View className="flex-row items-center px-4 py-3">
+				<TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+					<ArrowLeft size={22} color={theme.neutral400} />
+				</TouchableOpacity>
+				<Text className="text-xl font-bold text-foreground">{courseName}</Text>
+			</View>
+			<View className="flex-1 items-center justify-center px-6">
+				<Wrench size={36} color={theme.neutral400} />
+				<Text className="mt-2 text-base font-semibold text-neutral-700">
+					Sin asistencia diaria
+				</Text>
+				<Text className="mt-2 text-center text-sm text-muted-foreground">
+					{WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE} Tomala desde Asistencia de taller.
+				</Text>
+			</View>
+		</SafeAreaView>
+	);
+}
 
 export default function AttendanceSheetScreen() {
 	const params = useLocalSearchParams();
@@ -77,6 +126,9 @@ export default function AttendanceSheetScreen() {
 			hasUserEdits.current = false;
 		},
 	});
+
+	const workshopOnly = useIsWorkshopOnlyCourse(courseId);
+	if (workshopOnly) return <WorkshopOnlyNotice courseName={courseName} />;
 
 	// `key` gives every day a fresh sheet: no edits or selections carry over.
 	return (
@@ -103,7 +155,7 @@ function DailySheet({
 	nav,
 	hasUserEdits,
 }: DailySheetProps) {
-	const { tokens } = useBrand();
+	const theme = useThemeColors();
 	const router = useRouter();
 	const online = useIsOnline();
 	const { enqueueDaily, getItemForCourse } = useOutbox();
@@ -352,20 +404,20 @@ function DailySheet({
 	};
 
 	return (
-		<SafeAreaView edges={['bottom']} className="flex-1 bg-slate-50">
+		<SafeAreaView edges={['bottom']} className="flex-1 bg-background">
 			{/* Top Bar / Course Header */}
-			<View className="border-b border-slate-200 bg-white px-5 py-4">
+			<View className="border-b border-border bg-card px-5 py-4">
 				<View className="flex-row items-center justify-between">
 					<View className="flex-1">
-						<Text className="text-xl font-bold text-slate-900">{courseName}</Text>
+						<Text className="text-xl font-bold text-foreground">{courseName}</Text>
 					</View>
 
 					<TouchableOpacity
 						onPress={markAllPresent}
-						className="flex-row items-center rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 active:bg-emerald-100"
+						className="flex-row items-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 px-3 py-2 active:bg-emerald-100 dark:active:bg-emerald-500/25"
 					>
-						<CheckCheck size={16} color="#059669" />
-						<Text className="ml-1.5 text-xs font-bold text-emerald-700">
+						<CheckCheck size={16} color={theme.status.success.icon} />
+						<Text className="ml-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
 							Todos presentes
 						</Text>
 					</TouchableOpacity>
@@ -376,10 +428,10 @@ function DailySheet({
 				{isPreceptor ? (
 					<TouchableOpacity
 						onPress={() => setIsMonthOpen(true)}
-						className="mt-3 flex-row items-center self-start rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 active:bg-primary-100"
+						className="mt-3 flex-row items-center self-start rounded-lg border border-primary-200 dark:border-primary-ink/40 bg-primary-50 dark:bg-primary-ink/15 px-3 py-1.5 active:bg-primary-100 dark:active:bg-primary-ink/25"
 					>
-						<FileCheck size={14} color={tokens.primary} />
-						<Text className="ml-1.5 text-xs font-bold text-primary-700">
+						<FileCheck size={14} color={theme.primaryInk} />
+						<Text className="ml-1.5 text-xs font-bold text-primary-700 dark:text-primary-ink">
 							Justificaciones del mes
 						</Text>
 					</TouchableOpacity>
@@ -387,26 +439,30 @@ function DailySheet({
 
 				{/* Summary badges */}
 				<View className="mt-3.5 flex-row space-x-2">
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 py-1.5 border border-emerald-100">
-						<Text className="text-xs font-bold text-emerald-700">
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/15 py-1.5 border border-emerald-100 dark:border-emerald-500/25">
+						<Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
 							{counts.present} P
 						</Text>
 					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 py-1.5 border border-red-100">
-						<Text className="text-xs font-bold text-red-700">{counts.absent} A</Text>
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/15 py-1.5 border border-red-100 dark:border-red-500/25">
+						<Text className="text-xs font-bold text-red-700 dark:text-red-300">
+							{counts.absent} A
+						</Text>
 					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 py-1.5 border border-amber-100">
-						<Text className="text-xs font-bold text-amber-700">{counts.late} T</Text>
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/15 py-1.5 border border-amber-100 dark:border-amber-500/25">
+						<Text className="text-xs font-bold text-amber-700 dark:text-amber-300">
+							{counts.late} T
+						</Text>
 					</View>
 					{counts.justified > 0 ? (
-						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-primary-50 py-1.5 border border-primary-100">
-							<Text className="text-xs font-bold text-primary-700">
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-ink/15 py-1.5 border border-primary-100 dark:border-primary-ink/25">
+							<Text className="text-xs font-bold text-primary-700 dark:text-primary-ink">
 								{counts.justified} J
 							</Text>
 						</View>
 					) : null}
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-slate-100 py-1.5">
-						<Text className="text-xs font-bold text-slate-600">
+					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-muted py-1.5">
+						<Text className="text-xs font-bold text-neutral-600">
 							{counts.total} Total
 						</Text>
 					</View>
@@ -419,20 +475,28 @@ function DailySheet({
 					className="mx-5 mt-4 rounded-xl p-3 border"
 					style={
 						outboxItem.error?.isPermanent
-							? { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }
-							: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }
+							? {
+									backgroundColor: theme.status.danger.background,
+									borderColor: theme.status.danger.border,
+								}
+							: {
+									backgroundColor: theme.status.warning.background,
+									borderColor: theme.status.warning.border,
+								}
 					}
 				>
 					<View className="flex-row items-center">
 						{outboxItem.error?.isPermanent ? (
-							<AlertCircle size={15} color="#DC2626" />
+							<AlertCircle size={15} color={theme.status.danger.icon} />
 						) : (
-							<Clock size={15} color="#D97706" />
+							<Clock size={15} color={theme.status.warning.icon} />
 						)}
 						<Text
 							className="ml-2 font-bold text-xs"
 							style={{
-								color: outboxItem.error?.isPermanent ? '#991B1B' : '#92400E',
+								color: outboxItem.error?.isPermanent
+									? theme.status.danger.strongText
+									: theme.status.warning.strongText,
 							}}
 						>
 							{outboxItem.error?.isPermanent
@@ -445,14 +509,16 @@ function DailySheet({
 						</Text>
 					</View>
 					{outboxItem.error?.message ? (
-						<Text className="mt-1 text-xs text-red-700">
+						<Text className="mt-1 text-xs text-red-700 dark:text-red-300">
 							{outboxItem.error.message}
 						</Text>
 					) : null}
 					<Text
 						className="mt-0.5 text-[11px]"
 						style={{
-							color: outboxItem.error?.isPermanent ? '#B91C1C' : '#B45309',
+							color: outboxItem.error?.isPermanent
+								? theme.status.danger.text
+								: theme.status.warning.text,
 						}}
 					>
 						{outboxItem.error?.isPermanent
@@ -465,65 +531,67 @@ function DailySheet({
 			{/* Student Roster */}
 			{isLoadingStudents ? (
 				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color={tokens.primary} />
-					<Text className="mt-3 text-sm text-slate-500">
+					<ActivityIndicator size="large" color={theme.primaryInk} />
+					<Text className="mt-3 text-sm text-muted-foreground">
 						Cargando nómina de alumnos...
 					</Text>
 				</View>
 			) : isOfflineWithoutRoster ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<CloudOff size={36} color="#94A3B8" />
-					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+					<CloudOff size={36} color={theme.neutral400} />
+					<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 						Sin conexión. La lista de alumnos de este curso todavía no se descargó.
 					</Text>
 				</View>
 			) : studentsError && studentsData === undefined ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<AlertCircle size={36} color="#EF4444" />
-					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+					<AlertCircle size={36} color={theme.destructive} />
+					<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 						No se pudo cargar la lista de alumnos.
 					</Text>
 				</View>
 			) : students.length === 0 ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<Users size={36} color="#94A3B8" />
-					<Text className="mt-2 text-base font-semibold text-slate-700">
+					<Users size={36} color={theme.neutral400} />
+					<Text className="mt-2 text-base font-semibold text-neutral-700">
 						Curso sin alumnos registrados
 					</Text>
 				</View>
 			) : dayState === 'loading' ? (
 				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color={tokens.primary} />
-					<Text className="mt-3 text-sm text-slate-500">
+					<ActivityIndicator size="large" color={theme.primaryInk} />
+					<Text className="mt-3 text-sm text-muted-foreground">
 						Cargando asistencia del {nav.label}...
 					</Text>
 				</View>
 			) : dayState === 'offline-empty' ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<CloudOff size={36} color="#94A3B8" />
-					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+					<CloudOff size={36} color={theme.neutral400} />
+					<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 						Sin conexión: no hay datos guardados para esta fecha.
 					</Text>
 				</View>
 			) : dayState === 'error' ? (
 				<View className="flex-1 items-center justify-center px-6">
-					<AlertCircle size={36} color="#EF4444" />
-					<Text className="mt-2 text-center text-sm font-medium text-slate-700">
+					<AlertCircle size={36} color={theme.destructive} />
+					<Text className="mt-2 text-center text-sm font-medium text-neutral-700">
 						No se pudo cargar la asistencia de esta fecha.
 					</Text>
 					<TouchableOpacity
 						onPress={() => refetchDay()}
-						className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 active:bg-primary-100"
+						className="mt-3 rounded-xl border border-primary-200 dark:border-primary-ink/40 bg-primary-50 dark:bg-primary-ink/15 px-4 py-2 active:bg-primary-100 dark:active:bg-primary-ink/25"
 					>
-						<Text className="text-xs font-bold text-primary-700">Reintentar</Text>
+						<Text className="text-xs font-bold text-primary-700 dark:text-primary-ink">
+							Reintentar
+						</Text>
 					</TouchableOpacity>
 				</View>
 			) : (
 				<ScrollView className="flex-1 px-4 py-3">
 					{hasJustifiableRows && justifyBlockHint ? (
-						<View className="mb-2.5 flex-row items-center rounded-xl border border-slate-200 bg-slate-100 px-3 py-2">
-							<FileText size={13} color="#64748B" />
-							<Text className="ml-2 flex-1 text-xs text-slate-600">
+						<View className="mb-2.5 flex-row items-center rounded-xl border border-border bg-muted px-3 py-2">
+							<FileText size={13} color={theme.mutedForeground} />
+							<Text className="ml-2 flex-1 text-xs text-neutral-600">
 								{justifyBlockHint}
 							</Text>
 						</View>
@@ -535,23 +603,23 @@ function DailySheet({
 						return (
 							<View
 								key={student.id}
-								className="mb-2.5 flex-row items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"
+								className="mb-2.5 flex-row items-center justify-between rounded-xl border border-border bg-card p-3.5 shadow-sm"
 							>
 								{/* Student Info */}
 								<View className="flex-1 pr-2">
 									<View className="flex-row items-center">
-										<Text className="mr-2 text-xs font-bold text-slate-400">
+										<Text className="mr-2 text-xs font-bold text-neutral-400">
 											#{index + 1}
 										</Text>
 										<Text
-											className="text-sm font-semibold text-slate-900"
+											className="text-sm font-semibold text-foreground"
 											numberOfLines={1}
 										>
 											{student.lastName}, {student.firstName}
 										</Text>
 									</View>
 									{student.documentNumber && (
-										<Text className="ml-5 text-xs text-slate-400">
+										<Text className="ml-5 text-xs text-neutral-400">
 											DNI: {student.documentNumber}
 										</Text>
 									)}
@@ -566,8 +634,8 @@ function DailySheet({
 											className="ml-5 mt-1.5 flex-row items-center self-start rounded-md px-1 py-1"
 											style={{ opacity: justifyState.enabled ? 1 : 0.4 }}
 										>
-											<FileText size={13} color={tokens.primary} />
-											<Text className="ml-1 text-xs font-bold text-primary">
+											<FileText size={13} color={theme.primaryInk} />
+											<Text className="ml-1 text-xs font-bold text-primary-ink">
 												Justificar
 											</Text>
 										</TouchableOpacity>
@@ -594,7 +662,7 @@ function DailySheet({
 
 			{/* Sticky Bottom Confirmation Bar */}
 			{students.length > 0 && dayState === 'ready' && (
-				<View className="border-t border-slate-200 bg-white px-5 py-4 shadow-lg">
+				<View className="border-t border-border bg-card px-5 py-4 shadow-lg">
 					<TouchableOpacity
 						onPress={handleSave}
 						disabled={isSaving}

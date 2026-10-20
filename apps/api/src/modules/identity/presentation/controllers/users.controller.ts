@@ -254,11 +254,11 @@ export class UsersController {
 	}
 
 	@Get()
-	@RolesDecorator(ROLES.ADMIN, ROLES.SUPERADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
 		summary: 'Listar usuarios (del tenant o globales)',
 		description:
-			'Lista los usuarios con paginación y filtros opcionales (rol, búsqueda, tenantId). ADMIN solo puede listar su propio tenant. SUPERADMIN puede listar cualquier tenant o todos los usuarios si no especifica tenantId.',
+			'Lista los usuarios con paginación y filtros opcionales (rol, búsqueda, tenantId). ADMIN solo puede listar su propio tenant. SUPERADMIN puede listar cualquier tenant o todos los usuarios si no especifica tenantId. PRECEPTOR solo obtiene los docentes de su propio tenant (para asignarlos a materias), sin importar el rol pedido.',
 	})
 	@ApiQuery({
 		name: 'role',
@@ -318,8 +318,17 @@ export class UsersController {
 					: tenantId
 				: user.tenantId;
 
+		// Preceptors only need teachers to assign them to subjects.
+		const effectiveRole = user.role === ROLES.PRECEPTOR ? ROLES.TEACHER : role;
+
 		return this.listUsersByTenantHandler.execute(
-			new ListUsersByTenantQuery(effectiveTenant, +page, +limit, role, search),
+			new ListUsersByTenantQuery(
+				effectiveTenant,
+				+page,
+				+limit,
+				effectiveRole,
+				search,
+			),
 		);
 	}
 

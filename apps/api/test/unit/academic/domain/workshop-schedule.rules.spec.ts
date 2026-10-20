@@ -99,6 +99,44 @@ describe('Workshop schedule rules', () => {
 		});
 	});
 
+	describe('validateExistingCommissions', () => {
+		it('rejects a slot for commission 2 when the course only has commission 1', () => {
+			const validate = () =>
+				CourseService.validateExistingCommissions(
+					[slot('w', '08:00', '09:00', 2)],
+					[1],
+				);
+			expect(validate).toThrow(DomainError);
+			expect(validate).toThrow(
+				'El curso no tiene la comisión 2: tiene una sola comisión de taller.',
+			);
+		});
+
+		it('accepts slots for existing commissions or for both', () => {
+			expect(() =>
+				CourseService.validateExistingCommissions(
+					[slot('w', '08:00', '09:00', 1), slot('w', '09:00', '10:00', null)],
+					[1],
+				),
+			).not.toThrow();
+			expect(() =>
+				CourseService.validateExistingCommissions(
+					[slot('w', '08:00', '09:00', 1), slot('w', '08:00', '09:00', 2)],
+					[1, 2],
+				),
+			).not.toThrow();
+		});
+
+		it('does not restrict courses without commissions yet', () => {
+			expect(() =>
+				CourseService.validateExistingCommissions(
+					[slot('w', '08:00', '09:00', 2)],
+					[],
+				),
+			).not.toThrow();
+		});
+	});
+
 	describe('validateWeeklyHours', () => {
 		const hours = new Map([['workshop', 4]]);
 		const workshops = new Set(['workshop']);

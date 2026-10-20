@@ -33,6 +33,7 @@ export class ScheduleAdapter implements ISchedulePort {
 				slot.dayOfWeek,
 				slot.startTime,
 				slot.endTime,
+				slot.commissionNumber,
 			),
 		);
 	}
@@ -44,6 +45,7 @@ export class ScheduleAdapter implements ISchedulePort {
 				slot.dayOfWeek,
 				slot.startTime,
 				slot.endTime,
+				slot.commissionNumber,
 			),
 		);
 	}

@@ -14,6 +14,9 @@ export * from './components/brand';
 // Layout
 export * from './components/layout';
 
+// Theme (light / dark / system)
+export * from './components/theme';
+
 // Onboarding tour
 export * from './components/tour';
 

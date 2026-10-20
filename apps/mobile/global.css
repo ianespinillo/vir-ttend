@@ -23,3 +23,40 @@
 	--brand-accent: 198 244 50;
 	--brand-on-accent: 20 33 61;
 }
+
+/*
+ * Scheme-aware neutrals ("R G B"), mirrored from NEUTRALS in
+ * src/features/theme/theme-tokens.ts. `BrandProvider` injects the active
+ * scheme's values at runtime with `vars()`; these are the defaults.
+ */
+:root {
+	--brand-primary-ink: 20 33 61;
+	--color-background: 248 250 252;
+	--color-card: 255 255 255;
+	--color-foreground: 15 23 42;
+	--color-muted: 241 245 249;
+	--color-muted-foreground: 100 116 139;
+	--color-border: 226 232 240;
+	--color-neutral-300: 203 213 225;
+	--color-neutral-400: 148 163 184;
+	--color-neutral-600: 71 85 105;
+	--color-neutral-700: 51 65 85;
+	--color-neutral-800: 30 41 59;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--brand-primary-ink: 180 184 193;
+		--color-background: 2 6 23;
+		--color-card: 15 23 42;
+		--color-foreground: 241 245 249;
+		--color-muted: 30 41 59;
+		--color-muted-foreground: 148 163 184;
+		--color-border: 30 41 59;
+		--color-neutral-300: 51 65 85;
+		--color-neutral-400: 100 116 139;
+		--color-neutral-600: 203 213 225;
+		--color-neutral-700: 226 232 240;
+		--color-neutral-800: 241 245 249;
+	}
+}

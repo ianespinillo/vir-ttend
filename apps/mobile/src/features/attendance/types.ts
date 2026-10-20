@@ -37,6 +37,8 @@ export interface CourseSnapshot {
 	late?: number;
 	notRecorded?: number;
 	attendancePercent?: number;
+	/** 7th year technical: no daily attendance, only workshop attendance. */
+	workshopOnly?: boolean;
 }
 
 /** One course of `GET /courses/by-preceptor`. */
@@ -44,6 +46,7 @@ export interface PreceptorCourse {
 	id: string;
 	fullName: string;
 	level?: string;
+	yearNumber?: number;
 	shift?: string;
 }
 

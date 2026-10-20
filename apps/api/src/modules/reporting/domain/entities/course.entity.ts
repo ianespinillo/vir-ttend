@@ -1,4 +1,4 @@
-import { LevelType } from '@repo/common';
+import { LevelType, isWorkshopOnlyCourse } from '@repo/common';
 
 interface ConstructorParameters {
 	id: string;
@@ -6,6 +6,7 @@ interface ConstructorParameters {
 	tenantId: string;
 	name: string;
 	level: LevelType;
+	yearNumber?: number | null;
 }
 
 export class Course {
@@ -14,18 +15,21 @@ export class Course {
 	private readonly _name: string;
 	private readonly _level: LevelType;
 	private readonly _tenantId: string;
+	private readonly _yearNumber: number | null;
 	private constructor({
 		id,
 		academicYearId,
 		name,
 		level,
 		tenantId,
+		yearNumber,
 	}: ConstructorParameters) {
 		this._id = id;
 		this._academicYearId = academicYearId;
 		this._name = name;
 		this._level = level;
 		this._tenantId = tenantId;
+		this._yearNumber = yearNumber ?? null;
 	}
 	static reconstitute(props: ConstructorParameters) {
 		return new Course(props);
@@ -49,5 +53,17 @@ export class Course {
 
 	get name(): string {
 		return this._name;
+	}
+
+	get yearNumber(): number | null {
+		return this._yearNumber;
+	}
+
+	/** 7th year technical: workshop is the only shift (no contraturno halving). */
+	get isWorkshopOnly(): boolean {
+		return isWorkshopOnlyCourse({
+			level: this._level,
+			yearNumber: this._yearNumber,
+		});
 	}
 }

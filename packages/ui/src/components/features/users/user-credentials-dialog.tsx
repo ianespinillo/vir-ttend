@@ -54,7 +54,7 @@ export function UserCredentialsDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader className="flex flex-col items-center text-center pb-2">
-					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 mb-2">
+					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-2">
 						<CheckCircle2 className="h-6 w-6" />
 					</div>
 					<DialogTitle className="text-xl">
@@ -87,7 +87,7 @@ export function UserCredentialsDialog({
 									onClick={() => copyToClipboard(credentials.email, 'email')}
 								>
 									{copiedField === 'email' ? (
-										<Check className="h-4 w-4 text-emerald-600" />
+										<Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
 									) : (
 										<Copy className="h-4 w-4" />
 									)}

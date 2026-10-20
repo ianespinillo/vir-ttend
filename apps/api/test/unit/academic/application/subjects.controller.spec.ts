@@ -1,6 +1,7 @@
 import { JwtPayload, ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { AssignTeacherHandler } from '../../../../src/modules/academic/application/commands/assign-teaher/assign-teacher.handler';
+import { CreateSubjectCommand } from '../../../../src/modules/academic/application/commands/create-subject/create-subject.command';
 import { CreateSubjectHandler } from '../../../../src/modules/academic/application/commands/create-subject/create-subject.handler';
 import { DeleteSubjectHandler } from '../../../../src/modules/academic/application/commands/delete-subject/delete-subject.handler';
 import { UpdateSubjectCommand } from '../../../../src/modules/academic/application/commands/update-subject/update-subject.command';
@@ -20,6 +21,7 @@ describe('SubjectsController (teacher endpoints)', () => {
 	let getMySubjectsHandler: MockProxy<GetMySubjectsHandler>;
 	let getSubjectStudentsHandler: MockProxy<GetSubjectStudentsHandler>;
 	let updateSubjectHandler: MockProxy<UpdateSubjectHandler>;
+	let createSubjectHandler: MockProxy<CreateSubjectHandler>;
 
 	const teacher: JwtPayload = {
 		sub: 'teacher-1',
@@ -32,8 +34,9 @@ describe('SubjectsController (teacher endpoints)', () => {
 		getMySubjectsHandler = mock<GetMySubjectsHandler>();
 		getSubjectStudentsHandler = mock<GetSubjectStudentsHandler>();
 		updateSubjectHandler = mock<UpdateSubjectHandler>();
+		createSubjectHandler = mock<CreateSubjectHandler>();
 		controller = new SubjectsController(
-			mock<CreateSubjectHandler>(),
+			createSubjectHandler,
 			updateSubjectHandler,
 			mock<DeleteSubjectHandler>(),
 			mock<AssignTeacherHandler>(),
@@ -91,6 +94,18 @@ describe('SubjectsController (teacher endpoints)', () => {
 		});
 	});
 
+	it('students forwards the optional date as a Date', async () => {
+		getSubjectStudentsHandler.execute.mockResolvedValue([]);
+
+		await controller.students('sub-1', teacher, '2026-03-02');
+		await controller.students('sub-1', teacher);
+
+		const [withDate] = getSubjectStudentsHandler.execute.mock.calls[0];
+		const [withoutDate] = getSubjectStudentsHandler.execute.mock.calls[1];
+		expect(withDate.date).toEqual(new Date('2026-03-02'));
+		expect(withoutDate.date).toBeUndefined();
+	});
+
 	it('declares mine before any parameterised route and restricts roles', () => {
 		const routes = Object.getOwnPropertyNames(SubjectsController.prototype);
 		expect(routes.indexOf('mine')).toBeLessThan(routes.indexOf('students'));
@@ -136,5 +151,53 @@ describe('SubjectsController (teacher endpoints)', () => {
 			'Ada Lovelace',
 		);
 		expect(new SubjectResponseDto(subject).teacherName).toBeUndefined();
+	});
+
+	it('lets preceptors create and edit subjects but only admins delete them', () => {
+		const proto = SubjectsController.prototype;
+		expect(Reflect.getMetadata('roles', proto.create)).toEqual([
+			ROLES.ADMIN,
+			ROLES.PRECEPTOR,
+		]);
+		expect(Reflect.getMetadata('roles', proto.update)).toEqual([
+			ROLES.ADMIN,
+			ROLES.PRECEPTOR,
+		]);
+		expect(Reflect.getMetadata('roles', proto.delete)).toEqual([ROLES.ADMIN]);
+	});
+
+	it('create and update forward the manual teacher name', async () => {
+		await controller.create({
+			courseId: 'course-1',
+			name: 'Historia',
+			area: 'Sociales',
+			weeklyHours: 3,
+			teacherName: 'Laura Gómez',
+		});
+		await controller.update('sub-1', { teacherName: 'Laura Gómez' });
+
+		const created = createSubjectHandler.execute.mock.calls[0][0];
+		expect(created).toBeInstanceOf(CreateSubjectCommand);
+		expect(created.teacherName).toBe('Laura Gómez');
+		expect(updateSubjectHandler.execute.mock.calls[0][0].teacherName).toBe(
+			'Laura Gómez',
+		);
+	});
+
+	it('SubjectResponseDto falls back to the manual teacher name', () => {
+		const subject = Subject.reconstitute({
+			id: 'sub-1',
+			courseId: 'course-1',
+			teacherName: 'Laura Gómez',
+			name: 'Historia',
+			area: 'Sociales',
+			weeklyHours: 3,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+
+		const dto = new SubjectResponseDto(subject);
+		expect(dto.teacherId).toBeUndefined();
+		expect(dto.teacherName).toBe('Laura Gómez');
 	});
 });

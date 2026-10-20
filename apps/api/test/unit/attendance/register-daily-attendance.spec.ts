@@ -5,6 +5,7 @@ import { MockProxy, mock } from 'jest-mock-extended';
 import { RegisterDailyAttendanceCommand } from '../../../src/modules/attendance/application/commands/register-daily-attendance/register-daily-attendance.command';
 import { RegisterDailyAttendanceHandler } from '../../../src/modules/attendance/application/commands/register-daily-attendance/register-daily-attendance.handler';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 
@@ -47,6 +48,7 @@ describe('RegisterDailyAttendanceHandler', () => {
 			attendanceRepo,
 			unitOfWork,
 			eventEmitter,
+			mock<ICoursePort>(),
 		);
 	});
 

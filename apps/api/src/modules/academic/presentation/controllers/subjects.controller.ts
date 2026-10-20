@@ -62,11 +62,11 @@ export class SubjectsController {
 	) {}
 
 	@Post()
-	@RolesDecorator(ROLES.ADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
 		summary: 'Crear una materia',
 		description:
-			'Crea una nueva materia para el curso indicado, asignándole un docente que pertenezca al tenant del curso. Roles permitidos: admin. ' +
+			'Crea una nueva materia para el curso indicado, opcionalmente con un docente que pertenezca al tenant del curso o, si el docente no tiene usuario, con su nombre (teacherName). Roles permitidos: admin, preceptor. ' +
 			'Body de ejemplo: {"courseId": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "teacherId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "name": "Matemática", "area": "Ciencias Exactas", "weeklyHours": 5}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
@@ -83,6 +83,7 @@ export class SubjectsController {
 				dto.area,
 				dto.weeklyHours,
 				dto.kind,
+				dto.teacherName,
 			),
 		);
 	}
@@ -169,14 +170,21 @@ export class SubjectsController {
 	@ApiOperation({
 		summary: 'Listar los estudiantes de una materia',
 		description:
-			'Devuelve los estudiantes activos del curso al que pertenece la materia. Un docente solo puede consultar sus propias materias. Roles permitidos: teacher (solo materias propias), admin, preceptor. ' +
-			'URL de ejemplo: /subjects/550e8400-e29b-41d4-a716-446655440000/students. ' +
+			'Devuelve los estudiantes activos del curso al que pertenece la materia. En materias de taller con horarios por comisión, solo devuelve los estudiantes de esas comisiones; con `date`, usa los horarios de ese día de la semana. Un docente solo puede consultar sus propias materias. Roles permitidos: teacher (solo materias propias), admin, preceptor. ' +
+			'URL de ejemplo: /subjects/550e8400-e29b-41d4-a716-446655440000/students?date=2026-03-02. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
 	@ApiParam({
 		name: 'id',
 		description: 'ID de la materia.',
 		example: '550e8400-e29b-41d4-a716-446655440000',
+	})
+	@ApiQuery({
+		name: 'date',
+		required: false,
+		description:
+			'Fecha (YYYY-MM-DD). Filtra por las comisiones de los horarios de ese día de la semana.',
+		example: '2026-03-02',
 	})
 	@ApiResponse({
 		status: 200,
@@ -189,18 +197,28 @@ export class SubjectsController {
 		description: 'Rol no autorizado o materia de otro docente',
 	})
 	@ApiResponse({ status: 404, description: 'Materia no encontrada' })
-	async students(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+	async students(
+		@Param('id') id: string,
+		@CurrentUser() user: JwtPayload,
+		@Query('date') date?: string,
+	) {
 		return this.getSubjectStudentsHandler.execute(
-			new GetSubjectStudentsQuery(id, user.tenantId, user.sub, user.role),
+			new GetSubjectStudentsQuery(
+				id,
+				user.tenantId,
+				user.sub,
+				user.role,
+				date ? new Date(date) : undefined,
+			),
 		);
 	}
 
 	@Put(':id')
-	@RolesDecorator(ROLES.ADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
 		summary: 'Actualizar una materia',
 		description:
-			'Actualiza el docente, nombre, área y/o carga horaria semanal de una materia existente. Roles permitidos: admin. ' +
+			'Actualiza el docente (con usuario o solo nombre vía teacherName), nombre, área y/o carga horaria semanal de una materia existente. Roles permitidos: admin, preceptor. ' +
 			'Body de ejemplo: {"teacherId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "name": "Matemática", "area": "Ciencias Exactas", "weeklyHours": 6}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
@@ -223,6 +241,7 @@ export class SubjectsController {
 				dto.area,
 				dto.weeklyHours,
 				dto.kind,
+				dto.teacherName,
 			),
 		);
 	}

@@ -35,7 +35,7 @@ export function AcademicYearCard({
 				<CardTitle className="text-xl font-bold flex items-center gap-2">
 					Ciclo Lectivo {academicYear.year}
 					{academicYear.isActive ? (
-						<Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300">
+						<Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
 							Activo
 						</Badge>
 					) : (
@@ -104,7 +104,7 @@ export function AcademicYearCard({
 									variant="outline"
 									size="sm"
 									data-tour="declare-non-working-day"
-									className="h-7 text-xs px-2 gap-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900"
+									className="h-7 text-xs px-2 gap-1 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900"
 									onClick={() => onDeclareNonWorkingDay(academicYear)}
 								>
 									<CalendarOff className="h-3.5 w-3.5" />

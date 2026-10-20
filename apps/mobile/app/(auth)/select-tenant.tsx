@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/auth-context';
-import { useBrand } from '../../src/features/branding/brand-context';
+import { useThemeColors } from '../../src/features/theme/use-theme-colors';
 
 export default function SelectTenantScreen() {
-	const { tokens } = useBrand();
+	const theme = useThemeColors();
 	const { availableTenants, selectTenant, logout } = useAuth();
 	const router = useRouter();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -40,25 +40,27 @@ export default function SelectTenantScreen() {
 	};
 
 	return (
-		<SafeAreaView className="flex-1 bg-slate-50 px-6 py-6">
+		<SafeAreaView className="flex-1 bg-background px-6 py-6">
 			<View className="mb-6 flex-row items-center justify-between">
 				<View>
-					<Text className="text-2xl font-bold text-slate-900">Elegir Escuela</Text>
-					<Text className="mt-1 text-sm text-slate-500">
+					<Text className="text-2xl font-bold text-foreground">Elegir Escuela</Text>
+					<Text className="mt-1 text-sm text-muted-foreground">
 						Seleccioná la institución para operar en esta sesión
 					</Text>
 				</View>
 				<TouchableOpacity
 					onPress={handleLogout}
-					className="flex-row items-center rounded-lg border border-slate-200 bg-white px-3 py-2"
+					className="flex-row items-center rounded-lg border border-border bg-card px-3 py-2"
 				>
-					<LogOut size={16} color="#64748B" />
+					<LogOut size={16} color={theme.mutedForeground} />
 				</TouchableOpacity>
 			</View>
 
 			{error && (
-				<View className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
-					<Text className="text-sm font-medium text-red-700">{error}</Text>
+				<View className="mb-4 rounded-xl border border-red-200 dark:border-red-500/40 bg-red-50 dark:bg-red-500/15 p-3">
+					<Text className="text-sm font-medium text-red-700 dark:text-red-300">
+						{error}
+					</Text>
 				</View>
 			)}
 
@@ -70,26 +72,26 @@ export default function SelectTenantScreen() {
 							key={t.tenantId}
 							onPress={() => handleSelect(t.tenantId)}
 							disabled={isSubmitting}
-							className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:border-primary-400"
+							className="mb-3 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400"
 						>
 							<View className="flex-row items-center space-x-3.5">
-								<View className="h-12 w-12 items-center justify-center rounded-xl bg-primary-50">
-									<Building size={22} color={tokens.primary} />
+								<View className="h-12 w-12 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-ink/15">
+									<Building size={22} color={theme.primaryInk} />
 								</View>
 								<View className="ml-3">
-									<Text className="text-base font-semibold text-slate-800">
+									<Text className="text-base font-semibold text-neutral-800">
 										{t.name || 'Institución Educativa'}
 									</Text>
-									<Text className="text-xs uppercase tracking-wide text-primary">
+									<Text className="text-xs uppercase tracking-wide text-primary-ink">
 										Rol: {t.role || 'Docente'}
 									</Text>
 								</View>
 							</View>
 
 							{isThisSelected ? (
-								<ActivityIndicator size="small" color={tokens.primary} />
+								<ActivityIndicator size="small" color={theme.primaryInk} />
 							) : (
-								<ArrowRight size={20} color="#94A3B8" />
+								<ArrowRight size={20} color={theme.neutral400} />
 							)}
 						</TouchableOpacity>
 					);
@@ -97,7 +99,7 @@ export default function SelectTenantScreen() {
 
 				{availableTenants.length === 0 && (
 					<View className="items-center justify-center py-12">
-						<Text className="text-sm text-slate-500">
+						<Text className="text-sm text-muted-foreground">
 							No se encontraron instituciones asignadas a tu cuenta.
 						</Text>
 					</View>

@@ -26,13 +26,13 @@
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-	background: hsl(145 25% 75%);
+	background: hsl(var(--muted-foreground) / 0.35);
 	border-radius: 4px;
 }
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-	background: hsl(145 65% 72%);
+	background: hsl(var(--muted-foreground) / 0.55);
 	box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
 }
 .custom-scroll::-webkit-scrollbar-thumb:active {
-	background-color: hsl(145 60% 60%);
+	background-color: hsl(var(--muted-foreground) / 0.7);
 }

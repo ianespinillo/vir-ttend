@@ -299,3 +299,73 @@ describe('calculateWeightedAbsencesByStudent', () => {
 		expect(calculateWeightedAbsencesByStudent([], []).size).toBe(0);
 	});
 });
+
+describe('workshop-only course (7th year technical)', () => {
+	it.each([
+		[ATTENDANCE_STATUS.PRESENT, 0],
+		[ATTENDANCE_STATUS.ABSENT, 1],
+		[ATTENDANCE_STATUS.JUSTIFIED, 1],
+		[ATTENDANCE_STATUS.LATE, 0.25],
+		[ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE, 0.5],
+	])(
+		'workshop %s weighs %d (single shift, no contraturno halving)',
+		(status, weight) => {
+			const result = run({ workshopRecords: [daily(status)], workshopOnly: true });
+			expect(result.total).toBe(weight);
+			expect(result.breakdown).toEqual({ daily: 0, workshop: weight });
+		},
+	);
+
+	it('keeps a legacy daily absence at 1 even on a day with a workshop record', () => {
+		const result = run({
+			dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+			workshopRecords: [daily(ATTENDANCE_STATUS.PRESENT)],
+			workshopOnly: true,
+		});
+		expect(result.total).toBe(1);
+		expect(result.breakdown).toEqual({ daily: 1, workshop: 0 });
+	});
+
+	it('caps a day with a legacy daily absence and a workshop absence at 1', () => {
+		const result = run({
+			dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+			workshopRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+			workshopOnly: true,
+		});
+		expect(result.total).toBe(MAX_DAILY_ABSENCE);
+		expect(result.breakdown).toEqual({ daily: 1, workshop: 0 });
+	});
+
+	it('ignores expected contraturno days', () => {
+		const result = run({
+			dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+			expectedContraturnoDays: [MONDAY],
+			workshopOnly: true,
+		});
+		expect(result.total).toBe(1);
+	});
+
+	it('leaves regular courses unchanged when the flag is false', () => {
+		const result = run({
+			workshopRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+			workshopOnly: false,
+		});
+		expect(result.total).toBe(0.5);
+	});
+
+	it('applies to every student of a course-wide read', () => {
+		const result = calculateWeightedAbsencesByStudent(
+			[],
+			[
+				{ studentId: 'ana', status: ATTENDANCE_STATUS.ABSENT, date: MONDAY },
+				{ studentId: 'ana', status: ATTENDANCE_STATUS.LATE, date: TUESDAY },
+			],
+			{ workshopOnly: true },
+		);
+		expect(result.get('ana')).toEqual({
+			total: 1.25,
+			breakdown: { daily: 0, workshop: 1.25 },
+			daysGiven: 2,
+		});
+	});
+});

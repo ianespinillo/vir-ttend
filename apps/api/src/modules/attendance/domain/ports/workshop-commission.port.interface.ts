@@ -19,6 +19,8 @@ export interface IWorkshopCommissionPort {
 	/** The commission the student belongs to, if any. */
 	findByStudent(studentId: string): Promise<WorkshopCommissionInfo | null>;
 	/** Commissions of active courses the user is the workshop preceptor of. */
+	/** Commissions of the course (none when the course is not split). */
+	findByCourse(courseId: string): Promise<WorkshopCommissionInfo[]>;
 	findByPreceptor(preceptorId: string): Promise<WorkshopCommissionInfo[]>;
 	/** Commissions of the active courses of the tenant. */
 	findByTenant(tenantId: string): Promise<WorkshopCommissionInfo[]>;

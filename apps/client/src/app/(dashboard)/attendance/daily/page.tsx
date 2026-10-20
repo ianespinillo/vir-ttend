@@ -4,6 +4,7 @@ import {
 	ATTENDANCE_STATUS,
 	type AttendanceRecord,
 	type AttendanceStatus,
+	isWorkshopOnlyCourse,
 } from '@repo/common';
 import {
 	useActiveAcademicYear,
@@ -89,17 +90,24 @@ export default function AttendanceDailyPage() {
 		[selectedCourseId, updateUrl],
 	);
 
+	// Workshop-only courses (7th year technical) have no daily attendance: the
+	// page shows a notice and never queries their daily records.
+	const dailyCourseId = useMemo(() => {
+		const selected = courses?.find((c) => c.id === selectedCourseId);
+		return selected && isWorkshopOnlyCourse(selected) ? '' : selectedCourseId;
+	}, [courses, selectedCourseId]);
+
 	const {
 		data: dailyRecords,
 		isLoading: isLoadingDaily,
 		isRefetching,
 	} = useDailyAttendance({
-		courseId: selectedCourseId,
+		courseId: dailyCourseId,
 		date: selectedDate,
 	});
 
 	const { data: metrics, isLoading: isLoadingMetrics } = useAttendanceMetrics({
-		courseId: selectedCourseId,
+		courseId: dailyCourseId,
 		date: selectedDate,
 	});
 
@@ -363,6 +371,7 @@ export default function AttendanceDailyPage() {
 				isSubmittingCopy={copyDailyMutation.isPending}
 				onConfirmChanges={handleConfirmChanges}
 				onResetChanges={handleResetChanges}
+				workshopAttendanceHref="/attendance/workshop"
 				extraActions={
 					selectedCourseId ? (
 						<div className="flex flex-wrap items-center gap-2">
@@ -371,7 +380,7 @@ export default function AttendanceDailyPage() {
 								variant="outline"
 								size="sm"
 								onClick={() => setIsReviewJustificationsOpen(true)}
-								className="border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+								className="border-primary/40 text-primary hover:bg-primary-ink/10 shadow-xs"
 							>
 								<FileCheck className="mr-1.5 h-4 w-4 shrink-0" />
 								Revisar justificaciones

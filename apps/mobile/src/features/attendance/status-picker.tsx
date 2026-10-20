@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { useThemeColors } from '../theme/use-theme-colors';
 import type { AttendanceStatus, RecordedAttendanceStatus } from './types';
 
 // NativeWind crash workaround: className must stay STATIC per render.
@@ -46,8 +47,9 @@ interface Props {
 
 /** Segmented control P | A | T | TF shared by the daily and workshop sheets. */
 export function StatusPicker({ value, onSelect }: Props) {
+	const theme = useThemeColors();
 	return (
-		<View className="flex-row items-center rounded-lg border border-slate-200 bg-slate-100 p-1">
+		<View className="flex-row items-center rounded-lg border border-border bg-muted p-1">
 			{STATUS_ORDER.map((status, i) => {
 				const isActive = value === status;
 				const colors = statusStyles[status];
@@ -70,7 +72,7 @@ export function StatusPicker({ value, onSelect }: Props) {
 						<Text
 							className="text-sm font-bold"
 							style={{
-								color: isActive ? colors.activeText : '#475569', // slate-600
+								color: isActive ? colors.activeText : theme.neutral600,
 							}}
 						>
 							{STATUS_LABEL[status]}
