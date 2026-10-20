@@ -207,12 +207,21 @@ describe('students, courses, subjects', () => {
 		const store = freshStore();
 		const id = demoIds.student['martin-benitez'];
 
-		store.enrollStudent(id, demoIds.course['crs-3a']);
-		expect(
-			store.getState().students.find((student) => student.id === id)?.courseId,
-		).toBe(demoIds.course['crs-3a']);
+		// Changing course keeps the student active in the new course.
+		store.enrollStudent(id, demoIds.course['crs-7a']);
+		const moved = store.getState().students.find((student) => student.id === id);
+		expect(moved?.courseId).toBe(demoIds.course['crs-7a']);
+		expect(moved?.status).toBe(STUDENTSTATUS.ACTIVE);
+		expect(moved?.workshopCommissionId).toBeTruthy();
+		expect(() => store.enrollStudent(id, demoIds.course['crs-7a'])).toThrow(
+			/ya está matriculado/,
+		);
 
 		store.transferStudent(id);
+		expect(() => store.transferStudent(id)).toThrow(/alumno activo/);
+		expect(() => store.enrollStudent(id, demoIds.course['crs-3a'])).toThrow(
+			/trasladado/,
+		);
 		expect(
 			store.getState().students.find((student) => student.id === id)?.status,
 		).toBe(STUDENTSTATUS.TRANSFERRED);

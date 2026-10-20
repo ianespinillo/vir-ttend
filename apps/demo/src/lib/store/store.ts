@@ -485,8 +485,19 @@ export function createDemoStore(
 	}
 
 	function enrollStudent(studentId: string, courseId: string): DemoStudent {
-		requireStudent(studentId);
+		const current = requireStudent(studentId);
 		const course = requireCourse(courseId);
+		// Same rules as the API: no re-enrolling into the same course, and a
+		// student already moved to another school cannot be enrolled.
+		if (current.status === STUDENTSTATUS.TRANSFERRED) {
+			throw new Error('El alumno fue trasladado a otra escuela.');
+		}
+		if (
+			current.courseId === courseId &&
+			current.status === STUDENTSTATUS.ACTIVE
+		) {
+			throw new Error('El alumno ya está matriculado en ese curso.');
+		}
 		const next = structuredClone(state);
 		next.students = next.students.map((student) =>
 			student.id === studentId
@@ -515,6 +526,9 @@ export function createDemoStore(
 
 	function transferStudent(studentId: string, courseId?: string): DemoStudent {
 		const existing = requireStudent(studentId);
+		if (existing.status !== STUDENTSTATUS.ACTIVE) {
+			throw new Error('Solo se puede trasladar a un alumno activo.');
+		}
 		const targetCourse = courseId ? requireCourse(courseId) : null;
 		const next = structuredClone(state);
 		next.students = next.students.map((student) =>

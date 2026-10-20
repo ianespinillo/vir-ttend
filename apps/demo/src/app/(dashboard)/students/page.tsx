@@ -26,6 +26,7 @@ import { type IStudentResponse, ROLES, STUDENT_ROUTES } from '@repo/common';
 import { type StudentFiltersState, StudentsPage } from '@repo/ui';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 
 export default function StudentsListPage() {
 	const router = useRouter();
@@ -128,8 +129,33 @@ export default function StudentsListPage() {
 		router.push(DEMO_STUDENT_ROUTES.edit(id));
 	};
 
+	/** Runs a store action and reports it like the product (toast + "Ver alumno"). */
+	const runStudentAction = (
+		studentId: string,
+		action: () => unknown,
+		successMessage: string,
+		errorFallback: string,
+	) => {
+		try {
+			action();
+			toast.success(successMessage, {
+				action: {
+					label: 'Ver alumno',
+					onClick: () => router.push(STUDENT_ROUTES.student(studentId)),
+				},
+			});
+		} catch (error: unknown) {
+			toast.error(error instanceof Error ? error.message : errorFallback);
+		}
+	};
+
 	const handleEnrollSubmit = (studentId: string, targetCourseId: string) => {
-		store.enrollStudent(studentId, targetCourseId);
+		runStudentAction(
+			studentId,
+			() => store.enrollStudent(studentId, targetCourseId),
+			'Estudiante matriculado exitosamente',
+			'Error al matricular el estudiante',
+		);
 	};
 
 	const handleChangeCourseSubmit = (
@@ -137,7 +163,12 @@ export default function StudentsListPage() {
 		targetCourseId: string,
 	) => {
 		// Changing course keeps the student active; the demo store treats it as an enroll.
-		store.enrollStudent(studentId, targetCourseId);
+		runStudentAction(
+			studentId,
+			() => store.enrollStudent(studentId, targetCourseId),
+			'Curso cambiado exitosamente',
+			'Error al cambiar el curso del estudiante',
+		);
 	};
 
 	const handleTransferSubmit = (student: IStudentResponse) => {
@@ -146,7 +177,12 @@ export default function StudentsListPage() {
 				`¿Confirma el traslado de ${student.fullName} a otra escuela? El alumno quedará marcado como Transferido.`,
 			)
 		) {
-			store.transferStudent(student.id, student.courseId);
+			runStudentAction(
+				student.id,
+				() => store.transferStudent(student.id, student.courseId),
+				'Estudiante trasladado a otra escuela',
+				'Error al trasladar el estudiante',
+			);
 		}
 	};
 
@@ -154,7 +190,16 @@ export default function StudentsListPage() {
 		if (
 			window.confirm(`¿Está seguro de que desea desactivar a ${student.fullName}?`)
 		) {
-			store.toggleStudentStatus(student.id, false);
+			try {
+				store.toggleStudentStatus(student.id, false);
+				toast.success('Estudiante desactivado exitosamente');
+			} catch (error: unknown) {
+				toast.error(
+					error instanceof Error
+						? error.message
+						: 'Error al desactivar el estudiante',
+				);
+			}
 		}
 	};
 

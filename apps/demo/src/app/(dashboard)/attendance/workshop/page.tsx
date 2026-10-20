@@ -12,6 +12,7 @@
 
 import { getInitialAttendanceDate } from '@/lib/attendance/attendance-mappings';
 import { useDemo } from '@/lib/session/demo-provider';
+import { demoTodayDate } from '@/lib/store/types';
 import type { AttendanceRecord, AttendanceStatus } from '@repo/common';
 import { type StudentRowItem, WorkshopAttendancePage } from '@repo/ui';
 import { useCallback, useMemo, useState } from 'react';
@@ -22,7 +23,7 @@ export default function AttendanceWorkshopPage() {
 	const user = session.user;
 
 	const [selectedDate, setSelectedDate] = useState<string>(() =>
-		getInitialAttendanceDate(),
+		getInitialAttendanceDate(demoTodayDate()),
 	);
 	const [selectedCommissionId, setSelectedCommissionId] = useState('');
 	// Edits staged until "Confirm": studentId -> status (per commission and date).

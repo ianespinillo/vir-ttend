@@ -8,6 +8,7 @@ import {
 	toJustifyInput,
 } from '@/lib/attendance/attendance-mappings';
 import { useDemo } from '@/lib/session/demo-provider';
+import { demoTodayDate } from '@/lib/store/types';
 import {
 	APP_ROUTES,
 	ATTENDANCE_STATUS,
@@ -49,7 +50,7 @@ export default function AttendanceDailyPage() {
 		() => searchParams.get('courseId') || courses[0]?.id || '',
 	);
 	const [selectedDate, setSelectedDate] = useState(
-		() => searchParams.get('date') || getInitialAttendanceDate(),
+		() => searchParams.get('date') || getInitialAttendanceDate(demoTodayDate()),
 	);
 
 	const [isJustifyOpen, setIsJustifyOpen] = useState(false);

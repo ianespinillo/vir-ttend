@@ -28,6 +28,7 @@ import {
 } from '@repo/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function StudentDetailPage() {
 	const params = useParams();
@@ -65,8 +66,24 @@ export default function StudentDetailPage() {
 	}
 
 	const handleModalSubmit = (targetCourseId: string) => {
+		const isEnroll = modalState.mode === 'enroll';
 		// Both 'enroll' and 'change' assign a course and keep the student active.
-		store.enrollStudent(student.id, targetCourseId);
+		try {
+			store.enrollStudent(student.id, targetCourseId);
+			toast.success(
+				isEnroll
+					? 'Estudiante matriculado exitosamente'
+					: 'Curso cambiado exitosamente',
+			);
+		} catch (error: unknown) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: isEnroll
+						? 'Error al matricular el estudiante'
+						: 'Error al cambiar el curso del estudiante',
+			);
+		}
 	};
 
 	const handleTransfer = () => {
@@ -76,6 +93,7 @@ export default function StudentDetailPage() {
 			)
 		) {
 			store.transferStudent(student.id, student.courseId);
+			toast.success('Estudiante trasladado a otra escuela');
 		}
 	};
 
@@ -84,6 +102,7 @@ export default function StudentDetailPage() {
 			window.confirm(`¿Está seguro de que desea desactivar a ${student.fullName}?`)
 		) {
 			store.toggleStudentStatus(student.id, false);
+			toast.success('Estudiante desactivado exitosamente');
 		}
 	};
 
