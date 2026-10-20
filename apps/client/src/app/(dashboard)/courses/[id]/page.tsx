@@ -72,7 +72,10 @@ export default function CourseDetailPage() {
 		limit: 100,
 	});
 	const { data: academicYears } = useAcademicYears();
-	const { data: preceptors } = useUsersByRole(ROLES.PRECEPTOR);
+	// Only admins edit the course; preceptors may list teachers only.
+	const { data: preceptors } = useUsersByRole(
+		isAdmin ? ROLES.PRECEPTOR : undefined,
+	);
 	const { data: teachers } = useUsersByRole(ROLES.TEACHER);
 	// Also read by schedule editors: the slot form hides the commission selector
 	// when the course has a single commission (or none).
@@ -316,13 +319,14 @@ export default function CourseDetailPage() {
 				onDelete={handleDeleteCourse}
 				onAddSubject={() => setSubjectModalState({ open: true, subject: null })}
 				onEditSubject={(subject) => setSubjectModalState({ open: true, subject })}
-				onDeleteSubject={handleDeleteSubject}
+				onDeleteSubject={isAdmin ? handleDeleteSubject : undefined}
 				onSaveSchedule={handleSaveSchedule}
 				onImportStudents={
 					canImportStudents ? () => setIsImportOpen(true) : undefined
 				}
 				canManage={isAdmin}
 				canManageSchedule={canManageSchedule}
+				canManageSubjects={isAdmin || isPreceptor}
 				students={studentsData?.items ?? []}
 				isLoadingStudents={studentsLoading}
 				studentCount={studentsData?.total}
@@ -414,6 +418,9 @@ export default function CourseDetailPage() {
 											area: subjectModalState.subject.area,
 											weeklyHours: subjectModalState.subject.weeklyHours,
 											teacherId: subjectModalState.subject.teacherId || '',
+											teacherName: subjectModalState.subject.teacherId
+												? ''
+												: subjectModalState.subject.teacherName || '',
 											kind: subjectModalState.subject.kind,
 										}
 									: undefined

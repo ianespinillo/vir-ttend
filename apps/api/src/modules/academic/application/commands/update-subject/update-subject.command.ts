@@ -8,5 +8,6 @@ export class UpdateSubjectCommand {
 		readonly area?: string,
 		readonly weeklyHours?: number,
 		readonly kind?: SubjectKindType,
+		readonly teacherName?: string,
 	) {}
 }

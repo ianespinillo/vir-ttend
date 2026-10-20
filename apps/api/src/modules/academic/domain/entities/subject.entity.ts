@@ -7,6 +7,8 @@ import { SubjectId } from '../value-objects/subject-id.vo';
 interface CreateProps {
 	courseId: string;
 	teacherId?: string;
+	/** Teacher without a user account; only kept while teacherId is unset. */
+	teacherName?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -17,6 +19,8 @@ interface ConstructorProps {
 	id: SubjectId;
 	courseId: string;
 	teacherId?: string;
+	/** Teacher without a user account; only kept while teacherId is unset. */
+	teacherName?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -30,6 +34,8 @@ export interface ReconstituteProps {
 	id: string;
 	courseId: string;
 	teacherId?: string;
+	/** Teacher without a user account; only kept while teacherId is unset. */
+	teacherName?: string;
 	name: string;
 	area: string;
 	weeklyHours: number;
@@ -43,6 +49,7 @@ export class Subject {
 	private readonly _id: SubjectId;
 	private readonly _courseId: string;
 	private _teacherId?: string;
+	private _teacherName?: string;
 	private _name: string;
 	private _area: string;
 	private _weeklyHours: number;
@@ -55,6 +62,9 @@ export class Subject {
 		this._id = props.id;
 		this._courseId = props.courseId;
 		this._teacherId = props.teacherId;
+		this._teacherName = props.teacherId
+			? undefined
+			: props.teacherName?.trim() || undefined;
 		this._name = props.name;
 		this._area = props.area;
 		this._weeklyHours = props.weeklyHours;
@@ -96,6 +106,9 @@ export class Subject {
 	get teacherId(): string | undefined {
 		return this._teacherId;
 	}
+	get teacherName(): string | undefined {
+		return this._teacherName;
+	}
 	get name(): string {
 		return this._name;
 	}
@@ -123,11 +136,20 @@ export class Subject {
 
 	assignTeacher(teacherId: string): void {
 		this._teacherId = teacherId;
+		this._teacherName = undefined;
+		this._updatedAt = new Date();
+	}
+
+	/** Names a teacher who has no user account; an empty name leaves the subject without teacher. */
+	assignExternalTeacher(teacherName: string): void {
+		this._teacherId = undefined;
+		this._teacherName = teacherName.trim() || undefined;
 		this._updatedAt = new Date();
 	}
 
 	unassignTeacher(): void {
 		this._teacherId = undefined;
+		this._teacherName = undefined;
 		this._updatedAt = new Date();
 	}
 

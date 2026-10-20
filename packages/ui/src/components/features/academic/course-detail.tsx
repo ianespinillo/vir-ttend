@@ -52,6 +52,8 @@ export interface CourseDetailProps {
 	onImportStudents?: () => void;
 	canManage?: boolean;
 	canManageSchedule?: boolean;
+	/** Create/edit subjects; defaults to canManage. */
+	canManageSubjects?: boolean;
 	attendancePath?: string;
 	/** Optional "Comisiones" tab content (workshop commissions); shown only to managers. */
 	commissionsTab?: ReactNode;
@@ -80,6 +82,7 @@ export function CourseDetail({
 	onImportStudents,
 	canManage = false,
 	canManageSchedule,
+	canManageSubjects,
 	attendancePath,
 	commissionsTab,
 	commissionNumbers,
@@ -304,7 +307,7 @@ export function CourseDetail({
 						onAddSubject={onAddSubject}
 						onEditSubject={onEditSubject}
 						onDeleteSubject={onDeleteSubject}
-						canManage={canManage}
+						canManage={canManageSubjects ?? canManage}
 					/>
 				</TabsContent>
 

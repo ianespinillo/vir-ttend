@@ -6,6 +6,7 @@ import {
 	IsNumber,
 	IsOptional,
 	IsString,
+	MaxLength,
 	Min,
 } from 'class-validator';
 
@@ -27,6 +28,17 @@ export class CreateSubjectRequestDto {
 		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
 	})
 	teacherId?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(255)
+	@ApiPropertyOptional({
+		type: String,
+		description:
+			'Nombre del docente cuando no tiene usuario en el sistema. Se ignora si se envía teacherId.',
+		example: 'Laura Gómez',
+	})
+	teacherName?: string;
 
 	@IsNotEmpty({ message: 'El nombre de la materia es obligatorio.' })
 	@IsString()

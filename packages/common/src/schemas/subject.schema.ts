@@ -9,6 +9,11 @@ export const createSubjectSchema = z.object({
 		.number()
 		.min(1, 'Las horas semanales deben ser al menos 1'),
 	teacherId: z.string().optional().or(z.literal('')),
+	/** Teacher without a user account; ignored when teacherId is set. */
+	teacherName: z
+		.string()
+		.max(255, 'El nombre del docente no puede superar los 255 caracteres')
+		.optional(),
 	kind: z.nativeEnum(SUBJECT_KIND).optional(),
 });
 

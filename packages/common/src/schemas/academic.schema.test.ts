@@ -61,6 +61,23 @@ describe('academic schemas', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('acepta un docente sin usuario y limita su nombre a 255 caracteres', () => {
+		const base = {
+			courseId: validUUID,
+			name: 'Historia',
+			area: 'Sociales',
+			weeklyHours: 3,
+		};
+		expect(
+			createSubjectSchema.safeParse({ ...base, teacherName: 'Laura Gómez' }).data
+				?.teacherName,
+		).toBe('Laura Gómez');
+		expect(
+			createSubjectSchema.safeParse({ ...base, teacherName: 'a'.repeat(256) })
+				.success,
+		).toBe(false);
+	});
+
 	it('valida franja horaria e inhabilita hora fin anterior a hora inicio', () => {
 		const validSlot = scheduleSlotSchema.safeParse({
 			subjectId: 'sub-1',

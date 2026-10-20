@@ -102,4 +102,21 @@ describe('CourseDetail', () => {
 		expect(screen.getByText('711')).toBeInTheDocument();
 		expect(screen.queryByText('C1')).not.toBeInTheDocument();
 	});
+
+	it('lets subjects be managed without managing the course', () => {
+		render(
+			<CourseDetail
+				course={course}
+				canManage={false}
+				canManageSubjects={true}
+				onAddSubject={() => {}}
+			/>,
+		);
+		fireEvent.mouseDown(screen.getByRole('tab', { name: 'Materias' }));
+
+		expect(
+			screen.getAllByRole('button', { name: /Agregar Materia/i }).length,
+		).toBeGreaterThan(0);
+		expect(screen.queryByText('Editar Curso')).not.toBeInTheDocument();
+	});
 });

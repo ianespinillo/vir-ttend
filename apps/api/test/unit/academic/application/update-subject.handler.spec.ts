@@ -1,10 +1,19 @@
-import { DAYOFWEEK, SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import {
+	DAYOFWEEK,
+	LEVEL,
+	SHIFT,
+	SUBJECT_KIND,
+	SubjectKindType,
+} from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
-import { BusinessRuleError } from '../../../../src/common/errors';
+import { BusinessRuleError, DomainError } from '../../../../src/common/errors';
 import { UpdateSubjectCommand } from '../../../../src/modules/academic/application/commands/update-subject/update-subject.command';
 import { UpdateSubjectHandler } from '../../../../src/modules/academic/application/commands/update-subject/update-subject.handler';
+import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
 import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
+import { IMembershipPort } from '../../../../src/modules/academic/domain/ports/membership.port.interface';
+import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
 import { expectRejection } from '../expect-rejection';
@@ -13,6 +22,22 @@ describe('UpdateSubjectHandler', () => {
 	let handler: UpdateSubjectHandler;
 	let subjectRepo: MockProxy<ISubjectRepository>;
 	let scheduleRepo: MockProxy<IScheduleRepository>;
+	let courseRepo: MockProxy<ICourseRepository>;
+	let membershipPort: MockProxy<IMembershipPort>;
+
+	const course = Course.reconstitute({
+		id: 'course-1',
+		tenantId: 'tenant-1',
+		academicYearId: 'ay-1',
+		preceptorId: 'preceptor-1',
+		level: LEVEL.SECONDARY,
+		yearNumber: 3,
+		division: 'A',
+		shift: SHIFT.MORNING,
+		isActive: true,
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	});
 
 	const makeSubject = (kind: SubjectKindType) =>
 		Subject.reconstitute({
@@ -50,7 +75,14 @@ describe('UpdateSubjectHandler', () => {
 	beforeEach(() => {
 		subjectRepo = mock<ISubjectRepository>();
 		scheduleRepo = mock<IScheduleRepository>();
-		handler = new UpdateSubjectHandler(subjectRepo, scheduleRepo);
+		courseRepo = mock<ICourseRepository>();
+		membershipPort = mock<IMembershipPort>();
+		handler = new UpdateSubjectHandler(
+			subjectRepo,
+			scheduleRepo,
+			courseRepo,
+			membershipPort,
+		);
 	});
 
 	it('saves name and area in the right fields', async () => {
@@ -97,5 +129,83 @@ describe('UpdateSubjectHandler', () => {
 		await handler.execute(kindOnly(to));
 
 		expect(subjectRepo.save).toHaveBeenCalledTimes(1);
+	});
+
+	it('keeps the teacher when the update does not mention it', async () => {
+		subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.THEORY));
+
+		await handler.execute(kindOnly(SUBJECT_KIND.THEORY));
+
+		expect(subjectRepo.save.mock.calls[0][0].teacherId).toBe('teacher-1');
+	});
+
+	it('unassigns the teacher when "NONE" is sent without a manual name', async () => {
+		subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.THEORY));
+
+		await handler.execute(new UpdateSubjectCommand('sub-1', 'NONE'));
+
+		const saved = subjectRepo.save.mock.calls[0][0];
+		expect(saved.teacherId).toBeUndefined();
+		expect(saved.teacherName).toBeUndefined();
+	});
+
+	it('replaces the teacher account with a manual teacher name', async () => {
+		subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.THEORY));
+
+		await handler.execute(
+			new UpdateSubjectCommand(
+				'sub-1',
+				'NONE',
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				'Laura Gómez',
+			),
+		);
+
+		const saved = subjectRepo.save.mock.calls[0][0];
+		expect(saved.teacherId).toBeUndefined();
+		expect(saved.teacherName).toBe('Laura Gómez');
+	});
+
+	it('assigns a teacher account of the course institution and drops the manual name', async () => {
+		subjectRepo.findById.mockResolvedValue(
+			Subject.reconstitute({
+				id: 'sub-1',
+				courseId: 'course-1',
+				teacherName: 'Laura Gómez',
+				name: 'Original',
+				area: 'AreaOriginal',
+				weeklyHours: 4,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			}),
+		);
+		courseRepo.findById.mockResolvedValue(course);
+		membershipPort.belongsToTenant.mockResolvedValue(true);
+
+		await handler.execute(new UpdateSubjectCommand('sub-1', 'teacher-2'));
+
+		expect(membershipPort.belongsToTenant).toHaveBeenCalledWith(
+			'teacher-2',
+			'tenant-1',
+		);
+		const saved = subjectRepo.save.mock.calls[0][0];
+		expect(saved.teacherId).toBe('teacher-2');
+		expect(saved.teacherName).toBeUndefined();
+	});
+
+	it('rejects a teacher account from another institution', async () => {
+		subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.THEORY));
+		courseRepo.findById.mockResolvedValue(course);
+		membershipPort.belongsToTenant.mockResolvedValue(false);
+
+		await expectRejection(
+			handler.execute(new UpdateSubjectCommand('sub-1', 'teacher-x')),
+			DomainError,
+			'El profesor no pertenece a la institución.',
+		);
+		expect(subjectRepo.save).not.toHaveBeenCalled();
 	});
 });
