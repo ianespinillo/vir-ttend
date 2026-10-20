@@ -110,4 +110,4 @@ RDD: not enabled by the user for this work; delivery follows ordinary repository
 
 ## Próximo paso
 
-All tasks done. Remaining: user review; push and pull requests are the user's decision (about 2,400 authored lines across 5 commits: chain or one PR per layer — store model, screens, docs).
+All tasks done. Remaining: user review; push and pull requests are the user's decision (about 4,700 changed lines (large share tests, seed and docs) across 5 commits: chain or one PR per layer — store model, screens, docs).
