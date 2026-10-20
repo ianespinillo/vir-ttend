@@ -1,8 +1,9 @@
 import '@repo/ui/tokens.css';
 import './globals.css';
 
+import { ThemedToaster } from '@/components/themed-toaster';
 import { DemoProvider } from '@/lib/session/demo-provider';
-import { Toaster } from '@repo/ui';
+import { ThemeProvider, ThemeScript } from '@repo/ui';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -17,12 +18,17 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="es" className="scroll-smooth">
+		<html lang="es" className="scroll-smooth" suppressHydrationWarning>
+			<head>
+				<ThemeScript />
+			</head>
 			<body>
-				<DemoProvider>
-					<div className="min-h-screen">{children}</div>
-					<Toaster richColors position="top-right" />
-				</DemoProvider>
+				<ThemeProvider>
+					<DemoProvider>
+						<div className="min-h-screen">{children}</div>
+						<ThemedToaster richColors position="top-right" />
+					</DemoProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);
