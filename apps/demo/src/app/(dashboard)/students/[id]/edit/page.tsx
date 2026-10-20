@@ -22,6 +22,7 @@ import { STUDENT_ROUTES } from '@repo/common';
 import { ErrorState, PageHeader, StudentForm } from '@repo/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 const UPDATE_ERROR_FALLBACK =
 	'Ocurrió un error al actualizar los datos del estudiante.';
@@ -57,6 +58,7 @@ export default function EditStudentPage() {
 		setErrorMsg(null);
 		try {
 			store.updateStudent(studentId, toUpdateStudentInput(values));
+			toast.success('Estudiante actualizado exitosamente');
 			router.push(STUDENT_ROUTES.student(studentId));
 		} catch (err: unknown) {
 			setErrorMsg(err instanceof Error ? err.message : UPDATE_ERROR_FALLBACK);

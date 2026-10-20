@@ -17,6 +17,7 @@ import { STUDENT_ROUTES } from '@repo/common';
 import { PageHeader, StudentForm } from '@repo/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 const CREATE_ERROR_FALLBACK =
 	'Ocurrió un error al crear el estudiante. Intente nuevamente.';
@@ -33,7 +34,13 @@ export default function NewStudentPage() {
 	const handleSubmit = (values: CreateStudentFormValues) => {
 		setErrorMsg(null);
 		try {
-			store.createStudent(values);
+			const created = store.createStudent(values);
+			toast.success('Estudiante creado exitosamente', {
+				action: {
+					label: 'Ver alumno',
+					onClick: () => router.push(STUDENT_ROUTES.student(created.id)),
+				},
+			});
 			router.push(STUDENT_ROUTES.students);
 		} catch (err: unknown) {
 			setErrorMsg(err instanceof Error ? err.message : CREATE_ERROR_FALLBACK);

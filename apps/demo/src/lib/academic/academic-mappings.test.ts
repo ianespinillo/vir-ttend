@@ -7,6 +7,7 @@ import {
 	LEVEL,
 	ROLES,
 	SHIFT,
+	SUBJECT_KIND,
 } from '@repo/common';
 import { describe, expect, it } from 'vitest';
 import {
@@ -181,6 +182,26 @@ describe('academic form mappings', () => {
 			area: 'Matemática',
 			weeklyHours: 4,
 			teacherId: 'teacher-a',
+			teacherName: '',
+			kind: undefined,
+		});
+	});
+
+	it('keeps the name of a teacher without account in the form defaults', () => {
+		expect(
+			toSubjectFormDefaults({
+				id: 's',
+				courseId: 'c',
+				name: 'Taller',
+				area: 'Taller',
+				weeklyHours: 4,
+				kind: SUBJECT_KIND.WORKSHOP,
+				teacherName: 'Daniel Ortega',
+			}),
+		).toMatchObject({
+			teacherId: '',
+			teacherName: 'Daniel Ortega',
+			kind: 'workshop',
 		});
 	});
 
@@ -212,6 +233,30 @@ describe('academic form mappings', () => {
 			name: 'Biología',
 			area: 'Ciencias Naturales',
 			weeklyHours: 3,
+			// Without account teacher nor name the update clears the teacher.
+			teacherId: '',
+			teacherName: '',
+		});
+	});
+
+	it('keeps kind and the typed teacher name in subject inputs', () => {
+		const values = {
+			...subjectFormValues,
+			kind: SUBJECT_KIND.WORKSHOP,
+			teacherName: '  Marta Quiroga ',
+		};
+		expect(toCreateSubjectInput(values)).toEqual({
+			courseId: 'course-b',
+			name: 'Biología',
+			area: 'Ciencias Naturales',
+			weeklyHours: 3,
+			kind: 'workshop',
+			teacherName: 'Marta Quiroga',
+		});
+		expect(toUpdateSubjectInput(values)).toMatchObject({
+			kind: 'workshop',
+			teacherId: '',
+			teacherName: 'Marta Quiroga',
 		});
 	});
 });

@@ -17,16 +17,23 @@
 
 import {
 	type ChangePasswordPayload,
+	type CommissionCount,
 	type CreateTenantPayload,
 	type CreateUserPayload,
 	type CreateUserResponse,
 	type ICourseResponse,
+	type IStudentImportRowData,
 	type ISubjectResponse,
 	ROLES,
 	type Roles,
+	SUBJECT_KIND,
+	type ScheduleSlotFormValues,
 	type Tenant,
 	type UpdateUserPayload,
+	WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE,
+	isWorkshopOnlyCourse,
 } from '@repo/common';
+import { evaluateStudentAlert } from './alerts';
 import {
 	type MinimalStorage,
 	clearPersistedState,
@@ -35,6 +42,7 @@ import {
 	saveState,
 } from './persistence';
 import { createSeedState, demoUuid } from './seed-data';
+import { getSubjectRoster } from './selectors';
 import {
 	type Announcement,
 	type AttendanceEntry,
@@ -51,6 +59,8 @@ import {
 	type DemoState,
 	type DemoStudent,
 	type DemoUser,
+	type DemoWorkshopCommission,
+	type DemoWorkshopRecord,
 	type JustifyInput,
 	STUDENTSTATUS,
 	type UpdateAnnouncementPayload,
@@ -101,6 +111,29 @@ export interface DemoStore {
 	updateCourse(courseId: string, input: UpdateCourseInput): ICourseResponse;
 	createSubject(input: CreateSubjectInput): ISubjectResponse;
 	updateSubject(subjectId: string, input: UpdateSubjectInput): ISubjectResponse;
+	deleteSubject(subjectId: string): void;
+	/** Replaces the whole weekly schedule of a course. */
+	setSchedule(courseId: string, slots: ScheduleSlotFormValues[]): void;
+
+	// Workshop commissions (technical courses)
+	createWorkshopCommissions(
+		courseId: string,
+		count: CommissionCount,
+	): DemoWorkshopCommission[];
+	regenerateWorkshopCommissions(courseId: string): DemoWorkshopCommission[];
+	assignCommissionPreceptor(
+		commissionId: string,
+		preceptorId: string | null,
+	): DemoWorkshopCommission;
+	moveStudentToCommission(commissionId: string, studentId: string): DemoStudent;
+	registerWorkshopAttendance(
+		commissionId: string,
+		date: string,
+		entries: AttendanceEntry[],
+	): void;
+
+	// Bulk import
+	importStudents(courseId: string, rows: IStudentImportRowData[]): number;
 
 	// Attendance
 	markDailyAttendance(
@@ -171,9 +204,30 @@ export function createDemoStore(
 		for (const listener of listeners) listener();
 	}
 
+	function usedIds(): Set<string> {
+		return new Set(
+			[
+				...state.users,
+				...state.tenants,
+				...state.students,
+				...state.courses,
+				...state.subjects,
+				...state.schedules,
+				...state.announcements,
+				...state.workshopCommissions,
+			].map((item) => item.id),
+		);
+	}
+
 	function nextId(namespace: string): string {
-		const id = demoUuid(namespace, `created-${idCounter}`);
+		// The counter restarts on every page load: skip ids persisted earlier.
+		const used = usedIds();
+		let id = demoUuid(namespace, `created-${idCounter}`);
 		idCounter += 1;
+		while (used.has(id)) {
+			id = demoUuid(namespace, `created-${idCounter}`);
+			idCounter += 1;
+		}
 		return id;
 	}
 
@@ -402,6 +456,7 @@ export function createDemoStore(
 			tutorEmail: input.tutorEmail,
 		};
 		const next = structuredClone(state);
+		placeNewStudent(next, student);
 		next.students.push(student);
 		commit(next);
 		return student;
@@ -430,8 +485,19 @@ export function createDemoStore(
 	}
 
 	function enrollStudent(studentId: string, courseId: string): DemoStudent {
-		const existing = requireStudent(studentId);
+		const current = requireStudent(studentId);
 		const course = requireCourse(courseId);
+		// Same rules as the API: no re-enrolling into the same course, and a
+		// student already moved to another school cannot be enrolled.
+		if (current.status === STUDENTSTATUS.TRANSFERRED) {
+			throw new Error('El alumno fue trasladado a otra escuela.');
+		}
+		if (
+			current.courseId === courseId &&
+			current.status === STUDENTSTATUS.ACTIVE
+		) {
+			throw new Error('El alumno ya está matriculado en ese curso.');
+		}
 		const next = structuredClone(state);
 		next.students = next.students.map((student) =>
 			student.id === studentId
@@ -440,9 +506,14 @@ export function createDemoStore(
 						courseId,
 						courseName: course.fullName,
 						status: STUDENTSTATUS.ACTIVE,
+						// The commission belongs to the old course: place again.
+						workshopCommissionId:
+							student.courseId === courseId ? student.workshopCommissionId : undefined,
 					}
 				: student,
 		);
+		const moved = next.students.find((student) => student.id === studentId);
+		if (moved && !moved.workshopCommissionId) placeNewStudent(next, moved);
 		commit(next);
 		const updatedStudent = next.students.find(
 			(student) => student.id === studentId,
@@ -455,6 +526,9 @@ export function createDemoStore(
 
 	function transferStudent(studentId: string, courseId?: string): DemoStudent {
 		const existing = requireStudent(studentId);
+		if (existing.status !== STUDENTSTATUS.ACTIVE) {
+			throw new Error('Solo se puede trasladar a un alumno activo.');
+		}
 		const targetCourse = courseId ? requireCourse(courseId) : null;
 		const next = structuredClone(state);
 		next.students = next.students.map((student) =>
@@ -560,10 +634,12 @@ export function createDemoStore(
 			name: input.name,
 			area: input.area,
 			weeklyHours: input.weeklyHours,
-			teacherId: input.teacherId,
+			kind: input.kind ?? SUBJECT_KIND.THEORY,
+			teacherId: input.teacherId || undefined,
+			// A teacher without an account is kept by name only.
 			teacherName: teacher
 				? `${teacher.firstName} ${teacher.lastName}`
-				: undefined,
+				: input.teacherName?.trim() || undefined,
 		};
 		const next = structuredClone(state);
 		next.subjects.push(subject);
@@ -577,14 +653,23 @@ export function createDemoStore(
 	): ISubjectResponse {
 		const existing = state.subjects.find((item) => item.id === subjectId);
 		if (!existing) throw new Error(`Materia no encontrada: ${subjectId}`);
-		const teacher =
-			input.teacherId !== undefined ? requireUser(input.teacherId) : undefined;
+		const teacher = input.teacherId ? requireUser(input.teacherId) : undefined;
+		const clearsTeacher = input.teacherId === '';
 		const merged: ISubjectResponse = {
 			...existing,
 			...input,
+			teacherId: teacher
+				? teacher.id
+				: clearsTeacher
+					? undefined
+					: existing.teacherId,
 			teacherName: teacher
 				? `${teacher.firstName} ${teacher.lastName}`
-				: existing.teacherName,
+				: input.teacherName !== undefined
+					? input.teacherName.trim() || undefined
+					: clearsTeacher
+						? undefined
+						: existing.teacherName,
 		};
 		const next = structuredClone(state);
 		next.subjects = next.subjects.map((subject) =>
@@ -592,6 +677,219 @@ export function createDemoStore(
 		);
 		commit(next);
 		return merged;
+	}
+
+	function deleteSubject(subjectId: string): void {
+		if (!state.subjects.some((subject) => subject.id === subjectId)) {
+			throw new Error(`Materia no encontrada: ${subjectId}`);
+		}
+		const next = structuredClone(state);
+		next.subjects = next.subjects.filter((subject) => subject.id !== subjectId);
+		next.schedules = next.schedules.filter(
+			(slot) => slot.subjectId !== subjectId,
+		);
+		next.attendance = next.attendance.filter(
+			(record) => record.subjectId !== subjectId,
+		);
+		commit(next);
+	}
+
+	function setSchedule(courseId: string, slots: ScheduleSlotFormValues[]): void {
+		requireCourse(courseId);
+		const courseSubjectIds = new Set(
+			state.subjects
+				.filter((subject) => subject.courseId === courseId)
+				.map((subject) => subject.id),
+		);
+		const next = structuredClone(state);
+		next.schedules = next.schedules.filter(
+			(slot) => !courseSubjectIds.has(slot.subjectId),
+		);
+		for (const [index, slot] of slots.entries()) {
+			if (!courseSubjectIds.has(slot.subjectId)) continue;
+			next.schedules.push({
+				id: demoUuid(
+					'schedule',
+					`${courseId}:${slot.subjectId}:${slot.dayOfWeek}:${slot.startTime}:${slot.commissionNumber ?? 'all'}:${index}`,
+				),
+				subjectId: slot.subjectId,
+				dayOfWeek: slot.dayOfWeek,
+				startTime: slot.startTime,
+				endTime: slot.endTime,
+				commissionNumber: slot.commissionNumber ?? null,
+			});
+		}
+		commit(next);
+	}
+
+	// -------------------------------------------------------------------------
+	// Workshop commissions
+	// -------------------------------------------------------------------------
+
+	function createWorkshopCommissions(
+		courseId: string,
+		count: CommissionCount,
+	): DemoWorkshopCommission[] {
+		requireCourse(courseId);
+		if (state.workshopCommissions.some((item) => item.courseId === courseId)) {
+			throw new Error('El curso ya tiene comisiones de taller.');
+		}
+		const next = structuredClone(state);
+		const created: DemoWorkshopCommission[] = ([1, 2] as const)
+			.slice(0, count)
+			.map((number) => ({
+				id: demoUuid('commission', `${courseId}:${number}`),
+				courseId,
+				number,
+				preceptorId: null,
+			}));
+		next.workshopCommissions.push(...created);
+		applySplit(next, courseId);
+		commit(next);
+		return created;
+	}
+
+	function regenerateWorkshopCommissions(
+		courseId: string,
+	): DemoWorkshopCommission[] {
+		requireCourse(courseId);
+		if (!state.workshopCommissions.some((item) => item.courseId === courseId)) {
+			throw new Error('El curso no tiene comisiones de taller.');
+		}
+		const next = structuredClone(state);
+		applySplit(next, courseId);
+		commit(next);
+		return next.workshopCommissions.filter((item) => item.courseId === courseId);
+	}
+
+	function assignCommissionPreceptor(
+		commissionId: string,
+		preceptorId: string | null,
+	): DemoWorkshopCommission {
+		if (!state.workshopCommissions.some((item) => item.id === commissionId)) {
+			throw new Error('Comisión no encontrada');
+		}
+		if (preceptorId) requireUser(preceptorId);
+		const next = structuredClone(state);
+		const commission = next.workshopCommissions.find(
+			(item) => item.id === commissionId,
+		) as DemoWorkshopCommission;
+		commission.preceptorId = preceptorId;
+		commit(next);
+		return commission;
+	}
+
+	function moveStudentToCommission(
+		commissionId: string,
+		studentId: string,
+	): DemoStudent {
+		const commission = state.workshopCommissions.find(
+			(item) => item.id === commissionId,
+		);
+		if (!commission) throw new Error('Comisión no encontrada');
+		const student = requireStudent(studentId);
+		if (student.courseId !== commission.courseId) {
+			throw new Error('El estudiante no pertenece al curso de la comisión.');
+		}
+		if (student.status !== STUDENTSTATUS.ACTIVE) {
+			throw new Error('El estudiante no está activo.');
+		}
+		const next = structuredClone(state);
+		const target = next.students.find(
+			(item) => item.id === studentId,
+		) as DemoStudent;
+		target.workshopCommissionId = commissionId;
+		commit(next);
+		return target;
+	}
+
+	function registerWorkshopAttendance(
+		commissionId: string,
+		date: string,
+		entries: AttendanceEntry[],
+	): void {
+		const commission = state.workshopCommissions.find(
+			(item) => item.id === commissionId,
+		);
+		if (!commission) throw new Error('Comisión no encontrada');
+		const next = structuredClone(state);
+		const members = new Map(
+			next.students
+				.filter(
+					(student) =>
+						student.workshopCommissionId === commissionId &&
+						student.status === STUDENTSTATUS.ACTIVE,
+				)
+				.map((student) => [student.id, student]),
+		);
+		for (const entry of entries) {
+			const student = members.get(entry.studentId);
+			if (!student) continue; // outside the commission roster
+			const existing = next.workshopAttendance.find(
+				(record) =>
+					record.commissionId === commissionId &&
+					record.date === date &&
+					record.studentId === entry.studentId,
+			);
+			if (existing) {
+				existing.status = entry.status;
+			} else {
+				const record: DemoWorkshopRecord = {
+					id: demoUuid('workshop-attendance', `${entry.studentId}:${date}`),
+					commissionId,
+					courseId: commission.courseId,
+					studentId: entry.studentId,
+					studentName: student.fullName,
+					status: entry.status,
+					date,
+				};
+				next.workshopAttendance.push(record);
+			}
+		}
+		raiseAlerts(
+			next,
+			entries.map((entry) => entry.studentId),
+		);
+		commit(next);
+	}
+
+	// -------------------------------------------------------------------------
+	// Bulk import
+	// -------------------------------------------------------------------------
+
+	function importStudents(
+		courseId: string,
+		rows: IStudentImportRowData[],
+	): number {
+		const course = requireCourse(courseId);
+		const next = structuredClone(state);
+		let created = 0;
+		for (const row of rows) {
+			const duplicate = next.students.some(
+				(student) => student.documentNumber === row.documentNumber,
+			);
+			if (duplicate) continue;
+			const student: DemoStudent = {
+				id: nextIdFor(next, 'student'),
+				fullName: `${row.firstName} ${row.lastName}`,
+				firstName: row.firstName,
+				lastName: row.lastName,
+				documentNumber: row.documentNumber,
+				birthDate: row.birthDate,
+				age: 2026 - Number(row.birthDate.slice(0, 4)),
+				courseId,
+				courseName: course.fullName,
+				status: STUDENTSTATUS.ACTIVE,
+				tutorName: row.tutorName,
+				tutorPhone: row.tutorPhone,
+				tutorEmail: row.tutorEmail ?? undefined,
+			};
+			placeNewStudent(next, student);
+			next.students.push(student);
+			created += 1;
+		}
+		commit(next);
+		return created;
 	}
 
 	// -------------------------------------------------------------------------
@@ -603,11 +901,15 @@ export function createDemoStore(
 		date: string,
 		entries: AttendanceEntry[],
 	): void {
-		requireCourse(courseId);
+		assertDailyAllowed(courseId);
 		const next = structuredClone(state);
 		for (const entry of entries) {
 			upsertRecord(next, courseId, undefined, date, entry);
 		}
+		raiseAlerts(
+			next,
+			entries.map((entry) => entry.studentId),
+		);
 		commit(next);
 	}
 
@@ -619,7 +921,12 @@ export function createDemoStore(
 	): void {
 		requireCourse(courseId);
 		const next = structuredClone(state);
+		// The roster of a workshop subject is the commission(s) its slots target.
+		const roster = new Set(
+			getSubjectRoster(state, subjectId, date).map((student) => student.id),
+		);
 		for (const entry of entries) {
+			if (!roster.has(entry.studentId)) continue;
 			upsertRecord(next, courseId, subjectId, date, entry);
 		}
 		commit(next);
@@ -630,7 +937,7 @@ export function createDemoStore(
 		date: string,
 		status: AttendanceEntry['status'],
 	): void {
-		requireCourse(courseId);
+		assertDailyAllowed(courseId);
 		const next = structuredClone(state);
 		const students = next.students.filter(
 			(student) =>
@@ -642,6 +949,10 @@ export function createDemoStore(
 				status,
 			});
 		}
+		raiseAlerts(
+			next,
+			students.map((student) => student.id),
+		);
 		commit(next);
 	}
 
@@ -656,12 +967,24 @@ export function createDemoStore(
 		const sourceRecords = scopeRecords.filter(
 			(record) => record.date === sourceDate,
 		);
+		const roster = input.subjectId
+			? new Set(
+					getSubjectRoster(state, input.subjectId, input.targetDate).map(
+						(student) => student.id,
+					),
+				)
+			: null;
+		const copied: string[] = [];
 		for (const record of sourceRecords) {
+			// A subject copy is limited to the subject's roster (commission).
+			if (roster && !roster.has(record.studentId)) continue;
 			upsertRecord(next, record.courseId, input.subjectId, input.targetDate, {
 				studentId: record.studentId,
 				status: record.status,
 			});
+			copied.push(record.studentId);
 		}
+		if (!input.subjectId) raiseAlerts(next, copied);
 		commit(next);
 	}
 
@@ -681,6 +1004,8 @@ export function createDemoStore(
 			createdBy: currentUserName(next),
 			createdAt: demoTodayDate(),
 		};
+		// Justified absences still count: a daily record may cross a threshold.
+		if (!record.subjectId) raiseAlerts(next, [record.studentId]);
 		commit(next);
 		return record;
 	}
@@ -827,6 +1152,89 @@ export function createDemoStore(
 	// Internal helpers
 	// -------------------------------------------------------------------------
 
+	function assertDailyAllowed(courseId: string): void {
+		const course = requireCourse(courseId);
+		if (isWorkshopOnlyCourse(course)) {
+			throw new Error(WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE);
+		}
+	}
+
+	/** Raises the absence alerts the weighted count of each student reached. */
+	function raiseAlerts(next: DemoState, studentIds: Iterable<string>): void {
+		for (const studentId of new Set(studentIds)) {
+			const alert = evaluateStudentAlert(
+				next,
+				studentId,
+				demoTodayDate(),
+				(id, type) => demoUuid('alert', `${id}:${type}`),
+			);
+			if (alert) next.alerts.push(alert);
+		}
+	}
+
+	function nextIdFor(draft: DemoState, namespace: string): string {
+		const used = new Set(draft.students.map((student) => student.id));
+		let id = demoUuid(namespace, `created-${idCounter}`);
+		idCounter += 1;
+		while (used.has(id)) {
+			id = demoUuid(namespace, `created-${idCounter}`);
+			idCounter += 1;
+		}
+		return id;
+	}
+
+	/**
+	 * Alphabetical split of the course's active students over its commissions
+	 * (50/50 with two, everyone together with one).
+	 */
+	function applySplit(draft: DemoState, courseId: string): void {
+		const commissions = draft.workshopCommissions
+			.filter((item) => item.courseId === courseId)
+			.sort((a, b) => a.number - b.number);
+		if (commissions.length === 0) return;
+		const roster = draft.students
+			.filter(
+				(student) =>
+					student.courseId === courseId && student.status === STUDENTSTATUS.ACTIVE,
+			)
+			.sort(
+				(a, b) =>
+					a.lastName.localeCompare(b.lastName, 'es', { sensitivity: 'base' }) ||
+					a.firstName.localeCompare(b.firstName, 'es', { sensitivity: 'base' }),
+			);
+		const cut =
+			commissions.length === 1 ? roster.length : Math.ceil(roster.length / 2);
+		roster.forEach((student, index) => {
+			const commission = index < cut ? commissions[0] : commissions[1];
+			student.workshopCommissionId = commission?.id;
+		});
+	}
+
+	/**
+	 * A student joining a course with commissions goes to the one with fewer
+	 * active students (ties to commission 1); courses without commissions leave
+	 * the student unassigned.
+	 */
+	function placeNewStudent(draft: DemoState, student: DemoStudent): void {
+		const commissions = draft.workshopCommissions
+			.filter((item) => item.courseId === student.courseId)
+			.sort((a, b) => a.number - b.number);
+		const [first, second] = commissions;
+		if (!first) {
+			student.workshopCommissionId = undefined;
+			return;
+		}
+		const sizeOf = (commissionId: string) =>
+			draft.students.filter(
+				(item) =>
+					item.id !== student.id &&
+					item.workshopCommissionId === commissionId &&
+					item.status === STUDENTSTATUS.ACTIVE,
+			).length;
+		student.workshopCommissionId =
+			second && sizeOf(second.id) < sizeOf(first.id) ? second.id : first.id;
+	}
+
 	function upsertRecord(
 		next: DemoState,
 		courseId: string,
@@ -925,6 +1333,14 @@ export function createDemoStore(
 		updateCourse,
 		createSubject,
 		updateSubject,
+		deleteSubject,
+		setSchedule,
+		createWorkshopCommissions,
+		regenerateWorkshopCommissions,
+		assignCommissionPreceptor,
+		moveStudentToCommission,
+		registerWorkshopAttendance,
+		importStudents,
 		markDailyAttendance,
 		markSubjectAttendance,
 		markAllAttendance,

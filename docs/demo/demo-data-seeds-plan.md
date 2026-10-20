@@ -1,3 +1,5 @@
+> **Actualización (v1.3.0):** este plan describe la semilla original. La semilla vigente (esquema `virttend-demo-state:v2`) agrega 60 días hábiles, faltas ponderadas con alertas a 10/20/28, el curso técnico de 7º año con comisiones de taller, el preceptor de taller, un día no laborable declarado y más alumnos. Ver `apps/demo/src/lib/store/seed-data.ts` y la parte 1 de `docs/demo/demo-guide.md`.
+
 # Plan de Data Seeds y Estrategia de Demo para Vir-ttend
 
 **Versión:** 1.0  
