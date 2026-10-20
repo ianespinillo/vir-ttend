@@ -312,6 +312,7 @@ export function CourseDetail({
 					<ScheduleGrid
 						slots={schedule}
 						subjects={subjects}
+						course={course}
 						onAddSlot={(day) => setScheduleModalState({ open: true, day })}
 						onDeleteSlot={handleDeleteSlot}
 						canManage={isScheduleEditable}
