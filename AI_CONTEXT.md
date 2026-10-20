@@ -106,6 +106,7 @@ vir-ttend/
   - `/descargar` — Descarga general + listado de colegios.
   - `/descargar/[slug]` — Página de descarga por colegio con QR.
   - `/privacidad` — Política de privacidad (borrador, `noindex`).
+  - `/blog` — Novedades y notas de versión (listado, más nueva primero); `/blog/[slug]` — entrada; `/blog/rss.xml` — feed RSS. Las entradas son archivos Markdown en `apps/site/content/blog/*.md` (frontmatter `title`, `date`, `summary`, opcionales `version` y `tags`; ver el `README.md` de esa carpeta). Se parsean en build con `gray-matter` + `marked` (HTML crudo escapado), 100% estático y sin JS de cliente.
 - **Fuente de verdad de configuración de descarga:** `src/config/mobile-apps.ts`.
 - **Variables de entorno clave:** `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_DEMO_URL` (default: `https://demo.virttend.app`), `NEXT_PUBLIC_APP_URL` (instancia compartida, oculta si no está definida), `NEXT_PUBLIC_CONTACT_EMAIL`.
 
