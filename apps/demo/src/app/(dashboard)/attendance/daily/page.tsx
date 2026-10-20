@@ -9,11 +9,18 @@ import {
 } from '@/lib/attendance/attendance-mappings';
 import { useDemo } from '@/lib/session/demo-provider';
 import {
+	APP_ROUTES,
 	ATTENDANCE_STATUS,
 	type AttendanceRecord,
 	type AttendanceStatus,
 } from '@repo/common';
-import { DailyAttendancePage } from '@repo/ui';
+import {
+	Button,
+	DailyAttendancePage,
+	ReviewJustificationsModal,
+	localizeCourseName,
+} from '@repo/ui';
+import { Copy, FileCheck } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
@@ -50,6 +57,8 @@ export default function AttendanceDailyPage() {
 		useState<AttendanceRecord | null>(null);
 	const [isCopyOpen, setIsCopyOpen] = useState(false);
 	const [copySourceDate, setCopySourceDate] = useState<string | undefined>();
+	const [isReviewJustificationsOpen, setIsReviewJustificationsOpen] =
+		useState(false);
 
 	// Derived data
 	const dailyData = selectors.getDailyAttendance(
@@ -63,6 +72,17 @@ export default function AttendanceDailyPage() {
 		(dailyData?.records ?? []) as Parameters<typeof toAttendanceGridStudents>[1],
 	);
 	const metrics = dailyData?.metrics ?? null;
+	const selectedCourse = courses.find((c) => c.id === selectedCourseId);
+	// Justified records of the month of the selected date (review modal).
+	const monthPrefix = selectedDate.slice(0, 7);
+	const justifiedRecords = state.attendance.filter(
+		(record) =>
+			record.courseId === selectedCourseId &&
+			!record.subjectId &&
+			record.date.startsWith(monthPrefix) &&
+			(record.status === ATTENDANCE_STATUS.JUSTIFIED ||
+				Boolean(record.justification)),
+	) as AttendanceRecord[];
 
 	// Preview for copy modal
 	const previewData = copySourceDate
@@ -177,38 +197,75 @@ export default function AttendanceDailyPage() {
 	const handleResetChanges = useCallback(() => {}, []);
 
 	return (
-		<DailyAttendancePage
-			courses={courses}
-			gridStudents={gridStudents}
-			metrics={metrics}
-			selectedCourseId={selectedCourseId}
-			selectedDate={selectedDate}
-			isLoadingCourses={false}
-			isLoadingDaily={false}
-			isLoadingMetrics={false}
-			isSaving={false}
-			isBulkSaving={false}
-			onCourseChange={handleCourseChange}
-			onDateChange={handleDateChange}
-			onStatusChange={handleStatusChange}
-			onMarkAll={handleMarkAll}
-			onJustify={handleOpenJustify}
-			isJustifyOpen={isJustifyOpen}
-			selectedRecordToJustify={selectedRecordToJustify}
-			onCloseJustify={handleCloseJustify}
-			onConfirmJustify={handleConfirmJustify}
-			isSubmittingJustify={false}
-			isCopyOpen={isCopyOpen}
-			onOpenCopy={handleOpenCopy}
-			onCloseCopy={handleCloseCopy}
-			onSourceDateChange={handleSourceDateChange}
-			copySourceDate={copySourceDate}
-			previewRecords={previewRecords}
-			isLoadingPreview={false}
-			onConfirmCopy={handleConfirmCopy}
-			isSubmittingCopy={false}
-			onConfirmChanges={handleConfirmChanges}
-			onResetChanges={handleResetChanges}
-		/>
+		<>
+			<DailyAttendancePage
+				courses={courses}
+				gridStudents={gridStudents}
+				metrics={metrics}
+				selectedCourseId={selectedCourseId}
+				selectedDate={selectedDate}
+				isLoadingCourses={false}
+				isLoadingDaily={false}
+				isLoadingMetrics={false}
+				isSaving={false}
+				isBulkSaving={false}
+				onCourseChange={handleCourseChange}
+				onDateChange={handleDateChange}
+				onStatusChange={handleStatusChange}
+				onMarkAll={handleMarkAll}
+				onJustify={handleOpenJustify}
+				isJustifyOpen={isJustifyOpen}
+				selectedRecordToJustify={selectedRecordToJustify}
+				onCloseJustify={handleCloseJustify}
+				onConfirmJustify={handleConfirmJustify}
+				isSubmittingJustify={false}
+				isCopyOpen={isCopyOpen}
+				onOpenCopy={handleOpenCopy}
+				onCloseCopy={handleCloseCopy}
+				onSourceDateChange={handleSourceDateChange}
+				copySourceDate={copySourceDate}
+				previewRecords={previewRecords}
+				isLoadingPreview={false}
+				onConfirmCopy={handleConfirmCopy}
+				isSubmittingCopy={false}
+				onConfirmChanges={handleConfirmChanges}
+				onResetChanges={handleResetChanges}
+				workshopAttendanceHref={APP_ROUTES.attendanceWorkshop}
+				extraActions={
+					selectedCourseId ? (
+						<div className="flex flex-wrap items-center gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setIsReviewJustificationsOpen(true)}
+								className="border-primary/40 text-primary hover:bg-primary-ink/10 shadow-xs"
+							>
+								<FileCheck className="mr-1.5 h-4 w-4 shrink-0" />
+								Revisar justificaciones
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleOpenCopy}
+								className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
+							>
+								<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+								Copiar de Otro Dia
+							</Button>
+						</div>
+					) : undefined
+				}
+			/>
+			<ReviewJustificationsModal
+				open={isReviewJustificationsOpen}
+				onClose={() => setIsReviewJustificationsOpen(false)}
+				courseName={localizeCourseName(selectedCourse?.fullName)}
+				selectedDate={selectedDate}
+				justifiedRecords={justifiedRecords}
+				isLoading={false}
+			/>
+		</>
 	);
 }

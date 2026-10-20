@@ -14,7 +14,8 @@ import {
 	type AttendanceRecord,
 	type AttendanceStatus,
 } from '@repo/common';
-import { SubjectAttendancePage } from '@repo/ui';
+import { Button, SubjectAttendancePage } from '@repo/ui';
+import { Copy } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
@@ -55,7 +56,12 @@ export default function AttendanceSubjectPage() {
 	);
 	const selectedSubject = scopedSubjects.find((s) => s.id === selectedSubjectId);
 	const courseId = subjectData?.courseId ?? selectedSubject?.courseId ?? '';
-	const courseStudents = selectors.getCourseStudents(state, courseId);
+	// Workshop subjects list only the commission(s) their slots target.
+	const courseStudents = selectors.getSubjectRoster(
+		state,
+		selectedSubjectId,
+		selectedDate,
+	);
 
 	const gridStudents = toAttendanceGridStudents(
 		courseStudents,
@@ -235,6 +241,21 @@ export default function AttendanceSubjectPage() {
 			onCloseJustify={handleCloseJustify}
 			onConfirmJustify={handleConfirmJustify}
 			isSubmittingJustify={false}
+			extraActions={
+				selectedSubjectId ? (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={handleOpenCopy}
+						disabled={!classDayToday}
+						className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
+					>
+						<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+						Copiar de Clase Anterior
+					</Button>
+				) : undefined
+			}
 		/>
 	);
 }

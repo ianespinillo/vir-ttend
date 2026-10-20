@@ -95,6 +95,9 @@ export function toSubjectFormDefaults(
 		area: subject.area,
 		weeklyHours: subject.weeklyHours,
 		teacherId: subject.teacherId ?? '',
+		// The name only applies to a teacher without an account.
+		teacherName: subject.teacherId ? '' : (subject.teacherName ?? ''),
+		kind: subject.kind,
 	};
 }
 
@@ -129,12 +132,14 @@ export function toCreateSubjectInput(
 	values: CreateSubjectFormValues,
 ): CreateSubjectInput {
 	const teacherId = normalizeOptionalId(values.teacherId);
+	const teacherName = values.teacherName?.trim();
 	return {
 		courseId: values.courseId,
 		name: values.name,
 		area: values.area,
 		weeklyHours: values.weeklyHours,
-		...(teacherId ? { teacherId } : {}),
+		...(values.kind ? { kind: values.kind } : {}),
+		...(teacherId ? { teacherId } : teacherName ? { teacherName } : {}),
 	};
 }
 
@@ -142,12 +147,18 @@ export function toUpdateSubjectInput(
 	values: CreateSubjectFormValues,
 ): UpdateSubjectInput {
 	const teacherId = normalizeOptionalId(values.teacherId);
+	const teacherName = values.teacherName?.trim();
 	return {
 		courseId: values.courseId,
 		name: values.name,
 		area: values.area,
 		weeklyHours: values.weeklyHours,
-		...(teacherId ? { teacherId } : {}),
+		...(values.kind ? { kind: values.kind } : {}),
+		// Picking an account teacher replaces a typed name; clearing both
+		// leaves the subject without a teacher.
+		...(teacherId
+			? { teacherId }
+			: { teacherId: '', teacherName: teacherName ?? '' }),
 	};
 }
 

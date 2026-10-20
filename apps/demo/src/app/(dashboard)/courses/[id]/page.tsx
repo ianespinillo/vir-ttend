@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * Demo `/courses/[id]` — the product course detail, fed by the demo store.
+ *
+ * Mirrors `apps/client/src/app/(dashboard)/courses/[id]/page.tsx`: course
+ * header with subjects, weekly schedule (with workshop commissions) and the
+ * students tab, plus the workshop commissions tab and the student import
+ * dialog for admins and the course preceptor. Preceptors also manage the
+ * schedule and the subjects of their courses.
+ */
+
+import { DemoStudentImportContainer } from '@/components/student-import-container';
 import {
 	getScopedCourseIds,
 	getScopedSubjects,
@@ -16,7 +27,11 @@ import {
 	ATTENDANCE_ROUTES,
 	type CreateCourseFormValues,
 	type CreateSubjectFormValues,
+	type ISubjectResponse,
 	ROLES,
+	STUDENTSTATUS,
+	STUDENT_ROUTES,
+	type ScheduleSlotFormValues,
 } from '@repo/common';
 import {
 	CourseDetail,
@@ -28,9 +43,12 @@ import {
 	ErrorState,
 	PageHeader,
 	SubjectForm,
+	WorkshopCommissionsPanel,
+	localizeCourseName,
 } from '@repo/ui';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 const UPDATE_ERROR_FALLBACK =
 	'Ocurrió un error al actualizar el curso. Intente nuevamente.';
@@ -43,9 +61,10 @@ export default function CourseDetailPage() {
 	const [isEditingCourse, setIsEditingCourse] = useState(
 		searchParams.get('edit') === 'true',
 	);
+	const [isImportOpen, setIsImportOpen] = useState(false);
 	const [subjectModalState, setSubjectModalState] = useState<{
 		open: boolean;
-		subject: ReturnType<typeof selectors.getSubjects>[number] | null;
+		subject: ISubjectResponse | null;
 	}>({ open: false, subject: null });
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -56,6 +75,7 @@ export default function CourseDetailPage() {
 	const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.SUPERADMIN;
 	const isPreceptor = user?.role === ROLES.PRECEPTOR;
 	const canManageSchedule = isAdmin || isPreceptor;
+	const canManageSubjects = isAdmin || isPreceptor;
 	const courseIds = getScopedCourseIds(
 		selectors.getCourses(state),
 		selectors.getSubjects(state),
@@ -81,6 +101,12 @@ export default function CourseDetailPage() {
 		);
 	}
 
+	// The course preceptor reorganizes and imports; assigning commission
+	// preceptors stays admin-only.
+	const isCoursePreceptor = isPreceptor && course.preceptorId === user?.id;
+	const canImportStudents = isAdmin || isCoursePreceptor;
+	const canManageCommissions = isAdmin || isCoursePreceptor;
+
 	const visibleSubjects = getScopedSubjects(
 		selectors.getCourses(state),
 		selectors.getSubjects(state),
@@ -93,6 +119,31 @@ export default function CourseDetailPage() {
 	const visibleSchedule = selectors
 		.getSchedule(state, course.id)
 		.filter((slot) => visibleSubjectIds.has(slot.subjectId));
+	const commissions = selectors.getWorkshopCommissions(state, course.id);
+	const activeStudents = selectors.getStudents(state, {
+		courseId: course.id,
+		status: STUDENTSTATUS.ACTIVE,
+		limit: 100,
+	});
+	const teachers = selectors
+		.getUsers(state, { role: ROLES.TEACHER, limit: 100 })
+		.items.map(toUserResponse);
+	const preceptors = selectors
+		.getUsers(state, { role: ROLES.PRECEPTOR, limit: 100 })
+		.items.map(toUserResponse);
+
+	const run = (
+		action: () => unknown,
+		successMessage: string,
+		fallbackError: string,
+	) => {
+		try {
+			action();
+			toast.success(successMessage);
+		} catch (error: unknown) {
+			toast.error(error instanceof Error ? error.message : fallbackError);
+		}
+	};
 
 	const handleUpdateCourse = (values: CreateCourseFormValues) => {
 		if (!isAdmin) return;
@@ -101,34 +152,64 @@ export default function CourseDetailPage() {
 			store.updateCourse(course.id, toUpdateCourseInput(values));
 			setIsEditingCourse(false);
 			router.replace(ACADEMIC_ROUTES.course(course.id));
+			toast.success('Curso actualizado exitosamente');
 		} catch (error: unknown) {
 			setErrorMsg(error instanceof Error ? error.message : UPDATE_ERROR_FALLBACK);
 		}
 	};
 
 	const handleSaveSubject = (values: CreateSubjectFormValues) => {
-		if (!isAdmin) return;
+		if (!canManageSubjects) return;
 		setErrorMsg(null);
+		const isEditing = Boolean(subjectModalState.subject);
 		try {
+			const subjectValues = { ...values, courseId: course.id };
 			if (subjectModalState.subject) {
 				store.updateSubject(
 					subjectModalState.subject.id,
-					toUpdateSubjectInput(values),
+					toUpdateSubjectInput(subjectValues),
 				);
 			} else {
-				store.createSubject(toCreateSubjectInput(values));
+				store.createSubject(toCreateSubjectInput(subjectValues));
 			}
 			setSubjectModalState({ open: false, subject: null });
+			toast.success(
+				isEditing
+					? 'Materia actualizada exitosamente'
+					: 'Materia agregada exitosamente',
+			);
 		} catch (error: unknown) {
 			setErrorMsg(error instanceof Error ? error.message : UPDATE_ERROR_FALLBACK);
 		}
+	};
+
+	const handleDeleteSubject = (subject: ISubjectResponse) => {
+		if (
+			window.confirm(
+				`¿Está seguro de que desea eliminar la materia ${subject.name}?`,
+			)
+		) {
+			run(
+				() => store.deleteSubject(subject.id),
+				'Materia eliminada exitosamente',
+				'Error al eliminar la materia',
+			);
+		}
+	};
+
+	const handleSaveSchedule = (slots: ScheduleSlotFormValues[]) => {
+		run(
+			() => store.setSchedule(course.id, slots),
+			'Horarios guardados exitosamente',
+			'Error al guardar los horarios',
+		);
 	};
 
 	if (isAdmin && isEditingCourse) {
 		return (
 			<div className="space-y-6">
 				<PageHeader
-					title={`Editar: ${course.fullName}`}
+					title={`Editar: ${localizeCourseName(course.fullName)}`}
 					description="Modifique la información del curso o la asignación de preceptor"
 				/>
 				{errorMsg && (
@@ -142,9 +223,7 @@ export default function CourseDetailPage() {
 					onSubmit={handleUpdateCourse}
 					isLoading={false}
 					academicYears={selectors.getAcademicYears(state)}
-					preceptors={selectors
-						.getUsers(state, { role: ROLES.PRECEPTOR, limit: 100 })
-						.items.map(toUserResponse)}
+					preceptors={preceptors}
 					onCancel={() => setIsEditingCourse(false)}
 				/>
 			</div>
@@ -162,25 +241,82 @@ export default function CourseDetailPage() {
 				course={course}
 				subjects={visibleSubjects}
 				schedule={visibleSchedule}
-				studentCount={selectors.getCourseStudents(state, course.id).length}
+				studentCount={activeStudents.total}
+				students={activeStudents.items}
+				onViewStudent={(id) => router.push(STUDENT_ROUTES.student(id))}
 				onBack={handleBack}
 				onEdit={isAdmin ? () => setIsEditingCourse(true) : undefined}
 				onAddSubject={
-					isAdmin
+					canManageSubjects
 						? () => setSubjectModalState({ open: true, subject: null })
 						: undefined
 				}
 				onEditSubject={
-					isAdmin
+					canManageSubjects
 						? (subject) => setSubjectModalState({ open: true, subject })
 						: undefined
 				}
+				onDeleteSubject={isAdmin ? handleDeleteSubject : undefined}
+				onSaveSchedule={handleSaveSchedule}
+				onImportStudents={
+					canImportStudents ? () => setIsImportOpen(true) : undefined
+				}
 				canManage={isAdmin}
 				canManageSchedule={canManageSchedule}
+				canManageSubjects={canManageSubjects}
 				attendancePath={`${ATTENDANCE_ROUTES.daily}?courseId=${course.id}`}
+				commissionNumbers={commissions.map((commission) => commission.number)}
+				commissionsTab={
+					canManageCommissions ? (
+						<WorkshopCommissionsPanel
+							commissions={commissions}
+							preceptors={preceptors}
+							onCreate={(count) =>
+								run(
+									() => store.createWorkshopCommissions(course.id, count),
+									'Comisiones creadas exitosamente',
+									'Error al crear las comisiones',
+								)
+							}
+							onAssignPreceptor={
+								isAdmin
+									? (commissionId, preceptorId) =>
+											run(
+												() => store.assignCommissionPreceptor(commissionId, preceptorId),
+												'Preceptor de la comisión actualizado',
+												'Error al asignar el preceptor',
+											)
+									: undefined
+							}
+							onMoveStudent={(commissionId, studentId) =>
+								run(
+									() => store.moveStudentToCommission(commissionId, studentId),
+									'Estudiante movido de comisión',
+									'Error al mover al estudiante',
+								)
+							}
+							onRegenerate={() =>
+								run(
+									() => store.regenerateWorkshopCommissions(course.id),
+									'Reparto regenerado exitosamente',
+									'Error al regenerar el reparto',
+								)
+							}
+						/>
+					) : undefined
+				}
 			/>
 
-			{isAdmin && (
+			{canImportStudents && (
+				<DemoStudentImportContainer
+					courseId={course.id}
+					courseName={localizeCourseName(course.fullName)}
+					open={isImportOpen}
+					onOpenChange={setIsImportOpen}
+				/>
+			)}
+
+			{canManageSubjects && (
 				<Dialog
 					open={subjectModalState.open}
 					onOpenChange={(open) =>
@@ -204,9 +340,7 @@ export default function CourseDetailPage() {
 									: undefined
 							}
 							onSubmit={handleSaveSubject}
-							teachers={selectors
-								.getUsers(state, { role: ROLES.TEACHER, limit: 100 })
-								.items.map(toUserResponse)}
+							teachers={teachers}
 							isLoading={false}
 							onCancel={() => setSubjectModalState({ open: false, subject: null })}
 						/>
