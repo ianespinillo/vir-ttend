@@ -9,6 +9,7 @@ const NAV_LINKS = [
 	{ href: '/#planes', label: 'Planes' },
 	{ href: '/#app-movil', label: 'App móvil' },
 	{ href: '/#faq', label: 'Preguntas' },
+	{ href: '/blog', label: 'Novedades' },
 	{ href: '/#contacto', label: 'Contacto' },
 ];
 

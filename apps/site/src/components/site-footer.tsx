@@ -6,6 +6,7 @@ const FOOTER_LINKS = [
 	{ href: '/#caracteristicas', label: 'Características' },
 	{ href: '/#planes', label: 'Planes' },
 	{ href: '/descargar', label: 'Descargar la app' },
+	{ href: '/blog', label: 'Novedades' },
 	{ href: '/#faq', label: 'Preguntas frecuentes' },
 	{ href: '/#contacto', label: 'Contacto' },
 	{ href: '/privacidad', label: 'Política de privacidad' },

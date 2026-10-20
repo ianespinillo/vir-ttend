@@ -20,3 +20,37 @@
 		}
 	}
 }
+
+/* Rendered blog posts (Markdown to HTML at build time, see lib/blog.ts). */
+@layer components {
+	.blog-prose {
+		@apply space-y-4 text-base leading-7;
+	}
+	.blog-prose h2 {
+		@apply mt-10 text-2xl font-bold tracking-tight;
+	}
+	.blog-prose h3 {
+		@apply mt-6 text-lg font-semibold;
+	}
+	.blog-prose ul {
+		@apply list-disc space-y-2 pl-6;
+	}
+	.blog-prose ol {
+		@apply list-decimal space-y-2 pl-6;
+	}
+	.blog-prose a {
+		@apply font-medium underline underline-offset-4 hover:text-primary;
+	}
+	.blog-prose strong {
+		@apply font-semibold;
+	}
+	.blog-prose blockquote {
+		@apply border-l-4 pl-4 text-muted-foreground;
+	}
+	.blog-prose code {
+		@apply rounded bg-muted px-1.5 py-0.5 text-sm;
+	}
+	.blog-prose hr {
+		@apply my-8;
+	}
+}
