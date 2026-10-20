@@ -1,4 +1,4 @@
-import { ATTENDANCE_STATUS, ROLES, Roles } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK, ROLES, Roles } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import {
 	DomainError,
@@ -7,19 +7,27 @@ import {
 } from '../../../src/common/errors';
 import { GetSubjectAttendanceQueryHandler } from '../../../src/modules/attendance/application/queries/get-subject-attendance/get-subject-attendance.handler';
 import { GetSubjectAttendanceQuery } from '../../../src/modules/attendance/application/queries/get-subject-attendance/get-subject-attendance.query';
+import { SubjectRosterService } from '../../../src/modules/attendance/application/services/subject-roster.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { ScheduleSlot } from '../../../src/modules/attendance/domain/entities/schedule-slot.entity';
 import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
+import { ISchedulePort } from '../../../src/modules/attendance/domain/ports/schedule.port.interface';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
+import { IWorkshopCommissionPort } from '../../../src/modules/attendance/domain/ports/workshop-commission.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
+import { buildCommissionInfo } from './subject-roster.fixtures';
 
 describe('GetSubjectAttendanceQueryHandler', () => {
 	let handler: GetSubjectAttendanceQueryHandler;
 	let subjectPort: MockProxy<ISubjectPort>;
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let studentPort: MockProxy<IStudentPort>;
+	let schedulePort: MockProxy<ISchedulePort>;
+	let commissionPort: MockProxy<IWorkshopCommissionPort>;
 
+	// 2026-07-06 is a Monday.
 	const date = new Date('2026-07-06');
 	const buildQuery = (
 		userId = 'teacher-1',
@@ -44,10 +52,25 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 		subjectPort = mock<ISubjectPort>();
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		studentPort = mock<IStudentPort>();
+		schedulePort = mock<ISchedulePort>();
+		commissionPort = mock<IWorkshopCommissionPort>();
 		handler = new GetSubjectAttendanceQueryHandler(
 			subjectPort,
 			attendanceRepo,
-			studentPort,
+			new SubjectRosterService(schedulePort, commissionPort, studentPort),
+		);
+		// Theory subject: its slots target the whole course.
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '09:00'),
+		]);
+		commissionPort.findByCourse.mockResolvedValue([
+			buildCommissionInfo(1),
+			buildCommissionInfo(2),
+		]);
+		commissionPort.getActiveStudents.mockImplementation(async (id) =>
+			id === 'commission-1'
+				? [Student.reconstitute('student-1', 'Garcia, Ana')]
+				: [Student.reconstitute('student-2', 'Perez, Zoe')],
 		);
 		subjectPort.getSubjectById.mockResolvedValue(
 			Subject.reconstitute('sub-1', 'course-1', 'Math', 'teacher-1', 'tenant-1'),
@@ -79,6 +102,57 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 		]);
 		expect(result.records[1].id).toBeUndefined();
 		expect(result.records[0].id).toBe('record-student-1');
+	});
+
+	it('should list only the students of the commission a workshop subject targets', async () => {
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '12:00', 2),
+		]);
+
+		const result = await handler.execute(buildQuery());
+
+		expect(commissionPort.findByCourse).toHaveBeenCalledWith('course-1');
+		expect(commissionPort.getActiveStudents).toHaveBeenCalledWith('commission-2');
+		expect(studentPort.getActiveByCourseId).not.toHaveBeenCalled();
+		expect(result.records.map((r) => r.studentId)).toEqual(['student-2']);
+		expect(result.metrics.totalStudents).toBe(1);
+	});
+
+	it('should use the commission of the date weekday when slots are mixed', async () => {
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '12:00', 1),
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.WEDNESDAY, '08:00', '12:00', 2),
+		]);
+
+		const result = await handler.execute(buildQuery());
+
+		expect(result.records.map((r) => r.studentId)).toEqual(['student-1']);
+	});
+
+	it('should list every targeted commission when the weekday has no slot', async () => {
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.TUESDAY, '08:00', '12:00', 1),
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.WEDNESDAY, '08:00', '12:00', 2),
+		]);
+
+		const result = await handler.execute(buildQuery());
+
+		expect(result.records.map((r) => r.studentId)).toEqual([
+			'student-1',
+			'student-2',
+		]);
+	});
+
+	it('should fall back to the whole course when the course has no commissions', async () => {
+		schedulePort.findBySubject.mockResolvedValue([
+			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '12:00', 1),
+		]);
+		commissionPort.findByCourse.mockResolvedValue([]);
+
+		const result = await handler.execute(buildQuery());
+
+		expect(studentPort.getActiveByCourseId).toHaveBeenCalledWith('course-1');
+		expect(result.records).toHaveLength(3);
 	});
 
 	it('should compute metrics over the whole roster', async () => {

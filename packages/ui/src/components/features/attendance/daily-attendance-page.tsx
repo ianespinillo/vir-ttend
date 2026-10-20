@@ -1,12 +1,24 @@
 'use client';
 
-import type {
-	AttendanceMetrics,
-	AttendanceRecord,
-	AttendanceStatus,
-	ICourseResponse,
+import {
+	type AttendanceMetrics,
+	type AttendanceRecord,
+	type AttendanceStatus,
+	type ICourseResponse,
+	WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE,
+	isWorkshopOnlyCourse,
 } from '@repo/common';
+import { Wrench } from 'lucide-react';
+import { useMemo } from 'react';
 import { Button } from '../../../ui/button';
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from '../../../ui/empty';
 import { PageHeader } from '../../shared/page-header';
 import { AttendanceGrid } from './attendance-grid/attendance-grid';
 import type { StudentRowItem } from './attendance-grid/attendance-row';
@@ -48,6 +60,41 @@ export interface DailyAttendancePageProps {
 	onConfirmChanges?: () => void;
 	onResetChanges?: () => void;
 	extraActions?: React.ReactNode;
+	/** Where the workshop attendance lives, linked from the workshop-only notice. */
+	workshopAttendanceHref?: string;
+}
+
+/**
+ * Courses that take daily attendance: workshop-only courses (7th year
+ * technical) have none, their attendance is the workshop one.
+ */
+export function filterDailyAttendanceCourses(
+	courses: readonly ICourseResponse[],
+): ICourseResponse[] {
+	return courses.filter((course) => !isWorkshopOnlyCourse(course));
+}
+
+function WorkshopOnlyNotice({ href }: Readonly<{ href?: string }>) {
+	return (
+		<Empty className="my-8 border border-dashed border-border">
+			<EmptyHeader>
+				<EmptyMedia variant="icon">
+					<Wrench className="h-6 w-6" />
+				</EmptyMedia>
+				<EmptyTitle>Sin asistencia diaria</EmptyTitle>
+				<EmptyDescription>
+					{WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE}
+				</EmptyDescription>
+			</EmptyHeader>
+			{href && (
+				<EmptyContent>
+					<Button asChild variant="outline">
+						<a href={href}>Ir a Asistencia de taller</a>
+					</Button>
+				</EmptyContent>
+			)}
+		</Empty>
+	);
 }
 
 export function DailyAttendancePage({
@@ -83,7 +130,18 @@ export function DailyAttendancePage({
 	onConfirmChanges,
 	onResetChanges,
 	extraActions,
+	workshopAttendanceHref,
 }: Readonly<DailyAttendancePageProps>) {
+	const dailyCourses = useMemo(
+		() => filterDailyAttendanceCourses(courses),
+		[courses],
+	);
+	const selectedIsWorkshopOnly = useMemo(() => {
+		const selected = courses.find((course) => course.id === selectedCourseId);
+		return selected ? isWorkshopOnlyCourse(selected) : false;
+	}, [courses, selectedCourseId]);
+	const hasDailyCourse = Boolean(selectedCourseId) && !selectedIsWorkshopOnly;
+
 	return (
 		<div className="space-y-6">
 			<PageHeader
@@ -92,7 +150,7 @@ export function DailyAttendancePage({
 			/>
 
 			<AttendanceToolbar
-				courses={courses}
+				courses={dailyCourses}
 				selectedCourseId={selectedCourseId}
 				onCourseChange={onCourseChange}
 				selectedDate={selectedDate}
@@ -100,11 +158,15 @@ export function DailyAttendancePage({
 				onMarkAll={onMarkAll}
 				isLoadingCourses={isLoadingCourses}
 				isBulkSaving={isBulkSaving}
-				disabled={!selectedCourseId}
-				extraActions={extraActions}
+				disabled={!hasDailyCourse}
+				extraActions={hasDailyCourse ? extraActions : undefined}
 			/>
 
-			{selectedCourseId && (
+			{selectedIsWorkshopOnly && (
+				<WorkshopOnlyNotice href={workshopAttendanceHref} />
+			)}
+
+			{hasDailyCourse && (
 				<>
 					<AttendanceSummary metrics={metrics} isLoading={isLoadingMetrics} />
 

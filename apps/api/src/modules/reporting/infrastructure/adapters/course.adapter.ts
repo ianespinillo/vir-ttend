@@ -15,6 +15,7 @@ export class CourseAdapter implements ICoursePort {
 			tenantId: course.tenantId,
 			name: `${course.yearNumber}° ${course.division}°`,
 			level: course.level,
+			yearNumber: course.yearNumber,
 		});
 	}
 }

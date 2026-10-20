@@ -37,6 +37,7 @@ export function buildPort(
 	return {
 		findById: jest.fn().mockResolvedValue(info),
 		findByStudent: jest.fn().mockResolvedValue(info),
+		findByCourse: jest.fn().mockResolvedValue(info ? [info] : []),
 		findByPreceptor: jest.fn().mockResolvedValue(info ? [info] : []),
 		findByTenant: jest.fn().mockResolvedValue(info ? [info] : []),
 		getActiveStudents: jest.fn().mockResolvedValue(students),

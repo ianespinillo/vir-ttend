@@ -1,10 +1,11 @@
 import {
+	BadRequestException,
 	ConflictException,
 	Inject,
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
-import { COMMISSION_NUMBERS } from '@repo/common';
+import { DomainError } from '../../../../../common/errors';
 import { WorkshopCommission } from '../../../domain/entities/workshop-commission.entity';
 import { IAcademicUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
@@ -31,6 +32,7 @@ export class CreateWorkshopCommissionsHandler {
 	async execute(
 		command: CreateWorkshopCommissionsCommand,
 	): Promise<WorkshopCommissionResponseDto[]> {
+		const numbers = this.numbersFor(command.count);
 		const course = await this.courseRepo.findById(command.courseId);
 		if (!course || course.tenantId !== command.tenantId)
 			throw new NotFoundException('Curso no encontrado');
@@ -41,7 +43,7 @@ export class CreateWorkshopCommissionsHandler {
 
 		return this.unitOfWork.run(async () => {
 			const commissions: WorkshopCommission[] = [];
-			for (const number of COMMISSION_NUMBERS) {
+			for (const number of numbers) {
 				const commission = WorkshopCommission.create({
 					tenantId: course.tenantId,
 					courseId: command.courseId,
@@ -61,5 +63,15 @@ export class CreateWorkshopCommissionsHandler {
 					),
 			);
 		});
+	}
+
+	private numbersFor(count: number) {
+		try {
+			return WorkshopCommission.numbersFor(count);
+		} catch (error) {
+			if (error instanceof DomainError)
+				throw new BadRequestException(error.message);
+			throw error;
+		}
 	}
 }

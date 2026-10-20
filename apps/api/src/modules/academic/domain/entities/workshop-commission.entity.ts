@@ -1,6 +1,11 @@
 // workshop-commission.entity.ts
 import { randomUUID } from 'node:crypto';
-import { COMMISSION_NUMBERS, CommissionNumber } from '@repo/common';
+import {
+	COMMISSION_COUNTS,
+	COMMISSION_NUMBERS,
+	CommissionCount,
+	CommissionNumber,
+} from '@repo/common';
 import { DomainError } from '../../../../common/errors';
 import { Course } from './course.entity';
 
@@ -18,8 +23,9 @@ export interface ReconstituteProps extends CreateProps {
 }
 
 /**
- * One of the two workshop commissions a course is split into (technical
- * schools). Students attend the workshop per commission, in the opposite shift.
+ * One of the workshop commissions (one or two) a course is split into
+ * (technical schools). Students attend the workshop per commission, in the
+ * opposite shift. The number of commissions of a course is the number of rows.
  */
 export class WorkshopCommission {
 	private readonly _id: string;
@@ -59,6 +65,14 @@ export class WorkshopCommission {
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		});
+	}
+
+	/** Commission numbers to create for a course split into `count` commissions. */
+	static numbersFor(count: number): CommissionNumber[] {
+		if (!(COMMISSION_COUNTS as readonly number[]).includes(count)) {
+			throw new DomainError('La cantidad de comisiones debe ser 1 o 2.');
+		}
+		return COMMISSION_NUMBERS.slice(0, count as CommissionCount);
 	}
 
 	static reconstitute(props: ReconstituteProps): WorkshopCommission {

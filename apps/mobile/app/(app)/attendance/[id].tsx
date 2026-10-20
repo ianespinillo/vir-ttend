@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE } from '@repo/common/constants';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
@@ -10,6 +11,7 @@ import {
 	FileCheck,
 	FileText,
 	Users,
+	Wrench,
 	X,
 } from 'lucide-react-native';
 import React, {
@@ -30,6 +32,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/context/auth-context';
 import { AttendanceDateBar } from '../../../src/features/attendance/attendance-date-bar';
+import { isCachedWorkshopOnlyCourse } from '../../../src/features/attendance/course-list';
 import { resolveDayDataState } from '../../../src/features/attendance/date-nav';
 import {
 	getJustifyBlockHint,
@@ -42,9 +45,12 @@ import { JustificationBadge } from '../../../src/features/attendance/justificati
 import { JustifySheet } from '../../../src/features/attendance/justify-sheet';
 import { MonthlyJustificationsModal } from '../../../src/features/attendance/monthly-justifications-modal';
 import { attendanceQueries } from '../../../src/features/attendance/queries';
+import { queryKeys } from '../../../src/features/attendance/query-keys';
 import { StatusPicker } from '../../../src/features/attendance/status-picker';
 import type {
 	AttendanceStatus,
+	CourseListItem,
+	PreceptorCourse,
 	RecordedAttendanceStatus,
 	StudentItem,
 } from '../../../src/features/attendance/types';
@@ -59,6 +65,49 @@ import { useServerReachability } from '../../../src/features/offline/use-server-
 import { useThemeColors } from '../../../src/features/theme/use-theme-colors';
 
 const NO_STUDENTS: StudentItem[] = [];
+
+/** Workshop-only (7th year technical) per the course rows already cached. */
+function useIsWorkshopOnlyCourse(courseId: string): boolean {
+	const queryClient = useQueryClient();
+	return useMemo(() => {
+		const dashboards = queryClient
+			.getQueriesData<CourseListItem[]>({
+				queryKey: queryKeys.preceptorDashboard('').slice(0, 1),
+			})
+			.map(([, data]) => data);
+		const assigned = queryClient
+			.getQueriesData<PreceptorCourse[]>({
+				queryKey: queryKeys.preceptorCourses('').slice(0, 2),
+			})
+			.map(([, data]) => data);
+		return isCachedWorkshopOnlyCourse(courseId, dashboards, assigned);
+	}, [queryClient, courseId]);
+}
+
+/** Daily attendance does not exist for a workshop-only course. */
+function WorkshopOnlyNotice({ courseName }: { courseName: string }) {
+	const theme = useThemeColors();
+	const router = useRouter();
+	return (
+		<SafeAreaView className="flex-1 bg-background">
+			<View className="flex-row items-center px-4 py-3">
+				<TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+					<ArrowLeft size={22} color={theme.neutral400} />
+				</TouchableOpacity>
+				<Text className="text-xl font-bold text-foreground">{courseName}</Text>
+			</View>
+			<View className="flex-1 items-center justify-center px-6">
+				<Wrench size={36} color={theme.neutral400} />
+				<Text className="mt-2 text-base font-semibold text-neutral-700">
+					Sin asistencia diaria
+				</Text>
+				<Text className="mt-2 text-center text-sm text-muted-foreground">
+					{WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE} Tomala desde Asistencia de taller.
+				</Text>
+			</View>
+		</SafeAreaView>
+	);
+}
 
 export default function AttendanceSheetScreen() {
 	const params = useLocalSearchParams();
@@ -77,6 +126,9 @@ export default function AttendanceSheetScreen() {
 			hasUserEdits.current = false;
 		},
 	});
+
+	const workshopOnly = useIsWorkshopOnlyCourse(courseId);
+	if (workshopOnly) return <WorkshopOnlyNotice courseName={courseName} />;
 
 	// `key` gives every day a fresh sheet: no edits or selections carry over.
 	return (

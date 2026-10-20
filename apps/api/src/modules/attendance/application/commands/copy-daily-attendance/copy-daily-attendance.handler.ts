@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { DomainError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
+import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
+import { assertCourseHasDailyAttendance } from '../../services/daily-attendance.policy';
 import { CopyDailyAttendanceCommand } from './copy-daily-attendance.command';
 
 @Injectable()
@@ -9,9 +11,12 @@ export class CopyDailyAttendanceHandler {
 	constructor(
 		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
+		@Inject('ICoursePort')
+		private readonly coursePort: ICoursePort,
 	) {}
 
 	async execute(command: CopyDailyAttendanceCommand): Promise<void> {
+		await assertCourseHasDailyAttendance(this.coursePort, command.courseId);
 		let sourceDate = command.sourceDate;
 
 		if (!sourceDate) {

@@ -1,6 +1,7 @@
 'use client';
 
 import type {
+	CommissionNumber,
 	DAYOFWEEK,
 	IScheduleSlotResponse,
 	ISubjectResponse,
@@ -23,6 +24,8 @@ export interface ScheduleModalProps {
 	defaultDay?: DAYOFWEEK;
 	onSubmit: (slot: ScheduleSlotFormValues) => Promise<void> | void;
 	isLoading?: boolean;
+	/** Workshop commissions of the course; see ScheduleForm. */
+	commissionNumbers?: readonly CommissionNumber[];
 }
 
 export function ScheduleModal({
@@ -33,6 +36,7 @@ export function ScheduleModal({
 	defaultDay,
 	onSubmit,
 	isLoading = false,
+	commissionNumbers,
 }: ScheduleModalProps) {
 	const handleSubmit = async (slot: ScheduleSlotFormValues) => {
 		await onSubmit(slot);
@@ -57,6 +61,7 @@ export function ScheduleModal({
 					onSubmit={handleSubmit}
 					onCancel={() => onOpenChange(false)}
 					isLoading={isLoading}
+					commissionNumbers={commissionNumbers}
 				/>
 			</DialogContent>
 		</Dialog>

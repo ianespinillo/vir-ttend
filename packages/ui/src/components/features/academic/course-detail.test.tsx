@@ -1,4 +1,5 @@
 import {
+	DAYOFWEEK,
 	type ICourseDetailResponse,
 	type IStudentResponse,
 	LEVEL,
@@ -75,5 +76,30 @@ describe('CourseDetail', () => {
 			screen.getByRole('button', { name: /Agregar Franja Horaria/i }),
 		).toBeInTheDocument();
 		expect(screen.queryByText('Editar Curso')).not.toBeInTheDocument();
+	});
+
+	it('labels commission slots with year, division and commission', () => {
+		render(
+			<CourseDetail
+				course={{ ...course, yearNumber: 7, division: '1' }}
+				subjects={[
+					{ id: 'subject-1', name: 'Taller', area: 'Taller', weeklyHours: 4 },
+				]}
+				schedule={[
+					{
+						id: 'slot-1',
+						subjectId: 'subject-1',
+						dayOfWeek: DAYOFWEEK.MONDAY,
+						startTime: '08:00',
+						endTime: '10:00',
+						commissionNumber: 1,
+					},
+				]}
+			/>,
+		);
+		fireEvent.mouseDown(screen.getByRole('tab', { name: 'Horario' }));
+
+		expect(screen.getByText('711')).toBeInTheDocument();
+		expect(screen.queryByText('C1')).not.toBeInTheDocument();
 	});
 });

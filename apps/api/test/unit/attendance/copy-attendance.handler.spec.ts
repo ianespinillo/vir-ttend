@@ -8,7 +8,9 @@ import {
 import { CopyAttendanceCommand } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.command';
 import { CopyAttendanceHandler } from '../../../src/modules/attendance/application/commands/copy-attendance/copy-attendance.handler';
 import { AttendanceCopyService } from '../../../src/modules/attendance/application/services/attendance-copy.service';
+import { SubjectRosterService } from '../../../src/modules/attendance/application/services/subject-roster.service';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
+import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
 import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
@@ -18,6 +20,7 @@ describe('CopyAttendanceHandler', () => {
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let copyAttendanceService: MockProxy<AttendanceCopyService>;
 	let subjectPort: MockProxy<ISubjectPort>;
+	let rosterService: MockProxy<SubjectRosterService>;
 
 	beforeEach(() => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
@@ -26,11 +29,52 @@ describe('CopyAttendanceHandler', () => {
 		subjectPort.getSubjectById.mockResolvedValue(
 			Subject.reconstitute('sub-1', 'course-1', 'Math', 'user-1', 'tenant-1'),
 		);
+		rosterService = mock<SubjectRosterService>();
+		rosterService.getActiveRoster.mockResolvedValue([
+			Student.reconstitute('student-1', 'Ana'),
+			Student.reconstitute('student-2', 'Beto'),
+		]);
 		handler = new CopyAttendanceHandler(
 			attendanceRepo,
 			copyAttendanceService,
 			subjectPort,
+			rosterService,
 		);
+	});
+
+	it('only copies records of students in the target date roster', async () => {
+		copyAttendanceService.getLastClassRecords.mockResolvedValue([
+			mock<AttendanceRecord>({
+				studentId: 'student-1',
+				courseId: 'course-1',
+				status: ATTENDANCE_STATUS.PRESENT,
+			}),
+			mock<AttendanceRecord>({
+				studentId: 'outsider',
+				courseId: 'course-1',
+				status: ATTENDANCE_STATUS.ABSENT,
+			}),
+		]);
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+		const targetDate = new Date('2026-07-10');
+
+		await handler.execute(
+			new CopyAttendanceCommand(
+				'user-1',
+				ROLES.TEACHER,
+				'tenant-1',
+				'sub-1',
+				targetDate,
+				undefined,
+			),
+		);
+
+		expect(rosterService.getActiveRoster).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'sub-1' }),
+			targetDate,
+		);
+		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
+		expect(saved.map((r) => r.studentId)).toEqual(['student-1']);
 	});
 
 	it('debe lanzar error si no hay registros en la fecha origen', async () => {

@@ -2,6 +2,7 @@
 
 import {
 	DAYOFWEEK,
+	type ICourseResponse,
 	type IScheduleSlotResponse,
 	type ISubjectResponse,
 } from '@repo/common';
@@ -13,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 export interface ScheduleGridProps {
 	slots: IScheduleSlotResponse[];
 	subjects: ISubjectResponse[];
+	/** When given, commission badges read year + division + commission (e.g. 711) instead of C1. */
+	course?: Pick<ICourseResponse, 'yearNumber' | 'division'>;
 	onAddSlot?: (dayOfWeek?: DAYOFWEEK) => void;
 	onDeleteSlot?: (slotId: string) => void;
 	canManage?: boolean;
@@ -39,10 +42,16 @@ const COLORS = [
 export function ScheduleGrid({
 	slots,
 	subjects,
+	course,
 	onAddSlot,
 	onDeleteSlot,
 	canManage = false,
 }: ScheduleGridProps) {
+	const commissionLabel = (commissionNumber: number) =>
+		course
+			? `${course.yearNumber}${course.division}${commissionNumber}`
+			: `C${commissionNumber}`;
+
 	const subjectMap = new Map(subjects.map((s) => [s.id, s]));
 
 	// Map colors to subject IDs deterministically
@@ -113,7 +122,7 @@ export function ScheduleGrid({
 													{subject?.name || 'Materia desconocida'}
 													{slot.commissionNumber != null && (
 														<span className="ml-1.5 text-[10px] font-semibold rounded border border-current px-1 py-0.5">
-															C{slot.commissionNumber}
+															{commissionLabel(slot.commissionNumber)}
 														</span>
 													)}
 												</p>

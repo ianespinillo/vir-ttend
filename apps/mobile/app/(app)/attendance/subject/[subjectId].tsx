@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
@@ -35,6 +35,7 @@ import {
 } from '../../../../src/features/attendance/justification';
 import { JustificationBadge } from '../../../../src/features/attendance/justification-badge';
 import { attendanceQueries } from '../../../../src/features/attendance/queries';
+import { queryKeys } from '../../../../src/features/attendance/query-keys';
 import type {
 	AttendanceStatus,
 	RecordedAttendanceStatus,
@@ -153,15 +154,25 @@ function SubjectSheet({
 	>({});
 	const [isSaving, setIsSaving] = useState(false);
 
-	// Students of the subject: shared key, populated by the offline preload.
+	// Students of the subject for the shown day: a mixed-slot workshop subject
+	// lists the commission of that weekday. Offline, with no roster cached for
+	// the day, the undated roster the preload cached (union of the subject's
+	// commissions) stands in; it only differs for mixed-slot subjects.
+	const queryClient = useQueryClient();
 	const {
 		data: studentsData,
 		isLoading: isLoadingStudents,
 		fetchStatus: studentsFetchStatus,
 		error: studentsError,
 	} = useQuery({
-		...attendanceQueries.subjectStudents(subjectId),
+		...attendanceQueries.subjectStudents(subjectId, dateStr),
 		enabled: !!subjectId,
+		placeholderData: () =>
+			online
+				? undefined
+				: queryClient.getQueryData<StudentItem[]>(
+						queryKeys.subjectStudents(subjectId),
+					),
 	});
 
 	// The day's existing attendance for the subject.

@@ -74,8 +74,10 @@ export default function CourseDetailPage() {
 	const { data: academicYears } = useAcademicYears();
 	const { data: preceptors } = useUsersByRole(ROLES.PRECEPTOR);
 	const { data: teachers } = useUsersByRole(ROLES.TEACHER);
+	// Also read by schedule editors: the slot form hides the commission selector
+	// when the course has a single commission (or none).
 	const { data: commissions, isLoading: commissionsLoading } =
-		useWorkshopCommissions(courseId, isAdmin);
+		useWorkshopCommissions(courseId, canManageSchedule);
 
 	const updateCourseMutation = useUpdateCourse();
 	const deleteCourseMutation = useDeleteCourse();
@@ -326,6 +328,7 @@ export default function CourseDetailPage() {
 				studentCount={studentsData?.total}
 				onViewStudent={(id) => router.push(`/students/${id}`)}
 				attendancePath={`/attendance?courseId=${course.id}`}
+				commissionNumbers={commissions?.map((c) => c.number)}
 				commissionsTab={
 					isAdmin ? (
 						<WorkshopCommissionsPanel
@@ -333,9 +336,9 @@ export default function CourseDetailPage() {
 							preceptors={preceptors?.items || []}
 							isLoading={commissionsLoading}
 							isBusy={commissionsBusy}
-							onCreate={() =>
+							onCreate={(count) =>
 								runCommissionAction(
-									() => createCommissionsMutation.mutateAsync(courseId),
+									() => createCommissionsMutation.mutateAsync({ courseId, count }),
 									'Comisiones creadas exitosamente',
 									'Error al crear las comisiones',
 								)

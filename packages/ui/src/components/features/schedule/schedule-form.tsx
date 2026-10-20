@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
 	COMMISSION_NUMBERS,
+	type CommissionNumber,
 	DAYOFWEEK,
 	type IScheduleSlotResponse,
 	type ISubjectResponse,
@@ -38,11 +39,18 @@ export interface ScheduleFormProps {
 	onSubmit: (slot: ScheduleSlotFormValues) => Promise<void> | void;
 	onCancel?: () => void;
 	isLoading?: boolean;
+	/**
+	 * Workshop commissions of the course. The commission selector only shows
+	 * with two or more; with one or none slots are saved for the whole course
+	 * (null). Undefined = unknown, which offers both commissions.
+	 */
+	commissionNumbers?: readonly CommissionNumber[];
 }
 
 export function ScheduleForm({
 	subjects,
 	existingSlots = [],
+	commissionNumbers,
 	defaultDay = DAYOFWEEK.MONDAY,
 	onSubmit,
 	onCancel,
@@ -61,18 +69,30 @@ export function ScheduleForm({
 		},
 	});
 
+	// Commissions a slot can target. A course without commissions yet still
+	// offers both (the backend allows it); only a single commission hides the select.
+	const availableCommissions =
+		commissionNumbers && commissionNumbers.length > 0
+			? commissionNumbers
+			: COMMISSION_NUMBERS;
+	// Commissions a slot for the whole course counts towards.
+	const courseCommissions = availableCommissions;
+	const canPickCommission = availableCommissions.length > 1;
 	const isWorkshopSubject = (subjectId: string) =>
 		subjects.find((sub) => sub.id === subjectId)?.kind === SUBJECT_KIND.WORKSHOP;
-	const showCommission = isWorkshopSubject(form.watch('subjectId'));
+	const showCommission =
+		canPickCommission && isWorkshopSubject(form.watch('subjectId'));
 
 	const handleSubmit = async (values: ScheduleSlotFormValues) => {
 		setFormError(null);
 
 		const subject = subjects.find((sub) => sub.id === values.subjectId);
-		// Only workshop subjects can be split by commission; theory slots always cover both.
-		const commissionNumber = isWorkshopSubject(values.subjectId)
-			? (values.commissionNumber ?? null)
-			: null;
+		// Only workshop subjects of a course with two commissions can target one;
+		// every other slot covers the whole course.
+		const commissionNumber =
+			canPickCommission && isWorkshopSubject(values.subjectId)
+				? (values.commissionNumber ?? null)
+				: null;
 
 		// Client-side overlap validation
 		const isOverlapping = checkScheduleOverlap([
@@ -94,10 +114,10 @@ export function ScheduleForm({
 
 		if (subject) {
 			const newSlotMinutes = minutesBetween(values.startTime, values.endTime);
-			// Weekly hours are counted per commission: a slot for both commissions
-			// counts towards each of them.
+			// Weekly hours are counted per existing commission: a slot for the whole
+			// course counts towards each of them.
 			const affectedCommissions =
-				commissionNumber === null ? COMMISSION_NUMBERS : [commissionNumber];
+				commissionNumber === null ? courseCommissions : [commissionNumber];
 			const exceedsWeeklyHours = affectedCommissions.some((commission) => {
 				const scheduledMinutes = existingSlots
 					.filter(
@@ -240,8 +260,11 @@ export function ScheduleForm({
 									</FormControl>
 									<SelectContent>
 										<SelectItem value="BOTH">Ambas</SelectItem>
-										<SelectItem value="1">1</SelectItem>
-										<SelectItem value="2">2</SelectItem>
+										{availableCommissions.map((number) => (
+											<SelectItem key={number} value={String(number)}>
+												{number}
+											</SelectItem>
+										))}
 									</SelectContent>
 								</Select>
 								<FormMessage />

@@ -48,6 +48,7 @@ describe('CourseSnapshotBuilderService', () => {
 	function build(opts: {
 		daily?: AttendanceRecord[];
 		workshop?: WorkshopAttendanceRecord[];
+		workshopOnly?: boolean;
 	}) {
 		const attendanceRepo = {
 			getCourseSummaryForDate: jest.fn().mockResolvedValue(rawCounts),
@@ -62,6 +63,7 @@ describe('CourseSnapshotBuilderService', () => {
 				id: 'course-1',
 				name: '3° A',
 				academicYearId: 'y',
+				isWorkshopOnly: opts.workshopOnly ?? false,
 			}),
 		};
 		const attendanceService = {
@@ -105,6 +107,33 @@ describe('CourseSnapshotBuilderService', () => {
 			MON,
 			TUE,
 		);
+	});
+
+	it('weighs workshop absences 1 and flags the snapshot in a workshop-only course', async () => {
+		const { service } = build({
+			workshop: [workshop('ana', MON, ATTENDANCE_STATUS.ABSENT)],
+			workshopOnly: true,
+		});
+
+		const json = (
+			await service.buildCourseSnapshot('course-1', MON, MON)
+		).toJSON();
+
+		expect(json.absent).toBe(1);
+		expect(json.workshopOnly).toBe(true);
+	});
+
+	it('does not flag a regular course snapshot', async () => {
+		const { service } = build({
+			workshop: [workshop('ana', MON, ATTENDANCE_STATUS.ABSENT)],
+		});
+
+		const json = (
+			await service.buildCourseSnapshot('course-1', MON, MON)
+		).toJSON();
+
+		expect(json.absent).toBe(0.5);
+		expect(json.workshopOnly).toBe(false);
 	});
 
 	it('keeps the raw status counts as integers', async () => {

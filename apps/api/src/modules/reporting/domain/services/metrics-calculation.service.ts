@@ -4,6 +4,7 @@ import {
 	isLateStatus,
 } from '@repo/common';
 import {
+	WeightedAbsenceOptions,
 	calculateWeightedAbsences,
 	countDaysGiven,
 } from '../../../attendance/domain/services/weighted-absence';
@@ -19,14 +20,17 @@ export class MetricsCalculationService {
 	/**
 	 * @param dailyRecords daily attendance only (no subject records)
 	 * @param workshopRecords workshop attendance of the same student and period
+	 * @param options `workshopOnly` for a 7th-year technical course
 	 */
 	calculateStudentMetrics(
 		dailyRecords: AttendanceRecord[],
 		workshopRecords: AttendanceRecord[] = [],
+		options: WeightedAbsenceOptions = {},
 	): IStudentMetrics {
 		const { total, breakdown } = calculateWeightedAbsences({
 			dailyRecords,
 			workshopRecords,
+			workshopOnly: options.workshopOnly,
 		});
 		const daysGiven = countDaysGiven(dailyRecords, workshopRecords);
 		const absencePercent = daysGiven > 0 ? (total / daysGiven) * 100 : null;

@@ -122,3 +122,41 @@ describe('WorkshopCommissionAdapter.findByStudent', () => {
 		});
 	});
 });
+
+describe('WorkshopCommissionAdapter.findByCourse', () => {
+	const commission = (number: CommissionNumber) => ({
+		id: `commission-${number}`,
+		tenantId: 'tenant-1',
+		courseId: 'course-1',
+		number,
+		preceptorId: null,
+		code: () => `14${number}`,
+	});
+	const build = (commissions: unknown[]) =>
+		new WorkshopCommissionAdapter(
+			{ findByCourse: jest.fn().mockResolvedValue(commissions) } as never,
+			{
+				findById: jest
+					.fn()
+					.mockResolvedValue({ yearNumber: 1, division: '4', isActive: true }),
+			} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+		);
+
+	it('maps the commissions of the course with their number and id', async () => {
+		const infos = await build([commission(1), commission(2)]).findByCourse(
+			'course-1',
+		);
+
+		expect(infos.map((i) => [i.id, i.number, i.code])).toEqual([
+			['commission-1', 1, '141'],
+			['commission-2', 2, '142'],
+		]);
+	});
+
+	it('returns no commissions when the course is not split', async () => {
+		expect(await build([]).findByCourse('course-1')).toEqual([]);
+	});
+});

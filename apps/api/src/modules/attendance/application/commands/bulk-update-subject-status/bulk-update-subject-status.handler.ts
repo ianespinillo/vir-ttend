@@ -3,15 +3,16 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotFoundError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
-import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import { SubjectRosterService } from '../../services/subject-roster.service';
 import { BulkUpdateSubjectStatusCommand } from './bulk-update-subject-status.command';
 
 /**
- * Sets the same status for every student of the subject's course. Idempotent:
+ * Sets the same status for every ACTIVE student of the subject's roster on that
+ * date (the whole course, or the targeted workshop commissions). Idempotent:
  * only subject records that were created or whose status changed are saved and
  * announced. It only ever reads/writes records of this subject, never daily ones.
  */
@@ -21,7 +22,7 @@ export class BulkUpdateSubjectStatusHandler {
 		@Inject('IAttendanceRecordRepository')
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		@Inject('ISubjectPort') private readonly subjectRepository: ISubjectPort,
-		@Inject('IStudentPort') private readonly studentPort: IStudentPort,
+		private readonly subjectRoster: SubjectRosterService,
 		@Inject('IUnitOfWorkPort')
 		private readonly unitOfWork: IUnitOfWorkPort,
 		private readonly em: EventEmitter2,
@@ -36,7 +37,10 @@ export class BulkUpdateSubjectStatusHandler {
 			role: command.userRole,
 			tenantId: command.tenantId,
 		});
-		const students = await this.studentPort.getByCourseId(subject.courseId);
+		const students = await this.subjectRoster.getActiveRoster(
+			subject,
+			command.date,
+		);
 		const changedRecords = await this.unitOfWork.run(async () => {
 			const existingByStudent = new Map(
 				(

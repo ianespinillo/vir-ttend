@@ -54,10 +54,10 @@ export const attendanceQueries = {
 			queryKey: queryKeys.mySubjects(),
 			queryFn: fetchMySubjects,
 		}),
-	subjectStudents: (subjectId: string) =>
+	subjectStudents: (subjectId: string, date?: string) =>
 		queryOptions({
-			queryKey: queryKeys.subjectStudents(subjectId),
-			queryFn: () => fetchSubjectStudents(subjectId),
+			queryKey: queryKeys.subjectStudents(subjectId, date),
+			queryFn: () => fetchSubjectStudents(subjectId, date),
 		}),
 	subjectAttendance: (subjectId: string, date: string) =>
 		queryOptions({
