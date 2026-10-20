@@ -16,6 +16,7 @@ import { ScheduleSlotOrmEntity } from './schedule-slot.orm-entity';
 export class SubjectOrmEntity extends BaseEntity {
 	@Property() courseId!: string;
 	@Property({ nullable: true }) teacherId: string | null = null;
+	@Property({ nullable: true }) teacherName: string | null = null;
 	@Property() name!: string;
 	@Property() area!: string;
 	@Property() weeklyHours!: number;

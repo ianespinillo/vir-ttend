@@ -49,7 +49,8 @@ export class SubjectResponseDto implements ISubjectResponse {
 
 	@ApiPropertyOptional({
 		type: String,
-		description: 'Nombre completo del docente a cargo de la materia.',
+		description:
+			'Nombre completo del docente a cargo de la materia: el del usuario asignado o, si no tiene usuario, el nombre cargado a mano.',
 		example: 'Juan Pérez',
 	})
 	teacherName?: string;
@@ -69,6 +70,6 @@ export class SubjectResponseDto implements ISubjectResponse {
 		this.weeklyHours = subject.weeklyHours;
 		this.kind = subject.kind;
 		this.teacherId = subject.teacherId;
-		this.teacherName = teacherName;
+		this.teacherName = teacherName ?? subject.teacherName;
 	}
 }

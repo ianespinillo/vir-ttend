@@ -91,4 +91,48 @@ describe('CreateSubjectHandler', () => {
 		);
 		expect(subjectRepository.save).not.toHaveBeenCalled();
 	});
+
+	it('stores a manual teacher name when no teacher account is given', async () => {
+		courseRepository.findById.mockResolvedValue(mockCourse);
+		subjectRepository.findByCourse.mockResolvedValue([]);
+
+		await handler.execute(
+			new CreateSubjectCommand(
+				'course-1',
+				'NONE',
+				'Historia',
+				'Sociales',
+				3,
+				undefined,
+				'  Laura Gómez  ',
+			),
+		);
+
+		const saved = subjectRepository.save.mock.calls[0][0];
+		expect(saved.teacherId).toBeUndefined();
+		expect(saved.teacherName).toBe('Laura Gómez');
+		expect(membershipPort.belongsToTenant).not.toHaveBeenCalled();
+	});
+
+	it('ignores the manual teacher name when a teacher account is given', async () => {
+		courseRepository.findById.mockResolvedValue(mockCourse);
+		membershipPort.belongsToTenant.mockResolvedValue(true);
+		subjectRepository.findByCourse.mockResolvedValue([]);
+
+		await handler.execute(
+			new CreateSubjectCommand(
+				'course-1',
+				'teacher-1',
+				'Historia',
+				'Sociales',
+				3,
+				undefined,
+				'Laura Gómez',
+			),
+		);
+
+		const saved = subjectRepository.save.mock.calls[0][0];
+		expect(saved.teacherId).toBe('teacher-1');
+		expect(saved.teacherName).toBeUndefined();
+	});
 });

@@ -54,13 +54,26 @@ export function SubjectForm({
 			area: defaultValues?.area || '',
 			weeklyHours: defaultValues?.weeklyHours || 4,
 			teacherId: defaultValues?.teacherId || '',
+			teacherName: defaultValues?.teacherName || '',
 			kind: defaultValues?.kind || SUBJECT_KIND.THEORY,
 		},
 	});
+	const teacherId = form.watch('teacherId');
+	const hasTeacherAccount = Boolean(teacherId) && teacherId !== 'NONE';
+
+	const handleSubmit = (values: CreateSubjectFormValues) =>
+		onSubmit(
+			hasTeacherAccount
+				? { ...values, teacherName: undefined }
+				: { ...values, teacherName: values.teacherName?.trim() ?? '' },
+		);
 
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-xl">
+			<form
+				onSubmit={form.handleSubmit(handleSubmit)}
+				className="space-y-6 max-w-xl"
+			>
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-lg">
@@ -165,6 +178,22 @@ export function SubjectForm({
 								</FormItem>
 							)}
 						/>
+
+						{!hasTeacherAccount && (
+							<FormField
+								control={form.control}
+								name="teacherName"
+								render={({ field }) => (
+									<FormItem className="md:col-span-2">
+										<FormLabel>Nombre del docente (sin usuario)</FormLabel>
+										<FormControl>
+											<Input placeholder="Ej. Laura Gómez" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						)}
 					</CardContent>
 				</Card>
 
