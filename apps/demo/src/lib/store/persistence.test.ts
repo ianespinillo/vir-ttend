@@ -106,3 +106,31 @@ describe('storage absence (SSR / node)', () => {
 		expect(() => clearPersistedState(exploding)).not.toThrow();
 	});
 });
+
+describe('schema v2 migration', () => {
+	it('restores the non-working days as Date instances', () => {
+		const storage = createMockStorage();
+		saveState(createSeedState(), storage);
+		const days = loadState(storage)?.academicYears[0]?.nonWorkingDays ?? [];
+		expect(days.length).toBeGreaterThan(0);
+		for (const day of days) expect(day).toBeInstanceOf(Date);
+	});
+
+	it('discards and removes a v1 state (no workshop data) instead of loading it', () => {
+		const legacy = { ...createSeedState(), version: 1 };
+		const storage = createMockStorage({
+			'virttend-demo-state:v1': JSON.stringify(legacy),
+		});
+		expect(loadState(storage)).toBeNull();
+		expect(storage.getItem('virttend-demo-state:v1')).toBeNull();
+	});
+
+	it('rejects a v2 state that lacks the workshop collections', () => {
+		const {
+			workshopCommissions: _c,
+			workshopAttendance: _a,
+			...rest
+		} = createSeedState();
+		expect(isValidDemoState(rest)).toBe(false);
+	});
+});

@@ -31,7 +31,7 @@ describe('Demo App End-to-End Smoke & Integration Suite', () => {
 		const state = store.getState();
 		const profiles = selectors.getLandingProfiles(state);
 
-		expect(profiles.length).toBe(6);
+		expect(profiles.length).toBe(7);
 		const roles = profiles.map((p) => p.user.role);
 		expect(roles).toContain(ROLES.SUPERADMIN);
 		expect(roles).toContain(ROLES.ADMIN);
@@ -72,7 +72,7 @@ describe('Demo App End-to-End Smoke & Integration Suite', () => {
 			expect(detail?.id).toBe(firstStudent.id);
 
 			const totals = selectors.getStudentAttendanceTotals(state, firstStudent.id);
-			expect(totals.totalSlots).toBeGreaterThan(0);
+			expect(totals.daysGiven).toBeGreaterThan(0);
 		}
 	});
 

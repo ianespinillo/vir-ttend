@@ -2,7 +2,7 @@
  * Demo store — persistence.
  *
  * Persists the canonical demo state to localStorage under
- * DEMO_STORAGE_KEY ('virttend-demo-state:v1'). The storage backend is
+ * DEMO_STORAGE_KEY ('virttend-demo-state:v2'). The storage backend is
  * injectable (MinimalStorage) so tests run against an in-memory mock with no
  * DOM/jsdom dependency.
  *
@@ -12,7 +12,11 @@
  */
 
 import type { DemoState } from './types';
-import { DEMO_STORAGE_KEY, STORAGE_SCHEMA_VERSION } from './types';
+import {
+	DEMO_STORAGE_KEY,
+	LEGACY_STORAGE_KEYS,
+	STORAGE_SCHEMA_VERSION,
+} from './types';
 
 /** The minimal storage surface the demo needs (localStorage-shaped). */
 export interface MinimalStorage {
@@ -41,6 +45,8 @@ export function loadState(
 		return null;
 	}
 	try {
+		// Older schemas cannot be migrated: drop them so they stop taking space.
+		for (const legacyKey of LEGACY_STORAGE_KEYS) storage.removeItem(legacyKey);
 		const raw = storage.getItem(key);
 		if (!raw) {
 			return null;
@@ -102,6 +108,8 @@ export function isValidDemoState(value: unknown): value is DemoState {
 		Array.isArray(candidate.schedules) &&
 		Array.isArray(candidate.students) &&
 		Array.isArray(candidate.attendance) &&
+		Array.isArray(candidate.workshopCommissions) &&
+		Array.isArray(candidate.workshopAttendance) &&
 		Array.isArray(candidate.alerts) &&
 		Array.isArray(candidate.announcements) &&
 		typeof candidate.announcementReads === 'object' &&
@@ -132,6 +140,9 @@ export function reviveState(parsed: DemoState): DemoState {
 			...year,
 			startDate: toDate(year.startDate) ?? new Date(year.startDate),
 			endDate: toDate(year.endDate) ?? new Date(year.endDate),
+			nonWorkingDays: (year.nonWorkingDays ?? []).map(
+				(day) => toDate(day) ?? new Date(day),
+			),
 		})),
 		alerts: parsed.alerts.map((alert) => ({
 			...alert,

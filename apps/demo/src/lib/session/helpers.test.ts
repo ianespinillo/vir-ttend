@@ -37,6 +37,7 @@ describe('allowedPathsForRole', () => {
 			APP_ROUTES.courses,
 			APP_ROUTES.students,
 			APP_ROUTES.attendanceDaily,
+			APP_ROUTES.attendanceWorkshop,
 			APP_ROUTES.alerts,
 			APP_ROUTES.reports,
 			APP_ROUTES.announcements,
@@ -55,6 +56,7 @@ describe('allowedPathsForRole', () => {
 			APP_ROUTES.courses,
 			APP_ROUTES.students,
 			APP_ROUTES.attendanceDaily,
+			APP_ROUTES.attendanceWorkshop,
 			APP_ROUTES.alerts,
 			APP_ROUTES.reports,
 			APP_ROUTES.announcements,
@@ -91,16 +93,16 @@ describe('allowedPathsForRole', () => {
 });
 
 describe('demo profiles', () => {
-	it('returns the five institutional profiles in seed order, excluding superadmin', () => {
+	it('returns the six institutional profiles in seed order, excluding superadmin', () => {
 		const state = createSeedState();
 		const profiles = getDemoProfiles(state);
-		expect(profiles).toHaveLength(5);
+		expect(profiles).toHaveLength(6);
 		expect(profiles.some((p) => p.user.role === ROLES.SUPERADMIN)).toBe(false);
 		expect(profiles[0]).toMatchObject({
 			user: { firstName: 'Ana', lastName: 'Gómez', role: ROLES.ADMIN },
 			tenantName: 'Colegio San Martín',
 		});
-		expect(profiles.at(-1)?.user.lastName).toBe('Fernández');
+		expect(profiles.at(-1)?.user.lastName).toBe('Torres'); // workshop preceptor
 	});
 
 	it('ignores users created during a demo session', () => {
@@ -116,12 +118,12 @@ describe('demo profiles', () => {
 			mustChangePassword: true,
 			createdAt: '2026-06-19T12:00:00.000Z',
 		});
-		expect(getDemoProfiles(state)).toHaveLength(5);
+		expect(getDemoProfiles(state)).toHaveLength(6);
 	});
 
 	it('describes every canonical profile', () => {
 		const state = createSeedState();
-		expect(Object.keys(PROFILE_DESCRIPTORS)).toHaveLength(6);
+		expect(Object.keys(PROFILE_DESCRIPTORS)).toHaveLength(7);
 		for (const profile of getDemoProfiles(state)) {
 			expect(PROFILE_DESCRIPTORS[profile.user.id]).toBeTruthy();
 		}
