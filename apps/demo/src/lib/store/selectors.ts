@@ -8,9 +8,16 @@
  */
 
 import {
+	type CourseSummary,
+	type MyWorkshopCommission,
+	type WorkshopAttendance,
+	getStandardNationalHolidays,
+	isWorkshopOnlyCourse,
+} from '@repo/common';
+import { resolveSubjectAudience, weekdayOfIsoDate } from './subject-audience';
+import {
 	ATTENDANCE_THRESHOLDS,
 	type Alert,
-	type AlertType,
 	type AlertsCount,
 	type AlertsListResponse,
 	type Announcement,
@@ -31,13 +38,15 @@ import {
 	type IStudentResponse,
 	type ISubjectResponse,
 	type IUserWithMembershipResponse,
+	type IWorkshopCommissionResponse,
 	LEVEL,
 	type MonthlyReport,
 	type MonthlyReportStudent,
 	type PreceptorDashboard,
 	ROLES,
+	type Roles,
+	STUDENTSTATUS,
 	type StudentReport,
-	type StudentReportStatus,
 	type SubjectAttendanceResponse,
 	type SubjectHistoryResponse,
 	type SuperAdminAnalytics,
@@ -47,26 +56,32 @@ import {
 import {
 	type AlertsQuery,
 	type AnnouncementsQuery,
-	DEMO_ABSENCE_CRITICAL_PERCENT,
-	DEMO_ABSENCE_WARNING_PERCENT,
 	DEMO_ATTENDANCE_DAYS,
-	DEMO_LATE_TO_ABSENCE,
 	DEMO_TODAY,
 	type DemoAttendanceRecord,
 	type DemoCurrentUser,
 	type DemoState,
+	type DemoStudent,
 	type PaginatedResult,
 	type StudentAttendanceTotals,
 	type StudentsQuery,
 	type UsersQuery,
 	demoTodayDate,
 } from './types';
+import {
+	LATE_BEYOND_TOLERANCE_WEIGHT,
+	LATE_WEIGHT,
+	absenceCountToReportStatus,
+	absencePercentOver,
+	calculateWeightedAbsences,
+	countDaysGiven,
+} from './weighted-absence';
 
 // ---------------------------------------------------------------------------
 // Math helpers (single source of truth: seeds + alerts + tests)
 // ---------------------------------------------------------------------------
 
-function countByStatus(records: DemoAttendanceRecord[]): {
+function countByStatus(records: readonly { status: string }[]): {
 	present: number;
 	absent: number;
 	late: number;
@@ -94,39 +109,6 @@ function countByStatus(records: DemoAttendanceRecord[]): {
 	);
 }
 
-/** 3 tardanzas = 1 inasistencia (seeds plan). */
-export function effectiveAbsenceCount(absent: number, late: number): number {
-	return absent + Math.floor(late / DEMO_LATE_TO_ABSENCE);
-}
-
-/** % of absence rounded to 1 decimal (matches the report UI formatting). */
-export function absencePercent(
-	absent: number,
-	late: number,
-	totalSlots: number,
-): number {
-	if (totalSlots <= 0 || Number.isNaN(totalSlots)) return 0;
-	const safeAbsent = Number.isNaN(absent) ? 0 : absent;
-	const safeLate = Number.isNaN(late) ? 0 : late;
-	return Number(
-		((effectiveAbsenceCount(safeAbsent, safeLate) / totalSlots) * 100).toFixed(1),
-	);
-}
-
-/** No alerts below the warning band; warning < critical; else critical. */
-export function absenceToAlertType(pct: number): AlertType | null {
-	if (pct < DEMO_ABSENCE_WARNING_PERCENT) return null;
-	if (pct < DEMO_ABSENCE_CRITICAL_PERCENT) return 'warning';
-	return 'critical';
-}
-
-/** Report band (product UI: 'abajo' / 'en riesgo' / 'superado'). */
-export function absenceToReportStatus(pct: number): StudentReportStatus {
-	if (pct < DEMO_ABSENCE_WARNING_PERCENT) return 'ok';
-	if (pct < DEMO_ABSENCE_CRITICAL_PERCENT) return 'at-risk';
-	return 'exceeded';
-}
-
 /** Risk color like the product course snapshot (75/85 thresholds). */
 export function courseRiskStatus(pct: number): COURSE_RISK_STATUS {
 	if (pct >= ATTENDANCE_THRESHOLDS.CRITICAL) return COURSE_RISK_STATUS.CRITICAL;
@@ -134,11 +116,21 @@ export function courseRiskStatus(pct: number): COURSE_RISK_STATUS {
 	return COURSE_RISK_STATUS.OK;
 }
 
+/** National holidays of the demo year plus the declared institutional day. */
+export const DEMO_HOLIDAYS: readonly string[] =
+	getStandardNationalHolidays(2026);
+
+/** Institutional non-working day declared in the seed (with its announcement). */
+export const DEMO_INSTITUTIONAL_DAY = '2026-06-12';
+
 /** Last `count` business days ending at `endISODate`, ascending. */
 export function generateLastBusinessDays(
 	endISODate: string = DEMO_TODAY,
 	count: number = DEMO_ATTENDANCE_DAYS,
-	holidays: ReadonlySet<string> = new Set(['2026-05-25', '2026-07-09']),
+	holidays: ReadonlySet<string> = new Set([
+		...DEMO_HOLIDAYS,
+		DEMO_INSTITUTIONAL_DAY,
+	]),
 ): string[] {
 	const days: string[] = [];
 	const cursor = new Date(`${endISODate}T00:00:00.000Z`);
@@ -174,6 +166,21 @@ export function mondayOfWeek(isoDate: string): Date {
 	const diff = day === 0 ? -6 : 1 - day;
 	date.setUTCDate(date.getUTCDate() + diff);
 	return date;
+}
+
+/** Weighted contribution of a record to a subject's absence count. */
+function subjectWeight(status: string): number {
+	switch (status) {
+		case 'absent':
+		case 'justified':
+			return 1;
+		case 'late':
+			return LATE_WEIGHT;
+		case 'late_beyond_tolerance':
+			return LATE_BEYOND_TOLERANCE_WEIGHT;
+		default:
+			return 0;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -252,26 +259,86 @@ export function getStudentRecords(
 	return state.attendance.filter((record) => record.studentId === studentId);
 }
 
+export interface DateRange {
+	from?: string;
+	to?: string;
+}
+
+function inRange(date: string, range: DateRange): boolean {
+	const day = date.slice(0, 10);
+	if (range.from && day < range.from) return false;
+	if (range.to && day > range.to) return false;
+	return true;
+}
+
+/** Weighted totals from already-filtered daily and workshop records. */
+export function totalsFromRecords(
+	daily: readonly { status: string; date: string }[],
+	workshop: readonly { status: string; date: string }[],
+	workshopOnly: boolean,
+): StudentAttendanceTotals {
+	const { total, breakdown } = calculateWeightedAbsences({
+		dailyRecords: daily,
+		workshopRecords: workshop,
+		workshopOnly,
+	});
+	// A workshop-only course has no daily shift: its counts come from workshop.
+	const counts = countByStatus(workshopOnly ? workshop : daily);
+	return {
+		present: counts.present,
+		absent: total,
+		late: counts.late,
+		justified: counts.justified,
+		daysGiven: countDaysGiven(daily, workshop),
+		absenceBreakdown: breakdown,
+	};
+}
+
+/** Whether the course of a student is workshop-only (7th year technical). */
+export function isStudentWorkshopOnly(
+	state: DemoState,
+	student: { courseId?: string } | undefined,
+): boolean {
+	const course = student?.courseId
+		? getCourseById(state, student.courseId)
+		: undefined;
+	return course ? isWorkshopOnlyCourse(course) : false;
+}
+
+/**
+ * Institutional totals of a student: weighted absences (daily + workshop),
+ * counts of the shift that counts, and the days effectively given.
+ */
 export function getStudentAttendanceTotals(
 	state: DemoState,
 	studentId: string,
+	range: DateRange = {},
 ): StudentAttendanceTotals {
-	const records = getStudentRecords(state, studentId);
-	const { present, absent, late, justified } = countByStatus(records);
-	return { present, absent, late, justified, totalSlots: records.length };
+	const student = state.students.find((item) => item.id === studentId);
+	const daily = state.attendance.filter(
+		(record) =>
+			record.studentId === studentId &&
+			!record.subjectId &&
+			inRange(record.date, range),
+	);
+	const workshop = state.workshopAttendance.filter(
+		(record) => record.studentId === studentId && inRange(record.date, range),
+	);
+	return totalsFromRecords(
+		daily,
+		workshop,
+		isStudentWorkshopOnly(state, student),
+	);
 }
 
+/** Absence statistic over the days given; null when no class was given. */
 export function getStudentAbsencePercent(
 	state: DemoState,
 	studentId: string,
 	totals?: StudentAttendanceTotals,
-): number {
+): number | null {
 	const calculated = totals ?? getStudentAttendanceTotals(state, studentId);
-	return absencePercent(
-		calculated.absent,
-		calculated.late,
-		calculated.totalSlots,
-	);
+	return absencePercentOver(calculated.absent, calculated.daysGiven);
 }
 
 // ---------------------------------------------------------------------------
@@ -427,6 +494,200 @@ export function getTeacherSubjects(
 }
 
 // ---------------------------------------------------------------------------
+// Workshop commissions
+// ---------------------------------------------------------------------------
+
+function compareNames(
+	a: { lastName: string; firstName: string },
+	b: { lastName: string; firstName: string },
+): number {
+	const compare = (x: string, y: string) =>
+		x.localeCompare(y, 'es', { sensitivity: 'base' });
+	return compare(a.lastName, b.lastName) || compare(a.firstName, b.firstName);
+}
+
+/** Commission code: year + division + number (course 7 "A", commission 1 -> "7A1"). */
+export function commissionCode(
+	course: Pick<ICourseResponse, 'yearNumber' | 'division'>,
+	number: number,
+): string {
+	return `${course.yearNumber}${course.division}${number}`;
+}
+
+/** Active students of a commission, alphabetical. */
+export function getCommissionStudents(
+	state: DemoState,
+	commissionId: string,
+): DemoStudent[] {
+	return state.students
+		.filter(
+			(student) =>
+				student.workshopCommissionId === commissionId &&
+				student.status === STUDENTSTATUS.ACTIVE,
+		)
+		.sort(compareNames);
+}
+
+export function getWorkshopCommissions(
+	state: DemoState,
+	courseId: string,
+): IWorkshopCommissionResponse[] {
+	const course = getCourseById(state, courseId);
+	if (!course) return [];
+	return state.workshopCommissions
+		.filter((commission) => commission.courseId === courseId)
+		.sort((a, b) => a.number - b.number)
+		.map((commission) => {
+			const students = getCommissionStudents(state, commission.id);
+			return {
+				id: commission.id,
+				courseId,
+				number: commission.number,
+				code: commissionCode(course, commission.number),
+				preceptorId: commission.preceptorId,
+				studentCount: students.length,
+				students: students.map((student) => ({
+					id: student.id,
+					lastName: student.lastName,
+					firstName: student.firstName,
+				})),
+			};
+		});
+}
+
+/** Weekdays on which a commission has a workshop slot. */
+function commissionWorkshopDays(
+	state: DemoState,
+	courseId: string,
+	number: number,
+): Set<string> {
+	const workshopSubjectIds = new Set(
+		state.subjects
+			.filter(
+				(subject) => subject.courseId === courseId && subject.kind === 'workshop',
+			)
+			.map((subject) => subject.id),
+	);
+	return new Set(
+		state.schedules
+			.filter(
+				(slot) =>
+					workshopSubjectIds.has(slot.subjectId) &&
+					(slot.commissionNumber == null || slot.commissionNumber === number),
+			)
+			.map((slot) => slot.dayOfWeek),
+	);
+}
+
+/**
+ * Commissions the user can take workshop attendance for: every commission for
+ * admins, the ones assigned to them for preceptors. Flags whether the
+ * commission has a workshop on the weekday of `date`.
+ */
+export function getMyWorkshopCommissions(
+	state: DemoState,
+	user: { id: string; role: Roles } | null | undefined,
+	date: string,
+): MyWorkshopCommission[] {
+	if (!user) return [];
+	const isAdmin = user.role === ROLES.ADMIN || user.role === ROLES.SUPERADMIN;
+	const weekday = weekdayOfIsoDate(date);
+	return state.workshopCommissions
+		.filter((commission) => isAdmin || commission.preceptorId === user.id)
+		.flatMap((commission) => {
+			const course = getCourseById(state, commission.courseId);
+			if (!course) return [];
+			return [
+				{
+					commissionId: commission.id,
+					code: commissionCode(course, commission.number),
+					number: commission.number,
+					courseId: course.id,
+					courseName: course.fullName,
+					hasWorkshopToday:
+						weekday !== undefined &&
+						commissionWorkshopDays(state, course.id, commission.number).has(weekday),
+				},
+			];
+		})
+		.sort((a, b) => a.code.localeCompare(b.code));
+}
+
+/** Active students of the commission with their workshop status for a date. */
+export function getWorkshopAttendance(
+	state: DemoState,
+	commissionId: string,
+	date: string,
+): WorkshopAttendance | null {
+	const commission = state.workshopCommissions.find(
+		(item) => item.id === commissionId,
+	);
+	const course = commission ? getCourseById(state, commission.courseId) : null;
+	if (!commission || !course) return null;
+	const records = new Map(
+		state.workshopAttendance
+			.filter(
+				(record) => record.commissionId === commissionId && record.date === date,
+			)
+			.map((record) => [record.studentId, record]),
+	);
+	return {
+		commissionId,
+		commissionCode: commissionCode(course, commission.number),
+		courseId: course.id,
+		courseName: course.fullName,
+		date,
+		records: getCommissionStudents(state, commissionId).map((student) => ({
+			id: records.get(student.id)?.id ?? null,
+			studentId: student.id,
+			studentName: student.fullName,
+			status: records.get(student.id)?.status ?? null,
+			editedBy: null,
+			editedAt: null,
+		})),
+	};
+}
+
+/**
+ * Active roster of a subject on a date: the whole course, or only the workshop
+ * commission(s) its slots target on that weekday.
+ */
+export function getSubjectRoster(
+	state: DemoState,
+	subjectId: string,
+	date?: string,
+): DemoStudent[] {
+	const subject = state.subjects.find((item) => item.id === subjectId);
+	if (!subject?.courseId) return [];
+	const courseId = subject.courseId;
+	const active = state.students.filter(
+		(student) =>
+			student.courseId === courseId && student.status === STUDENTSTATUS.ACTIVE,
+	);
+	const slots = state.schedules.filter((slot) => slot.subjectId === subjectId);
+	const audience = resolveSubjectAudience(
+		slots,
+		date ? weekdayOfIsoDate(date) : undefined,
+	);
+	if (audience === 'whole-course') return active;
+	const commissions = state.workshopCommissions.filter(
+		(commission) => commission.courseId === courseId,
+	);
+	const ids: string[] = [];
+	for (const number of audience) {
+		const commission = commissions.find((item) => item.number === number);
+		// A slot targeting a commission that does not exist falls back to the course.
+		if (!commission) return active;
+		ids.push(commission.id);
+	}
+	return active.filter(
+		(student) =>
+			student.workshopCommissionId !== undefined &&
+			ids.includes(student.workshopCommissionId),
+	);
+}
+
+// ---------------------------------------------------------------------------
 // Attendance
 // ---------------------------------------------------------------------------
 
@@ -435,22 +696,36 @@ export function getDailyAttendance(
 	courseId: string,
 	date: string,
 ): DailyAttendance | undefined {
-	const records = state.attendance.filter(
-		(record) =>
-			record.courseId === courseId && record.date === date && !record.subjectId,
-	);
+	const course = getCourseById(state, courseId);
+	// Workshop-only courses (7th year technical) have no daily attendance.
+	const records =
+		course && isWorkshopOnlyCourse(course)
+			? []
+			: state.attendance.filter(
+					(record) =>
+						record.courseId === courseId && record.date === date && !record.subjectId,
+				);
 	const students = state.students.filter(
 		(student) => student.courseId === courseId,
 	);
 	const counts = countByStatus(records);
 	const studentsAtRisk = students
-		.map((student) => ({
-			studentId: student.id,
-			studentName: student.fullName,
-			absencePercent: getStudentAbsencePercent(state, student.id),
-		}))
-		.filter((entry) => entry.absencePercent >= DEMO_ABSENCE_WARNING_PERCENT)
-		.sort((a, b) => b.absencePercent - a.absencePercent);
+		.map((student) => {
+			const totals = getStudentAttendanceTotals(state, student.id);
+			return {
+				studentId: student.id,
+				studentName: student.fullName,
+				absenceCount: totals.absent,
+				absencePercent: getStudentAbsencePercent(state, student.id, totals) ?? 0,
+			};
+		})
+		.filter((entry) => absenceCountToReportStatus(entry.absenceCount) !== 'ok')
+		.sort((a, b) => b.absenceCount - a.absenceCount)
+		.map(({ studentId, studentName, absencePercent }) => ({
+			studentId,
+			studentName,
+			absencePercent,
+		}));
 	return {
 		date: new Date(`${date}T12:00:00.000Z`),
 		courseId,
@@ -458,7 +733,9 @@ export function getDailyAttendance(
 		metrics: {
 			totalStudents: students.length,
 			...counts,
-			absentPercent: absencePercent(counts.absent, counts.late, records.length),
+			absentPercent: records.length
+				? Number(((counts.absent / records.length) * 100).toFixed(1))
+				: 0,
 			studentsAtRisk,
 		},
 	};
@@ -472,8 +749,14 @@ export function getSubjectAttendance(
 	const subject = state.subjects.find((item) => item.id === subjectId);
 	if (!subject || !subject.courseId) return null;
 	const courseId = subject.courseId;
+	const roster = new Set(
+		getSubjectRoster(state, subjectId, date).map((student) => student.id),
+	);
 	const records = state.attendance.filter(
-		(record) => record.subjectId === subjectId && record.date === date,
+		(record) =>
+			record.subjectId === subjectId &&
+			record.date === date &&
+			roster.has(record.studentId),
 	);
 	return {
 		subjectId,
@@ -482,9 +765,7 @@ export function getSubjectAttendance(
 		date,
 		records: records.map((record): AttendanceRecord => record),
 		metrics: {
-			totalStudents: state.students.filter(
-				(student) => student.courseId === courseId,
-			).length,
+			totalStudents: roster.size,
 			...countByStatus(records),
 		},
 	};
@@ -496,7 +777,6 @@ export function getSubjectHistory(
 ): SubjectHistoryResponse | null {
 	const subject = state.subjects.find((item) => item.id === subjectId);
 	if (!subject || !subject.courseId) return null;
-	const courseId = subject.courseId;
 	const records = state.attendance.filter(
 		(record) => record.subjectId === subjectId,
 	);
@@ -509,27 +789,27 @@ export function getSubjectHistory(
 			...countByStatus(dayRecords),
 		};
 	});
-	const studentRecords = state.students
-		.filter((student) => student.courseId === courseId)
-		.map((student) => {
-			const studentDayRecords = records.filter(
-				(record) => record.studentId === student.id,
-			);
-			const counts = countByStatus(studentDayRecords);
-			return {
-				studentId: student.id,
-				studentName: student.fullName,
-				records: studentDayRecords.map((record) => ({
-					date: record.date,
-					status: record.status,
-				})),
-				absencePercent: absencePercent(
-					counts.absent,
-					counts.late,
-					classDates.length,
-				),
-			};
-		});
+	const roster = getSubjectRoster(state, subjectId);
+	const studentRecords = roster.map((student) => {
+		const studentDayRecords = records.filter(
+			(record) => record.studentId === student.id,
+		);
+		const weighted = studentDayRecords.reduce(
+			(sum, record) => sum + subjectWeight(record.status),
+			0,
+		);
+		return {
+			studentId: student.id,
+			studentName: student.fullName,
+			records: studentDayRecords.map((record) => ({
+				date: record.date,
+				status: record.status,
+			})),
+			absencePercent: classDates.length
+				? Number(((weighted / classDates.length) * 100).toFixed(1))
+				: 0,
+		};
+	});
 	return {
 		subjectId,
 		subjectName: subject.name,
@@ -539,6 +819,35 @@ export function getSubjectHistory(
 		sessions,
 		studentRecords,
 	};
+}
+
+/**
+ * Daily and subject attendance of a student in a date range (the history
+ * page's source, like the product's /attendance/student endpoint).
+ */
+export function getStudentAttendanceHistory(
+	state: DemoState,
+	studentId: string,
+	range: DateRange = {},
+): AttendanceRecord[] {
+	return state.attendance
+		.filter(
+			(record) => record.studentId === studentId && inRange(record.date, range),
+		)
+		.sort((a, b) => a.date.localeCompare(b.date))
+		.map((record): AttendanceRecord => record);
+}
+
+/** Whether a date is declared non-working for an academic year. */
+export function isNonWorkingDay(
+	state: DemoState,
+	academicYearId: string | undefined,
+	isoDate: string,
+): boolean {
+	const year = state.academicYears.find((item) => item.id === academicYearId);
+	return (year?.nonWorkingDays ?? []).some(
+		(day) => new Date(day).toISOString().slice(0, 10) === isoDate,
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -693,6 +1002,10 @@ export function dedupeById<T extends { id: string }>(items: T[]): T[] {
 // Dashboard
 // ---------------------------------------------------------------------------
 
+/**
+ * Raw record counts of a course for the shift that counts (daily, or workshop
+ * for a workshop-only course) plus the weighted absence total of its students.
+ */
 export function getCourseAttendance(
 	state: DemoState,
 	courseId: string,
@@ -704,18 +1017,47 @@ export function getCourseAttendance(
 	justified: number;
 	notRecorded: number;
 } {
-	const records = state.attendance.filter(
-		(record) => record.courseId === courseId,
-	);
-	const dates = distinctDates(records.map((record) => record.date));
+	const course = getCourseById(state, courseId);
+	const workshopOnly = course ? isWorkshopOnlyCourse(course) : false;
+	const workshopRecords = workshopOnly
+		? state.workshopAttendance.filter((record) => record.courseId === courseId)
+		: [];
+	const records: { status: string; date: string }[] = workshopOnly
+		? workshopRecords
+		: state.attendance.filter(
+				(record) => record.courseId === courseId && !record.subjectId,
+			);
 	const students = state.students.filter(
 		(student) => student.courseId === courseId,
 	);
-	const expected = dates.length * students.length;
+	// Daily: every student is expected on each day with records. Workshop-only:
+	// each commission is expected on its own workshop days.
+	const expected = workshopOnly
+		? state.workshopCommissions
+				.filter((commission) => commission.courseId === courseId)
+				.reduce((sum, commission) => {
+					const days = distinctDates(
+						workshopRecords
+							.filter((record) => record.commissionId === commission.id)
+							.map((record) => record.date),
+					).length;
+					return sum + days * getCommissionStudents(state, commission.id).length;
+				}, 0)
+		: distinctDates(records.map((record) => record.date)).length *
+			students.length;
 	const counts = countByStatus(records);
-	const recorded =
-		counts.present + counts.absent + counts.late + counts.justified;
-	return { expected, ...counts, notRecorded: Math.max(0, expected - recorded) };
+	const weightedAbsent = students.reduce(
+		(sum, student) => sum + getStudentAttendanceTotals(state, student.id).absent,
+		0,
+	);
+	return {
+		expected,
+		present: counts.present,
+		absent: weightedAbsent,
+		late: counts.late,
+		justified: counts.justified,
+		notRecorded: Math.max(0, expected - records.length),
+	};
 }
 
 export function getCourseSnapshot(
@@ -726,7 +1068,9 @@ export function getCourseSnapshot(
 	if (!course) return null;
 	const { expected, present, absent, late, justified, notRecorded } =
 		getCourseAttendance(state, courseId);
-	const absencePercentValue = absencePercent(absent, late, expected);
+	const absencePercentValue = expected
+		? Number(((absent / expected) * 100).toFixed(1))
+		: 0;
 	return {
 		courseId: course.id,
 		courseName: course.fullName,
@@ -741,6 +1085,7 @@ export function getCourseSnapshot(
 		attendancePercent: Number((100 - absencePercentValue).toFixed(1)),
 		statusColor: courseRiskStatus(absencePercentValue),
 		lastUpdated: demoTodayDate(),
+		workshopOnly: isWorkshopOnlyCourse(course),
 	};
 }
 
@@ -763,7 +1108,7 @@ export function getCourseSnapshotDetail(
 	return {
 		...snapshot,
 		records: state.attendance
-			.filter((record) => record.courseId === courseId)
+			.filter((record) => record.courseId === courseId && !record.subjectId)
 			.map((record): AttendanceRecord => record),
 	};
 }
@@ -787,9 +1132,10 @@ export function getDashboardMetrics(
 			(snap) => snap.statusColor !== COURSE_RISK_STATUS.OK,
 		),
 		weeklyTrend: weeklyTrendFromRecords(
-			courseIds
+			(courseIds
 				? state.attendance.filter((record) => courseIds.includes(record.courseId))
-				: state.attendance,
+				: state.attendance
+			).filter((record) => !record.subjectId),
 		),
 	};
 }
@@ -808,47 +1154,34 @@ export function getPreceptorDashboard(
 	};
 }
 
-/** Weekly attendance trend over the whole dataset, ascending by week. */
+/** Weekly attendance trend over daily records, ascending by week. */
 export function weeklyTrendFromRecords(
 	records: DemoAttendanceRecord[],
 ): WeeklyTrendPoint[] {
 	const byWeek = new Map<
 		string,
-		{ monday: Date; counts: ReturnType<typeof countByStatus> }
+		{ monday: Date; weighted: number; total: number }
 	>();
 	for (const record of records) {
 		const monday = mondayOfWeek(record.date);
 		const key = monday.toISOString().slice(0, 10);
 		let bucket = byWeek.get(key);
 		if (!bucket) {
-			bucket = {
-				monday,
-				counts: { present: 0, absent: 0, late: 0, justified: 0 },
-			};
+			bucket = { monday, weighted: 0, total: 0 };
 			byWeek.set(key, bucket);
 		}
-		bucket.counts[
-			record.status === 'late_beyond_tolerance' ? 'late' : record.status
-		] += 1;
+		bucket.weighted += subjectWeight(record.status);
+		bucket.total += 1;
 	}
 	return [...byWeek.entries()]
 		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([, bucket]) => {
-			const total =
-				bucket.counts.present +
-				bucket.counts.absent +
-				bucket.counts.late +
-				bucket.counts.justified;
-			const effective = effectiveAbsenceCount(
-				bucket.counts.absent,
-				bucket.counts.late,
-			);
-			return {
-				mondayWeek: bucket.monday,
-				percent:
-					total > 0 ? Number(((1 - effective / total) * 100).toFixed(1)) : 100,
-			};
-		});
+		.map(([, bucket]) => ({
+			mondayWeek: bucket.monday,
+			percent:
+				bucket.total > 0
+					? Number(((1 - bucket.weighted / bucket.total) * 100).toFixed(1))
+					: 100,
+		}));
 }
 
 export function getSuperAdminAnalytics(state: DemoState): SuperAdminAnalytics {
@@ -881,16 +1214,25 @@ export function getSuperAdminAnalytics(state: DemoState): SuperAdminAnalytics {
 // Reports
 // ---------------------------------------------------------------------------
 
+/** Course-wide records (daily, subject and workshop) used to list periods. */
+function courseRecordDates(state: DemoState, courseId: string): string[] {
+	return [
+		...state.attendance
+			.filter((record) => record.courseId === courseId)
+			.map((record) => record.date),
+		...state.workshopAttendance
+			.filter((record) => record.courseId === courseId)
+			.map((record) => record.date),
+	];
+}
+
 export function getAvailableReportPeriods(
 	state: DemoState,
 	courseId: string,
 ): AvailableReportPeriod[] {
-	const records = state.attendance.filter(
-		(record) => record.courseId === courseId,
-	);
 	const months = new Map<string, AvailableReportPeriod>();
-	for (const record of records) {
-		const date = new Date(`${record.date}T00:00:00.000Z`);
+	for (const day of courseRecordDates(state, courseId)) {
+		const date = new Date(`${day}T00:00:00.000Z`);
 		const key = `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}`;
 		if (!months.has(key)) {
 			months.set(key, {
@@ -904,6 +1246,11 @@ export function getAvailableReportPeriods(
 	);
 }
 
+function monthRange(month: number, year: number): { from: string; to: string } {
+	const monthStr = String(month).padStart(2, '0');
+	return { from: `${year}-${monthStr}-01`, to: `${year}-${monthStr}-31` };
+}
+
 export function getMonthlyReport(
 	state: DemoState,
 	courseId: string,
@@ -912,53 +1259,50 @@ export function getMonthlyReport(
 ): MonthlyReport | null {
 	const course = getCourseById(state, courseId);
 	if (!course) return null;
-	const monthStr = String(month).padStart(2, '0');
-	const records = state.attendance.filter(
-		(record) =>
-			record.courseId === courseId &&
-			record.date.startsWith(`${year}-${monthStr}`),
-	);
-	const workingDays = distinctDates(records.map((record) => record.date)).length;
+	const range = monthRange(month, year);
 	const students = state.students.filter(
 		(student) => student.courseId === courseId,
 	);
+	const workingDays = distinctDates(
+		courseRecordDates(state, courseId).filter((day) => inRange(day, range)),
+	).length;
 	const reportStudents: MonthlyReportStudent[] = students.map((student) => {
-		const studentRecords = records.filter(
-			(record) => record.studentId === student.id,
-		);
-		const counts = countByStatus(studentRecords);
-		const pct = absencePercent(counts.absent, counts.late, studentRecords.length);
-		const alerts = getStudentAlerts(state, student.id).map((alert) => ({
-			status: alert.alertType,
-		}));
+		const totals = getStudentAttendanceTotals(state, student.id, range);
+		// Status follows the cumulative institutional count up to the month end.
+		const cumulative = getStudentAttendanceTotals(state, student.id, {
+			to: range.to,
+		});
 		return {
 			studentId: student.id,
 			fullName: student.fullName,
 			documentNumber: student.documentNumber,
-			present: counts.present,
-			absent: counts.absent,
-			late: counts.late,
-			justified: counts.justified,
-			absencePercent: pct,
-			status: absenceToReportStatus(pct),
-			alerts,
+			present: totals.present,
+			absent: totals.absent,
+			late: totals.late,
+			justified: totals.justified,
+			daysGiven: totals.daysGiven,
+			absenceBreakdown: totals.absenceBreakdown,
+			absencePercent: absencePercentOver(totals.absent, totals.daysGiven),
+			status: absenceCountToReportStatus(cumulative.absent),
+			alerts: getStudentAlerts(state, student.id).map((alert) => ({
+				status: alert.alertType,
+			})),
 		};
 	});
+	const withClasses = reportStudents.filter(
+		(student) => typeof student.absencePercent === 'number',
+	);
 	const summary = {
-		averageAttendance: reportStudents.length
+		averageAttendance: withClasses.length
 			? Number(
 					(
-						reportStudents.reduce((sum, student) => {
-							const absence =
-								typeof student.absencePercent === 'number' &&
-								!Number.isNaN(student.absencePercent)
-									? student.absencePercent
-									: 0;
-							return sum + (100 - absence);
-						}, 0) / reportStudents.length
+						withClasses.reduce(
+							(sum, student) => sum + (100 - (student.absencePercent ?? 0)),
+							0,
+						) / withClasses.length
 					).toFixed(1),
 				)
-			: 0,
+			: null,
 		studentsAtRisk: reportStudents.filter(
 			(student) => student.status === 'at-risk',
 		).length,
@@ -983,17 +1327,30 @@ export function getCourseSummary(
 	state: DemoState,
 	courseId: string,
 ): CourseSummaryEntry[] {
-	const periods = getAvailableReportPeriods(state, courseId);
-	return periods
+	return getAvailableReportPeriods(state, courseId)
 		.map((period) => {
 			const report = getMonthlyReport(state, courseId, period.month, period.year);
 			return {
 				month: period.month,
 				year: period.year,
-				averageAttendance: report?.summary.averageAttendance ?? 0,
+				averageAttendance: report?.summary.averageAttendance ?? null,
 			};
 		})
-		.filter((entry) => entry.averageAttendance > 0);
+		.filter((entry) => entry.averageAttendance !== null);
+}
+
+/** Course summary in the shape of the product's `/reports/course/:id/summary`. */
+export function getCourseSummaryResponse(
+	state: DemoState,
+	courseId: string,
+): CourseSummary | null {
+	const course = getCourseById(state, courseId);
+	if (!course) return null;
+	return {
+		courseId,
+		academicYearId: course.academicYearId ?? '',
+		months: getCourseSummary(state, courseId),
+	};
 }
 
 export function getStudentReport(
@@ -1003,22 +1360,31 @@ export function getStudentReport(
 	const student = getStudentById(state, studentId);
 	if (!student || !student.courseId) return null;
 	const course = getCourseById(state, student.courseId);
-	const records = getStudentRecords(state, studentId);
 	const monthKeys = new Set<string>();
-	for (const record of records) {
-		monthKeys.add(record.date.slice(0, 7));
+	for (const record of state.attendance) {
+		if (record.studentId === studentId) monthKeys.add(record.date.slice(0, 7));
+	}
+	for (const record of state.workshopAttendance) {
+		if (record.studentId === studentId) monthKeys.add(record.date.slice(0, 7));
 	}
 	const months = [...monthKeys].sort().map((key) => {
 		const [year = 0, month = 0] = key.split('-').map(Number);
-		const monthRecords = records.filter((record) => record.date.startsWith(key));
-		const counts = countByStatus(monthRecords);
-		const pct = absencePercent(counts.absent, counts.late, monthRecords.length);
+		const range = monthRange(month, year);
+		const totals = getStudentAttendanceTotals(state, studentId, range);
+		const cumulative = getStudentAttendanceTotals(state, studentId, {
+			to: range.to,
+		});
 		return {
 			month,
 			year,
-			...counts,
-			absencePercent: pct,
-			status: absenceToReportStatus(pct),
+			present: totals.present,
+			absent: totals.absent,
+			late: totals.late,
+			justified: totals.justified,
+			daysGiven: totals.daysGiven,
+			absenceBreakdown: totals.absenceBreakdown,
+			absencePercent: absencePercentOver(totals.absent, totals.daysGiven),
+			status: absenceCountToReportStatus(cumulative.absent),
 		};
 	});
 	const totals = getStudentAttendanceTotals(state, studentId);
@@ -1032,13 +1398,15 @@ export function getStudentReport(
 		academicYearId: course?.academicYearId ?? '',
 		months,
 		totals: {
-			...totals,
-			totalDays: distinctDates(records.map((record) => record.date)).length,
+			present: totals.present,
+			absent: totals.absent,
+			late: totals.late,
+			justified: totals.justified,
+			totalDays: totals.daysGiven,
+			absenceBreakdown: totals.absenceBreakdown,
 			averageAbsencePercent: getStudentAbsencePercent(state, studentId, totals),
 		},
-		status: absenceToReportStatus(
-			getStudentAbsencePercent(state, studentId, totals),
-		),
+		status: absenceCountToReportStatus(totals.absent),
 		alerts: getStudentAlerts(state, studentId).map((alert) => ({
 			status: alert.alertType,
 		})),

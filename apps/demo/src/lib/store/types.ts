@@ -6,12 +6,16 @@
  * @repo/common so the real feature components from @repo/ui can be fed with the
  * exact same shapes they receive from the API-backed hooks.
  *
- * Business rules seeded (source: docs/demo/demo-data-seeds-plan.md §2.3):
- * - Absence threshold: 15%
- * - Equivalency: 3 tardanzas (lateness) = 1 inasistencia (absence)
- * - Warning band starts at 10% (two thirds of the 15% threshold)
+ * Business rules mirrored from the product (PBA Res. 1650/2024, Anexo 4):
+ * - Absences are weighted: absent/justified = 1, late = 0.25, late beyond
+ *   tolerance = 0.5; with a workshop (contraturno) shift each shift weighs 1/2
+ *   and a school day never weighs more than 1.
+ * - Alerts are raised when the weighted count reaches 10 (warning), 20
+ *   (critical) or the institutional cap of 28 (exceeded).
  * - Primaria registers attendance daily per course (subjectId omitted)
- * - Secundaria registers attendance per subject (subjectId set)
+ * - Secundaria registers daily attendance (preceptor) and per subject (teacher)
+ * - Technical courses split into one or two workshop commissions; the 7th year
+ *   is workshop-only (workshop attendance is its only attendance).
  */
 
 import {
@@ -49,6 +53,7 @@ import {
 	type IStudentResponse,
 	type ISubjectResponse,
 	type IUserWithMembershipResponse,
+	type IWorkshopCommissionResponse,
 	LEVEL,
 	type LevelType,
 	type MonthlyReport,
@@ -66,6 +71,7 @@ import {
 	type SubjectAttendanceMetrics,
 	type SubjectAttendanceResponse,
 	type SubjectHistoryResponse,
+	type SubjectKindType,
 	type SuperAdminAnalytics,
 	type Tenant,
 	type UpdateAnnouncementPayload,
@@ -144,10 +150,15 @@ export type {
 // ---------------------------------------------------------------------------
 
 /** localStorage key for the canonical demo state. */
-export const DEMO_STORAGE_KEY = 'virttend-demo-state:v1';
+export const DEMO_STORAGE_KEY = 'virttend-demo-state:v2';
+
+/** Keys of older schemas: their state is discarded (and cleaned up) on load. */
+export const LEGACY_STORAGE_KEYS: readonly string[] = [
+	'virttend-demo-state:v1',
+];
 
 /** Schema version of the persisted DemoState (bump to invalidate old states). */
-export const STORAGE_SCHEMA_VERSION = 1;
+export const STORAGE_SCHEMA_VERSION = 2;
 
 /** Fixed "today" of the demo (demos MUST be deterministic, never Date.now()). */
 export const DEMO_TODAY = '2026-06-19';
@@ -155,21 +166,18 @@ export const DEMO_TODAY = '2026-06-19';
 /** Default credentials shown on the landing page (informational). */
 export const DEMO_DEFAULT_PASSWORD = 'Demo1234!';
 
-/** Absence warning band: pct >= 10 is at risk (two thirds of the threshold). */
-export const DEMO_ABSENCE_WARNING_PERCENT = 10;
-
-/** Absence critical band: pct >= 15 exceeds the seeded threshold. */
-export const DEMO_ABSENCE_CRITICAL_PERCENT = 15;
-
-/** 3 tardanzas = 1 inasistencia (seeds plan equivalence). */
-export const DEMO_LATE_TO_ABSENCE = 3;
+/** Weighted absence counts at which an alert is raised (Res. 1650/2024). */
+export const DEMO_WARNING_ABSENCES = 10;
+export const DEMO_CRITICAL_ABSENCES = 20;
+/** Institutional absence cap per school year (the "exceeded" threshold). */
+export const DEMO_ABSENCE_CAP = 28;
 
 /** Academic year 2026 window. */
 export const DEMO_ACADEMIC_START = '2026-03-02';
 export const DEMO_ACADEMIC_END = '2026-12-18';
 
-/** Number of seeded business days of attendance. */
-export const DEMO_ATTENDANCE_DAYS = 30;
+/** Number of seeded business days of attendance (about three school months). */
+export const DEMO_ATTENDANCE_DAYS = 60;
 
 /**
  * Deterministic "today" as a Date (new instance per call so multiple seed
@@ -196,6 +204,27 @@ export type DemoUser = IUserWithMembershipResponse;
  */
 export interface DemoStudent extends IStudentDetailResponse {
 	birthDate: string;
+	/** Workshop commission the student attends (technical courses only). */
+	workshopCommissionId?: string;
+}
+
+/** A workshop commission of a course (1 or 2 per course, technical schools). */
+export interface DemoWorkshopCommission {
+	id: string;
+	courseId: string;
+	number: 1 | 2;
+	preceptorId: string | null;
+}
+
+/** One workshop attendance record (per commission student and date). */
+export interface DemoWorkshopRecord {
+	id: string;
+	commissionId: string;
+	courseId: string;
+	studentId: string;
+	studentName: string;
+	status: AttendanceStatus;
+	date: string;
 }
 
 /**
@@ -232,13 +261,16 @@ export interface DemoCurrentUser {
 	tenantName?: string;
 }
 
-/** Per-student attendance counts over a set of records. */
+/** Per-student attendance totals over a set of records (weighted absences). */
 export interface StudentAttendanceTotals {
 	present: number;
+	/** Weighted absence total (0.25 steps). */
 	absent: number;
 	late: number;
 	justified: number;
-	totalSlots: number;
+	/** Distinct days with a daily or workshop record (classes given). */
+	daysGiven: number;
+	absenceBreakdown: { daily: number; workshop: number };
 }
 
 /** Canonical in-memory demo state, persisted under DEMO_STORAGE_KEY. */
@@ -252,6 +284,10 @@ export interface DemoState {
 	schedules: IScheduleSlotResponse[];
 	students: DemoStudent[];
 	attendance: DemoAttendanceRecord[];
+	/** Workshop commissions (technical courses). */
+	workshopCommissions: DemoWorkshopCommission[];
+	/** Workshop attendance, taken per commission. */
+	workshopAttendance: DemoWorkshopRecord[];
 	alerts: Alert[];
 	announcements: Announcement[];
 	/** userId -> ordered list of announcement ids already read. */
@@ -343,6 +379,9 @@ export interface CreateSubjectInput {
 	area: string;
 	weeklyHours: number;
 	teacherId?: string;
+	/** Teacher without a user account; ignored when teacherId is set. */
+	teacherName?: string;
+	kind?: SubjectKindType;
 }
 
 export interface UpdateSubjectInput {
@@ -351,11 +390,15 @@ export interface UpdateSubjectInput {
 	area?: string;
 	weeklyHours?: number;
 	teacherId?: string;
+	teacherName?: string;
+	kind?: SubjectKindType;
 }
 
 export interface CreateAnnouncementInput extends CreateAnnouncementPayload {
 	authorName: string;
 }
+
+export type { IWorkshopCommissionResponse };
 
 export interface AttendanceEntry {
 	studentId: string;

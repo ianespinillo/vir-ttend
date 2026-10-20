@@ -7,14 +7,16 @@
  * two value-equal states, which is what the persistence tests rely on.
  *
  * Source of truth: docs/demo/demo-data-seeds-plan.md §2 (users, courses,
- * schedule, students + attendance profiles) and §3 (alerts, announcements).
- * Absence math (bands, late equivalence) is imported from selectors.ts so the
- * seeded alerts ALWAYS match what the selectors compute at render time.
+ * schedule, students + attendance profiles) and §3 (alerts, announcements),
+ * extended with the workshop commissions / non-working day / weighted absence
+ * features (see docs/demo/demo-guide.md). Alerts are produced by replaying the
+ * attendance history through the same rules the store applies on every save
+ * (alerts.ts + weighted-absence.ts), so seeded alerts ALWAYS match what the
+ * selectors compute at render time.
  */
 
 import {
 	ATTENDANCE_STATUS,
-	type Alert,
 	type Announcement,
 	type AttendanceRecordJustification,
 	DAYOFWEEK,
@@ -25,12 +27,14 @@ import {
 	ROLES,
 	SHIFT,
 	STUDENTSTATUS,
+	SUBJECT_KIND,
 	type Tenant,
+	isWorkshopOnlyCourse,
 } from '@repo/common';
+import { replayAlerts } from './alerts';
 import {
-	absencePercent,
-	absenceToAlertType,
-	effectiveAbsenceCount,
+	DEMO_HOLIDAYS,
+	DEMO_INSTITUTIONAL_DAY,
 	generateLastBusinessDays,
 } from './selectors';
 import {
@@ -43,6 +47,8 @@ import {
 	type DemoState,
 	type DemoStudent,
 	type DemoUser,
+	type DemoWorkshopCommission,
+	type DemoWorkshopRecord,
 	demoTodayDate,
 } from './types';
 
@@ -82,10 +88,19 @@ export interface DemoIdsCatalog {
 		| 'laura-martinez'
 		| 'javier-perez'
 		| 'elena-fernandez'
+		| 'marcelo-torres'
 	>;
 	academicYear: Catalog<'ay-2026'>;
-	course: Catalog<'crs-1a' | 'crs-3a'>;
-	subject: Catalog<'sub-mat' | 'sub-hist' | 'sub-leng'>;
+	course: Catalog<'crs-1a' | 'crs-3a' | 'crs-7a'>;
+	subject: Catalog<
+		| 'sub-mat'
+		| 'sub-hist'
+		| 'sub-leng'
+		| 'sub-taller'
+		| 'sub-electro'
+		| 'sub-autom'
+	>;
+	commission: Catalog<'c-3a-1' | 'c-3a-2' | 'c-7a-1' | 'c-7a-2'>;
 	schedule: Catalog<
 		| 'sch-mat-mon'
 		| 'sch-mat-wed'
@@ -93,6 +108,15 @@ export interface DemoIdsCatalog {
 		| 'sch-hist-thu'
 		| 'sch-leng-mon'
 		| 'sch-leng-fri'
+		| 'sch-taller-tue'
+		| 'sch-taller-thu'
+		| 'sch-taller-mon'
+		| 'sch-taller-wed'
+		| 'sch-electro-mon'
+		| 'sch-electro-wed'
+		| 'sch-electro-tue'
+		| 'sch-electro-thu'
+		| 'sch-autom-fri'
 	>;
 	student: Catalog<
 		| 'martin-benitez'
@@ -119,8 +143,18 @@ export interface DemoIdsCatalog {
 		| 'pilar-aguirre'
 		| 'nicolas-duarte'
 		| 'renata-silva'
+		| 'agustin-barrios'
+		| 'bianca-caruso'
+		| 'cristian-dominguez'
+		| 'daniela-escobar'
+		| 'facundo-funes'
+		| 'gisela-godoy'
+		| 'ignacio-ibarra'
+		| 'jazmin-luna'
+		| 'kevin-maidana'
+		| 'lautaro-navarro'
 	>;
-	announcement: Catalog<'annc-1' | 'annc-2' | 'annc-3' | 'annc-4'>;
+	announcement: Catalog<'annc-1' | 'annc-2' | 'annc-3' | 'annc-4' | 'annc-5'>;
 }
 
 type StudentSlug = keyof DemoIdsCatalog['student'];
@@ -139,6 +173,7 @@ export const demoIds: DemoIdsCatalog = {
 		'laura-martinez': demoUuid('user', 'laura-martinez'),
 		'javier-perez': demoUuid('user', 'javier-perez'),
 		'elena-fernandez': demoUuid('user', 'elena-fernandez'),
+		'marcelo-torres': demoUuid('user', 'marcelo-torres'),
 	},
 	academicYear: {
 		'ay-2026': demoUuid('academic-year', '2026'),
@@ -146,11 +181,21 @@ export const demoIds: DemoIdsCatalog = {
 	course: {
 		'crs-1a': demoUuid('course', 'crs-1a'),
 		'crs-3a': demoUuid('course', 'crs-3a'),
+		'crs-7a': demoUuid('course', 'crs-7a'),
 	},
 	subject: {
 		'sub-mat': demoUuid('subject', 'sub-mat'),
 		'sub-hist': demoUuid('subject', 'sub-hist'),
 		'sub-leng': demoUuid('subject', 'sub-leng'),
+		'sub-taller': demoUuid('subject', 'sub-taller'),
+		'sub-electro': demoUuid('subject', 'sub-electro'),
+		'sub-autom': demoUuid('subject', 'sub-autom'),
+	},
+	commission: {
+		'c-3a-1': demoUuid('commission', 'c-3a-1'),
+		'c-3a-2': demoUuid('commission', 'c-3a-2'),
+		'c-7a-1': demoUuid('commission', 'c-7a-1'),
+		'c-7a-2': demoUuid('commission', 'c-7a-2'),
 	},
 	schedule: {
 		'sch-mat-mon': demoUuid('schedule', 'sch-mat-mon'),
@@ -159,6 +204,15 @@ export const demoIds: DemoIdsCatalog = {
 		'sch-hist-thu': demoUuid('schedule', 'sch-hist-thu'),
 		'sch-leng-mon': demoUuid('schedule', 'sch-leng-mon'),
 		'sch-leng-fri': demoUuid('schedule', 'sch-leng-fri'),
+		'sch-taller-tue': demoUuid('schedule', 'sch-taller-tue'),
+		'sch-taller-thu': demoUuid('schedule', 'sch-taller-thu'),
+		'sch-taller-mon': demoUuid('schedule', 'sch-taller-mon'),
+		'sch-taller-wed': demoUuid('schedule', 'sch-taller-wed'),
+		'sch-electro-mon': demoUuid('schedule', 'sch-electro-mon'),
+		'sch-electro-wed': demoUuid('schedule', 'sch-electro-wed'),
+		'sch-electro-tue': demoUuid('schedule', 'sch-electro-tue'),
+		'sch-electro-thu': demoUuid('schedule', 'sch-electro-thu'),
+		'sch-autom-fri': demoUuid('schedule', 'sch-autom-fri'),
 	},
 	student: {
 		'martin-benitez': demoUuid('student', 'martin-benitez'),
@@ -185,12 +239,23 @@ export const demoIds: DemoIdsCatalog = {
 		'pilar-aguirre': demoUuid('student', 'pilar-aguirre'),
 		'nicolas-duarte': demoUuid('student', 'nicolas-duarte'),
 		'renata-silva': demoUuid('student', 'renata-silva'),
+		'agustin-barrios': demoUuid('student', 'agustin-barrios'),
+		'bianca-caruso': demoUuid('student', 'bianca-caruso'),
+		'cristian-dominguez': demoUuid('student', 'cristian-dominguez'),
+		'daniela-escobar': demoUuid('student', 'daniela-escobar'),
+		'facundo-funes': demoUuid('student', 'facundo-funes'),
+		'gisela-godoy': demoUuid('student', 'gisela-godoy'),
+		'ignacio-ibarra': demoUuid('student', 'ignacio-ibarra'),
+		'jazmin-luna': demoUuid('student', 'jazmin-luna'),
+		'kevin-maidana': demoUuid('student', 'kevin-maidana'),
+		'lautaro-navarro': demoUuid('student', 'lautaro-navarro'),
 	},
 	announcement: {
 		'annc-1': demoUuid('announcement', 'annc-1'),
 		'annc-2': demoUuid('announcement', 'annc-2'),
 		'annc-3': demoUuid('announcement', 'annc-3'),
 		'annc-4': demoUuid('announcement', 'annc-4'),
+		'annc-5': demoUuid('announcement', 'annc-5'),
 	},
 };
 
@@ -438,15 +503,121 @@ const PRIMARY_STUDENTS: StudentSeed[] = [
 	},
 ];
 
+/** 7º Año A (technical, workshop-only): 10 students split 5/5 into two commissions. */
+const WORKSHOP_STUDENTS: StudentSeed[] = [
+	{
+		slug: 'agustin-barrios',
+		firstName: 'Agustín',
+		lastName: 'Barrios',
+		documentNumber: '38123401',
+		birthDate: '2008-02-03',
+		tutorName: 'Mónica Barrios',
+		tutorPhone: '11-4567-8901',
+		tutorEmail: 'monica.barrios@gmail.com',
+	},
+	{
+		slug: 'bianca-caruso',
+		firstName: 'Bianca',
+		lastName: 'Caruso',
+		documentNumber: '38123402',
+		birthDate: '2008-05-18',
+		tutorName: 'Alberto Caruso',
+		tutorPhone: '11-4567-8902',
+	},
+	{
+		slug: 'cristian-dominguez',
+		firstName: 'Cristian',
+		lastName: 'Domínguez',
+		documentNumber: '38123403',
+		birthDate: '2008-08-27',
+		tutorName: 'Elsa Domínguez',
+		tutorPhone: '11-4567-8903',
+	},
+	{
+		slug: 'daniela-escobar',
+		firstName: 'Daniela',
+		lastName: 'Escobar',
+		documentNumber: '38123404',
+		birthDate: '2008-01-12',
+		tutorName: 'Rubén Escobar',
+		tutorPhone: '11-4567-8904',
+		tutorEmail: 'ruben.escobar@gmail.com',
+	},
+	{
+		slug: 'facundo-funes',
+		firstName: 'Facundo',
+		lastName: 'Funes',
+		documentNumber: '38123405',
+		birthDate: '2008-11-30',
+		tutorName: 'Nora Funes',
+		tutorPhone: '11-4567-8905',
+	},
+	{
+		slug: 'gisela-godoy',
+		firstName: 'Gisela',
+		lastName: 'Godoy',
+		documentNumber: '38123406',
+		birthDate: '2008-04-09',
+		tutorName: 'Claudio Godoy',
+		tutorPhone: '11-4567-8906',
+	},
+	{
+		slug: 'ignacio-ibarra',
+		firstName: 'Ignacio',
+		lastName: 'Ibarra',
+		documentNumber: '38123407',
+		birthDate: '2008-07-21',
+		tutorName: 'Lidia Ibarra',
+		tutorPhone: '11-4567-8907',
+	},
+	{
+		slug: 'jazmin-luna',
+		firstName: 'Jazmín',
+		lastName: 'Luna',
+		documentNumber: '38123408',
+		birthDate: '2008-09-05',
+		tutorName: 'Omar Luna',
+		tutorPhone: '11-4567-8908',
+	},
+	{
+		slug: 'kevin-maidana',
+		firstName: 'Kevin',
+		lastName: 'Maidana',
+		documentNumber: '38123409',
+		birthDate: '2008-03-16',
+		tutorName: 'Patricia Maidana',
+		tutorPhone: '11-4567-8909',
+	},
+	{
+		slug: 'lautaro-navarro',
+		firstName: 'Lautaro',
+		lastName: 'Navarro',
+		documentNumber: '38123410',
+		birthDate: '2008-12-24',
+		tutorName: 'Sergio Navarro',
+		tutorPhone: '11-4567-8910',
+	},
+];
+
 type AttendanceStatus =
 	(typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANCE_STATUS];
 
 interface StatusPlan {
-	subject: 'daily' | keyof (typeof demoIds)['subject'];
+	subject: 'daily' | 'workshop' | keyof (typeof demoIds)['subject'];
 	student: string;
 	indexes: number[];
 	status: AttendanceStatus;
 	reasons?: string[];
+	/**
+	 * Daily plans of a student with workshop: indexes count only the days the
+	 * student has no workshop, so a plain absence weighs the full day.
+	 */
+	onNonWorkshopDays?: boolean;
+}
+
+/** `count` indexes starting at `start`, every `step`. */
+function range(start: number, step: number, count: number): number[] {
+	return Array.from({ length: count }, (_, i) => start + i * step);
 }
 
 const SECONDARY_OVERRIDES: StatusPlan[] = [
@@ -518,9 +689,22 @@ const SECONDARY_OVERRIDES: StatusPlan[] = [
 		indexes: [4],
 		status: 'absent',
 	},
+	{
+		subject: 'sub-hist',
+		student: 'martina-acuna',
+		indexes: [4],
+		status: 'late_beyond_tolerance',
+	},
 ];
 
-const PRIMARY_OVERRIDES: StatusPlan[] = [
+/**
+ * Daily attendance (preceptor). Chosen so the weighted counts cross the alert
+ * thresholds: Sofía (10, warning), Joaquín (20, critical), Santiago (10,
+ * warning, seen), Emma (28, exceeded after warning and critical) and Thiago
+ * (10 made only of lates: 16 x 0.25 + 12 x 0.5).
+ */
+const DAILY_OVERRIDES: StatusPlan[] = [
+	// Primaria 1º Grado A
 	{
 		subject: 'daily',
 		student: 'valentina-fernandez',
@@ -530,11 +714,184 @@ const PRIMARY_OVERRIDES: StatusPlan[] = [
 	{
 		subject: 'daily',
 		student: 'santiago-paz',
-		indexes: [0, 7, 14, 21],
+		indexes: range(0, 6, 10),
 		status: 'absent',
 	},
-	{ subject: 'daily', student: 'delfina-ortiz', indexes: [5], status: 'late' },
+	{
+		subject: 'daily',
+		student: 'emma-villalba',
+		indexes: range(0, 2, 28),
+		status: 'absent',
+	},
+	{
+		subject: 'daily',
+		student: 'delfina-ortiz',
+		indexes: [5, 25, 45],
+		status: 'late',
+	},
+	{
+		subject: 'daily',
+		student: 'thiago-medina',
+		indexes: range(1, 3, 16),
+		status: 'late',
+	},
+	{
+		subject: 'daily',
+		student: 'thiago-medina',
+		indexes: range(2, 3, 12),
+		status: 'late_beyond_tolerance',
+	},
+	{
+		subject: 'daily',
+		student: 'bruno-alvarez',
+		indexes: range(3, 10, 5),
+		status: 'justified',
+		reasons: ['Certificado médico', 'Motivos familiares'],
+	},
+	{
+		subject: 'daily',
+		student: 'mateo-herrera',
+		indexes: [9, 39],
+		status: 'late_beyond_tolerance',
+	},
+	// Secundaria 3º Año A (technical: workshop in the opposite shift)
+	{
+		subject: 'daily',
+		student: 'sofia-rossi',
+		indexes: [2, 5, 9, 12, 16, 19, 23, 27, 31, 34],
+		status: 'absent',
+		onNonWorkshopDays: true,
+	},
+	{
+		subject: 'daily',
+		student: 'joaquin-diaz',
+		indexes: [
+			0, 1, 3, 4, 6, 7, 9, 11, 12, 14, 16, 17, 19, 21, 22, 24, 26, 28, 30, 33,
+		],
+		status: 'absent',
+		onNonWorkshopDays: true,
+	},
+	{
+		subject: 'daily',
+		student: 'lucia-morales',
+		indexes: [3, 8, 13, 18, 23, 28, 33, 35],
+		status: 'late',
+		onNonWorkshopDays: true,
+	},
+	{
+		subject: 'daily',
+		student: 'lucia-morales',
+		indexes: [6, 16, 26, 31],
+		status: 'late_beyond_tolerance',
+		onNonWorkshopDays: true,
+	},
+	{
+		subject: 'daily',
+		student: 'mateo-gimenez',
+		indexes: [6, 14, 22, 30],
+		status: 'justified',
+		reasons: ['Certificado médico', 'Motivos familiares'],
+		onNonWorkshopDays: true,
+	},
+	{
+		subject: 'daily',
+		student: 'martina-acuna',
+		indexes: [0, 30],
+		status: 'late_beyond_tolerance',
+		onNonWorkshopDays: true,
+	},
 ];
+
+/**
+ * Workshop attendance plans; indexes count the student's own workshop
+ * sessions. Camila misses the workshop AND the daily shift the same days (a
+ * full day, 1/2 + 1/2); Benjamín only misses the daily shift on workshop days
+ * (counts 1/2).
+ */
+const WORKSHOP_OVERRIDES: StatusPlan[] = [
+	{
+		subject: 'workshop',
+		student: 'camila-sosa',
+		indexes: [3, 4, 9],
+		status: 'absent',
+	},
+	{
+		subject: 'workshop',
+		student: 'tomas-pereyra',
+		indexes: [2, 10, 18],
+		status: 'late',
+	},
+	{
+		subject: 'workshop',
+		student: 'catalina-rios',
+		indexes: [5],
+		status: 'absent',
+	},
+	{
+		subject: 'workshop',
+		student: 'franco-arce',
+		indexes: [6, 14],
+		status: 'late_beyond_tolerance',
+	},
+	// 7º Año A (workshop-only)
+	{
+		subject: 'workshop',
+		student: 'daniela-escobar',
+		indexes: range(8, 1, 21),
+		status: 'absent',
+	},
+	{
+		subject: 'workshop',
+		student: 'kevin-maidana',
+		indexes: range(0, 3, 11),
+		status: 'absent',
+	},
+	{
+		subject: 'workshop',
+		student: 'ignacio-ibarra',
+		indexes: range(2, 6, 6),
+		status: 'late',
+	},
+	{
+		subject: 'workshop',
+		student: 'ignacio-ibarra',
+		indexes: range(5, 9, 4),
+		status: 'late_beyond_tolerance',
+	},
+	{
+		subject: 'workshop',
+		student: 'jazmin-luna',
+		indexes: [4, 15, 26],
+		status: 'justified',
+		reasons: ['Certificado médico'],
+	},
+	{
+		subject: 'workshop',
+		student: 'gisela-godoy',
+		indexes: [7, 19, 25, 33],
+		status: 'absent',
+	},
+	{
+		subject: 'workshop',
+		student: 'agustin-barrios',
+		indexes: [12],
+		status: 'late',
+	},
+];
+
+/** Students that are absent from the daily shift on their own workshop sessions. */
+const DAILY_ABSENT_ON_WORKSHOP_SESSIONS: Record<string, number[]> = {
+	'camila-sosa': [3, 4, 9],
+	'benjamin-vega': [2, 6],
+};
+
+/** Alerts the demo leaves already seen (the rest show as unread). */
+const SEEN_ALERTS = new Set([
+	'santiago-paz:warning',
+	'emma-villalba:warning',
+	'emma-villalba:critical',
+	'joaquin-diaz:warning',
+]);
 
 // ---------------------------------------------------------------------------
 // Seed state factory
@@ -549,6 +906,7 @@ export function createSeedState(): DemoState {
 	const studentIds = demoIds.student;
 	const academicYearIds = demoIds.academicYear;
 	const announcementIds = demoIds.announcement;
+	const commissionIds = demoIds.commission;
 
 	const tenants: Tenant[] = [
 		{
@@ -643,7 +1001,25 @@ export function createSeedState(): DemoState {
 			mustChangePassword: false,
 			createdAt: '2025-03-04T09:00:00.000Z',
 		},
+		{
+			id: userIds['marcelo-torres'],
+			email: 'preceptor.taller@virttend.com',
+			firstName: 'Marcelo',
+			lastName: 'Torres',
+			role: ROLES.PRECEPTOR,
+			tenantId: tenantIds['san-martin'],
+			isActive: true,
+			mustChangePassword: false,
+			createdAt: '2025-03-10T09:00:00.000Z',
+		},
 	];
+
+	// Non-working days: national holidays of the school year plus the
+	// institutional day declared in the demo (it has its own announcement).
+	const nonWorkingDays = [...new Set([...DEMO_HOLIDAYS, DEMO_INSTITUTIONAL_DAY])]
+		.filter((day) => day >= DEMO_ACADEMIC_START && day <= DEMO_ACADEMIC_END)
+		.sort()
+		.map((day) => new Date(`${day}T00:00:00.000Z`));
 
 	const academicYears: DemoState['academicYears'] = [
 		{
@@ -654,7 +1030,7 @@ export function createSeedState(): DemoState {
 			absenceThresholdPercent: 15,
 			lateCountAbscenseAfterMinutes: 3,
 			isActive: true,
-			nonWorkingDays: [],
+			nonWorkingDays,
 		},
 	];
 
@@ -681,6 +1057,17 @@ export function createSeedState(): DemoState {
 			preceptorName: 'Laura Martínez',
 			fullName: '3º Año A',
 		},
+		{
+			id: courseIds['crs-7a'],
+			academicYearId: academicYearIds['ay-2026'],
+			level: LEVEL.SECONDARY,
+			yearNumber: 7,
+			division: 'A',
+			shift: SHIFT.MORNING,
+			preceptorId: userIds['laura-martinez'],
+			preceptorName: 'Laura Martínez',
+			fullName: '7º Año A',
+		},
 	];
 
 	const subjects: ISubjectResponse[] = [
@@ -690,6 +1077,7 @@ export function createSeedState(): DemoState {
 			name: 'Matemática',
 			area: 'Matemática',
 			weeklyHours: 4,
+			kind: SUBJECT_KIND.THEORY,
 			teacherId: userIds['javier-perez'],
 			teacherName: 'Javier Pérez',
 		},
@@ -699,6 +1087,7 @@ export function createSeedState(): DemoState {
 			name: 'Historia',
 			area: 'Ciencias Sociales',
 			weeklyHours: 3,
+			kind: SUBJECT_KIND.THEORY,
 			teacherId: userIds['elena-fernandez'],
 			teacherName: 'Elena Fernández',
 		},
@@ -708,6 +1097,35 @@ export function createSeedState(): DemoState {
 			name: 'Lengua y Literatura',
 			area: 'Lengua y Literatura',
 			weeklyHours: 4,
+			kind: SUBJECT_KIND.THEORY,
+		},
+		// Workshop subjects: teachers without a user account are allowed.
+		{
+			id: subjectIds['sub-taller'],
+			courseId: courseIds['crs-3a'],
+			name: 'Taller de Informática',
+			area: 'Taller',
+			weeklyHours: 4,
+			kind: SUBJECT_KIND.WORKSHOP,
+			teacherName: 'Daniel Ortega',
+		},
+		{
+			id: subjectIds['sub-electro'],
+			courseId: courseIds['crs-7a'],
+			name: 'Taller de Electrónica',
+			area: 'Taller',
+			weeklyHours: 6,
+			kind: SUBJECT_KIND.WORKSHOP,
+			teacherName: 'Roberto Sáenz',
+		},
+		{
+			id: subjectIds['sub-autom'],
+			courseId: courseIds['crs-7a'],
+			name: 'Taller de Automatización',
+			area: 'Taller',
+			weeklyHours: 4,
+			kind: SUBJECT_KIND.WORKSHOP,
+			teacherName: 'Marta Quiroga',
 		},
 	];
 
@@ -754,7 +1172,83 @@ export function createSeedState(): DemoState {
 			startTime: '08:00',
 			endTime: '09:20',
 		},
+		// 3º Año A workshop (contraturno): commission 1 Tue/Thu, commission 2 Mon/Wed.
+		{
+			id: scheduleIds['sch-taller-tue'],
+			subjectId: subjectIds['sub-taller'],
+			dayOfWeek: DAYOFWEEK.TUESDAY,
+			startTime: '14:00',
+			endTime: '16:00',
+			commissionNumber: 1,
+		},
+		{
+			id: scheduleIds['sch-taller-thu'],
+			subjectId: subjectIds['sub-taller'],
+			dayOfWeek: DAYOFWEEK.THURSDAY,
+			startTime: '14:00',
+			endTime: '16:00',
+			commissionNumber: 1,
+		},
+		{
+			id: scheduleIds['sch-taller-mon'],
+			subjectId: subjectIds['sub-taller'],
+			dayOfWeek: DAYOFWEEK.MONDAY,
+			startTime: '14:00',
+			endTime: '16:00',
+			commissionNumber: 2,
+		},
+		{
+			id: scheduleIds['sch-taller-wed'],
+			subjectId: subjectIds['sub-taller'],
+			dayOfWeek: DAYOFWEEK.WEDNESDAY,
+			startTime: '14:00',
+			endTime: '16:00',
+			commissionNumber: 2,
+		},
+		// 7º Año A (workshop-only): electronics per commission, automation shared.
+		{
+			id: scheduleIds['sch-electro-mon'],
+			subjectId: subjectIds['sub-electro'],
+			dayOfWeek: DAYOFWEEK.MONDAY,
+			startTime: '08:00',
+			endTime: '11:00',
+			commissionNumber: 1,
+		},
+		{
+			id: scheduleIds['sch-electro-wed'],
+			subjectId: subjectIds['sub-electro'],
+			dayOfWeek: DAYOFWEEK.WEDNESDAY,
+			startTime: '08:00',
+			endTime: '11:00',
+			commissionNumber: 1,
+		},
+		{
+			id: scheduleIds['sch-electro-tue'],
+			subjectId: subjectIds['sub-electro'],
+			dayOfWeek: DAYOFWEEK.TUESDAY,
+			startTime: '08:00',
+			endTime: '11:00',
+			commissionNumber: 2,
+		},
+		{
+			id: scheduleIds['sch-electro-thu'],
+			subjectId: subjectIds['sub-electro'],
+			dayOfWeek: DAYOFWEEK.THURSDAY,
+			startTime: '08:00',
+			endTime: '11:00',
+			commissionNumber: 2,
+		},
+		{
+			id: scheduleIds['sch-autom-fri'],
+			subjectId: subjectIds['sub-autom'],
+			dayOfWeek: DAYOFWEEK.FRIDAY,
+			startTime: '08:00',
+			endTime: '12:00',
+			commissionNumber: null,
+		},
 	];
+
+	// --- Students and workshop commissions ------------------------------------
 
 	const students: DemoStudent[] = [
 		...SECONDARY_STUDENTS.map((seed) =>
@@ -763,7 +1257,77 @@ export function createSeedState(): DemoState {
 		...PRIMARY_STUDENTS.map((seed) =>
 			toStudent(seed, courseIds['crs-1a'], '1º Grado A'),
 		),
+		...WORKSHOP_STUDENTS.map((seed) =>
+			toStudent(seed, courseIds['crs-7a'], '7º Año A'),
+		),
 	];
+
+	const workshopCommissions: DemoWorkshopCommission[] = [
+		{
+			id: commissionIds['c-3a-1'],
+			courseId: courseIds['crs-3a'],
+			number: 1,
+			preceptorId: userIds['laura-martinez'],
+		},
+		{
+			id: commissionIds['c-3a-2'],
+			courseId: courseIds['crs-3a'],
+			number: 2,
+			preceptorId: userIds['marcelo-torres'],
+		},
+		{
+			id: commissionIds['c-7a-1'],
+			courseId: courseIds['crs-7a'],
+			number: 1,
+			preceptorId: userIds['laura-martinez'],
+		},
+		{
+			id: commissionIds['c-7a-2'],
+			courseId: courseIds['crs-7a'],
+			number: 2,
+			preceptorId: userIds['marcelo-torres'],
+		},
+	];
+
+	// Alphabetical 50/50 split by last name (the product's default placement).
+	for (const [courseId, first, second] of [
+		[courseIds['crs-3a'], commissionIds['c-3a-1'], commissionIds['c-3a-2']],
+		[courseIds['crs-7a'], commissionIds['c-7a-1'], commissionIds['c-7a-2']],
+	] as const) {
+		const roster = students
+			.filter((student) => student.courseId === courseId)
+			.sort(
+				(a, b) =>
+					a.lastName.localeCompare(b.lastName, 'es', { sensitivity: 'base' }) ||
+					a.firstName.localeCompare(b.firstName, 'es', { sensitivity: 'base' }),
+			);
+		const cut = Math.ceil(roster.length / 2);
+		roster.forEach((student, index) => {
+			student.workshopCommissionId = index < cut ? first : second;
+		});
+	}
+
+	const commissionNumberOf = new Map(
+		students.map((student) => [
+			student.id,
+			workshopCommissions.find(
+				(commission) => commission.id === student.workshopCommissionId,
+			)?.number,
+		]),
+	);
+
+	/** Weekdays a commission of a course has workshop (slots of its workshop subjects). */
+	const workshopDays = (courseId: string, number: number): DAYOFWEEK[] =>
+		schedules
+			.filter((slot) => {
+				const subject = subjects.find((item) => item.id === slot.subjectId);
+				return (
+					subject?.courseId === courseId &&
+					subject.kind === SUBJECT_KIND.WORKSHOP &&
+					(slot.commissionNumber == null || slot.commissionNumber === number)
+				);
+			})
+			.map((slot) => slot.dayOfWeek);
 
 	// --- Attendance ---------------------------------------------------------
 
@@ -772,35 +1336,74 @@ export function createSeedState(): DemoState {
 		DEMO_ATTENDANCE_DAYS,
 	);
 	const attendance: DemoAttendanceRecord[] = [];
+	const workshopAttendance: DemoWorkshopRecord[] = [];
 
-	// Primaria: one daily record per student per day.
-	for (const date of businessDays) {
-		const dayIndex = businessDays.indexOf(date);
-		for (const seed of PRIMARY_STUDENTS) {
-			const override = getOverride(
-				PRIMARY_OVERRIDES,
-				'daily',
-				seed.slug,
-				dayIndex,
-			);
-			const status = override?.status ?? ATTENDANCE_STATUS.PRESENT;
-			pushRecord(
-				attendance,
-				studentIds[seed.slug],
-				seed,
-				date,
-				courseIds['crs-1a'],
-				undefined,
-				status,
-				override?.reasons,
-			);
+	// Daily shift: primaria and secundaria take attendance every school day;
+	// workshop-only courses (7º técnico) have none.
+	const dailyRoster = [
+		{
+			seeds: PRIMARY_STUDENTS,
+			courseId: courseIds['crs-1a'],
+			creator: 'Roberto López',
+		},
+		{
+			seeds: SECONDARY_STUDENTS,
+			courseId: courseIds['crs-3a'],
+			creator: 'Laura Martínez',
+		},
+	];
+	for (const { seeds, courseId, creator } of dailyRoster) {
+		for (const [dayIndex, date] of businessDays.entries()) {
+			for (const seed of seeds) {
+				const studentId = studentIds[seed.slug];
+				const number = commissionNumberOf.get(studentId);
+				const days = number ? workshopDays(courseId, number) : [];
+				const ownWorkshopDay = days.includes(dayOfWeek(date));
+				// Position of this day among the student's days without workshop.
+				const nonWorkshopIndex =
+					businessDays
+						.slice(0, dayIndex + 1)
+						.filter((day) => !days.includes(dayOfWeek(day))).length - 1;
+				const sessionIndex =
+					businessDays
+						.slice(0, dayIndex + 1)
+						.filter((day) => days.includes(dayOfWeek(day))).length - 1;
+				const crossAbsent =
+					ownWorkshopDay &&
+					(DAILY_ABSENT_ON_WORKSHOP_SESSIONS[seed.slug] ?? []).includes(
+						sessionIndex,
+					);
+				const override = DAILY_OVERRIDES.find(
+					(plan) =>
+						plan.student === seed.slug &&
+						plan.indexes.includes(
+							plan.onNonWorkshopDays ? nonWorkshopIndex : dayIndex,
+						) &&
+						(!plan.onNonWorkshopDays || !ownWorkshopDay),
+				);
+				const status = crossAbsent
+					? ATTENDANCE_STATUS.ABSENT
+					: (override?.status ?? ATTENDANCE_STATUS.PRESENT);
+				pushRecord(
+					attendance,
+					studentId,
+					seed,
+					date,
+					courseId,
+					undefined,
+					status,
+					override?.reasons,
+					creator,
+				);
+			}
 		}
 	}
 
-	// Secundaria: one record per student per subject session. Override plans
-	// are keyed by subject SLUG, so iterate slugs and resolve the id from the
-	// fixed catalog instead of matching by the generated uuid.
-	for (const [subjectSlug, subjectId] of Object.entries(subjectIds)) {
+	// Secundaria: one record per student per theory-subject session. Override
+	// plans are keyed by subject SLUG, so iterate slugs and resolve the id from
+	// the fixed catalog instead of matching by the generated uuid.
+	for (const subjectSlug of ['sub-mat', 'sub-hist', 'sub-leng'] as const) {
+		const subjectId = subjectIds[subjectSlug];
 		const weekdays = schedules
 			.filter((slot) => slot.subjectId === subjectId)
 			.map((slot) => slot.dayOfWeek);
@@ -825,55 +1428,66 @@ export function createSeedState(): DemoState {
 					subjectId,
 					status,
 					override?.reasons,
+					'Laura Martínez',
 				);
 			}
 		});
 	}
 
-	// --- Alerts (computed with the SAME math the selectors use) --------------
-
-	const ALERT_THRESHOLDS = { warning: 10, critical: 20, exceeded: 28 } as const;
-
-	const studentCourseById = new Map(
-		students.map((student) => [student.id, student]),
+	// Workshop: one record per commission student on each of its workshop days.
+	const workshopSeeds = new Map(
+		[...SECONDARY_STUDENTS, ...WORKSHOP_STUDENTS].map((seed) => [
+			studentIds[seed.slug],
+			seed,
+		]),
 	);
-	const alerts: Alert[] = [];
-	for (const seed of [...SECONDARY_STUDENTS, ...PRIMARY_STUDENTS]) {
-		const studentId = studentIds[seed.slug];
-		const studentRecords = attendance.filter(
-			(record) => record.studentId === studentId,
+	for (const commission of workshopCommissions) {
+		const days = workshopDays(commission.courseId, commission.number);
+		const sessions = businessDays.filter((date) =>
+			days.includes(dayOfWeek(date)),
 		);
-		const counts = { present: 0, absent: 0, late: 0, justified: 0 };
-		for (const record of studentRecords)
-			counts[record.status === 'late_beyond_tolerance' ? 'late' : record.status] +=
-				1;
-		const pct = absencePercent(counts.absent, counts.late, studentRecords.length);
-		const alertType = absenceToAlertType(pct);
-		if (!alertType) continue;
-		const threshold = ALERT_THRESHOLDS[alertType];
-		const lastFlagDate =
-			[...studentRecords]
-				.reverse()
-				.find((record) => record.status === 'absent' || record.status === 'late')
-				?.date ?? DEMO_TODAY;
-		const student = studentCourseById.get(studentId);
-		alerts.push({
-			id: demoUuid('alert', seed.slug),
-			studentId,
-			studentName: `${seed.firstName} ${seed.lastName}`,
-			courseId: student?.courseId ?? '',
-			courseName: student?.courseName ?? '',
-			alertType,
-			// Like the API, an alert is raised when the count reaches its threshold;
-			// the demo bands come from percent, so the count is lifted to it.
-			absenceCount: Math.max(
-				effectiveAbsenceCount(counts.absent, counts.late),
-				threshold,
-			),
-			threshold,
-			seenAt: seed.slug === 'santiago-paz' ? demoTodayDate() : null,
-			createdAt: new Date(`${lastFlagDate}T09:30:00.000Z`),
+		const members = students.filter(
+			(student) => student.workshopCommissionId === commission.id,
+		);
+		sessions.forEach((date, sessionIndex) => {
+			for (const student of members) {
+				const seed = workshopSeeds.get(student.id);
+				const slug = seed?.slug ?? '';
+				const override = WORKSHOP_OVERRIDES.find(
+					(plan) => plan.student === slug && plan.indexes.includes(sessionIndex),
+				);
+				workshopAttendance.push({
+					id: demoUuid('workshop-attendance', `${student.id}:${date}`),
+					commissionId: commission.id,
+					courseId: commission.courseId,
+					studentId: student.id,
+					studentName: student.fullName,
+					status: override?.status ?? ATTENDANCE_STATUS.PRESENT,
+					date,
+				});
+			}
 		});
+	}
+
+	// --- Alerts: replay the history through the product's threshold rules ----
+
+	const alerts = replayAlerts(
+		students,
+		attendance,
+		workshopAttendance,
+		(student) =>
+			isWorkshopOnlyCourse(
+				courses.find((course) => course.id === student.courseId) ?? {},
+			),
+		(studentId, alertType) => demoUuid('alert', `${studentId}:${alertType}`),
+	);
+	const slugById = new Map(
+		Object.entries(studentIds).map(([slug, id]) => [id, slug]),
+	);
+	for (const alert of alerts) {
+		if (SEEN_ALERTS.has(`${slugById.get(alert.studentId)}:${alert.alertType}`)) {
+			alert.seenAt = demoTodayDate();
+		}
 	}
 
 	// --- Announcements -------------------------------------------------------
@@ -927,10 +1541,23 @@ export function createSeedState(): DemoState {
 			authorName: 'Ana María Gómez',
 			createdAt: '2026-06-18T12:00:00.000Z',
 		},
+		// Published automatically when the institutional day was declared.
+		{
+			id: announcementIds['annc-5'],
+			title: 'Suspensión de actividades — Jornada institucional',
+			body:
+				'Se informa a toda la comunidad educativa que el día 12/06/2026 no habrá dictado de clases ni actividades escolares debido a: Jornada institucional. El día ha sido registrado como no laborable en el calendario académico institucional.',
+			targetType: 'school',
+			targetId: '',
+			status: 'published',
+			publishAt: '2026-06-09T12:00:00.000Z',
+			authorName: 'Ana María Gómez',
+			createdAt: '2026-06-09T12:00:00.000Z',
+		},
 	];
 
 	return {
-		version: 1,
+		version: 2,
 		tenants,
 		users,
 		academicYears,
@@ -939,6 +1566,8 @@ export function createSeedState(): DemoState {
 		schedules,
 		students,
 		attendance,
+		workshopCommissions,
+		workshopAttendance,
 		alerts,
 		announcements,
 		announcementReads: {},
@@ -1014,6 +1643,7 @@ function pushRecord(
 	subjectId: string | undefined,
 	status: AttendanceStatus,
 	reasons?: string[],
+	createdBy = 'Laura Martínez',
 ): void {
 	const studentName = `${student.firstName} ${student.lastName}`;
 	let justification: AttendanceRecordJustification | undefined;
@@ -1036,7 +1666,7 @@ function pushRecord(
 				`${studentId}:${date}:${subjectId ?? 'daily'}`,
 			),
 			reason,
-			createdBy: 'Laura Martínez',
+			createdBy,
 			createdAt: new Date(`${date}T12:00:00.000Z`),
 		};
 	}

@@ -7,10 +7,12 @@ Aplicación autocontenida para demostraciones comerciales con prospectos y direc
 ## Características
 
 - **UI 100% real:** Reutiliza los componentes del sistema de diseño y layouts de producción (`@repo/ui` y `@repo/common`).
-- **Store local determinista:** Memoria reactiva con persistencia en `localStorage` bajo clave versionada (`virttend-demo-state:v1`).
+- **Store local determinista:** Memoria reactiva con persistencia en `localStorage` bajo clave versionada (`virttend-demo-state:v2`). Un estado guardado con un esquema anterior (`:v1`) se descarta y se limpia solo: la demo vuelve a sembrarse.
 - **Selector de roles ("Entrar como..."):** Perfiles preconfigurados para Superadmin, Administrador, Preceptor y Docente.
 - **Role Switcher flotante:** Permite saltar entre perfiles en cualquier pantalla sin perder el contexto.
 - **Botón "Reset demo":** Restaura inmediatamente el estado determinista canónico en cualquier momento.
+- **Modo oscuro:** Selector de tema (claro / oscuro / sistema) en la barra superior, igual que producción.
+- **Tour y tutoriales guiados:** Recorrido inicial por rol y guías funcionales (asistencia diaria, alta e importación de alumnos, historial, ciclo lectivo, comunicados) desde el selector de guías.
 
 ---
 
@@ -21,7 +23,8 @@ Aplicación autocontenida para demostraciones comerciales con prospectos y direc
 | **Superadmin** | Carlos Ramos | `SUPERADMIN` | Plataforma global | Gestión de sedes/tenants y métricas globales |
 | **Admin** | Ana María Gómez | `ADMIN` | Inst. San Martín | Gestión de cursos, materias, usuarios y comunicados |
 | **Preceptor Primaria** | Roberto López | `PRECEPTOR` | Inst. San Martín | Asistencia diaria de 1º Grado A y alertas tempranas |
-| **Preceptor Secundaria** | Laura Martínez | `PRECEPTOR` | Inst. San Martín | Asistencia por materia de 3º Año A, justificaciones y reportes |
+| **Preceptor Secundaria** | Laura Martínez | `PRECEPTOR` | Inst. San Martín | Asistencia diaria de 3º Año A, comisión de taller 1 de 3º y 7º Año A, justificaciones y reportes |
+| **Preceptor de taller** | Marcelo Torres | `PRECEPTOR` | Inst. San Martín | Asistencia de taller de la comisión 2 (3A2 y 7A2) |
 | **Docente Matemática** | Javier Pérez | `TEACHER` | Inst. San Martín | Toma de asistencia en Matemática (3º Año A) |
 | **Docente Historia** | Elena Fernández | `TEACHER` | Inst. San Martín | Toma de asistencia en Historia (3º Año A) |
 
@@ -79,12 +82,37 @@ Pasos:
 - `/`: Selector de rol ("Entrar como...") con enlace al sitio público
 - `/dashboard`: Panel de control adaptativo según rol (métricas, alertas, cursos)
 - `/students`: Listado de alumnos con filtros, detalle `/students/[id]`, alta y edición
-- `/courses`: Cursos académicos, creación `/courses/create` y detalle `/courses/[id]`
+- `/courses`: Cursos académicos, creación `/courses/create` y detalle `/courses/[id]` (materias, horario por comisión, alumnos del curso, comisiones de taller e importación de alumnos)
 - `/subjects`: Materias y asignación de docentes por curso
-- `/attendance`: Asistencia diaria (`/attendance/daily`) y por materia (`/attendance/subject`) con justificaciones y copiado de fechas
+- `/attendance`: Asistencia diaria (`/attendance/daily`), por materia (`/attendance/subject`) y de taller por comisión (`/attendance/workshop`) con justificaciones, revisión de justificaciones y copiado de fechas
+- `/attendance/student/[id]`: Historial del alumno (métricas ponderadas, comparativa alumno vs. curso, asistencia por materia, alertas) con exportación simulada
+- `/settings/academic`: Ciclo lectivo y días no laborables (declarar un día publica el comunicado institucional)
 - `/alerts`: Bandeja de alertas de inasistencia con marcas de lectura
 - `/announcements`: Publicación de anuncios institucionales con segmentación por audiencia
 - `/reports`: Reporte mensual de asistencia (`/reports/monthly`) con gráficos de tendencia y exportación simulada
 - `/users`: Gestión de cuentas de usuario, asignación de roles y estados
 - `/tenants`: Gestión de instituciones educativas (restringido a Superadmin)
 - `/me`: Perfil de usuario con cambio de contraseña simulado
+
+---
+
+## Datos sembrados que conviene mostrar
+
+El «hoy» de la demo es fijo (**19/06/2026**) y las pantallas de asistencia abren en esa fecha. El historial cubre 60 días hábiles.
+
+| Qué mostrar | Dónde | Dato sembrado |
+|---|---|---|
+| Alertas a las 10 y 20 faltas y al tope (28) | `/alerts`, ficha del alumno | Sofía Rossi y Joaquín Díaz (3º A), Emma Villalba (1º Grado: advertencia, crítica y excedida), Daniela Escobar y Kevin Maidana (7º A) |
+| Faltas ponderadas (tarde 0,25; tarde fuera de tolerancia 0,5) | `/attendance/student/[id]` | Thiago Medina alcanza 10 faltas solo con tardanzas |
+| Mitad de falta por turno en contraturno | Historial de Camila Sosa y Benjamín Vega | «turno 1,5 · taller 1,5» |
+| Curso técnico de 7º año solo de taller | `/courses/[id]` de 7º Año A, `/attendance/daily` | Dos comisiones (7A1, 7A2), sin asistencia diaria |
+| Asistencia de taller por comisión | `/attendance/workshop` | Admin ve todas las comisiones; Laura Martínez ve 3A1 y 7A1; Marcelo Torres ve 3A2 y 7A2 |
+| Docentes sin cuenta y materias de taller | `/courses/[id]` > Materias | Daniel Ortega, Roberto Sáenz y Marta Quiroga |
+| Día no laborable declarado con comunicado | `/settings/academic`, `/me/announcements` | 12/06/2026 «Jornada institucional» |
+| Estados «Tarde (fuera de tolerancia)» y «Justificada» | Asistencia diaria de 1º Grado A / 3º Año A | Bruno Álvarez, Mateo Giménez, Lucía Morales |
+
+## Diferencias con producción
+
+- La importación de alumnos (curso > pestaña Estudiantes > «Importar alumnos») valida un **CSV** (plantilla descargable) con las mismas reglas que producción; con cualquier otro archivo (p. ej. `.xlsx`) muestra una planilla de ejemplo para poder completar el flujo sin preparar un archivo.
+- La exportación de reportes e historiales es simulada (aviso, sin archivo).
+- Los docentes de taller sin cuenta se muestran por nombre; no tienen perfil de ingreso.

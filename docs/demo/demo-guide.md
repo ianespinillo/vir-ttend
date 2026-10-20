@@ -1,3 +1,44 @@
+# Guía de Demo
+
+Este documento tiene dos partes:
+
+1. **Demo offline (`apps/demo`)** — guion para mostrar el producto a un prospecto, sin servidor.
+2. **Evaluación de endpoints (API)** — checklist para probar la API real contra el seed de base de datos.
+
+---
+
+## Parte 1 — Demo offline (`apps/demo`)
+
+**Cómo abrirla:** `pnpm --filter demo dev` (ver `apps/demo/README.md`). No requiere base de datos ni red. El estado vive en `localStorage` (`virttend-demo-state:v2`) y el botón **Reset demo** vuelve al estado canónico. El «hoy» de la demo es fijo: **viernes 19/06/2026**, con 60 días hábiles de asistencia. Para ver el tema oscuro, usá el selector de tema de la barra superior; para el tour y las guías, el botón de ayuda (selector de guías).
+
+### Guion sugerido por rol
+
+| Rol (entrar como…) | Recorrido |
+|---|---|
+| **Administrador** (Ana Gómez) | Panel (el 7º Año A figura «Solo taller») → **Alertas** (11 alertas: 10, 20 y 28 faltas) → **Cursos > 7º Año A**: pestañas *Horario* (franjas por comisión 7A1/7A2), *Estudiantes*, *Comisiones* (mover un alumno, regenerar reparto, asignar preceptor de taller) y *Importar alumnos* → **Ciclo lectivo**: *Ver feriados* y *Suspender clases / Feriado* (con comunicado) |
+| **Preceptor secundaria** (Laura Martínez) | **Asistencia diaria** de 3º Año A (estados Tarde, Tarde fuera de tolerancia y Justificada; *Revisar justificaciones*; *Copiar de otro día*) → 7º Año A muestra «Sin asistencia diaria» con acceso a **Asistencia de taller** → comisiones 3A1 y 7A1 → **Estudiantes > Joaquín Díaz > «Ver detalle de asistencias completa»** (historial) |
+| **Preceptor de taller** (Marcelo Torres) | **Asistencia de taller**: solo ve las comisiones 3A2 y 7A2, con la marca «Hay taller este día» |
+| **Preceptor primaria** (Roberto López) | **Asistencia diaria** de 1º Grado A → Emma Villalba (28 faltas, tres alertas) y Thiago Medina (10 faltas solo por tardanzas) |
+| **Docente** (Javier Pérez / Elena Fernández) | **Asistencia por materia**, con la copia de la clase anterior |
+| **Superadmin** (Carlos Ramos) | Instituciones y métricas de plataforma |
+
+### Reglas de asistencia que reproduce la demo
+
+- **Faltas ponderadas** (Res. 1650/2024, Anexo 4): ausente y justificada = 1, tarde = 0,25, tarde fuera de tolerancia = 0,5. Con contraturno (taller) cada turno pesa 1/2 y un día nunca pesa más de 1; los reportes muestran «turno X · taller Y».
+- **Alertas** a las **10** (advertencia), **20** (crítica) y **28** faltas (excedida, tope institucional). Se generan al guardar asistencia diaria o de taller (una por tipo) y la semilla las reproduce día a día.
+- **Reportes** sobre los días efectivamente dictados (`daysGiven`); sin clases el porcentaje es «-».
+- **Cursos de 7º año técnico**: solo asistencia de taller; sin asistencia diaria.
+- **Comisiones de taller**: uno o dos grupos por curso, reparto alfabético 50/50; las materias de taller solo listan las comisiones de sus franjas.
+- **Días no laborables**: se omiten de la asistencia sembrada y declararlos publica el comunicado a toda la institución.
+
+### Qué es simulado
+
+Importación de alumnos (CSV real; otro archivo muestra una planilla de ejemplo), exportaciones de reportes/historial (aviso sin archivo) y las contraseñas. Los docentes de taller sin cuenta solo figuran por nombre. Ver «Diferencias con producción» en `apps/demo/README.md`.
+
+---
+
+## Parte 2 — Evaluación de endpoints (API)
+
 # Guía de Demo — Evaluación de Endpoints
 
 **Proyecto:** Vir-ttend
