@@ -78,6 +78,13 @@ export default function AppLayout() {
 						}}
 					/>
 					<Stack.Screen
+						name="my-courses"
+						options={{
+							title: 'Mis Cursos',
+							headerBackTitle: 'Atrás',
+						}}
+					/>
+					<Stack.Screen
 						name="settings"
 						options={{
 							title: 'Configuración',

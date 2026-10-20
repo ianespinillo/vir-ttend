@@ -177,9 +177,15 @@ export default function HomeScreen() {
 			{/* Quick Stats Summary */}
 			{isPreceptor ? (
 				<View className="mb-6 flex-row space-x-3">
-					<View className="mr-3 flex-1 rounded-2xl border border-border bg-card p-4 shadow-sm">
-						<View className="h-9 w-9 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-ink/15">
-							<BookOpen size={18} color={theme.primaryInk} />
+					<TouchableOpacity
+						onPress={() => router.push('/(app)/my-courses')}
+						className="mr-3 flex-1 rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400"
+					>
+						<View className="flex-row items-center justify-between">
+							<View className="h-9 w-9 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-ink/15">
+								<BookOpen size={18} color={theme.primaryInk} />
+							</View>
+							<ChevronRight size={16} color={theme.neutral400} />
 						</View>
 						<Text className="mt-2 text-2xl font-bold text-neutral-800">
 							{courses.length}
@@ -187,7 +193,7 @@ export default function HomeScreen() {
 						<Text className="text-xs font-medium text-muted-foreground">
 							Cursos a cargo
 						</Text>
-					</View>
+					</TouchableOpacity>
 					<View className="flex-1 rounded-2xl border border-border bg-card p-4 shadow-sm">
 						<View className="h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15">
 							<CheckCircle size={18} color={theme.status.success.icon} />
@@ -213,9 +219,15 @@ export default function HomeScreen() {
 							Materias hoy
 						</Text>
 					</View>
-					<View className="flex-1 rounded-2xl border border-border bg-card p-4 shadow-sm">
-						<View className="h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15">
-							<BookOpen size={18} color={theme.status.success.icon} />
+					<TouchableOpacity
+						onPress={() => router.push('/(app)/my-courses')}
+						className="flex-1 rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary-400"
+					>
+						<View className="flex-row items-center justify-between">
+							<View className="h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15">
+								<BookOpen size={18} color={theme.status.success.icon} />
+							</View>
+							<ChevronRight size={16} color={theme.neutral400} />
 						</View>
 						<Text className="mt-2 text-2xl font-bold text-neutral-800">
 							{subjects?.length ?? 0}
@@ -223,7 +235,7 @@ export default function HomeScreen() {
 						<Text className="text-xs font-medium text-muted-foreground">
 							Materias a cargo
 						</Text>
-					</View>
+					</TouchableOpacity>
 				</View>
 			)}
 
