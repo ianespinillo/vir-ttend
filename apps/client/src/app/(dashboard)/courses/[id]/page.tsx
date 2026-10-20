@@ -61,6 +61,7 @@ export default function CourseDetailPage() {
 	const isAdmin = role === ROLES.ADMIN || role === ROLES.SUPERADMIN;
 	const isPreceptor = role === ROLES.PRECEPTOR;
 	const canManageSchedule = isAdmin || isPreceptor;
+	const canManageSubjects = isAdmin || isPreceptor;
 	const [isImportOpen, setIsImportOpen] = useState(false);
 
 	const { data: course, isLoading, isError, error } = useCourse(courseId);
@@ -254,11 +255,12 @@ export default function CourseDetailPage() {
 		assignPreceptorMutation.isPending ||
 		moveStudentMutation.isPending;
 
-	const canImportStudents =
-		isAdmin ||
-		(role === ROLES.PRECEPTOR &&
-			Boolean(user?.id) &&
-			course?.preceptorId === user?.id);
+	const isCoursePreceptor =
+		isPreceptor && Boolean(user?.id) && course?.preceptorId === user?.id;
+	const canImportStudents = isAdmin || isCoursePreceptor;
+	// The course preceptor reorganizes commissions; assigning their preceptors
+	// stays admin-only.
+	const canManageCommissions = isAdmin || isCoursePreceptor;
 
 	if (isLoading) {
 		return (
@@ -326,7 +328,7 @@ export default function CourseDetailPage() {
 				}
 				canManage={isAdmin}
 				canManageSchedule={canManageSchedule}
-				canManageSubjects={isAdmin || isPreceptor}
+				canManageSubjects={canManageSubjects}
 				students={studentsData?.items ?? []}
 				isLoadingStudents={studentsLoading}
 				studentCount={studentsData?.total}
@@ -334,7 +336,7 @@ export default function CourseDetailPage() {
 				attendancePath={`/attendance?courseId=${course.id}`}
 				commissionNumbers={commissions?.map((c) => c.number)}
 				commissionsTab={
-					isAdmin ? (
+					canManageCommissions ? (
 						<WorkshopCommissionsPanel
 							commissions={commissions ?? []}
 							preceptors={preceptors?.items || []}
@@ -347,17 +349,20 @@ export default function CourseDetailPage() {
 									'Error al crear las comisiones',
 								)
 							}
-							onAssignPreceptor={(commissionId, preceptorId) =>
-								runCommissionAction(
-									() =>
-										assignPreceptorMutation.mutateAsync({
-											courseId,
-											commissionId,
-											preceptorId,
-										}),
-									'Preceptor de la comisión actualizado',
-									'Error al asignar el preceptor',
-								)
+							onAssignPreceptor={
+								isAdmin
+									? (commissionId, preceptorId) =>
+											runCommissionAction(
+												() =>
+													assignPreceptorMutation.mutateAsync({
+														courseId,
+														commissionId,
+														preceptorId,
+													}),
+												'Preceptor de la comisión actualizado',
+												'Error al asignar el preceptor',
+											)
+									: undefined
 							}
 							onMoveStudent={(commissionId, studentId) =>
 								runCommissionAction(
@@ -392,7 +397,7 @@ export default function CourseDetailPage() {
 				/>
 			)}
 
-			{isAdmin && (
+			{canManageSubjects && (
 				<Dialog
 					open={subjectModalState.open}
 					onOpenChange={(open) =>

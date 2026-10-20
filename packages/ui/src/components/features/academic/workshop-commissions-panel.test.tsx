@@ -107,6 +107,15 @@ describe('WorkshopCommissionsPanel', () => {
 		expect(titles[1]).toContain('142');
 	});
 
+	it('hides the preceptor selector when assignment is not allowed', () => {
+		const { onAssignPreceptor: _omit, ...h } = handlers();
+		render(<WorkshopCommissionsPanel commissions={pair} {...h} />);
+		expect(
+			screen.queryByLabelText('Preceptor de la comisión 141'),
+		).not.toBeInTheDocument();
+		expect(screen.getByText('Alvarez, Ana')).toBeInTheDocument();
+	});
+
 	it('moves a student to the other commission', () => {
 		const h = handlers();
 		render(<WorkshopCommissionsPanel commissions={pair} {...h} />);

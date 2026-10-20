@@ -202,6 +202,23 @@ describe('workshop commission handlers', () => {
 				),
 			).rejects.toThrow(NotFoundException);
 		});
+
+		it('lets the course preceptor create, rejects other preceptors', async () => {
+			studentRepo.findActiveByCourse.mockResolvedValue([]);
+			const as = (userId: string) =>
+				handler.execute(
+					new CreateWorkshopCommissionsCommand(
+						'course-1',
+						TENANT,
+						undefined,
+						userId,
+						ROLES.PRECEPTOR,
+					),
+				);
+			await expect(as('stranger')).rejects.toThrow(ForbiddenException);
+			expect(commissionRepo.save).not.toHaveBeenCalled();
+			await expect(as('course-preceptor')).resolves.toHaveLength(2);
+		});
 	});
 
 	describe('regenerate', () => {
@@ -275,6 +292,31 @@ describe('workshop commission handlers', () => {
 				),
 			).rejects.toThrow(NotFoundException);
 		});
+
+		it('lets the course preceptor regenerate, rejects commission-only preceptors', async () => {
+			commissionRepo.findByCourse.mockResolvedValue([
+				commission(1, { preceptorId: 'workshop-p' }),
+				commission(2),
+			]);
+			studentRepo.findActiveByCourse.mockResolvedValue([
+				student('a', 'Alvarez', { commissionId: 'commission-2' }),
+			]);
+			const as = (userId: string) =>
+				handler.execute(
+					new RegenerateWorkshopCommissionsCommand(
+						'course-1',
+						TENANT,
+						true,
+						userId,
+						ROLES.PRECEPTOR,
+					),
+				);
+			await expect(as('workshop-p')).rejects.toThrow(ForbiddenException);
+			expect(studentRepo.save).not.toHaveBeenCalled();
+			const result = await as('course-preceptor');
+			expect(result[0].preceptorId).toBe('workshop-p');
+			expect(studentRepo.save).toHaveBeenCalledTimes(1);
+		});
 	});
 
 	describe('assign preceptor', () => {
@@ -343,7 +385,11 @@ describe('workshop commission handlers', () => {
 	describe('move student', () => {
 		let handler: MoveStudentToCommissionHandler;
 		beforeEach(() => {
-			handler = new MoveStudentToCommissionHandler(commissionRepo, studentRepo);
+			handler = new MoveStudentToCommissionHandler(
+				commissionRepo,
+				studentRepo,
+				courseRepo,
+			);
 			commissionRepo.findById.mockResolvedValue(commission(2));
 		});
 
@@ -398,6 +444,28 @@ describe('workshop commission handlers', () => {
 					new MoveStudentToCommissionCommand('commission-2', 'a', TENANT),
 				),
 			).rejects.toThrow(NotFoundException);
+		});
+
+		it('lets the course preceptor move students, rejects other preceptors', async () => {
+			studentRepo.findById.mockResolvedValue(
+				student('a', 'Alvarez', { commissionId: 'commission-1' }),
+			);
+			const as = (userId: string) =>
+				handler.execute(
+					new MoveStudentToCommissionCommand(
+						'commission-2',
+						'a',
+						TENANT,
+						userId,
+						ROLES.PRECEPTOR,
+					),
+				);
+			await expect(as('stranger')).rejects.toThrow(ForbiddenException);
+			expect(studentRepo.save).not.toHaveBeenCalled();
+			await as('course-preceptor');
+			expect(studentRepo.save.mock.calls[0][0].workshopCommissionId).toBe(
+				'commission-2',
+			);
 		});
 	});
 

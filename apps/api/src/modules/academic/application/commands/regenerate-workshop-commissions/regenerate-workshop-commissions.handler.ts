@@ -9,6 +9,7 @@ import { ICourseRepository } from '../../../domain/repositories/course.repositor
 import { IStudentRepository } from '../../../domain/repositories/student.repository.interface';
 import { IWorkshopCommissionRepository } from '../../../domain/repositories/workshop-commission.repository.interface';
 import { WorkshopCommissionResponseDto } from '../../dtos/workshop-commission.response.dto';
+import { assertCanManageCommissions } from '../../services/commission-access';
 import { WorkshopPlacementService } from '../../services/workshop-placement.service';
 import { RegenerateWorkshopCommissionsCommand } from './regenerate-workshop-commissions.command';
 
@@ -36,6 +37,7 @@ export class RegenerateWorkshopCommissionsHandler {
 		const course = await this.courseRepo.findById(command.courseId);
 		if (!course || course.tenantId !== command.tenantId)
 			throw new NotFoundException('Curso no encontrado');
+		assertCanManageCommissions(course, command.actorId, command.actorRole);
 
 		const commissions = await this.commissionRepo.findByCourse(command.courseId);
 		if (commissions.length === 0)

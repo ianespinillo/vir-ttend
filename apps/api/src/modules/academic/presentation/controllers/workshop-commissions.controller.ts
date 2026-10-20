@@ -53,10 +53,10 @@ export class WorkshopCommissionsController {
 	) {}
 
 	@Post('courses/:courseId/workshop-commissions')
-	@RolesDecorator(ROLES.ADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
 		summary: 'Crear las comisiones de taller de un curso',
-		description: `Crea las comisiones del curso. Con {"count": 2} (por defecto, o sin body) crea las comisiones 1 y 2 y reparte a los estudiantes activos en orden alfabético (apellido, nombre), mitad y mitad: la primera mitad (redondeo hacia arriba) a la comisión 1. Con {"count": 1} crea solo la comisión 1 con todos los estudiantes activos. Cada comisión tiene su propio preceptor de taller. Roles permitidos: admin. ${ENVELOPE}`,
+		description: `Crea las comisiones del curso. Con {"count": 2} (por defecto, o sin body) crea las comisiones 1 y 2 y reparte a los estudiantes activos en orden alfabético (apellido, nombre), mitad y mitad: la primera mitad (redondeo hacia arriba) a la comisión 1. Con {"count": 1} crea solo la comisión 1 con todos los estudiantes activos. Cada comisión tiene su propio preceptor de taller. Roles permitidos: admin, preceptor del curso. ${ENVELOPE}`,
 	})
 	@ApiParam({ name: 'courseId', description: 'ID del curso.' })
 	@ApiResponse({
@@ -75,7 +75,13 @@ export class WorkshopCommissionsController {
 		@CurrentUser() user: JwtPayload,
 	) {
 		return this.createHandler.execute(
-			new CreateWorkshopCommissionsCommand(courseId, user.tenantId, dto?.count),
+			new CreateWorkshopCommissionsCommand(
+				courseId,
+				user.tenantId,
+				dto?.count,
+				user.sub,
+				user.role,
+			),
 		);
 	}
 
@@ -110,10 +116,10 @@ export class WorkshopCommissionsController {
 
 	@Post('courses/:courseId/workshop-commissions/regenerate')
 	@HttpCode(200)
-	@RolesDecorator(ROLES.ADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
 		summary: 'Regenerar la división alfabética de las comisiones',
-		description: `Recalcula la división alfabética de todos los estudiantes activos del curso y los reasigna, conservando la cantidad de comisiones: 50/50 con dos comisiones, todos a la comisión 1 si hay una sola. Mueve estudiantes con historial, por eso exige {"confirm": true}. Roles permitidos: admin. ${ENVELOPE}`,
+		description: `Recalcula la división alfabética de todos los estudiantes activos del curso y los reasigna, conservando la cantidad de comisiones: 50/50 con dos comisiones, todos a la comisión 1 si hay una sola. Mueve estudiantes con historial, por eso exige {"confirm": true}. Conserva los preceptores asignados. Roles permitidos: admin, preceptor del curso. ${ENVELOPE}`,
 	})
 	@ApiParam({ name: 'courseId', description: 'ID del curso.' })
 	@ApiResponse({
@@ -138,6 +144,8 @@ export class WorkshopCommissionsController {
 				courseId,
 				user.tenantId,
 				dto.confirm,
+				user.sub,
+				user.role,
 			),
 		);
 	}
@@ -165,10 +173,10 @@ export class WorkshopCommissionsController {
 	}
 
 	@Put('workshop-commissions/:id/students/:studentId')
-	@RolesDecorator(ROLES.ADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
 		summary: 'Mover un estudiante a una comisión',
-		description: `Mueve a un estudiante activo del curso de la comisión a esta comisión. Es idempotente. Roles permitidos: admin. ${ENVELOPE}`,
+		description: `Mueve a un estudiante activo del curso de la comisión a esta comisión. Es idempotente. Roles permitidos: admin, preceptor del curso. ${ENVELOPE}`,
 	})
 	@ApiParam({ name: 'id', description: 'ID de la comisión destino.' })
 	@ApiParam({ name: 'studentId', description: 'ID del estudiante.' })
@@ -192,7 +200,13 @@ export class WorkshopCommissionsController {
 		@CurrentUser() user: JwtPayload,
 	) {
 		return this.moveStudentHandler.execute(
-			new MoveStudentToCommissionCommand(id, studentId, user.tenantId),
+			new MoveStudentToCommissionCommand(
+				id,
+				studentId,
+				user.tenantId,
+				user.sub,
+				user.role,
+			),
 		);
 	}
 }

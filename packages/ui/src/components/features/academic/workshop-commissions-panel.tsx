@@ -37,7 +37,8 @@ export interface WorkshopCommissionsPanelProps {
 	isBusy?: boolean;
 	/** Creates the course's commissions: 1 (everyone together) or 2 (50/50). */
 	onCreate: (count: CommissionCount) => void;
-	onAssignPreceptor: (commissionId: string, preceptorId: string | null) => void;
+	/** Omitted when the viewer may not assign commission preceptors (admin-only). */
+	onAssignPreceptor?: (commissionId: string, preceptorId: string | null) => void;
 	/** Moves the student to the commission identified by `commissionId`. */
 	onMoveStudent: (commissionId: string, studentId: string) => void;
 	onRegenerate: () => void;
@@ -140,35 +141,37 @@ export function WorkshopCommissionsPanel({
 								</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-4">
-								<div className="space-y-1">
-									<span className="text-xs text-muted-foreground uppercase font-medium">
-										Preceptor de taller
-									</span>
-									<Select
-										value={commission.preceptorId ?? NO_PRECEPTOR}
-										onValueChange={(value) =>
-											onAssignPreceptor(
-												commission.id,
-												value === NO_PRECEPTOR ? null : value,
-											)
-										}
-										disabled={isBusy}
-									>
-										<SelectTrigger
-											aria-label={`Preceptor de la comisión ${commission.code}`}
+								{onAssignPreceptor && (
+									<div className="space-y-1">
+										<span className="text-xs text-muted-foreground uppercase font-medium">
+											Preceptor de taller
+										</span>
+										<Select
+											value={commission.preceptorId ?? NO_PRECEPTOR}
+											onValueChange={(value) =>
+												onAssignPreceptor(
+													commission.id,
+													value === NO_PRECEPTOR ? null : value,
+												)
+											}
+											disabled={isBusy}
 										>
-											<SelectValue placeholder="Seleccione preceptor" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value={NO_PRECEPTOR}>Sin preceptor asignado</SelectItem>
-											{preceptors.map((p) => (
-												<SelectItem key={p.id} value={p.id}>
-													{p.firstName} {p.lastName} ({p.email})
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
+											<SelectTrigger
+												aria-label={`Preceptor de la comisión ${commission.code}`}
+											>
+												<SelectValue placeholder="Seleccione preceptor" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value={NO_PRECEPTOR}>Sin preceptor asignado</SelectItem>
+												{preceptors.map((p) => (
+													<SelectItem key={p.id} value={p.id}>
+														{p.firstName} {p.lastName} ({p.email})
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+								)}
 
 								{commission.students.length === 0 ? (
 									<p className="text-sm text-muted-foreground">
