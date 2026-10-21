@@ -73,9 +73,12 @@ export default function CourseDetailPage() {
 		limit: 100,
 	});
 	const { data: academicYears } = useAcademicYears();
-	// Only admins edit the course; preceptors may list teachers only.
+	// Admins edit the course; the course preceptor picks commission preceptors.
+	// Both need the tenant's preceptors.
 	const { data: preceptors } = useUsersByRole(
-		isAdmin ? ROLES.PRECEPTOR : undefined,
+		isAdmin || (isPreceptor && course?.preceptorId === user?.id)
+			? ROLES.PRECEPTOR
+			: undefined,
 	);
 	const { data: teachers } = useUsersByRole(ROLES.TEACHER);
 	// Also read by schedule editors: the slot form hides the commission selector
@@ -258,8 +261,7 @@ export default function CourseDetailPage() {
 	const isCoursePreceptor =
 		isPreceptor && Boolean(user?.id) && course?.preceptorId === user?.id;
 	const canImportStudents = isAdmin || isCoursePreceptor;
-	// The course preceptor reorganizes commissions; assigning their preceptors
-	// stays admin-only.
+	// The course preceptor reorganizes commissions and assigns their preceptors.
 	const canManageCommissions = isAdmin || isCoursePreceptor;
 
 	if (isLoading) {
@@ -350,7 +352,7 @@ export default function CourseDetailPage() {
 								)
 							}
 							onAssignPreceptor={
-								isAdmin
+								canManageCommissions
 									? (commissionId, preceptorId) =>
 											runCommissionAction(
 												() =>
