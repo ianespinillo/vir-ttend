@@ -1,5 +1,5 @@
 import type { AttendanceStatus } from '@repo/common';
-import { ATTENDANCE_STATUS, LEVEL } from '@repo/common';
+import { ATTENDANCE_STATUS, LEVEL, SHIFT } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { NotFoundError } from '../../../src/common/errors';
 import { ReportGenerationService } from '../../../src/modules/reporting/application/services/report-generation.service';
@@ -116,6 +116,26 @@ describe('ReportGenerationService', () => {
 			if (!entry) throw new Error(`no entry for ${id}`);
 			return entry;
 		};
+
+		it('pide los dias habiles segun el turno del curso', async () => {
+			coursePort.findById.mockResolvedValue(
+				Course.reconstitute({
+					id: 'course-1',
+					name: '3° A',
+					level: LEVEL.PRIMARY,
+					academicYearId: 'ay-1',
+					tenantId: 'tenant-1',
+					shift: SHIFT.AFTERNOON,
+				}),
+			);
+
+			await service.generateMonthlyReport('course-1', period);
+
+			expect(academicYearPort.getWorkingDaysBYAcademicYear).toHaveBeenCalledWith(
+				'ay-1',
+				SHIFT.AFTERNOON,
+			);
+		});
 
 		it('lanza NotFoundError si el curso no existe', async () => {
 			coursePort.findById.mockResolvedValue(null);

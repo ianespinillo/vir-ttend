@@ -2,6 +2,7 @@
 
 import { type IAcademicYearResponse, getHolidayName } from '@repo/common';
 import { Calendar, CalendarOff, Clock, Edit, ShieldAlert } from 'lucide-react';
+import { formatShiftScope } from '../../../lib/shift';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
@@ -145,12 +146,21 @@ export function AcademicYearCard({
 														year: 'numeric',
 														timeZone: 'UTC',
 													});
+													const shiftScope =
+														academicYear.nonWorkingDayShifts?.[dateStr.slice(0, 10)];
 													return (
 														<li
 															key={dateStr}
 															className="pt-1.5 flex justify-between items-center text-muted-foreground"
 														>
-															<span>{holidayName || 'Feriado / Receso'}</span>
+															<span>
+																{holidayName || 'Feriado / Receso'}
+																{shiftScope && shiftScope.length > 0 && (
+																	<span className="ml-1.5 rounded-full border px-1.5 py-0.5 text-[10px] text-foreground">
+																		Turno: {formatShiftScope(shiftScope)}
+																	</span>
+																)}
+															</span>
 															<span className="font-mono text-[11px] text-foreground">
 																{formattedDate}
 															</span>

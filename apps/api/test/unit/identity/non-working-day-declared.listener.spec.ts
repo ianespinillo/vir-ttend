@@ -1,3 +1,4 @@
+import { SHIFT } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { NonWorkingDayDeclaredEvent } from '../../../src/modules/academic/events/non-working-day-declared.event';
 import { Announcement } from '../../../src/modules/identity/domain/entities/announcement.entity';
@@ -42,6 +43,56 @@ describe('NonWorkingDayDeclaredListener', () => {
 		expect(savedAnnouncement.title).toContain('Paro docente');
 		expect(savedAnnouncement.body).toContain('15/05/2026');
 		expect(savedAnnouncement.body).toContain('Paro docente por reclamo salarial');
+	});
+
+	it('should keep the whole-school wording when no shift is scoped', async () => {
+		await listener.handle(
+			new NonWorkingDayDeclaredEvent(
+				'year-1',
+				'tenant-1',
+				new Date('2026-05-15T00:00:00.000Z'),
+				'Feriado',
+				'user-1',
+			),
+		);
+
+		const saved = announcementRepo.save.mock.calls[0][0] as Announcement;
+		expect(saved.body).not.toContain('turno');
+	});
+
+	it('should mention a single affected shift in the announcement', async () => {
+		await listener.handle(
+			new NonWorkingDayDeclaredEvent(
+				'year-1',
+				'tenant-1',
+				new Date('2026-05-15T00:00:00.000Z'),
+				'Paro docente',
+				'user-1',
+				'strike',
+				[SHIFT.MORNING],
+			),
+		);
+
+		const saved = announcementRepo.save.mock.calls[0][0] as Announcement;
+		expect(saved.body).toContain('en el turno mañana');
+		expect(saved.body).toContain('para el turno mañana');
+	});
+
+	it('should list several affected shifts in the announcement', async () => {
+		await listener.handle(
+			new NonWorkingDayDeclaredEvent(
+				'year-1',
+				'tenant-1',
+				new Date('2026-05-15T00:00:00.000Z'),
+				'Paro docente',
+				'user-1',
+				'strike',
+				[SHIFT.MORNING, SHIFT.AFTERNOON, SHIFT.EVENING],
+			),
+		);
+
+		const saved = announcementRepo.save.mock.calls[0][0] as Announcement;
+		expect(saved.body).toContain('turnos mañana, tarde y noche');
 	});
 
 	it('should catch and log error without throwing if save fails', async () => {

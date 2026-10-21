@@ -37,7 +37,7 @@ export interface WorkshopCommissionsPanelProps {
 	isBusy?: boolean;
 	/** Creates the course's commissions: 1 (everyone together) or 2 (50/50). */
 	onCreate: (count: CommissionCount) => void;
-	/** Omitted when the viewer may not assign commission preceptors (admin-only). */
+	/** Omitted when the viewer may not assign commission preceptors (admin and course preceptor only). */
 	onAssignPreceptor?: (commissionId: string, preceptorId: string | null) => void;
 	/** Moves the student to the commission identified by `commissionId`. */
 	onMoveStudent: (commissionId: string, studentId: string) => void;

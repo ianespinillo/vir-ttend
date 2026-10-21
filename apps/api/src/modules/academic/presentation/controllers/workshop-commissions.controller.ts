@@ -151,10 +151,10 @@ export class WorkshopCommissionsController {
 	}
 
 	@Put('workshop-commissions/:id/preceptor')
-	@RolesDecorator(ROLES.ADMIN)
+	@RolesDecorator(ROLES.ADMIN, ROLES.PRECEPTOR)
 	@ApiOperation({
 		summary: 'Asignar el preceptor de una comisión',
-		description: `Asigna a una comisión un preceptor activo de la escuela; null quita la asignación. Body de ejemplo: {"preceptorId": "d7e8f9a0-1b2c-3d4e-5f6a-7b8c9d0e1f2a"}. Roles permitidos: admin. ${ENVELOPE}`,
+		description: `Asigna a una comisión un preceptor activo de la escuela; null quita la asignación. Body de ejemplo: {"preceptorId": "d7e8f9a0-1b2c-3d4e-5f6a-7b8c9d0e1f2a"}. Roles permitidos: admin, preceptor del curso. ${ENVELOPE}`,
 	})
 	@ApiParam({ name: 'id', description: 'ID de la comisión.' })
 	@ApiResponse({ status: 200, description: 'Preceptor asignado.' })
@@ -168,7 +168,13 @@ export class WorkshopCommissionsController {
 		@CurrentUser() user: JwtPayload,
 	) {
 		return this.assignPreceptorHandler.execute(
-			new AssignWorkshopPreceptorCommand(id, user.tenantId, dto.preceptorId),
+			new AssignWorkshopPreceptorCommand(
+				id,
+				user.tenantId,
+				dto.preceptorId,
+				user.sub,
+				user.role,
+			),
 		);
 	}
 

@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import { SHIFT } from '@repo/common';
 import { DomainError } from '../../../../common/errors';
 import { AcademicYearId } from '../value-objects/academic-year-id.vo';
+
+/** Shift scope of the non-working days, keyed by `YYYY-MM-DD`. A missing key means the whole day. */
+export type NonWorkingDayShifts = Record<string, SHIFT[]>;
 
 export interface CreateProps {
 	tenantId: string;
@@ -8,6 +12,7 @@ export interface CreateProps {
 	startDate: Date;
 	endDate: Date;
 	nonWorkingDays: Date[];
+	nonWorkingDayShifts?: NonWorkingDayShifts;
 	absenceThresholdPercent?: number;
 	lateCountAbscenseAfterMinutes?: number;
 	isActive?: boolean;
@@ -20,6 +25,7 @@ interface ConstructorProps {
 	startDate: Date;
 	endDate: Date;
 	nonWorkingDays: Date[];
+	nonWorkingDayShifts: NonWorkingDayShifts;
 	absenceThresholdPercent: number;
 	lateCountAbscenseAfterMinutes: number;
 	isActive: boolean;
@@ -34,6 +40,7 @@ export interface ReconstituteProps {
 	startDate: Date;
 	endDate: Date;
 	nonWorkingDays: Date[];
+	nonWorkingDayShifts?: NonWorkingDayShifts;
 	absenceThresholdPercent: number;
 	lateCountAbscenseAfterMinutes: number;
 	isActive: boolean;
@@ -48,6 +55,7 @@ export class AcademicYear {
 	private _startDate: Date;
 	private _endDate: Date;
 	private _nonWorkingDays: Date[];
+	private _nonWorkingDayShifts: NonWorkingDayShifts;
 	private _absenceThresholdPercent: number;
 	private _lateCountAbscenseAfterMinutes: number;
 	private _isActive: boolean;
@@ -61,6 +69,7 @@ export class AcademicYear {
 		this._startDate = props.startDate;
 		this._endDate = props.endDate;
 		this._nonWorkingDays = props.nonWorkingDays;
+		this._nonWorkingDayShifts = props.nonWorkingDayShifts;
 		this._absenceThresholdPercent = props.absenceThresholdPercent;
 		this._lateCountAbscenseAfterMinutes = props.lateCountAbscenseAfterMinutes;
 		this._isActive = props.isActive;
@@ -76,6 +85,7 @@ export class AcademicYear {
 			startDate: props.startDate,
 			endDate: props.endDate,
 			nonWorkingDays: props.nonWorkingDays ?? [],
+			nonWorkingDayShifts: props.nonWorkingDayShifts ?? {},
 			absenceThresholdPercent: props.absenceThresholdPercent ?? 75,
 			lateCountAbscenseAfterMinutes: props.lateCountAbscenseAfterMinutes ?? 15,
 			isActive: props.isActive ?? true,
@@ -87,6 +97,7 @@ export class AcademicYear {
 	static reconstitute(props: ReconstituteProps): AcademicYear {
 		return new AcademicYear({
 			...props,
+			nonWorkingDayShifts: props.nonWorkingDayShifts ?? {},
 			id: new AcademicYearId(props.id),
 		});
 	}
@@ -109,6 +120,9 @@ export class AcademicYear {
 	}
 	get nonWorkingDays(): Date[] {
 		return this._nonWorkingDays;
+	}
+	get nonWorkingDayShifts(): NonWorkingDayShifts {
+		return this._nonWorkingDayShifts;
 	}
 	get absenceThresholdPercent(): number {
 		return this._absenceThresholdPercent;
@@ -155,11 +169,51 @@ export class AcademicYear {
 		this._updatedAt = new Date();
 	}
 
+	/**
+	 * Declares a class suspension. Unlike `addNonWorkingDay` it is authoritative
+	 * for the scope: empty or missing `shifts` means every shift, and declaring
+	 * an already registered day replaces its scope.
+	 */
+	declareNonWorkingDay(date: Date, shifts?: SHIFT[]): void {
+		this.addNonWorkingDay(date);
+		const key = AcademicYear.toDayKey(date);
+		const scope = [...new Set(shifts ?? [])];
+		const next = { ...this._nonWorkingDayShifts };
+		if (scope.length > 0) next[key] = scope;
+		else delete next[key];
+		this._nonWorkingDayShifts = next;
+		this._updatedAt = new Date();
+	}
+
 	removeNonWorkingDay(date: Date): void {
 		this._nonWorkingDays = this._nonWorkingDays.filter(
 			(d) => d.getTime() !== date.getTime(),
 		);
+		const next = { ...this._nonWorkingDayShifts };
+		delete next[AcademicYear.toDayKey(date)];
+		this._nonWorkingDayShifts = next;
 		this._updatedAt = new Date();
+	}
+
+	/**
+	 * Whether `date` is a non-working day for a course of the given shift. A day
+	 * without a shift scope suspends every shift; with a scope it only suspends
+	 * the listed ones. Without a `shift` any suspension of the day counts.
+	 */
+	isNonWorkingDayFor(date: Date, shift?: SHIFT): boolean {
+		const key = AcademicYear.toDayKey(date);
+		if (!this._nonWorkingDays.some((d) => AcademicYear.toDayKey(d) === key)) {
+			return false;
+		}
+		const scope = this._nonWorkingDayShifts[key];
+		if (!scope || scope.length === 0 || shift === undefined) return true;
+		return scope.includes(shift);
+	}
+
+	/** Days may come back from the database as ISO strings instead of dates. */
+	private static toDayKey(date: Date | string): string {
+		if (typeof date === 'string') return date.slice(0, 10);
+		return date.toISOString().slice(0, 10);
 	}
 
 	updateThresholds(
