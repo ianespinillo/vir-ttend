@@ -28,7 +28,7 @@ User request (2026-10-21). Domain rule confirmed by the user: the course precept
 ## Checklist
 - [x] T1: Course preceptor can assign commission preceptors. Route: delegated writer (2+ non-trivial files). Commit `18ce01b`.
 - [x] T2: Optional shift scope on non-working days. Route: delegated writer (2+ non-trivial files), run in parallel with T1 on the same worktree per user request; writers do not commit, the parent commits each work unit.
-- [x] T3: Version 1.4.0 + site release notes. Route: inline (mechanical, already understood). Commit: the `chore(release)` commit on this branch.
+- [x] T3: Version 1.4.0 + site release notes. Route: inline (mechanical, already understood). Commit `f683706`.
 
 ## Acceptance criteria
 - T1: a course preceptor gets 200 assigning a preceptor (or themselves, or null) to a commission of their course; 403 for a commission of another course; admin behavior unchanged; UI shows the assignment control to that preceptor.

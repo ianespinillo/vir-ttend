@@ -4,26 +4,25 @@ on:
   push:
     branches:
       - main
-    # Only deploy when something baked into the api/client images, or used by
-    # the VM at deploy time, changed. Site, demo, mobile and docs-only pushes
-    # skip CD. workflow_dispatch ignores this filter.
-    paths:
-      - apps/api/**
-      - apps/client/**
-      - packages/branding/**
-      - packages/common/**
-      - packages/eslint-config/**
-      - packages/hooks/**
-      - packages/typescript-config/**
-      - packages/ui/**
-      - package.json
-      - pnpm-lock.yaml
-      - pnpm-workspace.yaml
-      - compose.prod.yml
-      - compose.ci.yml
-      - Caddyfile
-      - deploy/**
-      - .github/workflows/cd.yaml
+    # Skip CD when a push only touches paths that never reach the api/client
+    # images or the VM: other apps, docs and repo tooling. Anything not listed
+    # here deploys, so a forgotten entry deploys too often instead of silently
+    # leaving production stale. workflow_dispatch ignores this filter.
+    paths-ignore:
+      - apps/site/**
+      - apps/demo/**
+      - apps/mobile/**
+      - docs/**
+      - odd/**
+      - schools-data/**
+      - .atl/**
+      - .opencode/**
+      - .vscode/**
+      - .husky/**
+      - .github/workflows/ci.yaml
+      - .github/workflows/mobile-release.yaml
+      - README.md
+      - AI_CONTEXT.md
   workflow_dispatch:
     inputs:
       target:
