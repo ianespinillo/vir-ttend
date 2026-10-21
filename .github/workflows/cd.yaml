@@ -4,6 +4,26 @@ on:
   push:
     branches:
       - main
+    # Only deploy when something baked into the api/client images, or used by
+    # the VM at deploy time, changed. Site, demo, mobile and docs-only pushes
+    # skip CD. workflow_dispatch ignores this filter.
+    paths:
+      - apps/api/**
+      - apps/client/**
+      - packages/branding/**
+      - packages/common/**
+      - packages/eslint-config/**
+      - packages/hooks/**
+      - packages/typescript-config/**
+      - packages/ui/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - compose.prod.yml
+      - compose.ci.yml
+      - Caddyfile
+      - deploy/**
+      - .github/workflows/cd.yaml
   workflow_dispatch:
     inputs:
       target:

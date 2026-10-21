@@ -54,10 +54,13 @@ Notas:
 
 | Disparador | `target` | `sha` | Comportamiento |
 |---|---|---|---|
-| Push a `main` | ignorado (push usa la lista fan-out de `jobs.targets`) | vacío → el commit del push | build + deploy del HEAD de main a TODOS los environments de la lista, en paralelo (`fail-fast: false`) |
+| Push a `main` que toca api, client o lo que entra en sus imágenes o en el deploy (ver abajo) | ignorado (push usa la lista fan-out de `jobs.targets`) | vacío → el commit del push | build + deploy del HEAD de main a TODOS los environments de la lista, en paralelo (`fail-fast: false`) |
+| Push a `main` que no toca ninguno de esos paths (solo site, demo, mobile, docs, `odd/`) | — | — | `cd` no corre |
 | `workflow_dispatch` | Environment a desplegar (default `eest3`) | vacío | build + deploy del HEAD actual de main |
 | `workflow_dispatch` | Environment a desplegar | commit sha completo | build saltado; `verify-images` confirma que `sha-<sha>` existe en GHCR; deploy de ese commit |
 
+- Paths que disparan `cd` en push (`on.push.paths` en `.github/workflows/cd.yaml`): `apps/api`, `apps/client`, `packages/{branding,common,eslint-config,hooks,typescript-config,ui}`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `compose.prod.yml`, `compose.ci.yml`, `Caddyfile`, `deploy/` y el propio workflow. Si se suma un paquete que las imágenes usan, hay que agregarlo a esa lista.
+- Un commit de `main` que no disparó `cd` no tiene imágenes `sha-<sha>` en GHCR: para un rollback usá el sha de un commit que sí se desplegó.
 - Cada environment resuelve sus propios secretos `SSH_*` y `GHCR_*`.
 - **Rollback:** Actions → `cd` → Run workflow → `target` = ambiente, `sha` = último commit bueno. El deploy hace `git fetch` + `git checkout --detach` de ese sha y levanta exactamente sus imágenes (`sha-<sha>`).
 
