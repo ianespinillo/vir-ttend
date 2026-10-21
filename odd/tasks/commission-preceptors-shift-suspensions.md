@@ -37,7 +37,9 @@ User request (2026-10-21). Domain rule confirmed by the user: the course precept
 
 ## Delivery
 - delivery_strategy: single-pr (user asked for one branch). Branch `feat/commission-preceptors-shift-suspensions` from `dev`.
-- Push and PR creation: user's call.
+- Before the PR the branch was rebased onto `origin/main`, because the `dev` commits had already reached main under other hashes (PRs #88, #89). Hashes after the rebase (the review and progress notes below use the pre-rebase ones): T1 `18ce01b` → `8bd34f9`, T2 `0186f22` → `58d3c6f`, T3 `f683706` → `a4d0bd8`, CD allowlist `d60dcec` → `26bcf3e`, CD ignore list `e6b9dc4` → `db69ada`.
+- The PR to main is 1159 changed lines. The user chose a single PR with `size:exception` (the shift-scope commit alone is 912 lines of one behavior across API, UI, demo and tests).
+- Extra scope requested during delivery: CD skips pushes to main that only touch non-deployed paths (`on.push.paths-ignore` in `.github/workflows/cd.yaml`). Native review: high, granted → approved for both commits (lineages `review-002a968a62f602cb`, `review-845f7f6fc7a84e3b`). The accumulated range `ded7173..HEAD` that the stop hook offered failed three times with `lens_context_budget_exceeded`.
 
 ## TDD
 - Off (no TDD configuration in the project). Checks: `pnpm --filter api test`, `pnpm ts:check`, `pnpm lint:check`, plus ui/hooks/demo vitest where touched.
@@ -62,5 +64,7 @@ User request (2026-10-21). Domain rule confirmed by the user: the course precept
 - R3-demo-test-shift-import: false positive. `SHIFT` is imported in `apps/demo/src/lib/store/store.test.ts:11`.
 - Not verified: the migration against a real DB; no UI test for the shift checkbox group.
 
+- R2-schools-data-unexplained, R2-doc-summary-drift (CD review, suggestions): the workflow comment does not say why `schools-data` is ignored (it is unused by the api/client images), and the docs table row still names some ignored paths by hand.
+
 ## Next step
-Push and open the PR to `main` (user's call). Run the migration on deploy, and rebuild `@repo/common` before starting the API.
+PR to `main` opened (see Delivery). After merge: the deploy runs the migration; rebuild `@repo/common` before starting the API locally.
