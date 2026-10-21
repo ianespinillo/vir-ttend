@@ -119,4 +119,24 @@ describe('CourseDetail', () => {
 		).toBeGreaterThan(0);
 		expect(screen.queryByText('Editar Curso')).not.toBeInTheDocument();
 	});
+
+	it('shows the Comisiones tab whenever its content is given, without managing the course', () => {
+		render(
+			<CourseDetail
+				course={course}
+				canManage={false}
+				commissionsTab={<p>Panel de comisiones</p>}
+			/>,
+		);
+
+		expect(screen.getByRole('tab', { name: 'Comisiones' })).toBeInTheDocument();
+	});
+
+	it('hides the Comisiones tab when no content is given', () => {
+		render(<CourseDetail course={course} canManage={true} />);
+
+		expect(
+			screen.queryByRole('tab', { name: 'Comisiones' }),
+		).not.toBeInTheDocument();
+	});
 });

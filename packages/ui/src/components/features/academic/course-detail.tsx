@@ -55,7 +55,10 @@ export interface CourseDetailProps {
 	/** Create/edit subjects; defaults to canManage. */
 	canManageSubjects?: boolean;
 	attendancePath?: string;
-	/** Optional "Comisiones" tab content (workshop commissions); shown only to managers. */
+	/**
+	 * Optional "Comisiones" tab content (workshop commissions). The tab shows
+	 * whenever it is given, so the caller decides who may manage commissions.
+	 */
 	commissionsTab?: ReactNode;
 	/**
 	 * Workshop commission numbers of the course, used by the slot form to hide
@@ -102,7 +105,7 @@ export function CourseDetail({
 				: 'Inicial';
 
 	const shiftLabel = formatShift(course.shift);
-	const showCommissions = canManage && Boolean(commissionsTab);
+	const showCommissions = Boolean(commissionsTab);
 
 	const courseTitle =
 		localizeCourseName(course.fullName) ||
