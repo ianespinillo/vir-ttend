@@ -4,13 +4,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
 	type DeclareNonWorkingDayFormValues,
 	type IAcademicYearResponse,
+	SHIFT,
 	declareNonWorkingDaySchema,
 } from '@repo/common';
 import { AlertCircle, CalendarOff, Megaphone } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { SHIFT_LABELS } from '../../../lib/shift';
 import { Alert, AlertDescription, AlertTitle } from '../../../ui/alert';
 import { Button } from '../../../ui/button';
+import { Checkbox } from '../../../ui/checkbox';
 import {
 	Dialog,
 	DialogContent,
@@ -64,6 +67,7 @@ export function DeclareNonWorkingDayDialog({
 			reason: '',
 			type: 'strike',
 			notifySchool: true,
+			shifts: [],
 		},
 	});
 
@@ -74,6 +78,7 @@ export function DeclareNonWorkingDayDialog({
 				reason: '',
 				type: 'strike',
 				notifySchool: true,
+				shifts: [],
 			});
 		}
 	}, [open, form, todayStr]);
@@ -158,6 +163,46 @@ export function DeclareNonWorkingDayDialog({
 								))}
 							</div>
 						</div>
+
+						<FormField
+							control={form.control}
+							name="shifts"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Turnos afectados</FormLabel>
+									<div className="flex flex-wrap gap-4">
+										{Object.values(SHIFT).map((shift) => {
+											const checked = field.value.includes(shift);
+											return (
+												<div key={shift} className="flex items-center gap-2 text-sm">
+													<Checkbox
+														id={`non-working-day-shift-${shift}`}
+														checked={checked}
+														onCheckedChange={(next) =>
+															field.onChange(
+																next
+																	? [...field.value, shift]
+																	: field.value.filter((s) => s !== shift),
+															)
+														}
+													/>
+													<label
+														htmlFor={`non-working-day-shift-${shift}`}
+														className="cursor-pointer"
+													>
+														{SHIFT_LABELS[shift]}
+													</label>
+												</div>
+											);
+										})}
+									</div>
+									<FormDescription className="text-xs">
+										Si no marcás ningún turno, la suspensión aplica a todos los turnos.
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
 						<FormField
 							control={form.control}

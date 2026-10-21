@@ -26,8 +26,8 @@ User request (2026-10-21). Domain rule confirmed by the user: the course precept
 - Preceptors may assign only within courses where they are `courses.preceptorId`; the assignee must still be a preceptor of the tenant.
 
 ## Checklist
-- [x] T1: Course preceptor can assign commission preceptors. Route: delegated writer (2+ non-trivial files). Commit: see Progress.
-- [ ] T2: Optional shift scope on non-working days. Route: delegated writer (2+ non-trivial files), run in parallel with T1 on the same worktree per user request; writers do not commit, the parent commits each work unit.
+- [x] T1: Course preceptor can assign commission preceptors. Route: delegated writer (2+ non-trivial files). Commit `18ce01b`.
+- [x] T2: Optional shift scope on non-working days. Route: delegated writer (2+ non-trivial files), run in parallel with T1 on the same worktree per user request; writers do not commit, the parent commits each work unit.
 - [ ] T3: Version 1.4.0 + site release notes. Route: inline (mechanical, already understood).
 
 ## Acceptance criteria
@@ -44,7 +44,13 @@ User request (2026-10-21). Domain rule confirmed by the user: the course precept
 
 ## Progress / evidence
 - T1: `PUT workshop-commissions/:id/preceptor` allows ADMIN + PRECEPTOR; the handler loads the commission's course and calls `assertCanManageCommissions` for preceptors (403 for another course). `GET /users` now returns preceptors to a preceptor asking `role=PRECEPTOR` (own tenant only; any other filter still returns teachers), so the course page can list assignees. Client and demo course pages show the assignment control whenever the user can manage commissions. Mobile has no assignment UI (untouched).
-- T1 checks (writer): `pnpm --filter api test` 918 passed; `pnpm --filter @repo/ui test` 213 passed; `pnpm --filter demo test` 179 passed. `pnpm ts:check` and `pnpm lint:check` failed only on T2 in-progress files at that time (re-run after T2).
+- T1 checks (writer): `pnpm --filter api test` 918 passed; `pnpm --filter @repo/ui test` 213 passed; `pnpm --filter demo test` 179 passed. `pnpm ts:check` and `pnpm lint:check` failed only on T2 in-progress files at that time; both passed in the pre-commit hook once T2 was complete. The hook checks the whole working tree, so T1 could only be committed after T2 finished.
+- T1 native review: assess risk medium, `review_due: false` (`under_budget`, 176 lines); pending in the slice.
+- T2 design: `nonWorkingDays: Date[]` unchanged; parallel `nonWorkingDayShifts: Record<'YYYY-MM-DD', SHIFT[]>` (missing/empty = every shift). Single rule `AcademicYear.isNonWorkingDayFor(date, shift?)`; no shift given = any declared day counts (old behavior). Migration `Migration20261021120000_non_working_day_shifts.ts` adds `academic_years.non_working_day_shifts jsonb not null default '{}'` (not run against a DB; `.snapshot-vir_ttend.json` left as is, it is already stale).
+- T2 consumers made shift-aware: academic `ScheduleService.getWorkingDaysOnPeriod`; attendance `ISchedulePort`/`ScheduleAdapter`, `AttendanceCalculationService` expected classes, `CourseSnapshotBuilderService` (passes `course.shift`); reporting `AcademicYearAdapter.getWorkingDaysBYAcademicYear`, `ReportGenerationService.generateMonthlyReport`; identity announcement listener (text names the shifts via `describeShiftScope` in `@repo/common`); demo store/selectors. Attendance registration never blocked non-working days, so nothing to change there. Mobile shows no non-working days.
+- T2 behavior choices (writer, accepted by parent): re-declaring a registered day replaces its scope; `update-academic-year` (`addNonWorkingDay`) leaves the scope untouched; the monthly report's working-day count stays calendar days minus holidays, only made shift-aware.
+- T2 UI: shift checkbox group in the declare dialog (none = all shifts); "Turno: …" badge on scoped days in the year card.
+- T2 checks (writer): api 128 suites / 941 tests passed; common 75, ui 215, hooks 38, demo 181 tests passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean. The API resolves `@repo/common` from `dist`: rebuild common before running the API. Not verified: migration against a real DB; no UI test for the checkbox group.
 
 ## Next step
 Launch the T1 and T2 writers.

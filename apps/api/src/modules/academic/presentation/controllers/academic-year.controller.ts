@@ -211,6 +211,7 @@ export class AcademicYearsController {
 				dto.notifySchool ?? true,
 				user.tenantId,
 				user.sub,
+				dto.shifts ?? [],
 			),
 		);
 	}

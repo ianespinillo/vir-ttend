@@ -49,6 +49,7 @@ describe('CourseSnapshotBuilderService', () => {
 		daily?: AttendanceRecord[];
 		workshop?: WorkshopAttendanceRecord[];
 		workshopOnly?: boolean;
+		shift?: string;
 	}) {
 		const attendanceRepo = {
 			getCourseSummaryForDate: jest.fn().mockResolvedValue(rawCounts),
@@ -64,6 +65,7 @@ describe('CourseSnapshotBuilderService', () => {
 				name: '3° A',
 				academicYearId: 'y',
 				isWorkshopOnly: opts.workshopOnly ?? false,
+				shift: opts.shift,
 			}),
 		};
 		const attendanceService = {
@@ -75,7 +77,7 @@ describe('CourseSnapshotBuilderService', () => {
 			coursePort as never,
 			attendanceService as never,
 		);
-		return { service, attendanceRepo, workshopRepo };
+		return { service, attendanceRepo, workshopRepo, attendanceService };
 	}
 
 	it('reports the weighted absence total of the course over the days given', async () => {
@@ -106,6 +108,20 @@ describe('CourseSnapshotBuilderService', () => {
 			'course-1',
 			MON,
 			TUE,
+		);
+	});
+
+	it('asks for the expected classes of the course shift', async () => {
+		const { service, attendanceService } = build({ shift: 'MORNING' });
+
+		await service.buildCourseSnapshot('course-1', MON, TUE);
+
+		expect(attendanceService.getExpectedClassesForCourse).toHaveBeenCalledWith(
+			MON,
+			TUE,
+			'course-1',
+			'y',
+			'MORNING',
 		);
 	});
 

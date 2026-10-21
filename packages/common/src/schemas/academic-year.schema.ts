@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SHIFT } from '../constants/shift.enum.js';
 
 export const createAcademicYearSchema = z.object({
 	year: z.coerce.number().min(2020, 'El año debe ser igual o mayor a 2020'),
@@ -32,6 +33,7 @@ export const declareNonWorkingDaySchema = z.object({
 		.max(255, 'El motivo no puede exceder 255 caracteres'),
 	type: z.string().optional(),
 	notifySchool: z.boolean().default(true),
+	shifts: z.array(z.nativeEnum(SHIFT)).default([]),
 });
 
 export type CreateAcademicYearFormValues = z.infer<

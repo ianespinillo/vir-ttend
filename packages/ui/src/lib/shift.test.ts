@@ -1,6 +1,26 @@
 import { SHIFT } from '@repo/common';
 import { describe, expect, it } from 'vitest';
-import { SHIFT_LABELS, formatShift, localizeCourseName } from './shift';
+import {
+	SHIFT_LABELS,
+	formatShift,
+	formatShiftScope,
+	localizeCourseName,
+} from './shift';
+
+describe('formatShiftScope', () => {
+	it('means every shift when the scope is empty or missing', () => {
+		expect(formatShiftScope(undefined)).toBe('Todos los turnos');
+		expect(formatShiftScope(null)).toBe('Todos los turnos');
+		expect(formatShiftScope([])).toBe('Todos los turnos');
+	});
+
+	it('lists the labels of the scoped shifts', () => {
+		expect(formatShiftScope([SHIFT.MORNING])).toBe('Mañana');
+		expect(formatShiftScope([SHIFT.MORNING, SHIFT.EVENING])).toBe(
+			'Mañana, Noche',
+		);
+	});
+});
 
 describe('shift labels', () => {
 	it('maps every shift enum value to Spanish', () => {

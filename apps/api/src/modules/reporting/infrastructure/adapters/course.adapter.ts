@@ -16,6 +16,7 @@ export class CourseAdapter implements ICoursePort {
 			name: `${course.yearNumber}° ${course.division}°`,
 			level: course.level,
 			yearNumber: course.yearNumber,
+			shift: course.shift,
 		});
 	}
 }

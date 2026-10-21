@@ -1,6 +1,7 @@
 import { DAYOFWEEK, SUBJECT_KIND } from '@repo/common';
 import { describe, expect, it } from 'vitest';
 import { createSeedState, demoIds } from './seed-data';
+import { isNonWorkingDay } from './selectors';
 import { type DemoStore, createDemoStore } from './store';
 import {
 	DEMO_DEFAULT_PASSWORD,
@@ -474,6 +475,59 @@ describe('alerts + announcements', () => {
 		expect(lastAnnouncement?.status).toBe('published');
 		expect(lastAnnouncement?.targetType).toBe('school');
 		expect(lastAnnouncement?.title).toContain('Paro docente');
+	});
+
+	it('scopes a declared day to the given shifts and names them in the announcement', () => {
+		const store = freshStore();
+		const year = store.getState().academicYears[0];
+		if (!year) throw new Error('seed has no academic year');
+
+		store.declareNonWorkingDay(year.id, {
+			date: '2026-05-15',
+			reason: 'Paro docente turno mañana',
+			notifySchool: true,
+			shifts: [SHIFT.MORNING],
+		});
+
+		const state = store.getState();
+		const updated = state.academicYears.find((y) => y.id === year.id);
+		expect(updated?.nonWorkingDayShifts).toEqual({
+			'2026-05-15': [SHIFT.MORNING],
+		});
+		expect(isNonWorkingDay(state, year.id, '2026-05-15', SHIFT.MORNING)).toBe(
+			true,
+		);
+		expect(isNonWorkingDay(state, year.id, '2026-05-15', SHIFT.AFTERNOON)).toBe(
+			false,
+		);
+		expect(isNonWorkingDay(state, year.id, '2026-05-15')).toBe(true);
+		const last = state.announcements[state.announcements.length - 1];
+		expect(last?.body).toContain('en el turno mañana');
+	});
+
+	it('suspends every shift when no shifts are given and clears a previous scope', () => {
+		const store = freshStore();
+		const year = store.getState().academicYears[0];
+		if (!year) throw new Error('seed has no academic year');
+
+		store.declareNonWorkingDay(year.id, {
+			date: '2026-05-15',
+			reason: 'Paro',
+			notifySchool: false,
+			shifts: [SHIFT.EVENING],
+		});
+		store.declareNonWorkingDay(year.id, {
+			date: '2026-05-15',
+			reason: 'Paro',
+			notifySchool: false,
+		});
+
+		const state = store.getState();
+		const updated = state.academicYears.find((y) => y.id === year.id);
+		expect(updated?.nonWorkingDayShifts?.['2026-05-15']).toBeUndefined();
+		expect(isNonWorkingDay(state, year.id, '2026-05-15', SHIFT.AFTERNOON)).toBe(
+			true,
+		);
 	});
 });
 

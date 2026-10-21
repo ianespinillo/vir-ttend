@@ -2,6 +2,7 @@ import { RequestContext } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { describeShiftScope } from '@repo/common';
 import { NonWorkingDayDeclaredEvent } from '../../../academic/events/non-working-day-declared.event';
 import { Announcement } from '../../domain/entities/announcement.entity';
 import { IAnnouncementRepository } from '../../domain/repositories/announcement.repository.interface';
@@ -42,7 +43,12 @@ export class NonWorkingDayDeclaredListener {
 		});
 
 		const title = `Suspensión de actividades — ${event.reason}`;
-		const body = `Se informa a toda la comunidad educativa que el día ${formattedDate} no habrá dictado de clases ni actividades escolares debido a: ${event.reason}. El día ha sido registrado como no laborable en el calendario académico institucional.`;
+		const shiftScope = describeShiftScope(event.shifts);
+		const where = shiftScope ? ` en el ${shiftScope}` : '';
+		const registered = shiftScope
+			? `El día ha sido registrado como no laborable para el ${shiftScope}`
+			: 'El día ha sido registrado como no laborable';
+		const body = `Se informa a toda la comunidad educativa que el día ${formattedDate} no habrá dictado de clases ni actividades escolares${where} debido a: ${event.reason}. ${registered} en el calendario académico institucional.`;
 
 		const target = new AnnouncementTarget('school', '');
 		const announcement = Announcement.create({

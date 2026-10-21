@@ -1,8 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SHIFT } from '@repo/common';
 import { Transform } from 'class-transformer';
 import {
+	IsArray,
 	IsBoolean,
 	IsDate,
+	IsEnum,
 	IsNotEmpty,
 	IsOptional,
 	IsString,
@@ -50,4 +53,19 @@ export class DeclareNonWorkingDayRequestDto {
 		example: true,
 	})
 	notifySchool?: boolean;
+
+	@IsOptional()
+	@IsArray({ message: 'Los turnos deben ser una lista' })
+	@IsEnum(SHIFT, {
+		each: true,
+		message: 'Cada turno debe ser MORNING, AFTERNOON o EVENING',
+	})
+	@ApiPropertyOptional({
+		enum: SHIFT,
+		isArray: true,
+		description:
+			'Turnos a los que aplica la suspensión. Vacío u omitido = todos los turnos (el día completo).',
+		example: [SHIFT.MORNING],
+	})
+	shifts?: SHIFT[];
 }

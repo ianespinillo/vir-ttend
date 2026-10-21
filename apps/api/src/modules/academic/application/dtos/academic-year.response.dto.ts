@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IAcademicYearResponse } from '@repo/common';
+import { IAcademicYearResponse, SHIFT } from '@repo/common';
 import { AcademicYear } from '../../domain/entities/academic-year.entity';
 
 export class AcademicYearResponseDto implements IAcademicYearResponse {
@@ -42,6 +42,18 @@ export class AcademicYearResponseDto implements IAcademicYearResponse {
 	nonWorkingDays: Date[];
 
 	@ApiProperty({
+		type: 'object',
+		additionalProperties: {
+			type: 'array',
+			items: { type: 'string', enum: Object.values(SHIFT) },
+		},
+		description:
+			'Turnos afectados por cada día no laborable, indexados por fecha (YYYY-MM-DD). Un día sin entrada afecta a todos los turnos.',
+		example: { '2026-07-09': [SHIFT.MORNING] },
+	})
+	nonWorkingDayShifts: Record<string, SHIFT[]>;
+
+	@ApiProperty({
 		type: Number,
 		minimum: 0,
 		maximum: 100,
@@ -72,6 +84,7 @@ export class AcademicYearResponseDto implements IAcademicYearResponse {
 		this.startDate = academicYear.startDate;
 		this.endDate = academicYear.endDate;
 		this.nonWorkingDays = academicYear.nonWorkingDays;
+		this.nonWorkingDayShifts = academicYear.nonWorkingDayShifts;
 		this.absenceThresholdPercent = academicYear.absenceThresholdPercent;
 		this.lateCountAbscenseAfterMinutes =
 			academicYear.lateCountAbscenseAfterMinutes;
