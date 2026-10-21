@@ -28,7 +28,7 @@ User request (2026-10-21). Domain rule confirmed by the user: the course precept
 ## Checklist
 - [x] T1: Course preceptor can assign commission preceptors. Route: delegated writer (2+ non-trivial files). Commit `18ce01b`.
 - [x] T2: Optional shift scope on non-working days. Route: delegated writer (2+ non-trivial files), run in parallel with T1 on the same worktree per user request; writers do not commit, the parent commits each work unit.
-- [ ] T3: Version 1.4.0 + site release notes. Route: inline (mechanical, already understood).
+- [x] T3: Version 1.4.0 + site release notes. Route: inline (mechanical, already understood). Commit: the `chore(release)` commit on this branch.
 
 ## Acceptance criteria
 - T1: a course preceptor gets 200 assigning a preceptor (or themselves, or null) to a commission of their course; 403 for a commission of another course; admin behavior unchanged; UI shows the assignment control to that preceptor.
@@ -52,5 +52,15 @@ User request (2026-10-21). Domain rule confirmed by the user: the course precept
 - T2 UI: shift checkbox group in the declare dialog (none = all shifts); "Turno: …" badge on scoped days in the year card.
 - T2 checks (writer): api 128 suites / 941 tests passed; common 75, ui 215, hooks 38, demo 181 tests passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean. The API resolves `@repo/common` from `dist`: rebuild common before running the API. Not verified: migration against a real DB; no UI test for the checkbox group.
 
+- T2 commit `0186f22`. Parent spot check: `pnpm test -- shift-scope academic-year non-working-day report-generation workshop-commissions` in apps/api → 14 suites / 107 tests passed.
+- Native review of the slice `22e61d5..0186f22` (1082 lines, medium, `slice_budget_reached`): consent granted by the user → reliability lens approved → acknowledged, authority burned (lineage `review-42a00b196f4a3810`). Reviewed boundary is now `0186f22`.
+- T3: the same 10 files as `ded7173` bumped to 1.4.0; `apps/site/content/blog/version-1-4-0.md` covers `ded7173..0186f22`. `pnpm --filter site build` generated `/blog/version-1-4-0`.
+
+## Follow-ups (advisory review findings, non-blocking)
+- R3-partial-shift-adoption: `getExpectedClassesForSubject` and any future caller of `getExpectedClassesForCourse` without `shift` treat a shift-scoped day as suspended for every course. No impact today: the only caller (`CourseSnapshotBuilderService`) passes `course.shift`, and the subject method has no callers.
+- R3-preceptor-course-404-untested: the 404 branch for a missing course or one from another tenant in `assign-workshop-preceptor.handler.ts` has no test.
+- R3-demo-test-shift-import: false positive. `SHIFT` is imported in `apps/demo/src/lib/store/store.test.ts:11`.
+- Not verified: the migration against a real DB; no UI test for the shift checkbox group.
+
 ## Next step
-Launch the T1 and T2 writers.
+Push and open the PR to `main` (user's call). Run the migration on deploy, and rebuild `@repo/common` before starting the API.
