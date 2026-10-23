@@ -40,9 +40,12 @@ export function CourseCard({
 					<CardTitle className="text-lg font-bold text-foreground">
 						{titleName}
 					</CardTitle>
-					<Badge variant="outline" className="shrink-0 bg-primary-ink/5">
-						{shiftLabel}
-					</Badge>
+					<div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+						{course.isActive === false && <Badge variant="secondary">Inactivo</Badge>}
+						<Badge variant="outline" className="bg-primary-ink/5">
+							{shiftLabel}
+						</Badge>
+					</div>
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4 flex-1 flex flex-col justify-between">

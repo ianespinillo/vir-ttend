@@ -47,6 +47,7 @@ export * from './features/academic/use-course';
 export * from './features/academic/use-create-course';
 export * from './features/academic/use-update-course';
 export * from './features/academic/use-delete-course';
+export * from './features/academic/use-set-course-status';
 export * from './features/academic/use-subjects';
 export * from './features/academic/use-create-subject';
 export * from './features/academic/use-update-subject';

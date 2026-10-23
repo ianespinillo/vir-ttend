@@ -34,7 +34,7 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 ## Checklist
 - [x] T1: History tab uses daily records only; justified not duplicated; inclusive bounds; unit spec. Route: inline (one handler + one new spec, mechanical, already understood). Commit `c6351a6`.
 - [x] T2: API — `SetCourseStatusHandler`, `PATCH /courses/:id/status` (ADMIN, `{ isActive: boolean }` validated with `@IsBoolean()`, 200 `CourseResponseDto`, 404 missing/other tenant), `isActive` required in `CourseResponseDto` and optional in `ICourseResponse` (~15 demo/fixture implementers), route constant `ACADEMIC_ROUTES.courseStatus(id)`, unit tests. Route: delegated writer (2+ non-trivial files).
-- [ ] T3: UI — status route constant, `useToggleCourseStatus` hook, activate/deactivate action in `course-detail`, "Inactivo" badge in `course-card` and `course-detail`, wiring in `apps/client` course page, tests. Route: delegated writer (2+ non-trivial files).
+- [x] T3: UI — `useSetCourseStatus` hook (invalidates course detail, `['courses']`, `['attendance','workshop']`), `CourseDetail` `onToggleActive`/`isTogglingActive` (Activar/Desactivar inside `canManage`, outline), "Inactivo" badge in `course-card` and `course-detail`, client page wiring gated by `isAdmin` with confirm only on deactivate, tests. Route: delegated writer (2+ non-trivial files).
 
 ## Acceptance criteria
 - History tab and present counter use the same daily records.
@@ -56,4 +56,5 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 ## Progress / evidence
 - RDD: on (global). Review boundary starts at `22e61d5` (branch point of this work on `dev`).
 - T1 checks: new spec `get-attendance-by-student.handler.spec.ts` 2/2 passed; pre-commit `ts:check` 9/9 and `lint:check` clean. Review assess: medium, `under_budget` (152 lines) → pending in slice.
-- T2 checks (writer): `jest test/unit/academic` 45 suites/273 tests passed; `pnpm --filter api test` 127 suites/916 tests passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean. Parent spot check: handler + controller specs 9/9 passed.
+- T2 checks (writer): `jest test/unit/academic` 45 suites/273 tests passed; `pnpm --filter api test` 127 suites/916 tests passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean. Parent spot check: handler + controller specs 9/9 passed. Commit `d431ca2`. Review assess: medium, `under_budget` (364 lines).
+- T3 checks (writer): hooks vitest 40 passed; ui vitest 219 passed; demo vitest 179 passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean; `pnpm --filter client build` 29/29 pages. Parent spot check: course-detail + course-card tests 13/13 passed; verified `CourseDetailResponseDto` extends `CourseResponseDto` so the detail receives `isActive`. Not verified: real browser run against the API.
