@@ -55,6 +55,11 @@ export function buildRepo(
 	const saved: WorkshopAttendanceRecord[][] = [];
 	return {
 		saved,
+		findById: jest
+			.fn()
+			.mockImplementation(
+				async (id: string) => [...store.values()].find((r) => r.id === id) ?? null,
+			),
 		findByCommissionAndDate: jest
 			.fn()
 			.mockImplementation(async () => [...store.values()]),

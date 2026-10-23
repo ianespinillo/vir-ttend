@@ -2,6 +2,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 // justification.response.dto.ts
 import { Justification } from '../../domain/entities/justification.entity';
 
+/** Fields shared by daily and workshop justifications. */
+type JustificationSource = Pick<
+	Justification,
+	'id' | 'reason' | 'notes' | 'createdBy' | 'createdAt'
+>;
+
 export class JustificationResponseDto {
 	@ApiProperty({
 		description: 'Identificador de la justificación',
@@ -35,7 +41,7 @@ export class JustificationResponseDto {
 	})
 	readonly createdAt: Date;
 
-	constructor(justification: Justification) {
+	constructor(justification: JustificationSource) {
 		this.id = justification.id;
 		this.reason = justification.reason.getRaw();
 		this.notes = justification.notes;

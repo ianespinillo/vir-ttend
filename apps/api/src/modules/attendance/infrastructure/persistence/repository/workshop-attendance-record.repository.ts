@@ -8,6 +8,11 @@ export class WorkshopAttendanceRecordRepository
 	extends EntityRepository<WorkshopAttendanceRecordOrmEntity>
 	implements IWorkshopAttendanceRecordRepository
 {
+	async findById(id: string): Promise<WorkshopAttendanceRecord | null> {
+		const orm = await this.findOne({ id });
+		return orm ? WorkshopAttendanceRecordMapper.toDomain(orm) : null;
+	}
+
 	async findByCommissionAndDate(
 		commissionId: string,
 		date: Date,

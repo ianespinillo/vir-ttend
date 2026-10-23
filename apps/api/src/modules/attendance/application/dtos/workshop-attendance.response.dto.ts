@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ATTENDANCE_STATUS, AttendanceStatus } from '@repo/common';
+import { JustificationResponseDto } from './justification.response.dto';
 
 export class WorkshopAttendanceRecordResponseDto {
 	@ApiProperty({
@@ -38,6 +39,12 @@ export class WorkshopAttendanceRecordResponseDto {
 		type: Date,
 	})
 	readonly editedAt!: Date | null;
+
+	@ApiPropertyOptional({
+		description: 'Justificación asociada al registro, si el estado es justified',
+		type: JustificationResponseDto,
+	})
+	readonly justification?: JustificationResponseDto;
 
 	constructor(props: WorkshopAttendanceRecordResponseDto) {
 		Object.assign(this, props);

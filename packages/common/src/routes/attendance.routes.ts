@@ -14,5 +14,7 @@ export const ATTENDANCE_ROUTES = {
 	teacherSubjects: '/attendance/teacher/subjects',
 	workshop: '/attendance/workshop',
 	workshopAll: '/attendance/workshop/all',
+	workshopJustify: (recordId: string) =>
+		`/attendance/workshop/records/${recordId}/justify`,
 	workshopMyCommissions: '/attendance/workshop/my-commissions',
 } as const;

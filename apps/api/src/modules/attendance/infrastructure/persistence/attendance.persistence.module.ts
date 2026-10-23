@@ -6,10 +6,12 @@ import { AttendanceAlertOrmEntity } from './entities/attendance-alert.orm-entity
 import { AttendanceRecordOrmEntity } from './entities/attendance-record.orm-entity';
 import { JustificationOrmEntity } from './entities/justification.orm-entity';
 import { WorkshopAttendanceRecordOrmEntity } from './entities/workshop-attendance-record.orm-entity';
+import { WorkshopJustificationOrmEntity } from './entities/workshop-justification.orm-entity';
 import { AttendanceAlertRepository } from './repository/attendance-alert.repository';
 import { AttendanceRecordRepository } from './repository/attendance-record.repository';
 import { JustificationRepository } from './repository/justification.repository';
 import { WorkshopAttendanceRecordRepository } from './repository/workshop-attendance-record.repository';
+import { WorkshopJustificationRepository } from './repository/workshop-justification.repository';
 
 @Module({
 	imports: [
@@ -18,6 +20,7 @@ import { WorkshopAttendanceRecordRepository } from './repository/workshop-attend
 			AttendanceRecordOrmEntity,
 			AttendanceAlertOrmEntity,
 			WorkshopAttendanceRecordOrmEntity,
+			WorkshopJustificationOrmEntity,
 		]),
 	],
 	providers: [
@@ -32,6 +35,16 @@ import { WorkshopAttendanceRecordRepository } from './repository/workshop-attend
 		{
 			provide: 'IWorkshopAttendanceRecordRepository',
 			useExisting: WorkshopAttendanceRecordRepository,
+		},
+		{
+			provide: WorkshopJustificationRepository,
+			useFactory: (em: EntityManager) =>
+				em.getRepository(WorkshopJustificationOrmEntity),
+			inject: [EntityManager],
+		},
+		{
+			provide: 'IWorkshopJustificationRepository',
+			useExisting: WorkshopJustificationRepository,
 		},
 		{
 			provide: AttendanceAlertRepository,
@@ -66,6 +79,7 @@ import { WorkshopAttendanceRecordRepository } from './repository/workshop-attend
 		'IAttendanceAlertRepository',
 		'IJustificationRepository',
 		'IWorkshopAttendanceRecordRepository',
+		'IWorkshopJustificationRepository',
 	],
 })
 export class AttendancePersistenceModule {}
