@@ -1,7 +1,7 @@
 # Feature: Course activate/deactivate + student history fixes
 
 ## Status
-IN PROGRESS (started 2026-10-23).
+DONE (2026-10-23). Pushed to `dev`.
 
 ## Objective
 Let admins deactivate and reactivate a course without losing data, and make the student attendance history tab agree with the present counter.
@@ -32,7 +32,7 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 - Demo app parity: the new course-detail prop is optional; the demo store has no course delete.
 
 ## Checklist
-- [x] T1: History tab uses daily records only; justified not duplicated; inclusive bounds; unit spec. Route: inline (one handler + one new spec, mechanical, already understood). Commit `c6351a6`.
+- [x] T1: History tab uses daily records only; justified not duplicated; inclusive bounds; unit spec. Route: inline (one handler + one new spec, mechanical, already understood). Commit `57a15a8`.
 - [x] T2: API — `SetCourseStatusHandler`, `PATCH /courses/:id/status` (ADMIN, `{ isActive: boolean }` validated with `@IsBoolean()`, 200 `CourseResponseDto`, 404 missing/other tenant), `isActive` required in `CourseResponseDto` and optional in `ICourseResponse` (~15 demo/fixture implementers), route constant `ACADEMIC_ROUTES.courseStatus(id)`, unit tests. Route: delegated writer (2+ non-trivial files).
 - [x] T3: UI — `useSetCourseStatus` hook (invalidates course detail, `['courses']`, `['attendance','workshop']`), `CourseDetail` `onToggleActive`/`isTogglingActive` (Activar/Desactivar inside `canManage`, outline), "Inactivo" badge in `course-card` and `course-detail`, client page wiring gated by `isAdmin` with confirm only on deactivate, tests. Route: delegated writer (2+ non-trivial files).
 
@@ -56,5 +56,13 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 ## Progress / evidence
 - RDD: on (global). Review boundary starts at `22e61d5` (branch point of this work on `dev`).
 - T1 checks: new spec `get-attendance-by-student.handler.spec.ts` 2/2 passed; pre-commit `ts:check` 9/9 and `lint:check` clean. Review assess: medium, `under_budget` (152 lines) → pending in slice.
-- T2 checks (writer): `jest test/unit/academic` 45 suites/273 tests passed; `pnpm --filter api test` 127 suites/916 tests passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean. Parent spot check: handler + controller specs 9/9 passed. Commit `d431ca2`. Review assess: medium, `under_budget` (364 lines).
-- T3 checks (writer): hooks vitest 40 passed; ui vitest 219 passed; demo vitest 179 passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean; `pnpm --filter client build` 29/29 pages. Parent spot check: course-detail + course-card tests 13/13 passed; verified `CourseDetailResponseDto` extends `CourseResponseDto` so the detail receives `isActive`. Not verified: real browser run against the API.
+- T2 checks (writer): `jest test/unit/academic` 45 suites/273 tests passed; `pnpm --filter api test` 127 suites/916 tests passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean. Parent spot check: handler + controller specs 9/9 passed. Commit `87b4ca1`. Review assess: medium, `under_budget` (364 lines).
+- T3 checks (writer): hooks vitest 40 passed; ui vitest 219 passed; demo vitest 179 passed; `pnpm ts:check` 9/9; `pnpm lint:check` clean; `pnpm --filter client build` 29/29 pages. Parent spot check: course-detail + course-card tests 13/13 passed; verified `CourseDetailResponseDto` extends `CourseResponseDto` so the detail receives `isActive`. Not verified: real browser run against the API. Commit `183f314`.
+- Native review: assess medium, `slice_budget_reached` (633 lines, base `22e61d5`) → consent granted by the user → lens `review-reliability` → approved, acknowledged (lineage `review-553edbb48c600cc6`, authority burned). Reviewed boundary is now `183f314`.
+
+## Follow-ups (advisory review findings, non-blocking)
+- Boundary-day finding refuted: `findDailyByStudentAndDateRange` uses `$gte`/`$lte` (`attendance-record.repository.ts:160`).
+- R3-status-body-validation-untested: no test drives `PATCH /courses/:id/status` through the validation pipe (missing, string "false", null).
+- R3-preceptor-name-path-untested: handler spec never covers a course with a preceptor (`preceptorName` lookup).
+- Client page toggle wiring has no automated test.
+- Option B (inactive courses hidden from daily/subject attendance, new attendance rejected) not done.
