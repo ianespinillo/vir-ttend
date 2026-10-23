@@ -9,6 +9,7 @@ import { FileText } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../../../../ui/avatar';
 import { Badge } from '../../../../ui/badge';
 import { Button } from '../../../../ui/button';
+import { Checkbox } from '../../../../ui/checkbox';
 import {
 	Tooltip,
 	TooltipContent,
@@ -16,6 +17,10 @@ import {
 	TooltipTrigger,
 } from '../../../../ui/tooltip';
 import { AttendanceStatusSelect } from './attendance-status-select';
+import {
+	isBulkJustifiableRow,
+	isJustifiableRecord,
+} from './justifiable-record';
 
 export interface StudentRowItem {
 	id: string;
@@ -30,6 +35,10 @@ export interface AttendanceRowProps {
 	onJustify?: (record: AttendanceRecord) => void;
 	isSaving?: boolean;
 	isPending?: boolean;
+	/** Renders the selection cell (bulk justification). */
+	selectable?: boolean;
+	isSelected?: boolean;
+	onToggleSelect?: (recordId: string) => void;
 }
 
 export function AttendanceRow({
@@ -38,6 +47,9 @@ export function AttendanceRow({
 	onJustify,
 	isSaving,
 	isPending,
+	selectable = false,
+	isSelected = false,
+	onToggleSelect,
 }: AttendanceRowProps) {
 	const currentStatus = student.attendanceRecord?.status;
 	const justification = student.attendanceRecord?.justification;
@@ -52,16 +64,23 @@ export function AttendanceRow({
 			.toUpperCase();
 	};
 
-	// Absences and late arrivals can be justified (same rule as the API).
-	const canJustify =
-		(currentStatus === ATTENDANCE_STATUS.ABSENT ||
-			currentStatus === ATTENDANCE_STATUS.LATE ||
-			currentStatus === ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE) &&
-		student.attendanceRecord?.id &&
-		onJustify;
+	const canJustify = isJustifiableRecord(student.attendanceRecord) && onJustify;
+	const recordId = student.attendanceRecord?.id;
+	const canSelect = Boolean(recordId) && isBulkJustifiableRow(student);
 
 	return (
 		<tr className="border-b border-border/50 hover:bg-muted/40 transition-colors">
+			{selectable && (
+				<td className="py-3 px-4 w-10">
+					{canSelect && recordId && (
+						<Checkbox
+							checked={isSelected}
+							onCheckedChange={() => onToggleSelect?.(recordId)}
+							aria-label={`Seleccionar a ${student.name}`}
+						/>
+					)}
+				</td>
+			)}
 			<td className="py-3 px-4">
 				<div className="flex items-center gap-3">
 					<Avatar className="h-8 w-8 border border-border">

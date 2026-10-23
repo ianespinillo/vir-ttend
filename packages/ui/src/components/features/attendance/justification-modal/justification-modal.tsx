@@ -24,6 +24,8 @@ export interface JustificationModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	studentName?: string;
+	/** Bulk mode: number of selected students sharing the same justification. */
+	studentCount?: number;
 	onConfirm: (reason: string, notes?: string) => Promise<void>;
 	isSubmitting?: boolean;
 }
@@ -41,6 +43,7 @@ export function JustificationModal({
 	isOpen,
 	onClose,
 	studentName,
+	studentCount,
 	onConfirm,
 	isSubmitting,
 }: JustificationModalProps) {
@@ -60,6 +63,7 @@ export function JustificationModal({
 		onClose();
 	};
 
+	const isBulk = studentCount !== undefined && studentCount > 0;
 	const finalReasonValid =
 		reason === 'Otro' ? Boolean(customReason.trim()) : Boolean(reason);
 
@@ -68,11 +72,17 @@ export function JustificationModal({
 			<DialogContent className="sm:max-w-md">
 				<form onSubmit={handleSubmit}>
 					<DialogHeader>
-						<DialogTitle>Justificar Inasistencia</DialogTitle>
+						<DialogTitle>
+							{isBulk
+								? `Justificar ${studentCount} ${studentCount === 1 ? 'alumno' : 'alumnos'}`
+								: 'Justificar Inasistencia'}
+						</DialogTitle>
 						<DialogDescription>
-							{studentName
-								? `Registrar motivo de inasistencia/tardanza para ${studentName}.`
-								: 'Registrar motivo de inasistencia o tardanza.'}
+							{isBulk
+								? 'Se registrará el mismo motivo para todas las inasistencias y tardanzas seleccionadas.'
+								: studentName
+									? `Registrar motivo de inasistencia/tardanza para ${studentName}.`
+									: 'Registrar motivo de inasistencia o tardanza.'}
 						</DialogDescription>
 					</DialogHeader>
 

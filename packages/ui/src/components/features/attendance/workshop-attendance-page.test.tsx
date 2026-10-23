@@ -162,3 +162,40 @@ describe('WorkshopAttendancePage', () => {
 		});
 	});
 });
+
+describe('WorkshopAttendancePage bulk justification', () => {
+	it('hides the bulk button when nothing is selected', () => {
+		renderPage({
+			selectedCommissionId: 'c-1',
+			selectedRecordIds: new Set(),
+			onBulkJustify: vi.fn(),
+		});
+		expect(
+			screen.queryByText(/Justificar seleccionados/),
+		).not.toBeInTheDocument();
+	});
+
+	it('shows the bulk button with the count and calls onBulkJustify', () => {
+		const props = renderPage({
+			selectedCommissionId: 'c-1',
+			selectedRecordIds: new Set(['r-1', 'r-2']),
+			onBulkJustify: vi.fn(),
+		});
+		fireEvent.click(
+			screen.getByRole('button', { name: /Justificar seleccionados \(2\)/ }),
+		);
+		expect(props.onBulkJustify).toHaveBeenCalledTimes(1);
+	});
+
+	it('titles the justification modal with the number of students in bulk mode', () => {
+		renderPage({
+			selectedCommissionId: 'c-1',
+			onJustify: vi.fn(),
+			onCloseJustify: vi.fn(),
+			onConfirmJustify: vi.fn(),
+			isJustifyOpen: true,
+			bulkJustifyCount: 2,
+		});
+		expect(screen.getByText('Justificar 2 alumnos')).toBeInTheDocument();
+	});
+});
