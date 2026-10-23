@@ -60,6 +60,11 @@ export function buildRepo(
 			.mockImplementation(
 				async (id: string) => [...store.values()].find((r) => r.id === id) ?? null,
 			),
+		findByIds: jest
+			.fn()
+			.mockImplementation(async (ids: string[]) =>
+				[...store.values()].filter((r) => ids.includes(r.id)),
+			),
 		findByCommissionAndDate: jest
 			.fn()
 			.mockImplementation(async () => [...store.values()]),

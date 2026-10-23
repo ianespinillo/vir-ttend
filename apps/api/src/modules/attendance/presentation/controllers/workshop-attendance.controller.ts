@@ -19,12 +19,15 @@ import { CurrentUser } from '../../../../common/decorators/current-user.decorato
 import { RolesDecorator } from '../../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { RolesGuard } from '../../../../common/guard/roles.guard';
+import { BulkJustifyWorkshopAttendanceCommand } from '../../application/commands/bulk-justify-workshop-attendance/bulk-justify-workshop-attendance.command';
+import { BulkJustifyWorkshopAttendanceHandler } from '../../application/commands/bulk-justify-workshop-attendance/bulk-justify-workshop-attendance.handler';
 import { BulkRegisterWorkshopAttendanceCommand } from '../../application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.command';
 import { BulkRegisterWorkshopAttendanceHandler } from '../../application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.handler';
 import { JustifyWorkshopAttendanceCommand } from '../../application/commands/justify-workshop-attendance/justify-workshop-attendance.command';
 import { JustifyWorkshopAttendanceHandler } from '../../application/commands/justify-workshop-attendance/justify-workshop-attendance.handler';
 import { RegisterWorkshopAttendanceCommand } from '../../application/commands/register-workshop-attendance/register-workshop-attendance.command';
 import { RegisterWorkshopAttendanceHandler } from '../../application/commands/register-workshop-attendance/register-workshop-attendance.handler';
+import { BulkJustifyAttendanceRequestDto } from '../../application/dtos/bulk-justify-attendance.request.dto';
 import { JustifyAttendanceRequestDto } from '../../application/dtos/justify-attendance.request.dto';
 import {
 	BulkRegisterWorkshopAttendanceRequestDto,
@@ -52,6 +55,7 @@ export class WorkshopAttendanceController {
 		private readonly getAttendanceHandler: GetWorkshopAttendanceQueryHandler,
 		private readonly getMyCommissionsHandler: GetMyWorkshopCommissionsQueryHandler,
 		private readonly justifyHandler: JustifyWorkshopAttendanceHandler,
+		private readonly bulkJustifyHandler: BulkJustifyWorkshopAttendanceHandler,
 	) {}
 
 	@ApiOperation({
@@ -219,6 +223,45 @@ export class WorkshopAttendanceController {
 				user.sub,
 				user.role,
 				recordId,
+				dto.reason,
+				dto.notes,
+			),
+		);
+	}
+	@ApiOperation({
+		summary: 'Justificar varias inasistencias o tardanzas de taller',
+		description: `Justifica en una sola operación todos los registros de asistencia de taller indicados con el mismo motivo. Es todo o nada: si algún registro no se puede justificar (por ejemplo, de una comisión de otro preceptor) no se guarda ninguno. Roles permitidos: admin, y preceptor asignado a la comisión de cada registro. Body de ejemplo:
+{
+  "recordIds": ["5c4d3e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f"],
+  "reason": "Certificado médico",
+  "notes": "Presenta certificado emitido por el hospital"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Justificaciones registradas. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }; data es { justified: number }.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({
+		status: 422,
+		description:
+			'Algún registro no se puede justificar. No se justificó ninguno y "details" lista cada recordId con su motivo.',
+	})
+	@Post('records/justify/bulk')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async justifyBulk(
+		@Body() dto: BulkJustifyAttendanceRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.bulkJustifyHandler.execute(
+			new BulkJustifyWorkshopAttendanceCommand(
+				user.tenantId,
+				user.sub,
+				user.role,
+				dto.recordIds,
 				dto.reason,
 				dto.notes,
 			),

@@ -13,6 +13,12 @@ export class WorkshopAttendanceRecordRepository
 		return orm ? WorkshopAttendanceRecordMapper.toDomain(orm) : null;
 	}
 
+	async findByIds(ids: string[]): Promise<WorkshopAttendanceRecord[]> {
+		if (ids.length === 0) return [];
+		const orms = await this.find({ id: { $in: ids } });
+		return orms.map((orm) => WorkshopAttendanceRecordMapper.toDomain(orm));
+	}
+
 	async findByCommissionAndDate(
 		commissionId: string,
 		date: Date,

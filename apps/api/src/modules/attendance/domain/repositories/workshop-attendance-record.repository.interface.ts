@@ -2,6 +2,8 @@ import { WorkshopAttendanceRecord } from '../entities/workshop-attendance-record
 
 export interface IWorkshopAttendanceRecordRepository {
 	findById(id: string): Promise<WorkshopAttendanceRecord | null>;
+	/** Records with the given ids, in a single query. */
+	findByIds(ids: string[]): Promise<WorkshopAttendanceRecord[]>;
 	findByCommissionAndDate(
 		commissionId: string,
 		date: Date,

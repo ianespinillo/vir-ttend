@@ -13,6 +13,9 @@ export interface RawCourseMetrics {
 export interface IAttendanceRecordRepository {
 	findById(id: string): Promise<AttendanceRecord | null>;
 
+	/** Records with the given ids (daily and subject), in a single query. */
+	findByIds(ids: string[]): Promise<AttendanceRecord[]>;
+
 	findByCourseAndDate(courseId: string, date: Date): Promise<AttendanceRecord[]>;
 
 	/** Daily records only (no subject) of a course for a calendar day. */

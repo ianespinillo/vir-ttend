@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AcademicModule } from '../academic/academic.module';
 import { AcademicPersistenceModule } from '../academic/infrastructure/persistence/academic.persistence.module';
+import { BulkJustifyAttendanceHandler } from './application/commands/bulk-justify-attendance/bulk-justify-attendance.handler';
+import { BulkJustifyWorkshopAttendanceHandler } from './application/commands/bulk-justify-workshop-attendance/bulk-justify-workshop-attendance.handler';
 import { BulkRegisterAttendanceHandler } from './application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { BulkRegisterWorkshopAttendanceHandler } from './application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.handler';
 import { BulkUpdateSubjectStatusHandler } from './application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
@@ -92,6 +94,8 @@ import { WorkshopAttendanceController } from './presentation/controllers/worksho
 		BulkRegisterAttendanceHandler,
 		BulkUpdateSubjectStatusHandler,
 		JustifyAttendanceHandler,
+		BulkJustifyAttendanceHandler,
+		BulkJustifyWorkshopAttendanceHandler,
 		JustifyWorkshopAttendanceHandler,
 		CopyAttendanceHandler,
 		CopyDailyAttendanceHandler,
