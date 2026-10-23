@@ -1,7 +1,7 @@
 # Feature: Justify workshop attendance
 
 ## Status
-IN PROGRESS (started 2026-10-23).
+DONE (2026-10-23). Delivered in PR #92 (`dev` → `main`).
 
 ## Objective
 Let preceptors (and admins) justify a workshop absence or late arrival from the workshop attendance page, the same way they do in daily attendance (reason, optional notes, "Justificado" badge).
@@ -59,3 +59,6 @@ User report (2026-10-23): "en la sección de asistencia por taller, la prece no 
 - [x] T5: tenant check on single daily justify — `JustifyAttendanceCommand` gets `tenantId` (from `user.tenantId` in the controller); the handler reports a record of another tenant as not found (no existence leak) before any other lookup. New spec case "treats a record of another tenant as missing and changes nothing"; it fails on the old handler and passes with the fix (justify spec 8/8). API `tsc` and biome on touched files OK. Route: inline (3 small files, already understood).
 - Mobile workshop justification; demo parity.
 - T4 (writer, claims verified by the parent against the diff): `useBulkJustifyAttendance` (invalidates daily + metrics for course/date, falls back to `['attendance']`) and `useBulkJustifyWorkshopAttendance` (invalidates workshop for commission/date, falls back to `['attendance','workshop']`), both tested in `use-bulk-justify-attendance.test.tsx`. `AttendanceGrid` opt-in checkbox column (`selectedRecordIds`, `onToggleSelect`, `onToggleSelectAll`); justifiable rule extracted to `attendance-grid/justifiable-record.ts` (`isJustifiableRecord`, used by the row; `isBulkJustifiableRow` also requires no justification and an unedited status). Daily and workshop pages: "Justificar seleccionados (N)"; `JustificationModal` `studentCount` → "Justificar N alumnos". Containers clear the selection on date/course/commission change, after success and on "mark all", drop a student when their status is edited, keep it on failure; 422 toast names how many records failed. Checks (writer): hooks 48 tests, ui 236 tests, demo 181 tests, `ts:check` 9/9, `lint:check` clean, client build OK (hooks/ui/demo ran before a last client-only edit; ts/lint/build after). Not verified: real browser run against the API.
+- T5 commit `9141702`; T4 commit `3ea5832`. Full api jest after T5: 136 suites/1002 tests passed.
+- Native review: every slice of this feature was offered and the user declined each one (`ceb6636`; `5250f8a..8072da6`; `3ea5832..9141702`). No review receipt exists for this feature.
+- Delivery: user asked "pr a main ya"; `dev` pushed and PR #92 opened. PR #91 (1.4.1) had already been merged to `main` by the user. The migration `Migration20261023120000_workshop_justification` runs on deploy and was not run against a database beforehand.
