@@ -140,7 +140,7 @@ const config: ExpoConfig = {
 	slug: 'vir-ttend',
 	owner: 'ianespi',
 	scheme: variantConfig.scheme,
-	version: '1.4.0',
+	version: '1.4.1',
 	orientation: 'portrait',
 	icon: `${variantConfig.assetsDir}/icon.png`,
 	userInterfaceStyle: 'automatic',

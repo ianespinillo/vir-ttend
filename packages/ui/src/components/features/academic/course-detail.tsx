@@ -17,6 +17,8 @@ import {
 	Clock,
 	Edit,
 	GraduationCap,
+	Power,
+	PowerOff,
 	Trash2,
 	Upload,
 	UserCheck,
@@ -45,6 +47,9 @@ export interface CourseDetailProps {
 	onBack?: () => void;
 	onEdit?: () => void;
 	onDelete?: () => void;
+	/** Receives the new state: false to deactivate, true to activate. */
+	onToggleActive?: (isActive: boolean) => void;
+	isTogglingActive?: boolean;
 	onAddSubject?: () => void;
 	onEditSubject?: (subject: ISubjectResponse) => void;
 	onDeleteSubject?: (subject: ISubjectResponse) => void;
@@ -78,6 +83,8 @@ export function CourseDetail({
 	onBack,
 	onEdit,
 	onDelete,
+	onToggleActive,
+	isTogglingActive = false,
 	onAddSubject,
 	onEditSubject,
 	onDeleteSubject,
@@ -161,6 +168,9 @@ export function CourseDetail({
 									{levelLabel}
 								</Badge>
 								<Badge variant="outline">{shiftLabel}</Badge>
+								{course.isActive === false && (
+									<Badge variant="secondary">Inactivo</Badge>
+								)}
 							</div>
 							<div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
 								<span className="flex items-center gap-1.5">
@@ -197,6 +207,22 @@ export function CourseDetail({
 									>
 										<Edit className="h-4 w-4" />
 										Editar Curso
+									</Button>
+								)}
+								{onToggleActive && (
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => onToggleActive(course.isActive === false)}
+										disabled={isTogglingActive}
+										className="gap-1.5"
+									>
+										{course.isActive === false ? (
+											<Power className="h-4 w-4" />
+										) : (
+											<PowerOff className="h-4 w-4" />
+										)}
+										{course.isActive === false ? 'Activar' : 'Desactivar'}
 									</Button>
 								)}
 								{onDelete && (

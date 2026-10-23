@@ -7,7 +7,7 @@ import {
 	STUDENTSTATUS,
 } from '@repo/common';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CourseDetail } from './course-detail';
 
 const course: ICourseDetailResponse = {
@@ -130,6 +130,63 @@ describe('CourseDetail', () => {
 		);
 
 		expect(screen.getByRole('tab', { name: 'Comisiones' })).toBeInTheDocument();
+	});
+
+	it('shows the Inactivo badge only for inactive courses', () => {
+		const { rerender } = render(
+			<CourseDetail course={{ ...course, isActive: false }} />,
+		);
+		expect(screen.getByText('Inactivo')).toBeInTheDocument();
+
+		rerender(<CourseDetail course={{ ...course, isActive: true }} />);
+		expect(screen.queryByText('Inactivo')).not.toBeInTheDocument();
+
+		rerender(<CourseDetail course={course} />);
+		expect(screen.queryByText('Inactivo')).not.toBeInTheDocument();
+	});
+
+	it('deactivates an active course through onToggleActive(false)', () => {
+		const onToggleActive = vi.fn();
+		render(
+			<CourseDetail
+				course={{ ...course, isActive: true }}
+				canManage
+				onToggleActive={onToggleActive}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Desactivar' }));
+
+		expect(onToggleActive).toHaveBeenCalledWith(false);
+		expect(
+			screen.queryByRole('button', { name: 'Activar' }),
+		).not.toBeInTheDocument();
+	});
+
+	it('activates an inactive course through onToggleActive(true)', () => {
+		const onToggleActive = vi.fn();
+		render(
+			<CourseDetail
+				course={{ ...course, isActive: false }}
+				canManage
+				onToggleActive={onToggleActive}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Activar' }));
+
+		expect(onToggleActive).toHaveBeenCalledWith(true);
+	});
+
+	it('hides the status action without onToggleActive', () => {
+		render(<CourseDetail course={course} canManage />);
+
+		expect(
+			screen.queryByRole('button', { name: 'Desactivar' }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole('button', { name: 'Activar' }),
+		).not.toBeInTheDocument();
 	});
 
 	it('hides the Comisiones tab when no content is given', () => {

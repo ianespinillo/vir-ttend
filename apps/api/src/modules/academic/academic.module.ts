@@ -20,6 +20,7 @@ import { PreviewStudentImportHandler } from './application/commands/import-stude
 import { StudentImportService } from './application/commands/import-students/student-import.service';
 import { MoveStudentToCommissionHandler } from './application/commands/move-student-to-commission/move-student-to-commission.handler';
 import { RegenerateWorkshopCommissionsHandler } from './application/commands/regenerate-workshop-commissions/regenerate-workshop-commissions.handler';
+import { SetCourseStatusHandler } from './application/commands/set-course-status/set-course-status.handler';
 import { SetScheduleHandler } from './application/commands/set-schedule/set-schedule.handler';
 import { TransferStudentHandler } from './application/commands/transer-student/transer-student.handler';
 import { UpdateAcademicYearHandler } from './application/commands/update-academic-year/update-academic-year.handler';
@@ -77,6 +78,7 @@ import { WorkshopCommissionsController } from './presentation/controllers/worksh
 		CreateCourseHandler,
 		CreateSubjectHandler,
 		DeleteCourseHandler,
+		SetCourseStatusHandler,
 		DeleteSubjectHandler,
 		SetScheduleHandler,
 		UpdateAcademicYearHandler,

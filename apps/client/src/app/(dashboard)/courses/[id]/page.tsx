@@ -21,6 +21,7 @@ import {
 	useMoveStudentToCommission,
 	useRegenerateWorkshopCommissions,
 	useSchedule,
+	useSetCourseStatus,
 	useSetSchedule,
 	useStudents,
 	useSubjects,
@@ -88,6 +89,7 @@ export default function CourseDetailPage() {
 
 	const updateCourseMutation = useUpdateCourse();
 	const deleteCourseMutation = useDeleteCourse();
+	const setCourseStatusMutation = useSetCourseStatus();
 	const createSubjectMutation = useCreateSubject();
 	const updateSubjectMutation = useUpdateSubject();
 	const deleteSubjectMutation = useDeleteSubject();
@@ -150,6 +152,31 @@ export default function CourseDetailPage() {
 						'Error al eliminar el curso',
 				);
 			}
+		}
+	};
+
+	const handleToggleCourseActive = async (isActive: boolean) => {
+		if (
+			!isActive &&
+			!window.confirm(
+				'¿Desactivar este curso? Podés volver a activarlo cuando quieras.',
+			)
+		) {
+			return;
+		}
+		try {
+			await setCourseStatusMutation.mutateAsync({ courseId, isActive });
+			toast.success(isActive ? 'Curso activado' : 'Curso desactivado');
+		} catch (err: unknown) {
+			const errorObj = err as {
+				response?: { data?: { message?: string } };
+				message?: string;
+			};
+			toast.error(
+				errorObj?.response?.data?.message ||
+					errorObj?.message ||
+					(isActive ? 'Error al activar el curso' : 'Error al desactivar el curso'),
+			);
 		}
 	};
 
@@ -321,6 +348,8 @@ export default function CourseDetailPage() {
 				onBack={handleBack}
 				onEdit={() => setIsEditingCourse(true)}
 				onDelete={handleDeleteCourse}
+				onToggleActive={isAdmin ? handleToggleCourseActive : undefined}
+				isTogglingActive={setCourseStatusMutation.isPending}
 				onAddSubject={() => setSubjectModalState({ open: true, subject: null })}
 				onEditSubject={(subject) => setSubjectModalState({ open: true, subject })}
 				onDeleteSubject={isAdmin ? handleDeleteSubject : undefined}

@@ -4,6 +4,7 @@ import {
 	Delete,
 	Get,
 	Param,
+	Patch,
 	Post,
 	Put,
 	Query,
@@ -29,11 +30,14 @@ import { CreateCourseCommand } from '../../application/commands/create-course/cr
 import { CreateCourseHandler } from '../../application/commands/create-course/create-course.handler';
 import { DeleteCourseCommand } from '../../application/commands/delete-course/delete-course.command';
 import { DeleteCourseHandler } from '../../application/commands/delete-course/delete-course.handler';
+import { SetCourseStatusCommand } from '../../application/commands/set-course-status/set-course-status.command';
+import { SetCourseStatusHandler } from '../../application/commands/set-course-status/set-course-status.handler';
 import { UpdateCourseCommand } from '../../application/commands/update-course/update-course.command';
 import { UpdateCourseHandler } from '../../application/commands/update-course/update-course.handler';
 import { CourseDetailResponseDto } from '../../application/dtos/course-detail.response.dto';
 import { CourseResponseDto } from '../../application/dtos/course.response.dto';
 import { CreateCourseRequestDto } from '../../application/dtos/create-course.request.dto';
+import { SetCourseStatusRequestDto } from '../../application/dtos/set-course-status.request.dto';
 import { UpdateCourseRequestDto } from '../../application/dtos/update-course.request.dto';
 import { GetCourseHandler } from '../../application/queries/get-course/get-course.handler';
 import { GetCourseQuery } from '../../application/queries/get-course/get-course.query';
@@ -55,6 +59,7 @@ export class CoursesController {
 		private readonly getCoursesHandler: GetCoursesHandler,
 		private readonly getCourseHandler: GetCourseHandler,
 		private readonly getCoursesByPreceptorHandler: GetCoursesByPreceptorHandler,
+		private readonly setCourseStatusHandler: SetCourseStatusHandler,
 	) {}
 
 	@Post()
@@ -252,6 +257,39 @@ export class CoursesController {
 	@ApiResponse({ status: 404, description: 'Curso no encontrado' })
 	async delete(@Param('id') id: string) {
 		return this.deleteCourseHandler.execute(new DeleteCourseCommand(id));
+	}
+
+	@Patch(':id/status')
+	@RolesDecorator(ROLES.ADMIN)
+	@ApiOperation({
+		summary: 'Activar o desactivar un curso',
+		description:
+			'Activa o desactiva un curso de forma reversible. Solo cambia el estado del curso: no modifica materias, horarios ni alumnos. Roles permitidos: admin. ' +
+			'Body de ejemplo: {"isActive": false}. ' +
+			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
+	})
+	@ApiParam({
+		name: 'id',
+		description: 'ID del curso.',
+		example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Curso con su nuevo estado.',
+		type: CourseResponseDto,
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({ status: 404, description: 'Curso no encontrado' })
+	async setStatus(
+		@Param('id') id: string,
+		@Body() dto: SetCourseStatusRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.setCourseStatusHandler.execute(
+			new SetCourseStatusCommand(id, user.tenantId, dto.isActive),
+		);
 	}
 
 	@Put(':id/preceptor')

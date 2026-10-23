@@ -69,6 +69,13 @@ export class CourseResponseDto implements ICourseResponse {
 	})
 	fullName: string;
 
+	@ApiProperty({
+		type: Boolean,
+		description: 'Indica si el curso está activo.',
+		example: true,
+	})
+	isActive: boolean;
+
 	constructor(course: Course, preceptorName: string) {
 		this.id = course.id.getRaw();
 		this.preceptorName = preceptorName;
@@ -78,5 +85,6 @@ export class CourseResponseDto implements ICourseResponse {
 		this.shift = course.shift;
 		this.preceptorId = course.preceptorId;
 		this.fullName = CourseService.calculateFulName(course);
+		this.isActive = course.isActive;
 	}
 }
