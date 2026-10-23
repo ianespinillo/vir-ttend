@@ -1,7 +1,7 @@
 # Feature: Course activate/deactivate + student history fixes
 
 ## Status
-IN PROGRESS (2026-10-23). T1–T3 pushed to `dev`; T4 (review follow-ups) authorized by the user ("si").
+DONE (2026-10-23). T1–T3 pushed to `dev`; T4 committed (`e3e7256`), then `origin/main` (1.4.0) merged into `dev` (`72db617`) and version bumped to 1.4.1 (`756d292`).
 
 ## Objective
 Let admins deactivate and reactivate a course without losing data, and make the student attendance history tab agree with the present counter.
@@ -68,3 +68,5 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 - Client page toggle wiring has no automated test.
 - Option B (inactive courses hidden from daily/subject attendance, new attendance rejected) not done.
 - T4 (writer + parent): new `set-course-status.request-validation.spec.ts` (true/false accepted and kept boolean; missing, null, "false", "true", 0 rejected) and two handler cases (existing preceptor name; missing preceptor → 'Sin asignar'). Writer found a real bug: the global pipe's `enableImplicitConversion` turned the string "false" into `true`, so `{"isActive":"false"}` passed validation and would have activated the course. Parent fixed it in `SetCourseStatusRequestDto` with `@Transform(({ obj }) => obj.isActive)` so `@IsBoolean()` sees the raw value; the 3 string/number cases fail without the fix and pass with it. Client toggle test not done: `apps/client` has no test runner (no new infra added). Checks: course status specs 13/13; writer `pnpm --filter api test` 128 suites/922 tests, `ts:check` 9/9, `lint:check` clean.
+- Release: `origin/main` already shipped 1.4.0 (PR #90, `a4d0bd8`, blog post `version-1-4-0.md`); `dev` was behind. Merged `origin/main` into `dev` with no conflicts (`72db617`); post-merge checks: `ts:check` 9/9, `lint:check` clean, api jest 131 suites/957 tests, ui and hooks vitest passed. Bumped 1.4.0 → 1.4.1 in the same 10 files as previous bumps (`756d292`). No 1.4.1 blog post yet.
+- Native review of `ce31589..756d292` (includes the main merge): assess high (`.github/workflows/cd.yaml` from main), consent granted by the user → 4 lenses → approved, acknowledged (lineage `review-409532d709a3bdf8`, authority burned). Advisory findings mostly target main's shift-suspension feature (duplicated announcement wording and scope rule in demo, untested preceptor-course 404, shifts validation spec without implicit conversion, shift default suspends all); candidate-caused: version 1.4.1 has no release note, and this status line (fixed here).
