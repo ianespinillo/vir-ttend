@@ -1,7 +1,7 @@
 # Feature: Course activate/deactivate + student history fixes
 
 ## Status
-DONE (2026-10-23). Pushed to `dev`.
+IN PROGRESS (2026-10-23). T1–T3 pushed to `dev`; T4 (review follow-ups) authorized by the user ("si").
 
 ## Objective
 Let admins deactivate and reactivate a course without losing data, and make the student attendance history tab agree with the present counter.
@@ -25,7 +25,7 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 
 ## Decisions
 - D1 (parent default, user did not pick between A/B; user said "fixea todo"): option A — inactive is a visible state; only workshop attendance hides inactive courses (current behavior). Hiding inactive courses from daily/subject attendance and rejecting new attendance (option B) is out of scope, can be added later.
-- D2: the status route mirrors `PATCH /users/:id/status` (`@Body('isActive')`).
+- D2: the status route follows the shape of `PATCH /users/:id/status`, but validates the whole body with `SetCourseStatusRequestDto` (`@IsBoolean()`) instead of the bare `@Body('isActive')`, which has no validation.
 
 ## Out of scope
 - Restoring soft-deleted subjects or hard-deleted schedule slots from the app. Production recovery of `7° 1°` is a data fix (see Production recovery).
@@ -35,6 +35,7 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 - [x] T1: History tab uses daily records only; justified not duplicated; inclusive bounds; unit spec. Route: inline (one handler + one new spec, mechanical, already understood). Commit `57a15a8`.
 - [x] T2: API — `SetCourseStatusHandler`, `PATCH /courses/:id/status` (ADMIN, `{ isActive: boolean }` validated with `@IsBoolean()`, 200 `CourseResponseDto`, 404 missing/other tenant), `isActive` required in `CourseResponseDto` and optional in `ICourseResponse` (~15 demo/fixture implementers), route constant `ACADEMIC_ROUTES.courseStatus(id)`, unit tests. Route: delegated writer (2+ non-trivial files).
 - [x] T3: UI — `useSetCourseStatus` hook (invalidates course detail, `['courses']`, `['attendance','workshop']`), `CourseDetail` `onToggleActive`/`isTogglingActive` (Activar/Desactivar inside `canManage`, outline), "Inactivo" badge in `course-card` and `course-detail`, client page wiring gated by `isAdmin` with confirm only on deactivate, tests. Route: delegated writer (2+ non-trivial files).
+- [x] T4: Review follow-ups — request-validation spec for `SetCourseStatusRequestDto` through `ValidationPipe` (missing, null, "false" rejected; true/false accepted); handler spec for a course with a preceptor (name returned) and a preceptor that no longer exists (fallback); client toggle wiring test if `apps/client` has a test runner (otherwise reported, no new infra); D2 corrected. Route: delegated writer (2+ non-trivial test files).
 
 ## Acceptance criteria
 - History tab and present counter use the same daily records.
@@ -66,3 +67,4 @@ There is no reversible way to take a course out of use, and no way to undo a mis
 - R3-preceptor-name-path-untested: handler spec never covers a course with a preceptor (`preceptorName` lookup).
 - Client page toggle wiring has no automated test.
 - Option B (inactive courses hidden from daily/subject attendance, new attendance rejected) not done.
+- T4 (writer + parent): new `set-course-status.request-validation.spec.ts` (true/false accepted and kept boolean; missing, null, "false", "true", 0 rejected) and two handler cases (existing preceptor name; missing preceptor → 'Sin asignar'). Writer found a real bug: the global pipe's `enableImplicitConversion` turned the string "false" into `true`, so `{"isActive":"false"}` passed validation and would have activated the course. Parent fixed it in `SetCourseStatusRequestDto` with `@Transform(({ obj }) => obj.isActive)` so `@IsBoolean()` sees the raw value; the 3 string/number cases fail without the fix and pass with it. Client toggle test not done: `apps/client` has no test runner (no new infra added). Checks: course status specs 13/13; writer `pnpm --filter api test` 128 suites/922 tests, `ts:check` 9/9, `lint:check` clean.

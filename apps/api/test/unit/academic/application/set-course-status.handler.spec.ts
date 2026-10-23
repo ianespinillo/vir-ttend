@@ -5,6 +5,7 @@ import { SetCourseStatusCommand } from '../../../../src/modules/academic/applica
 import { SetCourseStatusHandler } from '../../../../src/modules/academic/application/commands/set-course-status/set-course-status.handler';
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
+import { User } from '../../../../src/modules/identity/domain/entities/user.entity';
 import { IUserRepository } from '../../../../src/modules/identity/domain/repositories/user.repository.interface';
 import { expectRejection } from '../expect-rejection';
 
@@ -14,12 +15,12 @@ describe('SetCourseStatusHandler', () => {
 	let courseRepository: MockProxy<ICourseRepository>;
 	let userRepository: MockProxy<IUserRepository>;
 
-	const buildCourse = (isActive: boolean) =>
+	const buildCourse = (isActive: boolean, preceptorId = '') =>
 		Course.reconstitute({
 			id: 'course-1',
 			tenantId: 'tenant-id',
 			academicYearId: 'ay-1',
-			preceptorId: '',
+			preceptorId,
 			level: LEVEL.PRIMARY,
 			yearNumber: 3,
 			division: 'A',
@@ -87,5 +88,46 @@ describe('SetCourseStatusHandler', () => {
 		);
 		expect(course.isActive).toBe(true);
 		expect(courseRepository.save).not.toHaveBeenCalled();
+	});
+
+	describe('preceptor name', () => {
+		it('returns the full name of the assigned preceptor', async () => {
+			const user = User.reconstitute({
+				id: 'preceptor-1',
+				email: 'ana@test.com',
+				passwordHash: 'hashed',
+				firstName: 'Ana',
+				lastName: 'Gomez',
+				isActive: true,
+				mustChangePassword: false,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			});
+			courseRepository.findById.mockResolvedValue(
+				buildCourse(true, 'preceptor-1'),
+			);
+			userRepository.findById.mockResolvedValue(user);
+
+			const result = await handler.execute(
+				new SetCourseStatusCommand('course-1', 'tenant-id', false),
+			);
+
+			expect(userRepository.findById).toHaveBeenCalledWith('preceptor-1');
+			expect(result.preceptorName).toBe('Ana Gomez');
+		});
+
+		it('falls back to "Sin asignar" when the preceptor no longer exists', async () => {
+			courseRepository.findById.mockResolvedValue(
+				buildCourse(true, 'preceptor-gone'),
+			);
+			userRepository.findById.mockResolvedValue(null);
+
+			const result = await handler.execute(
+				new SetCourseStatusCommand('course-1', 'tenant-id', false),
+			);
+
+			expect(userRepository.findById).toHaveBeenCalledWith('preceptor-gone');
+			expect(result.preceptorName).toBe('Sin asignar');
+		});
 	});
 });
