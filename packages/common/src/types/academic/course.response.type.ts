@@ -13,6 +13,7 @@ export interface ICourseResponse {
 	preceptorId?: string;
 	preceptorName?: string;
 	fullName: string;
+	isActive?: boolean;
 	studentCount?: number;
 	subjectsCount?: number;
 }

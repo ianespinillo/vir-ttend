@@ -6,6 +6,7 @@ export const ACADEMIC_ROUTES = {
 	courses: '/courses',
 	coursesByPreceptor: '/courses/by-preceptor',
 	course: (id: string) => `/courses/${id}`,
+	courseStatus: (id: string) => `/courses/${id}/status`,
 	coursePreceptor: (id: string) => `/courses/${id}/preceptor`,
 	subjects: '/subjects',
 	subject: (id: string) => `/subjects/${id}`,

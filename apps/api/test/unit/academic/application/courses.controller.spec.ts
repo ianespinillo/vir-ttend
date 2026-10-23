@@ -3,6 +3,8 @@ import { MockProxy, mock } from 'jest-mock-extended';
 import { AssignPreceptorHandler } from '../../../../src/modules/academic/application/commands/assign-preceptor/assign-preceptor.handler';
 import { CreateCourseHandler } from '../../../../src/modules/academic/application/commands/create-course/create-course.handler';
 import { DeleteCourseHandler } from '../../../../src/modules/academic/application/commands/delete-course/delete-course.handler';
+import { SetCourseStatusCommand } from '../../../../src/modules/academic/application/commands/set-course-status/set-course-status.command';
+import { SetCourseStatusHandler } from '../../../../src/modules/academic/application/commands/set-course-status/set-course-status.handler';
 import { UpdateCourseHandler } from '../../../../src/modules/academic/application/commands/update-course/update-course.handler';
 import { GetCourseHandler } from '../../../../src/modules/academic/application/queries/get-course/get-course.handler';
 import { GetCoursesByPreceptorHandler } from '../../../../src/modules/academic/application/queries/get-courses-by-preceptor/get-courses-by-preceptor.handler';
@@ -13,6 +15,7 @@ import { CoursesController } from '../../../../src/modules/academic/presentation
 describe('CoursesController.list (preceptor scoping)', () => {
 	let controller: CoursesController;
 	let getCoursesHandler: MockProxy<GetCoursesHandler>;
+	let setCourseStatusHandler: MockProxy<SetCourseStatusHandler>;
 
 	const preceptorUser: JwtPayload = {
 		sub: 'preceptor-uuid-1',
@@ -30,6 +33,7 @@ describe('CoursesController.list (preceptor scoping)', () => {
 
 	beforeEach(() => {
 		getCoursesHandler = mock<GetCoursesHandler>();
+		setCourseStatusHandler = mock<SetCourseStatusHandler>();
 		controller = new CoursesController(
 			mock<CreateCourseHandler>(),
 			mock<UpdateCourseHandler>(),
@@ -38,6 +42,7 @@ describe('CoursesController.list (preceptor scoping)', () => {
 			getCoursesHandler,
 			mock<GetCourseHandler>(),
 			mock<GetCoursesByPreceptorHandler>(),
+			setCourseStatusHandler,
 		);
 	});
 
@@ -78,5 +83,16 @@ describe('CoursesController.list (preceptor scoping)', () => {
 
 		const query: GetCoursesQuery = getCoursesHandler.execute.mock.calls[0][0];
 		expect(query.preceptorId).toBeUndefined();
+	});
+
+	it('delegates PATCH :id/status to the handler with the tenant of the caller', async () => {
+		await controller.setStatus('course-1', { isActive: false }, adminUser);
+
+		expect(setCourseStatusHandler.execute).toHaveBeenCalledTimes(1);
+		const command: SetCourseStatusCommand =
+			setCourseStatusHandler.execute.mock.calls[0][0];
+		expect(command.courseId).toBe('course-1');
+		expect(command.tenantId).toBe(adminUser.tenantId);
+		expect(command.isActive).toBe(false);
 	});
 });
