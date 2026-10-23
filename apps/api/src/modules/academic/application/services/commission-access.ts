@@ -4,7 +4,7 @@ import { Course } from '../../domain/entities/course.entity';
 
 /**
  * Preceptors may reorganize workshop commissions only for the course they are
- * in charge of. Assigning commission preceptors stays admin-only.
+ * in charge of, which includes assigning the commission preceptors.
  */
 export function assertCanManageCommissions(
 	course: Course,

@@ -27,7 +27,7 @@ export class DeclareNonWorkingDayHandler {
 			throw new BadRequestException('Fecha inválida');
 		}
 
-		period.addNonWorkingDay(date);
+		period.declareNonWorkingDay(date, command.shifts);
 		await this.aYRepo.save(period);
 
 		if (command.notifySchool) {
@@ -40,6 +40,7 @@ export class DeclareNonWorkingDayHandler {
 					command.reason,
 					command.authorId,
 					command.type,
+					command.shifts,
 				),
 			);
 		}

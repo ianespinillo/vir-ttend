@@ -3,5 +3,7 @@ export class AssignWorkshopPreceptorCommand {
 		readonly commissionId: string,
 		readonly tenantId: string,
 		readonly preceptorId: string | null,
+		readonly actorId?: string,
+		readonly actorRole?: string,
 	) {}
 }

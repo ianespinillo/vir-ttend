@@ -1,4 +1,4 @@
-import { DAYOFWEEK } from '@repo/common';
+import { DAYOFWEEK, SHIFT } from '@repo/common';
 import { AcademicYear } from '../../../../src/modules/academic/domain/entities/academic-year.entity';
 import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
 import { ScheduleService } from '../../../../src/modules/academic/domain/services/schedule.service';
@@ -152,6 +152,52 @@ describe('ScheduleService', () => {
 				'2026-03-12',
 				'2026-03-13',
 			]);
+		});
+
+		describe('shift-scoped non-working days', () => {
+			const scopedYear = AcademicYear.reconstitute({
+				id: 'ay-3',
+				tenantId: 'tenant-1',
+				year: 2026,
+				startDate: new Date('2026-03-02'),
+				endDate: new Date('2026-03-13'),
+				nonWorkingDays: [new Date('2026-03-11'), new Date('2026-03-12')],
+				nonWorkingDayShifts: { '2026-03-11': [SHIFT.MORNING] },
+				absenceThresholdPercent: 75,
+				lateCountAbscenseAfterMinutes: 15,
+				isActive: true,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			});
+			const keys = (shift?: SHIFT) =>
+				service
+					.getWorkingDaysOnPeriod(
+						new Date('2026-03-10'),
+						new Date('2026-03-13'),
+						scopedYear,
+						shift,
+					)
+					.map((d) => d.toISOString().slice(0, 10));
+
+			it('keeps a scoped day as working for courses of other shifts', () => {
+				expect(keys(SHIFT.AFTERNOON)).toEqual([
+					'2026-03-10',
+					'2026-03-11',
+					'2026-03-13',
+				]);
+			});
+
+			it('drops a scoped day for courses of an affected shift', () => {
+				expect(keys(SHIFT.MORNING)).toEqual(['2026-03-10', '2026-03-13']);
+			});
+
+			it('still drops the unscoped day for every shift', () => {
+				expect(keys(SHIFT.EVENING)).not.toContain('2026-03-12');
+			});
+
+			it('drops every declared day when the course shift is unknown', () => {
+				expect(keys()).toEqual(['2026-03-10', '2026-03-13']);
+			});
 		});
 
 		it('should return empty when from equals to and is weekend', () => {

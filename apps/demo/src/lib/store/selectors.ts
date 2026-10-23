@@ -10,6 +10,7 @@
 import {
 	type CourseSummary,
 	type MyWorkshopCommission,
+	type ShiftType,
 	type WorkshopAttendance,
 	getStandardNationalHolidays,
 	isWorkshopOnlyCourse,
@@ -838,16 +839,25 @@ export function getStudentAttendanceHistory(
 		.map((record): AttendanceRecord => record);
 }
 
-/** Whether a date is declared non-working for an academic year. */
+/**
+ * Whether a date is declared non-working for an academic year. A day scoped to
+ * some shifts only suspends courses of those shifts; without a `shift` any
+ * declared day counts (same rule as the API).
+ */
 export function isNonWorkingDay(
 	state: DemoState,
 	academicYearId: string | undefined,
 	isoDate: string,
+	shift?: ShiftType,
 ): boolean {
 	const year = state.academicYears.find((item) => item.id === academicYearId);
-	return (year?.nonWorkingDays ?? []).some(
+	const declared = (year?.nonWorkingDays ?? []).some(
 		(day) => new Date(day).toISOString().slice(0, 10) === isoDate,
 	);
+	if (!declared) return false;
+	const scope = year?.nonWorkingDayShifts?.[isoDate];
+	if (!scope || scope.length === 0 || shift === undefined) return true;
+	return scope.includes(shift);
 }
 
 // ---------------------------------------------------------------------------

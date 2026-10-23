@@ -4,6 +4,25 @@ on:
   push:
     branches:
       - main
+    # Skip CD when a push only touches paths that never reach the api/client
+    # images or the VM: other apps, docs and repo tooling. Anything not listed
+    # here deploys, so a forgotten entry deploys too often instead of silently
+    # leaving production stale. workflow_dispatch ignores this filter.
+    paths-ignore:
+      - apps/site/**
+      - apps/demo/**
+      - apps/mobile/**
+      - docs/**
+      - odd/**
+      - schools-data/**
+      - .atl/**
+      - .opencode/**
+      - .vscode/**
+      - .husky/**
+      - .github/workflows/ci.yaml
+      - .github/workflows/mobile-release.yaml
+      - README.md
+      - AI_CONTEXT.md
   workflow_dispatch:
     inputs:
       target:

@@ -28,9 +28,11 @@ import {
 	type Roles,
 	SUBJECT_KIND,
 	type ScheduleSlotFormValues,
+	type ShiftType,
 	type Tenant,
 	type UpdateUserPayload,
 	WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE,
+	describeShiftScope,
 	isWorkshopOnlyCourse,
 } from '@repo/common';
 import { evaluateStudentAlert } from './alerts';
@@ -176,6 +178,8 @@ export interface DemoStore {
 			reason: string;
 			type?: string;
 			notifySchool?: boolean;
+			/** Empty or missing = every shift. */
+			shifts?: ShiftType[];
 			authorName?: string;
 		},
 	): void;
@@ -1111,21 +1115,30 @@ export function createDemoStore(
 			reason: string;
 			type?: string;
 			notifySchool?: boolean;
+			/** Empty or missing = every shift. */
+			shifts?: ShiftType[];
 			authorName?: string;
 		},
 	): void {
 		const targetDate = new Date(input.date);
+		const shifts = [...new Set(input.shifts ?? [])];
 		const next = structuredClone(state);
 		next.academicYears = next.academicYears.map((ay) => {
 			if (ay.id !== academicYearId) return ay;
 			const exists = (ay.nonWorkingDays ?? []).some(
 				(d) => new Date(d).getTime() === targetDate.getTime(),
 			);
+			// Declaring a day again replaces its shift scope, like the API.
+			const dayKey = targetDate.toISOString().slice(0, 10);
+			const nonWorkingDayShifts = { ...(ay.nonWorkingDayShifts ?? {}) };
+			if (shifts.length > 0) nonWorkingDayShifts[dayKey] = shifts;
+			else delete nonWorkingDayShifts[dayKey];
 			return {
 				...ay,
 				nonWorkingDays: exists
 					? ay.nonWorkingDays
 					: [...(ay.nonWorkingDays ?? []), targetDate],
+				nonWorkingDayShifts,
 			};
 		});
 		commit(next);
@@ -1137,9 +1150,14 @@ export function createDemoStore(
 				year: 'numeric',
 				timeZone: 'UTC',
 			});
+			const shiftScope = describeShiftScope(shifts);
+			const where = shiftScope ? ` en el ${shiftScope}` : '';
+			const registered = shiftScope
+				? `El día ha sido registrado como no laborable para el ${shiftScope}`
+				: 'El día ha sido registrado como no laborable';
 			const announcement = createAnnouncement({
 				title: `Suspensión de actividades — ${input.reason}`,
-				body: `Se informa a toda la comunidad educativa que el día ${formattedDate} no habrá dictado de clases ni actividades escolares debido a: ${input.reason}. El día ha sido registrado como no laborable en el calendario académico institucional.`,
+				body: `Se informa a toda la comunidad educativa que el día ${formattedDate} no habrá dictado de clases ni actividades escolares${where} debido a: ${input.reason}. ${registered} en el calendario académico institucional.`,
 				targetType: 'school',
 				targetId: '',
 				authorName: input.authorName ?? 'Equipo Directivo',

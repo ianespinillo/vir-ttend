@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { SHIFT } from '@repo/common';
 import { NotFoundError } from '../../../../common/errors';
 import { IAcademicYearRepository } from '../../../academic/domain/repositories/academic-year.repository.interface';
 import { IScheduleRepository } from '../../../academic/domain/repositories/schedule.repository.interface';
@@ -19,11 +20,17 @@ export class ScheduleAdapter implements ISchedulePort {
 		from: Date,
 		to: Date,
 		academicYearId: string,
+		shift?: SHIFT,
 	): Promise<Date[]> {
 		const academicYear =
 			await this.academicYearRepository.findById(academicYearId);
 		if (!academicYear) throw new NotFoundError('Ciclo lectivo no encontrado');
-		return this.scheduleService.getWorkingDaysOnPeriod(from, to, academicYear);
+		return this.scheduleService.getWorkingDaysOnPeriod(
+			from,
+			to,
+			academicYear,
+			shift,
+		);
 	}
 	async findByCourse(courseId: string): Promise<ScheduleSlot[]> {
 		const slots = await this.scheduleRepo.findByCourse(courseId);

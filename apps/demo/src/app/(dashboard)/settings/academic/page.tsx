@@ -58,6 +58,7 @@ export default function AcademicSettingsPage() {
 			reason: values.reason,
 			type: values.type,
 			notifySchool: values.notifySchool,
+			shifts: values.shifts,
 			authorName: user ? `${user.firstName} ${user.lastName}` : 'Equipo Directivo',
 		});
 		toast.success(

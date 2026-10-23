@@ -1,3 +1,5 @@
+import { SHIFT } from '@repo/common';
+
 export class NonWorkingDayDeclaredEvent {
 	readonly occurredAt: Date;
 
@@ -8,6 +10,8 @@ export class NonWorkingDayDeclaredEvent {
 		readonly reason: string,
 		readonly authorId: string,
 		readonly type?: string,
+		/** Affected shifts; empty = every shift. */
+		readonly shifts: SHIFT[] = [],
 	) {
 		this.occurredAt = new Date();
 	}

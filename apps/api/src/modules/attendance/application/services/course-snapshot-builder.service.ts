@@ -42,6 +42,7 @@ export class CourseSnapshotBuilderService {
 				end,
 				courseId,
 				course.academicYearId,
+				course.shift,
 			),
 			this.weightedTotals(courseId, from, end, course.isWorkshopOnly),
 		]);

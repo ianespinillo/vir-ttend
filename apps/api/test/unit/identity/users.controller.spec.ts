@@ -64,6 +64,15 @@ describe('UsersController.list', () => {
 		});
 	});
 
+	it('lets preceptors list the preceptors of their own institution', async () => {
+		await controller.list(actor(ROLES.PRECEPTOR), undefined, ROLES.PRECEPTOR);
+
+		expect(listUsersByTenantHandler.execute.mock.calls[0][0]).toMatchObject({
+			tenantId: 'tenant-1',
+			role: ROLES.PRECEPTOR,
+		});
+	});
+
 	it('keeps the requested role filter for admins', async () => {
 		await controller.list(actor(ROLES.ADMIN), undefined, ROLES.PRECEPTOR);
 

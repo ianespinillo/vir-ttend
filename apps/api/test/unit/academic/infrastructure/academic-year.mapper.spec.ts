@@ -1,3 +1,4 @@
+import { SHIFT } from '@repo/common';
 import { AcademicYear } from '../../../../src/modules/academic/domain/entities/academic-year.entity';
 import { AcademicYearOrmEntity } from '../../../../src/modules/academic/infrastructure/persistence/entities/academic-year.orm-entity';
 import { AcademicYearMapper } from '../../../../src/modules/academic/infrastructure/persistence/mappers/academic-year.mapper';
@@ -34,6 +35,49 @@ describe('AcademicYearMapper', () => {
 		expect(orm.absenceThresholdPercent).toBe(20);
 		expect(orm.lateCountAbscenseAfterMinutes).toBe(10);
 		expect(orm.isActive).toBe(true);
+	});
+
+	it('round-trips the shift scope of the non-working days', () => {
+		const domain = AcademicYear.reconstitute({
+			id: 'ay-uuid-3',
+			tenantId: 'tenant-uuid-3',
+			year: 2026,
+			startDate,
+			endDate,
+			nonWorkingDays,
+			nonWorkingDayShifts: { '2026-05-25': [SHIFT.MORNING, SHIFT.EVENING] },
+			absenceThresholdPercent: 20,
+			lateCountAbscenseAfterMinutes: 10,
+			isActive: true,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		const orm = AcademicYearMapper.toOrm(domain);
+		expect(orm.nonWorkingDayShifts).toEqual({
+			'2026-05-25': [SHIFT.MORNING, SHIFT.EVENING],
+		});
+
+		const back = AcademicYearMapper.toDomain(orm);
+		expect(back.nonWorkingDayShifts).toEqual(domain.nonWorkingDayShifts);
+	});
+
+	it('maps legacy rows without a scope to an empty scope', () => {
+		const orm = new AcademicYearOrmEntity();
+		orm.id = 'ay-uuid-4';
+		orm.schoolId = 'tenant-uuid-4';
+		orm.year = 2026;
+		orm.startDate = startDate;
+		orm.endDate = endDate;
+		orm.nonWorkingDays = nonWorkingDays;
+		orm.nonWorkingDayShifts = undefined as never;
+		orm.absenceThresholdPercent = 15;
+		orm.lateCountAbscenseAfterMinutes = 15;
+		orm.isActive = true;
+		orm.createdAt = now;
+		orm.updatedAt = now;
+
+		expect(AcademicYearMapper.toDomain(orm).nonWorkingDayShifts).toEqual({});
 	});
 
 	it('maps ORM entity back to domain entity correctly', () => {

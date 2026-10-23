@@ -1,4 +1,5 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SHIFT } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { NotFoundError } from '../../../../src/common/errors';
 import { DeclareNonWorkingDayCommand } from '../../../../src/modules/academic/application/commands/declare-non-working-day/declare-non-working-day.command';
@@ -119,6 +120,51 @@ describe('DeclareNonWorkingDayHandler', () => {
 		expect(emittedEvent.date.getTime()).toBe(targetDate.getTime());
 		expect(emittedEvent.reason).toBe('Paro docente nacional');
 		expect(emittedEvent.authorId).toBe(authorId);
+	});
+
+	it('should store the shift scope and forward it in the event', async () => {
+		const existingYear = createAcademicYear([]);
+		academicYearRepository.findById.mockResolvedValue(existingYear);
+
+		const result = await handler.execute(
+			new DeclareNonWorkingDayCommand(
+				academicYearId,
+				new Date('2026-05-15T00:00:00.000Z'),
+				'Paro docente turno mañana',
+				'strike',
+				true,
+				tenantId,
+				authorId,
+				[SHIFT.MORNING],
+			),
+		);
+
+		expect(result.nonWorkingDayShifts).toEqual({ '2026-05-15': [SHIFT.MORNING] });
+		const emittedEvent = eventEmitter.emit.mock
+			.calls[0][1] as NonWorkingDayDeclaredEvent;
+		expect(emittedEvent.shifts).toEqual([SHIFT.MORNING]);
+	});
+
+	it('should declare the whole day when no shifts are given', async () => {
+		const existingYear = createAcademicYear([]);
+		academicYearRepository.findById.mockResolvedValue(existingYear);
+
+		const result = await handler.execute(
+			new DeclareNonWorkingDayCommand(
+				academicYearId,
+				new Date('2026-05-15T00:00:00.000Z'),
+				'Feriado',
+				'holiday',
+				true,
+				tenantId,
+				authorId,
+			),
+		);
+
+		expect(result.nonWorkingDayShifts).toEqual({});
+		const emittedEvent = eventEmitter.emit.mock
+			.calls[0][1] as NonWorkingDayDeclaredEvent;
+		expect(emittedEvent.shifts).toEqual([]);
 	});
 
 	it('should not emit event when notifySchool is false', async () => {

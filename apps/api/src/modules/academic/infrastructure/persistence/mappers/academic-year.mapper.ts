@@ -11,6 +11,7 @@ export class AcademicYearMapper {
 		ormEntity.endDate = entity.endDate;
 		ormEntity.isActive = entity.isActive;
 		ormEntity.nonWorkingDays = entity.nonWorkingDays;
+		ormEntity.nonWorkingDayShifts = entity.nonWorkingDayShifts;
 		ormEntity.absenceThresholdPercent = entity.absenceThresholdPercent;
 		ormEntity.lateCountAbscenseAfterMinutes =
 			entity.lateCountAbscenseAfterMinutes;
@@ -26,6 +27,7 @@ export class AcademicYearMapper {
 			startDate: new Date(ormEntity.startDate),
 			endDate: new Date(ormEntity.endDate),
 			nonWorkingDays: (ormEntity.nonWorkingDays ?? []).map((d) => new Date(d)),
+			nonWorkingDayShifts: ormEntity.nonWorkingDayShifts ?? {},
 			absenceThresholdPercent: ormEntity.absenceThresholdPercent,
 			lateCountAbscenseAfterMinutes: ormEntity.lateCountAbscenseAfterMinutes,
 			isActive: ormEntity.isActive,

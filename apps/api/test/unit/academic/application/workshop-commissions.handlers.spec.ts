@@ -322,7 +322,11 @@ describe('workshop commission handlers', () => {
 	describe('assign preceptor', () => {
 		let handler: AssignWorkshopPreceptorHandler;
 		beforeEach(() => {
-			handler = new AssignWorkshopPreceptorHandler(commissionRepo, memberPort);
+			handler = new AssignWorkshopPreceptorHandler(
+				commissionRepo,
+				memberPort,
+				courseRepo,
+			);
 			commissionRepo.findById.mockResolvedValue(
 				commission(1, { preceptorId: 'old' }),
 			);
@@ -368,6 +372,58 @@ describe('workshop commission handlers', () => {
 			);
 			expect(memberPort.belongsToTenant).not.toHaveBeenCalled();
 			expect(commissionRepo.save.mock.calls[0][0].preceptorId).toBeNull();
+		});
+
+		it('lets the course preceptor assign another preceptor, themselves or nobody', async () => {
+			memberPort.belongsToTenant.mockResolvedValue(true);
+			memberPort.existsAndHasRole.mockResolvedValue(true);
+			const as = (preceptorId: string | null) =>
+				handler.execute(
+					new AssignWorkshopPreceptorCommand(
+						'commission-1',
+						TENANT,
+						preceptorId,
+						'course-preceptor',
+						ROLES.PRECEPTOR,
+					),
+				);
+			for (const preceptorId of ['user-1', 'course-preceptor', null]) {
+				await as(preceptorId);
+				const saved = commissionRepo.save.mock.lastCall?.[0];
+				expect(saved?.preceptorId).toBe(preceptorId);
+			}
+			expect(commissionRepo.save).toHaveBeenCalledTimes(3);
+		});
+
+		it('rejects a preceptor that is not in charge of the course', async () => {
+			memberPort.belongsToTenant.mockResolvedValue(true);
+			memberPort.existsAndHasRole.mockResolvedValue(true);
+			await expect(
+				handler.execute(
+					new AssignWorkshopPreceptorCommand(
+						'commission-1',
+						TENANT,
+						'user-1',
+						'stranger',
+						ROLES.PRECEPTOR,
+					),
+				),
+			).rejects.toThrow(ForbiddenException);
+			expect(commissionRepo.save).not.toHaveBeenCalled();
+		});
+
+		it('keeps admins unrestricted without loading the course', async () => {
+			await handler.execute(
+				new AssignWorkshopPreceptorCommand(
+					'commission-1',
+					TENANT,
+					null,
+					'admin-1',
+					ROLES.ADMIN,
+				),
+			);
+			expect(courseRepo.findById).not.toHaveBeenCalled();
+			expect(commissionRepo.save).toHaveBeenCalledTimes(1);
 		});
 
 		it('returns 404 for a commission of another tenant', async () => {

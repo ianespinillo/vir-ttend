@@ -101,8 +101,8 @@ export default function CourseDetailPage() {
 		);
 	}
 
-	// The course preceptor reorganizes and imports; assigning commission
-	// preceptors stays admin-only.
+	// The course preceptor reorganizes, imports and assigns commission
+	// preceptors.
 	const isCoursePreceptor = isPreceptor && course.preceptorId === user?.id;
 	const canImportStudents = isAdmin || isCoursePreceptor;
 	const canManageCommissions = isAdmin || isCoursePreceptor;
@@ -279,7 +279,7 @@ export default function CourseDetailPage() {
 								)
 							}
 							onAssignPreceptor={
-								isAdmin
+								canManageCommissions
 									? (commissionId, preceptorId) =>
 											run(
 												() => store.assignCommissionPreceptor(commissionId, preceptorId),

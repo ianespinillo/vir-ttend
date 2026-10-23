@@ -17,6 +17,15 @@ export function formatShift(shift?: ShiftType | string | null): string {
 }
 
 /**
+ * Label for the shifts a non-working day applies to. An empty or missing scope
+ * means the whole day, i.e. every shift.
+ */
+export function formatShiftScope(shifts?: readonly ShiftType[] | null): string {
+	if (!shifts || shifts.length === 0) return 'Todos los turnos';
+	return shifts.map((shift) => formatShift(shift)).join(', ');
+}
+
+/**
  * The API builds course names like `"4° 2 - MORNING"` out of the raw shift
  * enum. Translate that embedded English token for display without changing
  * the API contract.

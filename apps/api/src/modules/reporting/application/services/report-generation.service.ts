@@ -73,6 +73,7 @@ export class ReportGenerationService {
 
 		const workingDays = await this.academicYearPort.getWorkingDaysBYAcademicYear(
 			course.academicYearId,
+			course.shift,
 		);
 
 		return MonthlyReportData.fromData({

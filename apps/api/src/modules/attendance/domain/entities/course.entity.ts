@@ -1,4 +1,4 @@
-import { LevelType, isWorkshopOnlyCourse } from '@repo/common';
+import { LevelType, SHIFT, isWorkshopOnlyCourse } from '@repo/common';
 
 export class Course {
 	private readonly _id: string;
@@ -7,6 +7,7 @@ export class Course {
 	private readonly _level: LevelType;
 	private readonly _isActive: boolean;
 	private readonly _yearNumber: number | null;
+	private readonly _shift: SHIFT | undefined;
 
 	private constructor(
 		id: string,
@@ -15,6 +16,7 @@ export class Course {
 		isActive: boolean,
 		level: LevelType,
 		yearNumber: number | null,
+		shift?: SHIFT,
 	) {
 		this._id = id;
 		this._name = name;
@@ -22,6 +24,7 @@ export class Course {
 		this._isActive = isActive;
 		this._level = level;
 		this._yearNumber = yearNumber;
+		this._shift = shift;
 	}
 	static reconstitute(
 		id: string,
@@ -30,8 +33,17 @@ export class Course {
 		isActive: boolean,
 		level: LevelType,
 		yearNumber: number | null = null,
+		shift?: SHIFT,
 	) {
-		return new Course(id, name, academicYearId, isActive, level, yearNumber);
+		return new Course(
+			id,
+			name,
+			academicYearId,
+			isActive,
+			level,
+			yearNumber,
+			shift,
+		);
 	}
 
 	get id(): string {
@@ -55,6 +67,9 @@ export class Course {
 
 	get yearNumber(): number | null {
 		return this._yearNumber;
+	}
+	get shift(): SHIFT | undefined {
+		return this._shift;
 	}
 	/** 7th year technical: no daily attendance, workshop is the only shift. */
 	get isWorkshopOnly(): boolean {

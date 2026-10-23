@@ -56,6 +56,7 @@ export class AcademicYearRepository
 			existing.endDate = entity.endDate;
 			existing.isActive = entity.isActive;
 			existing.nonWorkingDays = entity.nonWorkingDays;
+			existing.nonWorkingDayShifts = entity.nonWorkingDayShifts;
 			existing.absenceThresholdPercent = entity.absenceThresholdPercent;
 			existing.lateCountAbscenseAfterMinutes =
 				entity.lateCountAbscenseAfterMinutes;

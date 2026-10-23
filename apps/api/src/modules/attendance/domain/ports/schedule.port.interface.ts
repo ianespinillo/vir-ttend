@@ -1,3 +1,4 @@
+import { SHIFT } from '@repo/common';
 import { ScheduleSlot } from '../entities/schedule-slot.entity';
 
 export interface ISchedulePort {
@@ -7,5 +8,6 @@ export interface ISchedulePort {
 		from: Date,
 		to: Date,
 		academicYearId: string,
+		shift?: SHIFT,
 	): Promise<Date[]>;
 }
