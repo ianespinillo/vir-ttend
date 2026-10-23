@@ -93,4 +93,109 @@ describe('WorkshopAttendancePage', () => {
 		fireEvent.click(screen.getByText('Confirmar'));
 		expect(props.onConfirmChanges).toHaveBeenCalled();
 	});
+
+	describe('justification', () => {
+		const absentRecord = {
+			id: 'r-1',
+			studentId: 's-1',
+			studentName: 'Perez, Juan',
+			status: ATTENDANCE_STATUS.ABSENT,
+		};
+		const absentStudent = {
+			id: 's-1',
+			name: 'Perez, Juan',
+			attendanceRecord: absentRecord,
+			originalStatus: ATTENDANCE_STATUS.ABSENT,
+		};
+
+		it('does not offer Justificar when onJustify is not provided', () => {
+			renderPage({ selectedCommissionId: 'c-1', gridStudents: [absentStudent] });
+			expect(screen.queryByText('Justificar')).not.toBeInTheDocument();
+		});
+
+		it('offers Justificar for a saved absent record and notifies it', () => {
+			const onJustify = vi.fn();
+			renderPage({
+				selectedCommissionId: 'c-1',
+				gridStudents: [absentStudent],
+				onJustify,
+			});
+			fireEvent.click(screen.getByText('Justificar'));
+			expect(onJustify).toHaveBeenCalledWith(absentRecord);
+		});
+
+		it('does not offer Justificar for an unsaved record', () => {
+			renderPage({
+				selectedCommissionId: 'c-1',
+				gridStudents: [
+					{
+						...absentStudent,
+						attendanceRecord: { ...absentRecord, id: '' },
+					},
+				],
+				onJustify: vi.fn(),
+			});
+			expect(screen.queryByText('Justificar')).not.toBeInTheDocument();
+		});
+
+		it('shows the Justificado badge when the record has a justification', () => {
+			renderPage({
+				selectedCommissionId: 'c-1',
+				gridStudents: [
+					{
+						...absentStudent,
+						attendanceRecord: {
+							...absentRecord,
+							justification: {
+								id: 'j-1',
+								reason: 'Enfermedad',
+								createdBy: 'u-1',
+								createdAt: new Date('2026-03-10T10:00:00.000Z'),
+							},
+						},
+					},
+				],
+				onJustify: vi.fn(),
+			});
+			expect(screen.getByText('Justificado')).toBeInTheDocument();
+			expect(screen.queryByText('Justificar')).not.toBeInTheDocument();
+		});
+	});
+});
+
+describe('WorkshopAttendancePage bulk justification', () => {
+	it('hides the bulk button when nothing is selected', () => {
+		renderPage({
+			selectedCommissionId: 'c-1',
+			selectedRecordIds: new Set(),
+			onBulkJustify: vi.fn(),
+		});
+		expect(
+			screen.queryByText(/Justificar seleccionados/),
+		).not.toBeInTheDocument();
+	});
+
+	it('shows the bulk button with the count and calls onBulkJustify', () => {
+		const props = renderPage({
+			selectedCommissionId: 'c-1',
+			selectedRecordIds: new Set(['r-1', 'r-2']),
+			onBulkJustify: vi.fn(),
+		});
+		fireEvent.click(
+			screen.getByRole('button', { name: /Justificar seleccionados \(2\)/ }),
+		);
+		expect(props.onBulkJustify).toHaveBeenCalledTimes(1);
+	});
+
+	it('titles the justification modal with the number of students in bulk mode', () => {
+		renderPage({
+			selectedCommissionId: 'c-1',
+			onJustify: vi.fn(),
+			onCloseJustify: vi.fn(),
+			onConfirmJustify: vi.fn(),
+			isJustifyOpen: true,
+			bulkJustifyCount: 2,
+		});
+		expect(screen.getByText('Justificar 2 alumnos')).toBeInTheDocument();
+	});
 });

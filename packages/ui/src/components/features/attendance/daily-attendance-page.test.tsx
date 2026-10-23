@@ -1,5 +1,5 @@
 import { type ICourseResponse, LEVEL, SHIFT } from '@repo/common';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
 	DailyAttendancePage,
@@ -82,5 +82,37 @@ describe('DailyAttendancePage', () => {
 		renderPage({ selectedCourseId: 'c-6' });
 		expect(screen.queryByText(/no tienen asistencia diaria/i)).toBeNull();
 		expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument();
+	});
+});
+
+describe('DailyAttendancePage bulk justification', () => {
+	it('hides the bulk button when nothing is selected', () => {
+		renderPage({
+			selectedCourseId: 'c-6',
+			selectedRecordIds: new Set(),
+			onBulkJustify: vi.fn(),
+		});
+		expect(screen.queryByText(/Justificar seleccionados/)).toBeNull();
+	});
+
+	it('shows the bulk button with the count and calls onBulkJustify', () => {
+		const props = renderPage({
+			selectedCourseId: 'c-6',
+			selectedRecordIds: new Set(['r-1', 'r-2', 'r-3']),
+			onBulkJustify: vi.fn(),
+		});
+		fireEvent.click(
+			screen.getByRole('button', { name: /Justificar seleccionados \(3\)/ }),
+		);
+		expect(props.onBulkJustify).toHaveBeenCalledTimes(1);
+	});
+
+	it('titles the justification modal with the number of students in bulk mode', () => {
+		renderPage({
+			selectedCourseId: 'c-6',
+			isJustifyOpen: true,
+			bulkJustifyCount: 5,
+		});
+		expect(screen.getByText('Justificar 5 alumnos')).toBeInTheDocument();
 	});
 });

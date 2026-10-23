@@ -4,12 +4,14 @@ import {
 	ATTENDANCE_STATUS,
 	type AttendanceRecord,
 	type AttendanceStatus,
+	type ErrorResponse,
 	isWorkshopOnlyCourse,
 } from '@repo/common';
 import {
 	useActiveAcademicYear,
 	useAttendanceMetrics,
 	useBulkAttendance,
+	useBulkJustifyAttendance,
 	useCopyDailyAttendance,
 	useCourseAttendanceHistory,
 	useCurrentUser,
@@ -38,6 +40,15 @@ function getInitialDate(initialDate?: string): string {
 	if (day === 0) today.setDate(today.getDate() - 2);
 	if (day === 6) today.setDate(today.getDate() - 1);
 	return format(today, 'yyyy-MM-dd');
+}
+
+function getBulkFailureCount(error: unknown): number | null {
+	const response = (
+		error as { response?: { status?: number; data?: ErrorResponse } } | undefined
+	)?.response;
+	if (response?.status !== 422) return null;
+	const details = response.data?.details;
+	return Array.isArray(details) ? details.length : 0;
 }
 
 export default function AttendanceDailyPage() {
@@ -74,20 +85,29 @@ export default function AttendanceDailyPage() {
 		isPreceptor,
 	});
 
+	// Only saved, unchanged records (with an id) are offered for bulk justification.
+	const [selectedRecordIds, setSelectedRecordIds] = useState<Set<string>>(
+		() => new Set(),
+	);
+	const [isBulkJustify, setIsBulkJustify] = useState(false);
+	const clearSelection = useCallback(() => setSelectedRecordIds(new Set()), []);
+
 	const handleCourseChange = useCallback(
 		(courseId: string) => {
+			clearSelection();
 			setSelectedCourseId(courseId);
 			updateUrl(courseId, selectedDate);
 		},
-		[selectedDate, updateUrl],
+		[selectedDate, updateUrl, clearSelection],
 	);
 
 	const handleDateChange = useCallback(
 		(date: string) => {
+			clearSelection();
 			setSelectedDate(date);
 			if (selectedCourseId) updateUrl(selectedCourseId, date);
 		},
-		[selectedCourseId, updateUrl],
+		[selectedCourseId, updateUrl, clearSelection],
 	);
 
 	// Workshop-only courses (7th year technical) have no daily attendance: the
@@ -145,6 +165,7 @@ export default function AttendanceDailyPage() {
 	const registerDailyMutation = useRegisterDailyAttendance();
 	const bulkMutation = useBulkAttendance();
 	const justifyMutation = useJustifyAttendance();
+	const bulkJustifyMutation = useBulkJustifyAttendance();
 	const copyDailyMutation = useCopyDailyAttendance();
 
 	const [selectedRecordToJustify, setSelectedRecordToJustify] =
@@ -193,6 +214,15 @@ export default function AttendanceDailyPage() {
 
 	const handleStatusChange = useCallback(
 		(studentId: string, status: AttendanceStatus) => {
+			const editedId = localRecordsMap[studentId]?.id;
+			if (editedId) {
+				setSelectedRecordIds((prev) => {
+					if (!prev.has(editedId)) return prev;
+					const next = new Set(prev);
+					next.delete(editedId);
+					return next;
+				});
+			}
 			setLocalRecordsMap((prev) => {
 				const existing = prev[studentId];
 				const updated: AttendanceRecord = {
@@ -205,10 +235,11 @@ export default function AttendanceDailyPage() {
 				return { ...prev, [studentId]: updated };
 			});
 		},
-		[],
+		[localRecordsMap],
 	);
 
 	const handleMarkAll = useCallback((status: AttendanceStatus) => {
+		setSelectedRecordIds(new Set());
 		setLocalRecordsMap((prev) => {
 			const nextMap: Record<string, AttendanceRecord> = {};
 			for (const [sId, r] of Object.entries(prev)) {
@@ -309,6 +340,13 @@ export default function AttendanceDailyPage() {
 	const handleCloseJustify = useCallback(() => {
 		setIsJustifyOpen(false);
 		setSelectedRecordToJustify(null);
+		setIsBulkJustify(false);
+	}, []);
+
+	const handleOpenBulkJustify = useCallback(() => {
+		setSelectedRecordToJustify(null);
+		setIsBulkJustify(true);
+		setIsJustifyOpen(true);
 	}, []);
 
 	const handleConfirmJustify = useCallback(
@@ -337,6 +375,69 @@ export default function AttendanceDailyPage() {
 		],
 	);
 
+	const handleConfirmBulkJustify = useCallback(
+		async (reason: string, notes?: string) => {
+			const recordIds = [...selectedRecordIds];
+			if (recordIds.length === 0) return;
+			try {
+				const result = await bulkJustifyMutation.mutateAsync({
+					recordIds,
+					reason,
+					notes,
+					courseId: selectedCourseId,
+					date: selectedDate,
+				});
+				toast.success(
+					result.justified === 1
+						? '1 inasistencia justificada'
+						: `${result.justified} inasistencias justificadas`,
+				);
+				clearSelection();
+			} catch (error) {
+				const failed = getBulkFailureCount(error);
+				if (failed === null) {
+					toast.error('Error al guardar la justificación');
+				} else {
+					toast.error(
+						failed > 0
+							? `No se justificó ninguna inasistencia: ${failed} no se pueden justificar. Revisá la selección.`
+							: 'No se justificó ninguna inasistencia. Revisá la selección.',
+					);
+				}
+			}
+		},
+		[
+			selectedRecordIds,
+			bulkJustifyMutation,
+			selectedCourseId,
+			selectedDate,
+			clearSelection,
+		],
+	);
+
+	const handleToggleSelect = useCallback((recordId: string) => {
+		setSelectedRecordIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(recordId)) next.delete(recordId);
+			else next.add(recordId);
+			return next;
+		});
+	}, []);
+
+	const handleToggleSelectAll = useCallback(
+		(recordIds: string[], selected: boolean) => {
+			setSelectedRecordIds((prev) => {
+				const next = new Set(prev);
+				for (const id of recordIds) {
+					if (selected) next.add(id);
+					else next.delete(id);
+				}
+				return next;
+			});
+		},
+		[],
+	);
+
 	return (
 		<>
 			<DailyAttendancePage
@@ -358,8 +459,17 @@ export default function AttendanceDailyPage() {
 				isJustifyOpen={isJustifyOpen}
 				selectedRecordToJustify={selectedRecordToJustify}
 				onCloseJustify={handleCloseJustify}
-				onConfirmJustify={handleConfirmJustify}
-				isSubmittingJustify={justifyMutation.isPending}
+				onConfirmJustify={
+					isBulkJustify ? handleConfirmBulkJustify : handleConfirmJustify
+				}
+				isSubmittingJustify={
+					justifyMutation.isPending || bulkJustifyMutation.isPending
+				}
+				selectedRecordIds={selectedRecordIds}
+				onToggleSelect={handleToggleSelect}
+				onToggleSelectAll={handleToggleSelectAll}
+				onBulkJustify={handleOpenBulkJustify}
+				bulkJustifyCount={isBulkJustify ? selectedRecordIds.size : undefined}
 				isCopyOpen={isCopyOpen}
 				onOpenCopy={handleOpenCopy}
 				onCloseCopy={handleCloseCopy}

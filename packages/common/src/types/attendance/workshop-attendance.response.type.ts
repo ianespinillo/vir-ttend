@@ -1,4 +1,5 @@
 import type { AttendanceStatus } from '../../constants/attendance-status.enum.js';
+import type { AttendanceRecordJustification } from './attendance-record.response.type.js';
 
 export interface MyWorkshopCommission {
 	commissionId: string;
@@ -16,6 +17,7 @@ export interface WorkshopAttendanceRecord {
 	status: AttendanceStatus | null;
 	editedBy: string | null;
 	editedAt: string | null;
+	justification?: AttendanceRecordJustification;
 }
 
 export interface WorkshopAttendance {

@@ -8,7 +8,7 @@ import {
 	WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE,
 	isWorkshopOnlyCourse,
 } from '@repo/common';
-import { Wrench } from 'lucide-react';
+import { FileText, Wrench } from 'lucide-react';
 import { useMemo } from 'react';
 import { Button } from '../../../ui/button';
 import {
@@ -62,6 +62,13 @@ export interface DailyAttendancePageProps {
 	extraActions?: React.ReactNode;
 	/** Where the workshop attendance lives, linked from the workshop-only notice. */
 	workshopAttendanceHref?: string;
+	/** Bulk justification (optional): ids of the selected saved records. */
+	selectedRecordIds?: ReadonlySet<string>;
+	onToggleSelect?: (recordId: string) => void;
+	onToggleSelectAll?: (recordIds: string[], selected: boolean) => void;
+	onBulkJustify?: () => void;
+	/** Set while the justification modal is open in bulk mode. */
+	bulkJustifyCount?: number;
 }
 
 /**
@@ -131,6 +138,11 @@ export function DailyAttendancePage({
 	onResetChanges,
 	extraActions,
 	workshopAttendanceHref,
+	selectedRecordIds,
+	onToggleSelect,
+	onToggleSelectAll,
+	onBulkJustify,
+	bulkJustifyCount,
 }: Readonly<DailyAttendancePageProps>) {
 	const dailyCourses = useMemo(
 		() => filterDailyAttendanceCourses(courses),
@@ -140,6 +152,7 @@ export function DailyAttendancePage({
 		const selected = courses.find((course) => course.id === selectedCourseId);
 		return selected ? isWorkshopOnlyCourse(selected) : false;
 	}, [courses, selectedCourseId]);
+	const selectedCount = selectedRecordIds?.size ?? 0;
 	const hasDailyCourse = Boolean(selectedCourseId) && !selectedIsWorkshopOnly;
 
 	return (
@@ -177,6 +190,9 @@ export function DailyAttendancePage({
 							onJustify={onJustify}
 							isLoading={isLoadingDaily}
 							isSaving={isSaving}
+							selectedRecordIds={selectedRecordIds}
+							onToggleSelect={onToggleSelect}
+							onToggleSelectAll={onToggleSelectAll}
 						/>
 					</div>
 
@@ -184,6 +200,18 @@ export function DailyAttendancePage({
 						data-tour="attendance-confirm-actions"
 						className="flex items-center justify-end gap-2"
 					>
+						{selectedCount > 0 && onBulkJustify && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={onBulkJustify}
+								disabled={isSaving}
+							>
+								<FileText className="mr-1.5 h-4 w-4 shrink-0" />
+								Justificar seleccionados ({selectedCount})
+							</Button>
+						)}
 						<Button
 							type="button"
 							variant="outline"
@@ -222,6 +250,7 @@ export function DailyAttendancePage({
 				isOpen={isJustifyOpen}
 				onClose={onCloseJustify}
 				studentName={selectedRecordToJustify?.studentName}
+				studentCount={bulkJustifyCount}
 				onConfirm={onConfirmJustify}
 				isSubmitting={isSubmittingJustify}
 			/>

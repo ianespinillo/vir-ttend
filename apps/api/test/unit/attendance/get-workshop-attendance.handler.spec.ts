@@ -1,9 +1,12 @@
 import { ATTENDANCE_STATUS, DAYOFWEEK, ROLES } from '@repo/common';
+import { mock } from 'jest-mock-extended';
 import { ForbiddenError } from '../../../src/common/errors';
 import { GetMyWorkshopCommissionsQueryHandler } from '../../../src/modules/attendance/application/queries/get-my-workshop-commissions/get-my-workshop-commissions.handler';
 import { GetMyWorkshopCommissionsQuery } from '../../../src/modules/attendance/application/queries/get-my-workshop-commissions/get-my-workshop-commissions.query';
 import { GetWorkshopAttendanceQueryHandler } from '../../../src/modules/attendance/application/queries/get-workshop-attendance/get-workshop-attendance.handler';
 import { GetWorkshopAttendanceQuery } from '../../../src/modules/attendance/application/queries/get-workshop-attendance/get-workshop-attendance.query';
+import { WorkshopJustification } from '../../../src/modules/attendance/domain/entities/workshop-justification.entity';
+import { IWorkshopJustificationRepository } from '../../../src/modules/attendance/domain/repositories/workshop-justification.repository.interface';
 import {
 	DATE,
 	PRECEPTOR_ID,
@@ -16,6 +19,11 @@ import {
 } from './workshop-attendance.fixtures';
 
 describe('GetWorkshopAttendanceQueryHandler', () => {
+	const noJustifications = () => {
+		const repo = mock<IWorkshopJustificationRepository>();
+		repo.findByRecords.mockResolvedValue([]);
+		return repo;
+	};
 	const query = (userId = PRECEPTOR_ID) =>
 		new GetWorkshopAttendanceQuery(
 			TENANT,
@@ -29,6 +37,7 @@ describe('GetWorkshopAttendanceQueryHandler', () => {
 		const handler = new GetWorkshopAttendanceQueryHandler(
 			buildPort(commission(), [student('s1', 'Ana'), student('s2', 'Beto')]),
 			buildRepo([existingRecord('s2', ATTENDANCE_STATUS.ABSENT)]),
+			noJustifications(),
 		);
 
 		const result = await handler.execute(query());
@@ -45,8 +54,44 @@ describe('GetWorkshopAttendanceQueryHandler', () => {
 		const handler = new GetWorkshopAttendanceQueryHandler(
 			buildPort(commission()),
 			buildRepo(),
+			noJustifications(),
 		);
 		await expect(handler.execute(query('other'))).rejects.toThrow(ForbiddenError);
+	});
+
+	it('attaches the justification only to justified records, loaded in one query', async () => {
+		const justified = existingRecord('s1', ATTENDANCE_STATUS.JUSTIFIED);
+		const absent = existingRecord('s2', ATTENDANCE_STATUS.ABSENT);
+		const justification = WorkshopJustification.create({
+			workshopAttendanceRecordId: justified.id,
+			reason: 'Enfermedad',
+			notes: 'Certificado',
+			createdBy: PRECEPTOR_ID,
+		});
+		const justificationRepo = mock<IWorkshopJustificationRepository>();
+		justificationRepo.findByRecords.mockResolvedValue([justification]);
+		const handler = new GetWorkshopAttendanceQueryHandler(
+			buildPort(commission(), [
+				student('s1', 'Ana'),
+				student('s2', 'Beto'),
+				student('s3', 'Cora'),
+			]),
+			buildRepo([justified, absent]),
+			justificationRepo,
+		);
+
+		const result = await handler.execute(query());
+
+		expect(justificationRepo.findByRecords).toHaveBeenCalledTimes(1);
+		expect(justificationRepo.findByRecords).toHaveBeenCalledWith([justified.id]);
+		expect(result.records[0].justification).toMatchObject({
+			id: justification.id,
+			reason: 'Enfermedad',
+			notes: 'Certificado',
+			createdBy: PRECEPTOR_ID,
+		});
+		expect(result.records[1].justification).toBeUndefined();
+		expect(result.records[2].justification).toBeUndefined();
 	});
 });
 

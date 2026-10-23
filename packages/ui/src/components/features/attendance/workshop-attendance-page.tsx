@@ -1,7 +1,11 @@
 'use client';
 
-import type { AttendanceStatus, MyWorkshopCommission } from '@repo/common';
-import { Wrench } from 'lucide-react';
+import type {
+	AttendanceRecord,
+	AttendanceStatus,
+	MyWorkshopCommission,
+} from '@repo/common';
+import { FileText, Wrench } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Button } from '../../../ui/button';
 import { Skeleton } from '../../../ui/skeleton';
@@ -11,6 +15,7 @@ import { AttendanceGrid } from './attendance-grid/attendance-grid';
 import type { StudentRowItem } from './attendance-grid/attendance-row';
 import { AttendanceDatePicker } from './attendance-toolbar/date-picker';
 import { QuickActions } from './attendance-toolbar/quick-actions';
+import { JustificationModal } from './justification-modal/justification-modal';
 
 export function formatCommissionLabel(
 	commission: Pick<MyWorkshopCommission, 'courseName' | 'code'>,
@@ -32,6 +37,19 @@ export interface WorkshopAttendancePageProps {
 	onMarkAll: (status: AttendanceStatus) => void;
 	onConfirmChanges: () => void;
 	onResetChanges: () => void;
+	onJustify?: (record: AttendanceRecord) => void;
+	isJustifyOpen?: boolean;
+	selectedRecordToJustify?: AttendanceRecord | null;
+	onCloseJustify?: () => void;
+	onConfirmJustify?: (reason: string, notes?: string) => Promise<void>;
+	isSubmittingJustify?: boolean;
+	/** Bulk justification (optional): ids of the selected saved records. */
+	selectedRecordIds?: ReadonlySet<string>;
+	onToggleSelect?: (recordId: string) => void;
+	onToggleSelectAll?: (recordIds: string[], selected: boolean) => void;
+	onBulkJustify?: () => void;
+	/** Set while the justification modal is open in bulk mode. */
+	bulkJustifyCount?: number;
 }
 
 export function WorkshopAttendancePage({
@@ -48,7 +66,19 @@ export function WorkshopAttendancePage({
 	onMarkAll,
 	onConfirmChanges,
 	onResetChanges,
+	onJustify,
+	isJustifyOpen = false,
+	selectedRecordToJustify = null,
+	onCloseJustify,
+	onConfirmJustify,
+	isSubmittingJustify = false,
+	selectedRecordIds,
+	onToggleSelect,
+	onToggleSelectAll,
+	onBulkJustify,
+	bulkJustifyCount,
 }: Readonly<WorkshopAttendancePageProps>) {
+	const selectedCount = selectedRecordIds?.size ?? 0;
 	const selected = commissions.find(
 		(c) => c.commissionId === selectedCommissionId,
 	);
@@ -126,11 +156,27 @@ export function WorkshopAttendancePage({
 					<AttendanceGrid
 						students={gridStudents}
 						onStatusChange={onStatusChange}
+						onJustify={onJustify}
 						isLoading={isLoadingAttendance}
 						isSaving={isSaving}
+						selectedRecordIds={selectedRecordIds}
+						onToggleSelect={onToggleSelect}
+						onToggleSelectAll={onToggleSelectAll}
 					/>
 
 					<div className="flex items-center justify-end gap-2">
+						{selectedCount > 0 && onBulkJustify && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={onBulkJustify}
+								disabled={isSaving}
+							>
+								<FileText className="mr-1.5 h-4 w-4 shrink-0" />
+								Justificar seleccionados ({selectedCount})
+							</Button>
+						)}
 						<Button
 							type="button"
 							variant="outline"
@@ -150,6 +196,17 @@ export function WorkshopAttendancePage({
 						</Button>
 					</div>
 				</>
+			)}
+
+			{onJustify && onCloseJustify && onConfirmJustify && (
+				<JustificationModal
+					isOpen={isJustifyOpen}
+					onClose={onCloseJustify}
+					studentName={selectedRecordToJustify?.studentName}
+					studentCount={bulkJustifyCount}
+					onConfirm={onConfirmJustify}
+					isSubmitting={isSubmittingJustify}
+				/>
 			)}
 		</div>
 	);

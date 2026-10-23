@@ -195,6 +195,12 @@ export class AttendanceRecordRepository
 		return AttendanceRecordMapper.toDomain(orm);
 	}
 
+	async findByIds(ids: string[]): Promise<AttendanceRecord[]> {
+		if (ids.length === 0) return [];
+		const orms = await this.find({ id: { $in: ids } });
+		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
 	async findByStudentAndCourseAndDate(
 		courseId: string,
 		studentId: string,

@@ -12,6 +12,8 @@ import { CurrentUser } from '../../../../common/decorators/current-user.decorato
 import { RolesDecorator } from '../../../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { RolesGuard } from '../../../../common/guard/roles.guard';
+import { BulkJustifyAttendanceCommand } from '../../application/commands/bulk-justify-attendance/bulk-justify-attendance.command';
+import { BulkJustifyAttendanceHandler } from '../../application/commands/bulk-justify-attendance/bulk-justify-attendance.handler';
 import { BulkRegisterAttendanceCommand } from '../../application/commands/bulk-register-attendance/bulk-register-attendance.command';
 import { BulkRegisterAttendanceHandler } from '../../application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { BulkUpdateSubjectStatusCommand } from '../../application/commands/bulk-update-subject-status/bulk-update-subject-status.command';
@@ -26,6 +28,7 @@ import { RegisterDailyAttendanceCommand } from '../../application/commands/regis
 import { RegisterDailyAttendanceHandler } from '../../application/commands/register-daily-attendance/register-daily-attendance.handler';
 import { RegisterSubjectAttendanceCommand } from '../../application/commands/register-subject-attendance/register-subject-attendance.command';
 import { RegisterSubjectAttendanceHandler } from '../../application/commands/register-subject-attendance/register-subject-attendance.handler';
+import { BulkJustifyAttendanceRequestDto } from '../../application/dtos/bulk-justify-attendance.request.dto';
 import { BulkRegisterAttendanceRequestDto } from '../../application/dtos/bulk-register-attendance.request.dto';
 import { BulkUpdateSubjectStatusRequestDto } from '../../application/dtos/bulk-update-subject-status.request.dto';
 import { CopyAttendanceRequestDto } from '../../application/dtos/copy-attendance.request.dto';
@@ -43,6 +46,7 @@ export class AttendanceCommandController {
 		private readonly registerDailyAttendanceHandler: RegisterDailyAttendanceHandler,
 		private readonly bulkRegisterAttendanceHandler: BulkRegisterAttendanceHandler,
 		private readonly justifyAttendanceHandler: JustifyAttendanceHandler,
+		private readonly bulkJustifyAttendanceHandler: BulkJustifyAttendanceHandler,
 		private readonly bulkUpdateSubjectStatusHandler: BulkUpdateSubjectStatusHandler,
 		private readonly registerSubjectAttendanceHandler: RegisterSubjectAttendanceHandler,
 		private readonly copyAttendanceHandler: CopyAttendanceHandler,
@@ -153,9 +157,54 @@ export class AttendanceCommandController {
 		@CurrentUser() user: JwtPayload,
 	) {
 		return this.justifyAttendanceHandler.execute(
-			new JustifyAttendanceCommand(id, dto.reason, user.sub, dto.notes),
+			new JustifyAttendanceCommand(
+				id,
+				dto.reason,
+				user.sub,
+				user.tenantId,
+				dto.notes,
+			),
 		);
 	}
+	@ApiOperation({
+		summary: 'Justificar varias inasistencias o tardanzas',
+		description: `Justifica en una sola operación todos los registros de asistencia indicados (diarios o de materia) con el mismo motivo. Es todo o nada: si algún registro no se puede justificar no se guarda ninguno. Roles permitidos: preceptor, admin. Body de ejemplo:
+{
+  "recordIds": ["5c4d3e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f"],
+  "reason": "Certificado médico",
+  "notes": "Presenta certificado emitido por el hospital"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Justificaciones registradas. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }; data es { justified: number }.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({
+		status: 422,
+		description:
+			"Algún registro no se puede justificar. No se justificó ninguno y 'details' lista cada recordId con su motivo.",
+	})
+	@Post('justify/bulk')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async justifyBulk(
+		@Body() dto: BulkJustifyAttendanceRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.bulkJustifyAttendanceHandler.execute(
+			new BulkJustifyAttendanceCommand(
+				user.tenantId,
+				dto.recordIds,
+				dto.reason,
+				user.sub,
+				dto.notes,
+			),
+		);
+	}
+
 	@ApiOperation({
 		summary: 'Registrar asistencia de una materia',
 		description: `Registra la asistencia de los estudiantes para una materia y fecha concretas, validando que el día corresponda al horario de la materia. Roles permitidos: teacher, admin. Body de ejemplo:

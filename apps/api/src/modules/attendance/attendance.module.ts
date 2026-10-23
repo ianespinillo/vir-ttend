@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AcademicModule } from '../academic/academic.module';
 import { AcademicPersistenceModule } from '../academic/infrastructure/persistence/academic.persistence.module';
+import { BulkJustifyAttendanceHandler } from './application/commands/bulk-justify-attendance/bulk-justify-attendance.handler';
+import { BulkJustifyWorkshopAttendanceHandler } from './application/commands/bulk-justify-workshop-attendance/bulk-justify-workshop-attendance.handler';
 import { BulkRegisterAttendanceHandler } from './application/commands/bulk-register-attendance/bulk-register-attendance.handler';
 import { BulkRegisterWorkshopAttendanceHandler } from './application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.handler';
 import { BulkUpdateSubjectStatusHandler } from './application/commands/bulk-update-subject-status/bulk-update-subject-status.handler';
@@ -8,6 +10,7 @@ import { CopyAttendanceHandler } from './application/commands/copy-attendance/co
 import { CopyDailyAttendanceHandler } from './application/commands/copy-daily-attendance/copy-daily-attendance.handler';
 import { GenerateAlertHandler } from './application/commands/generate-alert/generate-alert.handler';
 import { JustifyAttendanceHandler } from './application/commands/justify-attendance/justify-attendance.handler';
+import { JustifyWorkshopAttendanceHandler } from './application/commands/justify-workshop-attendance/justify-workshop-attendance.handler';
 import { MarkAlertSeenHandler } from './application/commands/mark-alert-seen/mark-alert-seen.handler';
 import { RegisterDailyAttendanceHandler } from './application/commands/register-daily-attendance/register-daily-attendance.handler';
 import { RegisterSubjectAttendanceHandler } from './application/commands/register-subject-attendance/register-subject-attendance.handler';
@@ -91,6 +94,9 @@ import { WorkshopAttendanceController } from './presentation/controllers/worksho
 		BulkRegisterAttendanceHandler,
 		BulkUpdateSubjectStatusHandler,
 		JustifyAttendanceHandler,
+		BulkJustifyAttendanceHandler,
+		BulkJustifyWorkshopAttendanceHandler,
+		JustifyWorkshopAttendanceHandler,
 		CopyAttendanceHandler,
 		CopyDailyAttendanceHandler,
 		GenerateAlertHandler,

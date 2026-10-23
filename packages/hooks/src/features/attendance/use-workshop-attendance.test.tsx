@@ -4,9 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import React, { type ReactNode } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from '../../lib/axios-client';
+import { queryKeys } from '../../lib/keys';
 import { useBulkWorkshopAttendance } from './use-bulk-workshop-attendance';
+import { useJustifyWorkshopAttendance } from './use-justify-workshop-attendance';
 import { useMyWorkshopCommissions } from './use-my-workshop-commissions';
 import { useRegisterWorkshopAttendance } from './use-register-workshop-attendance';
 import { useWorkshopAttendance } from './use-workshop-attendance';
@@ -136,5 +138,51 @@ describe('workshop attendance hooks', () => {
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
 		expect(sentBody).toEqual(payload);
+	});
+
+	it('justifies a workshop record and invalidates the commission attendance', async () => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+		const wrapper = ({ children }: { children: ReactNode }) => (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		);
+		let sentBody: unknown;
+		mock.onPost(ATTENDANCE_ROUTES.workshopJustify('r-1')).reply((config) => {
+			sentBody = JSON.parse(config.data);
+			return [201, { data: null }];
+		});
+
+		const { result } = renderHook(() => useJustifyWorkshopAttendance(), {
+			wrapper,
+		});
+		result.current.mutate({
+			recordId: 'r-1',
+			reason: 'Enfermedad',
+			notes: 'Certificado',
+			commissionId: 'c-1',
+			date: '2026-03-10',
+		});
+
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+		expect(sentBody).toEqual({ reason: 'Enfermedad', notes: 'Certificado' });
+		expect(invalidate).toHaveBeenCalledWith({
+			queryKey: queryKeys.attendance.workshop('c-1', '2026-03-10'),
+		});
+	});
+
+	it('exposes an error when justifying a workshop record fails', async () => {
+		mock.onPost(ATTENDANCE_ROUTES.workshopJustify('r-2')).reply(403, {
+			message: 'Forbidden',
+		});
+
+		const { result } = renderHook(() => useJustifyWorkshopAttendance(), {
+			wrapper: createWrapper(),
+		});
+		result.current.mutate({ recordId: 'r-2', reason: 'Enfermedad' });
+
+		await waitFor(() => expect(result.current.isError).toBe(true));
+		expect(result.current.error?.response?.status).toBe(403);
 	});
 });

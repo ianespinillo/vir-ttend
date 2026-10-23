@@ -24,7 +24,10 @@ export class JustifyAttendanceHandler {
 
 	async execute(command: JustifyAttendanceCommand): Promise<void> {
 		const record = await this.attendaceRepo.findById(command.attendanceRecordId);
-		if (!record) throw new NotFoundError('Registro de asistencia no encontrado');
+		// A record of another tenant is reported as missing, not forbidden, so
+		// the endpoint does not reveal that the id exists elsewhere.
+		if (!record || record.tenantId !== command.tenantId)
+			throw new NotFoundError('Registro de asistencia no encontrado');
 		const year = await this.accademicYearPort.findActiveByTenant(record.tenantId);
 		if (!year) throw new NotFoundError('No hay un ciclo lectivo activo');
 		if (!JustificationService.canJustify(record, year))
