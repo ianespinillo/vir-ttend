@@ -3,6 +3,7 @@ export class JustifyAttendanceCommand {
 		readonly attendanceRecordId: string,
 		readonly reason: string,
 		readonly justifiedBy: string,
+		readonly tenantId: string,
 		readonly notes?: string,
 	) {}
 }

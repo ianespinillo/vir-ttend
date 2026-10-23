@@ -157,7 +157,13 @@ export class AttendanceCommandController {
 		@CurrentUser() user: JwtPayload,
 	) {
 		return this.justifyAttendanceHandler.execute(
-			new JustifyAttendanceCommand(id, dto.reason, user.sub, dto.notes),
+			new JustifyAttendanceCommand(
+				id,
+				dto.reason,
+				user.sub,
+				user.tenantId,
+				dto.notes,
+			),
 		);
 	}
 	@ApiOperation({

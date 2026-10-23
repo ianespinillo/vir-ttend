@@ -62,6 +62,7 @@ describe('JustifyAttendanceHandler', () => {
 				'record-id',
 				'Enfermedad',
 				'user-id',
+				'tenant-id',
 				'Certificado médico',
 			),
 		);
@@ -100,6 +101,7 @@ describe('JustifyAttendanceHandler', () => {
 				'record-id',
 				'Problema de transporte',
 				'user-id',
+				'tenant-id',
 				undefined,
 			),
 		);
@@ -117,11 +119,32 @@ describe('JustifyAttendanceHandler', () => {
 				'record-id',
 				'Enfermedad',
 				'user-id',
+				'tenant-id',
 				undefined,
 			),
 		);
 		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
 		await expect(attempt).rejects.toThrow('Registro de asistencia no encontrado');
+	});
+
+	it('treats a record of another tenant as missing and changes nothing', async () => {
+		attendanceRepo.findById.mockResolvedValue(mockRecord);
+
+		const attempt = handler.execute(
+			new JustifyAttendanceCommand(
+				'record-id',
+				'Enfermedad',
+				'user-id',
+				'other-tenant-id',
+				undefined,
+			),
+		);
+
+		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
+		expect(academicYearPort.findActiveByTenant).not.toHaveBeenCalled();
+		expect(justificationRepo.save).not.toHaveBeenCalled();
+		expect(attendanceRepo.save).not.toHaveBeenCalled();
+		expect(mockRecord.status).toBe(ATTENDANCE_STATUS.ABSENT);
 
 		expect(justificationRepo.save).not.toHaveBeenCalled();
 	});
@@ -147,6 +170,7 @@ describe('JustifyAttendanceHandler', () => {
 					'record-id',
 					'Enfermedad',
 					'user-id',
+					'tenant-id',
 					undefined,
 				),
 			),
@@ -172,6 +196,7 @@ describe('JustifyAttendanceHandler', () => {
 				'record-id',
 				'Enfermedad',
 				'user-id',
+				'tenant-id',
 				undefined,
 			),
 		);
@@ -200,6 +225,7 @@ describe('JustifyAttendanceHandler', () => {
 					'record-id',
 					'Enfermedad',
 					'user-id',
+					'tenant-id',
 					undefined,
 				),
 			),
@@ -237,6 +263,7 @@ describe('JustifyAttendanceHandler', () => {
 				'record-id',
 				'Enfermedad',
 				'user-id',
+				'tenant-id',
 				undefined,
 			),
 		);
