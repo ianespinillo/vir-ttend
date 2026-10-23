@@ -21,7 +21,8 @@ export class GetAttendanceByStudentQueryHandler {
 	async execute(
 		query: GetAttendanceByStudentQuery,
 	): Promise<AttendanceRecordResponseDto[]> {
-		const records = await this.attendanceRepo.findByStudentAndDateRange(
+		// Daily records only, the same source the present counter uses.
+		const records = await this.attendanceRepo.findDailyByStudentAndDateRange(
 			query.studentId,
 			query.from,
 			query.to,
@@ -38,8 +39,9 @@ export class GetAttendanceByStudentQueryHandler {
 						`AttendanceRecord ${record.id} is marked as JUSTIFIED but has no justification.`,
 					);
 				result.push(new AttendanceRecordResponseDto(student, record, j));
+			} else {
+				result.push(new AttendanceRecordResponseDto(student, record));
 			}
-			result.push(new AttendanceRecordResponseDto(student, record));
 		}
 		return result;
 	}
