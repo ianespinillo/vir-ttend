@@ -1,6 +1,10 @@
 'use client';
 
-import type { AttendanceStatus, MyWorkshopCommission } from '@repo/common';
+import type {
+	AttendanceRecord,
+	AttendanceStatus,
+	MyWorkshopCommission,
+} from '@repo/common';
 import { Wrench } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Button } from '../../../ui/button';
@@ -11,6 +15,7 @@ import { AttendanceGrid } from './attendance-grid/attendance-grid';
 import type { StudentRowItem } from './attendance-grid/attendance-row';
 import { AttendanceDatePicker } from './attendance-toolbar/date-picker';
 import { QuickActions } from './attendance-toolbar/quick-actions';
+import { JustificationModal } from './justification-modal/justification-modal';
 
 export function formatCommissionLabel(
 	commission: Pick<MyWorkshopCommission, 'courseName' | 'code'>,
@@ -32,6 +37,12 @@ export interface WorkshopAttendancePageProps {
 	onMarkAll: (status: AttendanceStatus) => void;
 	onConfirmChanges: () => void;
 	onResetChanges: () => void;
+	onJustify?: (record: AttendanceRecord) => void;
+	isJustifyOpen?: boolean;
+	selectedRecordToJustify?: AttendanceRecord | null;
+	onCloseJustify?: () => void;
+	onConfirmJustify?: (reason: string, notes?: string) => Promise<void>;
+	isSubmittingJustify?: boolean;
 }
 
 export function WorkshopAttendancePage({
@@ -48,6 +59,12 @@ export function WorkshopAttendancePage({
 	onMarkAll,
 	onConfirmChanges,
 	onResetChanges,
+	onJustify,
+	isJustifyOpen = false,
+	selectedRecordToJustify = null,
+	onCloseJustify,
+	onConfirmJustify,
+	isSubmittingJustify = false,
 }: Readonly<WorkshopAttendancePageProps>) {
 	const selected = commissions.find(
 		(c) => c.commissionId === selectedCommissionId,
@@ -126,6 +143,7 @@ export function WorkshopAttendancePage({
 					<AttendanceGrid
 						students={gridStudents}
 						onStatusChange={onStatusChange}
+						onJustify={onJustify}
 						isLoading={isLoadingAttendance}
 						isSaving={isSaving}
 					/>
@@ -150,6 +168,16 @@ export function WorkshopAttendancePage({
 						</Button>
 					</div>
 				</>
+			)}
+
+			{onJustify && onCloseJustify && onConfirmJustify && (
+				<JustificationModal
+					isOpen={isJustifyOpen}
+					onClose={onCloseJustify}
+					studentName={selectedRecordToJustify?.studentName}
+					onConfirm={onConfirmJustify}
+					isSubmitting={isSubmittingJustify}
+				/>
 			)}
 		</div>
 	);

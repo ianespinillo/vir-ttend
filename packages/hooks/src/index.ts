@@ -88,6 +88,7 @@ export * from './features/attendance/use-my-workshop-commissions';
 export * from './features/attendance/use-workshop-attendance';
 export * from './features/attendance/use-register-workshop-attendance';
 export * from './features/attendance/use-bulk-workshop-attendance';
+export * from './features/attendance/use-justify-workshop-attendance';
 export * from './features/attendance/use-subject-attendance';
 export * from './features/attendance/use-register-subject-attendance';
 export * from './features/attendance/use-bulk-subject-attendance';

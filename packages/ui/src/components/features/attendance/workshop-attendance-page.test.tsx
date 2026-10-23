@@ -93,4 +93,72 @@ describe('WorkshopAttendancePage', () => {
 		fireEvent.click(screen.getByText('Confirmar'));
 		expect(props.onConfirmChanges).toHaveBeenCalled();
 	});
+
+	describe('justification', () => {
+		const absentRecord = {
+			id: 'r-1',
+			studentId: 's-1',
+			studentName: 'Perez, Juan',
+			status: ATTENDANCE_STATUS.ABSENT,
+		};
+		const absentStudent = {
+			id: 's-1',
+			name: 'Perez, Juan',
+			attendanceRecord: absentRecord,
+			originalStatus: ATTENDANCE_STATUS.ABSENT,
+		};
+
+		it('does not offer Justificar when onJustify is not provided', () => {
+			renderPage({ selectedCommissionId: 'c-1', gridStudents: [absentStudent] });
+			expect(screen.queryByText('Justificar')).not.toBeInTheDocument();
+		});
+
+		it('offers Justificar for a saved absent record and notifies it', () => {
+			const onJustify = vi.fn();
+			renderPage({
+				selectedCommissionId: 'c-1',
+				gridStudents: [absentStudent],
+				onJustify,
+			});
+			fireEvent.click(screen.getByText('Justificar'));
+			expect(onJustify).toHaveBeenCalledWith(absentRecord);
+		});
+
+		it('does not offer Justificar for an unsaved record', () => {
+			renderPage({
+				selectedCommissionId: 'c-1',
+				gridStudents: [
+					{
+						...absentStudent,
+						attendanceRecord: { ...absentRecord, id: '' },
+					},
+				],
+				onJustify: vi.fn(),
+			});
+			expect(screen.queryByText('Justificar')).not.toBeInTheDocument();
+		});
+
+		it('shows the Justificado badge when the record has a justification', () => {
+			renderPage({
+				selectedCommissionId: 'c-1',
+				gridStudents: [
+					{
+						...absentStudent,
+						attendanceRecord: {
+							...absentRecord,
+							justification: {
+								id: 'j-1',
+								reason: 'Enfermedad',
+								createdBy: 'u-1',
+								createdAt: new Date('2026-03-10T10:00:00.000Z'),
+							},
+						},
+					},
+				],
+				onJustify: vi.fn(),
+			});
+			expect(screen.getByText('Justificado')).toBeInTheDocument();
+			expect(screen.queryByText('Justificar')).not.toBeInTheDocument();
+		});
+	});
 });

@@ -2,6 +2,7 @@
 
 import type { AttendanceRecord, AttendanceStatus } from '@repo/common';
 import {
+	useJustifyWorkshopAttendance,
 	useMyWorkshopCommissions,
 	useRegisterWorkshopAttendance,
 	useWorkshopAttendance,
@@ -36,6 +37,11 @@ export default function AttendanceWorkshopPage() {
 	});
 
 	const registerMutation = useRegisterWorkshopAttendance();
+	const justifyMutation = useJustifyWorkshopAttendance();
+
+	const [selectedRecordToJustify, setSelectedRecordToJustify] =
+		useState<AttendanceRecord | null>(null);
+	const [isJustifyOpen, setIsJustifyOpen] = useState(false);
 
 	const [localStatuses, setLocalStatuses] = useState<
 		Record<string, AttendanceStatus | null>
@@ -57,12 +63,16 @@ export default function AttendanceWorkshopPage() {
 		() =>
 			(attendance?.records ?? []).map((r) => {
 				const status = localStatuses[r.studentId] ?? null;
+				// Only an unchanged saved record keeps its id and justification, so
+				// a status edited locally cannot be justified before it is saved.
+				const isSaved = Boolean(r.id) && status === r.status;
 				const record: AttendanceRecord | undefined = status
 					? {
-							id: r.id ?? '',
+							id: isSaved ? (r.id ?? '') : '',
 							studentId: r.studentId,
 							studentName: r.studentName,
 							status,
+							justification: isSaved ? r.justification : undefined,
 						}
 					: undefined;
 				return {
@@ -121,6 +131,42 @@ export default function AttendanceWorkshopPage() {
 		savedStatuses,
 	]);
 
+	const handleOpenJustify = useCallback((record: AttendanceRecord) => {
+		setSelectedRecordToJustify(record);
+		setIsJustifyOpen(true);
+	}, []);
+
+	const handleCloseJustify = useCallback(() => {
+		setIsJustifyOpen(false);
+		setSelectedRecordToJustify(null);
+	}, []);
+
+	const handleConfirmJustify = useCallback(
+		async (reason: string, notes?: string) => {
+			if (!selectedRecordToJustify?.id) return;
+			try {
+				await justifyMutation.mutateAsync({
+					recordId: selectedRecordToJustify.id,
+					reason,
+					notes,
+					commissionId: selectedCommissionId,
+					date: selectedDate,
+				});
+				toast.success('Justificación registrada correctamente');
+				handleCloseJustify();
+			} catch {
+				toast.error('Error al guardar la justificación');
+			}
+		},
+		[
+			selectedRecordToJustify,
+			justifyMutation,
+			selectedCommissionId,
+			selectedDate,
+			handleCloseJustify,
+		],
+	);
+
 	return (
 		<WorkshopAttendancePage
 			commissions={commissions ?? []}
@@ -136,6 +182,12 @@ export default function AttendanceWorkshopPage() {
 			onMarkAll={handleMarkAll}
 			onConfirmChanges={handleConfirmChanges}
 			onResetChanges={() => setLocalStatuses(savedStatuses)}
+			onJustify={handleOpenJustify}
+			isJustifyOpen={isJustifyOpen}
+			selectedRecordToJustify={selectedRecordToJustify}
+			onCloseJustify={handleCloseJustify}
+			onConfirmJustify={handleConfirmJustify}
+			isSubmittingJustify={justifyMutation.isPending}
 		/>
 	);
 }

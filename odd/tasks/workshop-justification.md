@@ -27,7 +27,14 @@ User report (2026-10-23): "en la sección de asistencia por taller, la prece no 
 
 ## Checklist
 - [x] T1: API — migration `Migration20261023120000_workshop_justification` (`workshop_justification`: id, unique FK `workshop_attendance_record_id` → `workshop_attendance_records` ON DELETE CASCADE, reason, notes, created_by, created_at), `WorkshopJustification` entity/repo/mapper, `JustifyWorkshopAttendanceHandler`, `POST /attendance/workshop/records/:recordId/justify` (ADMIN, PRECEPTOR; body `{ reason, notes? }`; 201 no body; 403 via workshop access policy; 404 record/commission/active year; DomainError if not absent/late), GET workshop attendance batch-loads `justification` per JUSTIFIED record, `ATTENDANCE_ROUTES.workshopJustify(recordId)`, optional `justification` on `WorkshopAttendanceRecord`. Route: delegated writer (2+ non-trivial files).
-- [ ] T2: Web — justify hook, workshop page `onJustify` + modal, client page wiring (role gating like daily), tests. Route: delegated writer (2+ non-trivial files).
+- [x] T2: Web — `useJustifyWorkshopAttendance` (invalidates `queryKeys.attendance.workshop(commissionId, date)`, falls back to `['attendance','workshop']`), `WorkshopAttendancePage` optional justify props + `JustificationModal`, client page wiring (no role gating, like daily; API enforces commission ownership), tests. Route: delegated writer (2+ non-trivial files).
+- [ ] T3: API — bulk justification: `POST /attendance/justify/bulk` (daily table; also accepts subject records since they share `attendance_record`) and `POST /attendance/workshop/records/justify/bulk`, body `{ recordIds, reason, notes? }`, all-or-nothing, unit tests. Route: delegated writer (2+ non-trivial files).
+- [ ] T4: Web — multi-select of justifiable saved records in `AttendanceGrid`, "Justificar seleccionados" action reusing `JustificationModal`, wired in daily and workshop pages/containers, hooks, tests. Route: delegated writer (2+ non-trivial files).
+
+## Bulk justification (added 2026-10-23)
+- User request: "agrega un bulk justification". Scope (user, 2026-10-23): daily + workshop screens. Subject screen keeps individual justification (it has it today; the parent wrongly said it didn't, then verified and corrected).
+- D3 (parent default): all-or-nothing. Every record is validated first (exists, same tenant, absent/late, access); if any fails nothing is saved and the error names the failing records. Same reason/notes for all selected records.
+- D4 (parent default): bulk handlers reuse the single-record rules (`JustificationService`, access policy) instead of duplicating them.
 
 ## Acceptance criteria
 - A preceptor of the commission (or an admin) can justify an absent/late workshop record with a reason and optional notes; the row shows "Justificado" with the reason.
@@ -43,3 +50,5 @@ User report (2026-10-23): "en la sección de asistencia por taller, la prece no 
 - RDD: on (global). Review boundary starts at `97aee05`.
 - T1 checks (writer): `jest test/unit/attendance` 37 suites/340 tests; `pnpm --filter api test` 133 suites/972 tests; `ts:check` 9/9; `lint:check` clean. Parent spot check: migration references the right table, is the latest in order, and columns match the ORM's default snake_case naming (the old `justification` table is camelCase via explicit `fieldName`). Not verified: migration run against a database.
 - T1 choices to note: academic-year check uses the workshop record `date` (daily uses `createdAt`); no `AttendanceJustifiedEvent` emitted (no listeners; event is daily-specific); justified workshop absences still count in weighted absences (unchanged). No workshop controller spec exists, none added.
+- T2 checks (writer): hooks vitest 42 passed; ui vitest 225 passed; demo vitest 181 passed; `ts:check` 9/9 after fixing a test type; `lint:check` clean; `pnpm --filter client build` OK. Parent re-ran `@repo/ui` tests: 36 files passed.
+- T2 discrepancy caught by the parent: the writer reported that the container passes `justification` and blanks the id for unsaved status changes, but the diff did not contain it (the "Justificado" badge would never render in workshop). Parent fixed it in `apps/client/.../attendance/workshop/page.tsx`: only an unchanged saved record keeps its `id` and `justification` (`canJustify` requires an id). Client `tsc` and biome OK. Not verified: real browser run against the API.
