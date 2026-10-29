@@ -5,7 +5,11 @@ import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-reg
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { assertCourseHasDailyAttendance } from '../../services/daily-attendance.policy';
+import { IDailySessionNotHeldRepository } from '../../../domain/repositories/daily-session-not-held.repository.interface';
+import {
+	assertCourseHasDailyAttendance,
+	assertDailySessionHeld,
+} from '../../services/daily-attendance.policy';
 import { BulkRegisterAttendanceCommand } from './bulk-register-attendance.command';
 @Injectable()
 export class BulkRegisterAttendanceHandler {
@@ -17,9 +21,16 @@ export class BulkRegisterAttendanceHandler {
 		private readonly studentFinder: IStudentPort,
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
+		@Inject('IDailySessionNotHeldRepository')
+		private readonly notHeldRepo: IDailySessionNotHeldRepository,
 	) {}
 	async execute(command: BulkRegisterAttendanceCommand): Promise<void> {
 		await assertCourseHasDailyAttendance(this.coursePort, command.courseId);
+		await assertDailySessionHeld(
+			this.notHeldRepo,
+			command.courseId,
+			command.date,
+		);
 		const students = await this.studentFinder.getByCourseId(command.courseId);
 		const records = await Promise.all(
 			students.map(async (student) => {

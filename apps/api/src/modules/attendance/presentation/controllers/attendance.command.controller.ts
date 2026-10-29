@@ -1,4 +1,12 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Delete,
+	Param,
+	Post,
+	Query,
+	UseGuards,
+} from '@nestjs/common';
 import {
 	ApiCookieAuth,
 	ApiOperation,
@@ -24,16 +32,24 @@ import { CopyDailyAttendanceCommand } from '../../application/commands/copy-dail
 import { CopyDailyAttendanceHandler } from '../../application/commands/copy-daily-attendance/copy-daily-attendance.handler';
 import { JustifyAttendanceCommand } from '../../application/commands/justify-attendance/justify-attendance.command';
 import { JustifyAttendanceHandler } from '../../application/commands/justify-attendance/justify-attendance.handler';
+import { MarkDailySessionNotHeldCommand } from '../../application/commands/mark-daily-session-not-held/mark-daily-session-not-held.command';
+import { MarkDailySessionNotHeldHandler } from '../../application/commands/mark-daily-session-not-held/mark-daily-session-not-held.handler';
 import { RegisterDailyAttendanceCommand } from '../../application/commands/register-daily-attendance/register-daily-attendance.command';
 import { RegisterDailyAttendanceHandler } from '../../application/commands/register-daily-attendance/register-daily-attendance.handler';
 import { RegisterSubjectAttendanceCommand } from '../../application/commands/register-subject-attendance/register-subject-attendance.command';
 import { RegisterSubjectAttendanceHandler } from '../../application/commands/register-subject-attendance/register-subject-attendance.handler';
+import { UnmarkDailySessionNotHeldCommand } from '../../application/commands/unmark-daily-session-not-held/unmark-daily-session-not-held.command';
+import { UnmarkDailySessionNotHeldHandler } from '../../application/commands/unmark-daily-session-not-held/unmark-daily-session-not-held.handler';
 import { BulkJustifyAttendanceRequestDto } from '../../application/dtos/bulk-justify-attendance.request.dto';
 import { BulkRegisterAttendanceRequestDto } from '../../application/dtos/bulk-register-attendance.request.dto';
 import { BulkUpdateSubjectStatusRequestDto } from '../../application/dtos/bulk-update-subject-status.request.dto';
 import { CopyAttendanceRequestDto } from '../../application/dtos/copy-attendance.request.dto';
 import { CopyDailyAttendanceRequestDto } from '../../application/dtos/copy-daily-attendance.request.dto';
 import { JustifyAttendanceRequestDto } from '../../application/dtos/justify-attendance.request.dto';
+import {
+	MarkDailySessionNotHeldRequestDto,
+	UnmarkDailySessionNotHeldRequestDto,
+} from '../../application/dtos/mark-daily-session-not-held.request.dto';
 import { RegisterDailyAttendanceRequestDto } from '../../application/dtos/register-daily-attendance.request.dto';
 import { RegisterSubjectAttendanceRequestDto } from '../../application/dtos/register-subject-attendance.request.dto';
 
@@ -51,6 +67,8 @@ export class AttendanceCommandController {
 		private readonly registerSubjectAttendanceHandler: RegisterSubjectAttendanceHandler,
 		private readonly copyAttendanceHandler: CopyAttendanceHandler,
 		private readonly copyDailyAttendanceHandler: CopyDailyAttendanceHandler,
+		private readonly markDailySessionNotHeldHandler: MarkDailySessionNotHeldHandler,
+		private readonly unmarkDailySessionNotHeldHandler: UnmarkDailySessionNotHeldHandler,
 	) {}
 
 	@ApiOperation({
@@ -356,6 +374,73 @@ export class AttendanceCommandController {
 				dto.courseId,
 				new Date(dto.targetDate),
 				dto.sourceDate ? new Date(dto.sourceDate) : undefined,
+			),
+		);
+	}
+
+	@ApiOperation({
+		summary: 'Marcar la clase de teoría de un curso como no dictada',
+		description: `Marca que el turno de teoría del curso no se dictó en la fecha indicada (por ejemplo, por ausencia del docente). Borra los registros de asistencia diaria ya cargados ese día y bloquea nuevos registros hasta desmarcar. Los registros de materias no se tocan. Es idempotente: si ya estaba marcado solo actualiza el motivo. Roles permitidos: preceptor, admin. Body de ejemplo:
+{
+  "courseId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "date": "2026-03-10",
+  "reason": "Ausencia del docente"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Clase marcada como no dictada. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }; data es { deletedRecords: number }.',
+	})
+	@ApiResponse({
+		status: 400,
+		description:
+			'Validación falló o el curso no tiene asistencia diaria (7mo técnico)',
+	})
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({ status: 404, description: 'Curso no encontrado' })
+	@Post('daily/not-held')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async markDailyNotHeld(
+		@Body() dto: MarkDailySessionNotHeldRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.markDailySessionNotHeldHandler.execute(
+			new MarkDailySessionNotHeldCommand(
+				user.tenantId,
+				dto.courseId,
+				new Date(dto.date),
+				dto.reason,
+				user.sub,
+			),
+		);
+	}
+
+	@ApiOperation({
+		summary: 'Quitar la marca de clase de teoría no dictada',
+		description:
+			'Quita la marca de no dictada del curso para la fecha indicada y reabre el registro de asistencia. Los registros borrados al marcar no se restauran. Es idempotente. Roles permitidos: preceptor, admin. URL de ejemplo: DELETE /attendance/daily/not-held?courseId=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d&date=2026-03-10. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Marca quitada. No devuelve cuerpo.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({ status: 404, description: 'Curso no encontrado' })
+	@Delete('daily/not-held')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async unmarkDailyNotHeld(
+		@Query() dto: UnmarkDailySessionNotHeldRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.unmarkDailySessionNotHeldHandler.execute(
+			new UnmarkDailySessionNotHeldCommand(
+				user.tenantId,
+				dto.courseId,
+				new Date(dto.date),
 			),
 		);
 	}

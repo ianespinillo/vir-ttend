@@ -3,7 +3,11 @@ import { DomainError } from '../../../../../common/errors';
 import { AttendanceRecord } from '../../../domain/entities/attendance-record.entity';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { assertCourseHasDailyAttendance } from '../../services/daily-attendance.policy';
+import { IDailySessionNotHeldRepository } from '../../../domain/repositories/daily-session-not-held.repository.interface';
+import {
+	assertCourseHasDailyAttendance,
+	assertDailySessionHeld,
+} from '../../services/daily-attendance.policy';
 import { CopyDailyAttendanceCommand } from './copy-daily-attendance.command';
 
 @Injectable()
@@ -13,10 +17,17 @@ export class CopyDailyAttendanceHandler {
 		private readonly attendanceRepo: IAttendanceRecordRepository,
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
+		@Inject('IDailySessionNotHeldRepository')
+		private readonly notHeldRepo: IDailySessionNotHeldRepository,
 	) {}
 
 	async execute(command: CopyDailyAttendanceCommand): Promise<void> {
 		await assertCourseHasDailyAttendance(this.coursePort, command.courseId);
+		await assertDailySessionHeld(
+			this.notHeldRepo,
+			command.courseId,
+			command.targetDate,
+		);
 		let sourceDate = command.sourceDate;
 
 		if (!sourceDate) {

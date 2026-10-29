@@ -19,6 +19,7 @@ import { ICoursePort } from '../../../src/modules/attendance/domain/ports/course
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
+import { IDailySessionNotHeldRepository } from '../../../src/modules/attendance/domain/repositories/daily-session-not-held.repository.interface';
 
 /**
  * 7th year of technical secondary schools has only workshop subjects: there is
@@ -53,6 +54,7 @@ describe('daily attendance in a workshop-only course (7th year technical)', () =
 
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let coursePort: MockProxy<ICoursePort>;
+	let notHeldRepo: MockProxy<IDailySessionNotHeldRepository>;
 	let studentPort: MockProxy<IStudentPort>;
 	let unitOfWork: MockProxy<IUnitOfWorkPort>;
 	let eventEmitter: MockProxy<EventEmitter2>;
@@ -60,6 +62,8 @@ describe('daily attendance in a workshop-only course (7th year technical)', () =
 	beforeEach(() => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		coursePort = mock<ICoursePort>();
+		notHeldRepo = mock<IDailySessionNotHeldRepository>();
+		notHeldRepo.findByCourseAndDate.mockResolvedValue(null);
 		studentPort = mock<IStudentPort>();
 		unitOfWork = mock<IUnitOfWorkPort>();
 		unitOfWork.run.mockImplementation(async (work) => work());
@@ -85,6 +89,7 @@ describe('daily attendance in a workshop-only course (7th year technical)', () =
 				unitOfWork,
 				eventEmitter,
 				coursePort,
+				notHeldRepo,
 			).execute(
 				new RegisterDailyAttendanceCommand(
 					'tenant-id',
@@ -117,6 +122,7 @@ describe('daily attendance in a workshop-only course (7th year technical)', () =
 				eventEmitter,
 				studentPort,
 				coursePort,
+				notHeldRepo,
 			).execute(
 				new BulkRegisterAttendanceCommand(
 					'tenant-id',
@@ -141,7 +147,11 @@ describe('daily attendance in a workshop-only course (7th year technical)', () =
 
 	describe('CopyDailyAttendanceHandler', () => {
 		const run = () =>
-			new CopyDailyAttendanceHandler(attendanceRepo, coursePort).execute(
+			new CopyDailyAttendanceHandler(
+				attendanceRepo,
+				coursePort,
+				notHeldRepo,
+			).execute(
 				new CopyDailyAttendanceCommand(
 					'user-id',
 					'course-id',

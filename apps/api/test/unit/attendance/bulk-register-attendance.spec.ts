@@ -9,12 +9,14 @@ import { Student } from '../../../src/modules/attendance/domain/entities/student
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
+import { IDailySessionNotHeldRepository } from '../../../src/modules/attendance/domain/repositories/daily-session-not-held.repository.interface';
 
 describe('BulkRegisterAttendanceHandler', () => {
 	let handler: BulkRegisterAttendanceHandler;
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let studentPort: MockProxy<IStudentPort>;
 	let eventEmitter: MockProxy<EventEmitter2>;
+	let notHeldRepo: MockProxy<IDailySessionNotHeldRepository>;
 
 	const mockStudents = [
 		Student.reconstitute('student-1', 'Student 1'),
@@ -26,11 +28,14 @@ describe('BulkRegisterAttendanceHandler', () => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
 		studentPort = mock<IStudentPort>();
 		eventEmitter = mock<EventEmitter2>();
+		notHeldRepo = mock<IDailySessionNotHeldRepository>();
+		notHeldRepo.findByCourseAndDate.mockResolvedValue(null);
 		handler = new BulkRegisterAttendanceHandler(
 			attendanceRepo,
 			eventEmitter,
 			studentPort,
 			mock<ICoursePort>(),
+			notHeldRepo,
 		);
 	});
 

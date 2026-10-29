@@ -6,7 +6,11 @@ import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-reg
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { assertCourseHasDailyAttendance } from '../../services/daily-attendance.policy';
+import { IDailySessionNotHeldRepository } from '../../../domain/repositories/daily-session-not-held.repository.interface';
+import {
+	assertCourseHasDailyAttendance,
+	assertDailySessionHeld,
+} from '../../services/daily-attendance.policy';
 import { RegisterDailyAttendanceCommand } from './register-daily-attendance.command';
 
 /**
@@ -24,9 +28,16 @@ export class RegisterDailyAttendanceHandler {
 		private readonly em: EventEmitter2,
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
+		@Inject('IDailySessionNotHeldRepository')
+		private readonly notHeldRepo: IDailySessionNotHeldRepository,
 	) {}
 	async execute(command: RegisterDailyAttendanceCommand): Promise<void> {
 		await assertCourseHasDailyAttendance(this.coursePort, command.courseId);
+		await assertDailySessionHeld(
+			this.notHeldRepo,
+			command.courseId,
+			command.date,
+		);
 		const changedRecords = await this.unitOfWork.run(async () => {
 			const existingByStudent = new Map(
 				(
