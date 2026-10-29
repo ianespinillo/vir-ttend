@@ -8,9 +8,12 @@ import type {
 import {
 	useBulkJustifyWorkshopAttendance,
 	useJustifyWorkshopAttendance,
+	useMarkWorkshopSessionNotHeld,
 	useMyWorkshopCommissions,
 	useRegisterWorkshopAttendance,
+	useUnmarkWorkshopSessionNotHeld,
 	useWorkshopAttendance,
+	useWorkshopSessionNotHeld,
 } from '@repo/hooks';
 import { type StudentRowItem, WorkshopAttendancePage } from '@repo/ui';
 import { format } from 'date-fns';
@@ -34,6 +37,13 @@ function getBulkFailureCount(error: unknown): number | null {
 	return Array.isArray(details) ? details.length : 0;
 }
 
+function getApiErrorMessage(error: unknown, fallback: string): string {
+	const message = (error as { response?: { data?: ErrorResponse } } | undefined)
+		?.response?.data?.message;
+	if (Array.isArray(message)) return message.join('. ') || fallback;
+	return message || fallback;
+}
+
 export default function AttendanceWorkshopPage() {
 	const [selectedDate, setSelectedDate] = useState<string>(getInitialDate);
 	const [selectedCommissionId, setSelectedCommissionId] = useState('');
@@ -49,6 +59,16 @@ export default function AttendanceWorkshopPage() {
 		commissionId: selectedCommissionId,
 		date: selectedDate,
 	});
+
+	const { data: notHeldStatus } = useWorkshopSessionNotHeld(
+		selectedCommissionId,
+		selectedDate,
+	);
+	const notHeld = notHeldStatus?.notHeld
+		? { reason: notHeldStatus.reason }
+		: null;
+	const markNotHeldMutation = useMarkWorkshopSessionNotHeld();
+	const unmarkNotHeldMutation = useUnmarkWorkshopSessionNotHeld();
 
 	const registerMutation = useRegisterWorkshopAttendance();
 	const justifyMutation = useJustifyWorkshopAttendance();
@@ -180,6 +200,43 @@ export default function AttendanceWorkshopPage() {
 		registerMutation,
 		savedStatuses,
 	]);
+
+	const handleMarkNotHeld = useCallback(
+		async (reason?: string) => {
+			if (!selectedCommissionId || !selectedDate) return;
+			try {
+				await markNotHeldMutation.mutateAsync({
+					commissionId: selectedCommissionId,
+					date: selectedDate,
+					reason,
+				});
+				// Unsaved edits and the selection refer to records that no longer exist.
+				setLocalStatuses({});
+				clearSelection();
+				toast.success('Taller marcado como no dictado');
+			} catch (error) {
+				toast.error(
+					getApiErrorMessage(error, 'Error al marcar el taller como no dictado'),
+				);
+			}
+		},
+		[selectedCommissionId, selectedDate, markNotHeldMutation, clearSelection],
+	);
+
+	const handleUnmarkNotHeld = useCallback(async () => {
+		if (!selectedCommissionId || !selectedDate) return;
+		try {
+			await unmarkNotHeldMutation.mutateAsync({
+				commissionId: selectedCommissionId,
+				date: selectedDate,
+			});
+			toast.success('Taller marcado como dictado');
+		} catch (error) {
+			toast.error(
+				getApiErrorMessage(error, 'Error al marcar el taller como dictado'),
+			);
+		}
+	}, [selectedCommissionId, selectedDate, unmarkNotHeldMutation]);
 
 	const handleOpenJustify = useCallback((record: AttendanceRecord) => {
 		setSelectedRecordToJustify(record);
@@ -317,6 +374,12 @@ export default function AttendanceWorkshopPage() {
 			onToggleSelectAll={handleToggleSelectAll}
 			onBulkJustify={handleOpenBulkJustify}
 			bulkJustifyCount={isBulkJustify ? selectedRecordIds.size : undefined}
+			notHeld={notHeld}
+			onMarkNotHeld={handleMarkNotHeld}
+			onUnmarkNotHeld={handleUnmarkNotHeld}
+			isNotHeldPending={
+				markNotHeldMutation.isPending || unmarkNotHeldMutation.isPending
+			}
 		/>
 	);
 }

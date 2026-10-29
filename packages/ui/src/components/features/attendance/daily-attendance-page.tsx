@@ -26,6 +26,11 @@ import { AttendanceSummary } from './attendance-summary/attendance-summary';
 import { AttendanceToolbar } from './attendance-toolbar/attendance-toolbar';
 import { CopyAttendanceModal } from './copy-attendance-modal';
 import { JustificationModal } from './justification-modal/justification-modal';
+import {
+	MarkNotHeldButton,
+	NotHeldNotice,
+	type NotHeldState,
+} from './not-held-controls';
 
 export interface DailyAttendancePageProps {
 	courses: ICourseResponse[];
@@ -69,6 +74,14 @@ export interface DailyAttendancePageProps {
 	onBulkJustify?: () => void;
 	/** Set while the justification modal is open in bulk mode. */
 	bulkJustifyCount?: number;
+	/** Set when the theory class was marked as not held on the selected date. */
+	notHeld?: NotHeldState | null;
+	/** Marks the class as not held; deletes the day's saved attendance. */
+	onMarkNotHeld?: (reason?: string) => void;
+	onUnmarkNotHeld?: () => void;
+	isNotHeldPending?: boolean;
+	/** Saved records of the day, shown in the confirmation (defaults to the grid's). */
+	savedRecordsCount?: number;
 }
 
 /**
@@ -143,6 +156,11 @@ export function DailyAttendancePage({
 	onToggleSelectAll,
 	onBulkJustify,
 	bulkJustifyCount,
+	notHeld,
+	onMarkNotHeld,
+	onUnmarkNotHeld,
+	isNotHeldPending,
+	savedRecordsCount,
 }: Readonly<DailyAttendancePageProps>) {
 	const dailyCourses = useMemo(
 		() => filterDailyAttendanceCourses(courses),
@@ -154,6 +172,20 @@ export function DailyAttendancePage({
 	}, [courses, selectedCourseId]);
 	const selectedCount = selectedRecordIds?.size ?? 0;
 	const hasDailyCourse = Boolean(selectedCourseId) && !selectedIsWorkshopOnly;
+	const isNotHeld = hasDailyCourse && Boolean(notHeld);
+	const savedCount =
+		savedRecordsCount ??
+		gridStudents.filter((student) => Boolean(student.attendanceRecord?.id))
+			.length;
+	const markNotHeldAction =
+		hasDailyCourse && Boolean(selectedDate) && onMarkNotHeld && !isNotHeld ? (
+			<MarkNotHeldButton
+				kind="theory"
+				savedRecordsCount={savedCount}
+				onConfirm={onMarkNotHeld}
+				disabled={isNotHeldPending}
+			/>
+		) : null;
 
 	return (
 		<div className="space-y-6">
@@ -172,14 +204,31 @@ export function DailyAttendancePage({
 				isLoadingCourses={isLoadingCourses}
 				isBulkSaving={isBulkSaving}
 				disabled={!hasDailyCourse}
-				extraActions={hasDailyCourse ? extraActions : undefined}
+				quickActionsDisabled={isNotHeld}
+				extraActions={
+					hasDailyCourse ? (
+						<>
+							{extraActions}
+							{markNotHeldAction}
+						</>
+					) : undefined
+				}
 			/>
 
 			{selectedIsWorkshopOnly && (
 				<WorkshopOnlyNotice href={workshopAttendanceHref} />
 			)}
 
-			{hasDailyCourse && (
+			{isNotHeld && (
+				<NotHeldNotice
+					kind="theory"
+					reason={notHeld?.reason}
+					onUnmark={onUnmarkNotHeld}
+					isPending={isNotHeldPending}
+				/>
+			)}
+
+			{hasDailyCourse && !isNotHeld && (
 				<>
 					<AttendanceSummary metrics={metrics} isLoading={isLoadingMetrics} />
 

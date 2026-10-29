@@ -1,4 +1,9 @@
-import { type ICourseResponse, LEVEL, SHIFT } from '@repo/common';
+import {
+	ATTENDANCE_STATUS,
+	type ICourseResponse,
+	LEVEL,
+	SHIFT,
+} from '@repo/common';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -114,5 +119,127 @@ describe('DailyAttendancePage bulk justification', () => {
 			bulkJustifyCount: 5,
 		});
 		expect(screen.getByText('Justificar 5 alumnos')).toBeInTheDocument();
+	});
+});
+
+describe('DailyAttendancePage class not held', () => {
+	const savedStudent = (id: string) => ({
+		id: `s-${id}`,
+		name: `Alumno ${id}`,
+		attendanceRecord: {
+			id: `r-${id}`,
+			studentId: `s-${id}`,
+			studentName: `Alumno ${id}`,
+			status: ATTENDANCE_STATUS.PRESENT,
+		},
+		originalStatus: ATTENDANCE_STATUS.PRESENT,
+	});
+
+	it('renders nothing new when the not-held props are absent', () => {
+		renderPage({ selectedCourseId: 'c-6' });
+		expect(screen.queryByRole('button', { name: /Clase no dictada/ })).toBeNull();
+		expect(screen.queryByText(/Marcar como dictada/)).toBeNull();
+	});
+
+	it('offers the action only with a selected daily course', () => {
+		renderPage({ selectedCourseId: '', onMarkNotHeld: vi.fn() });
+		expect(screen.queryByRole('button', { name: /Clase no dictada/ })).toBeNull();
+	});
+
+	it('does not offer the action for a workshop-only course', () => {
+		renderPage({ selectedCourseId: 'c-7', onMarkNotHeld: vi.fn() });
+		expect(screen.queryByRole('button', { name: /Clase no dictada/ })).toBeNull();
+	});
+
+	it('warns about the saved records that will be deleted and confirms with the reason', () => {
+		const props = renderPage({
+			selectedCourseId: 'c-6',
+			gridStudents: [savedStudent('1'), savedStudent('2')],
+			onMarkNotHeld: vi.fn(),
+		});
+		fireEvent.click(screen.getByRole('button', { name: /Clase no dictada/ }));
+		expect(
+			screen.getByText('Se van a borrar 2 registros de asistencia de este día.'),
+		).toBeInTheDocument();
+		fireEvent.change(screen.getByLabelText(/Motivo/), {
+			target: { value: '  Docente ausente ' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+		expect(props.onMarkNotHeld).toHaveBeenCalledWith('Docente ausente');
+	});
+
+	it('confirms without a reason when none is typed and nothing is saved', () => {
+		const props = renderPage({
+			selectedCourseId: 'c-6',
+			onMarkNotHeld: vi.fn(),
+		});
+		fireEvent.click(screen.getByRole('button', { name: /Clase no dictada/ }));
+		expect(screen.queryByText(/Se van a borrar/)).toBeNull();
+		fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+		expect(props.onMarkNotHeld).toHaveBeenCalledWith(undefined);
+	});
+
+	it('does not call the handler when the confirmation is cancelled', () => {
+		const props = renderPage({
+			selectedCourseId: 'c-6',
+			onMarkNotHeld: vi.fn(),
+		});
+		fireEvent.click(screen.getByRole('button', { name: /Clase no dictada/ }));
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		expect(props.onMarkNotHeld).not.toHaveBeenCalled();
+	});
+
+	describe('when the class was not held', () => {
+		it('replaces the grid and the save actions with the notice and its reason', () => {
+			renderPage({
+				selectedCourseId: 'c-6',
+				gridStudents: [savedStudent('1')],
+				notHeld: { reason: 'Docente ausente' },
+				onMarkNotHeld: vi.fn(),
+				onUnmarkNotHeld: vi.fn(),
+			});
+			expect(screen.getByText('Motivo: Docente ausente')).toBeInTheDocument();
+			expect(screen.queryByText('Alumno 1')).toBeNull();
+			expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull();
+			expect(
+				screen.queryByRole('button', { name: 'Clase no dictada' }),
+			).toBeNull();
+		});
+
+		it('disables the quick actions', () => {
+			renderPage({
+				selectedCourseId: 'c-6',
+				notHeld: {},
+				onUnmarkNotHeld: vi.fn(),
+			});
+			expect(
+				screen.getByRole('button', { name: /Todos Presentes/ }),
+			).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Todos Ausentes/ }),
+			).toBeDisabled();
+		});
+
+		it('calls onUnmarkNotHeld from the notice', () => {
+			const props = renderPage({
+				selectedCourseId: 'c-6',
+				notHeld: {},
+				onUnmarkNotHeld: vi.fn(),
+			});
+			fireEvent.click(screen.getByRole('button', { name: 'Marcar como dictada' }));
+			expect(props.onUnmarkNotHeld).toHaveBeenCalledTimes(1);
+		});
+
+		it('disables the unmark action while pending', () => {
+			renderPage({
+				selectedCourseId: 'c-6',
+				notHeld: {},
+				onUnmarkNotHeld: vi.fn(),
+				isNotHeldPending: true,
+			});
+			expect(
+				screen.getByRole('button', { name: 'Marcar como dictada' }),
+			).toBeDisabled();
+		});
 	});
 });
