@@ -13,10 +13,12 @@ import { JustifyAttendanceHandler } from './application/commands/justify-attenda
 import { JustifyWorkshopAttendanceHandler } from './application/commands/justify-workshop-attendance/justify-workshop-attendance.handler';
 import { MarkAlertSeenHandler } from './application/commands/mark-alert-seen/mark-alert-seen.handler';
 import { MarkDailySessionNotHeldHandler } from './application/commands/mark-daily-session-not-held/mark-daily-session-not-held.handler';
+import { MarkWorkshopSessionNotHeldHandler } from './application/commands/mark-workshop-session-not-held/mark-workshop-session-not-held.handler';
 import { RegisterDailyAttendanceHandler } from './application/commands/register-daily-attendance/register-daily-attendance.handler';
 import { RegisterSubjectAttendanceHandler } from './application/commands/register-subject-attendance/register-subject-attendance.handler';
 import { RegisterWorkshopAttendanceHandler } from './application/commands/register-workshop-attendance/register-workshop-attendance.handler';
 import { UnmarkDailySessionNotHeldHandler } from './application/commands/unmark-daily-session-not-held/unmark-daily-session-not-held.handler';
+import { UnmarkWorkshopSessionNotHeldHandler } from './application/commands/unmark-workshop-session-not-held/unmark-workshop-session-not-held.handler';
 import { GetAlertsCountQueryHandler } from './application/queries/get-alerts-count/get-alerts-count.handler';
 import { GetAlertsQueryHandler } from './application/queries/get-alerts/get-alerts.handler';
 import { GetAttendanceByStudentQueryHandler } from './application/queries/get-attendance-by-student/get-attendance-by-student.handler';
@@ -33,6 +35,7 @@ import { GetSubjectAttendanceQueryHandler } from './application/queries/get-subj
 import { GetSubjectHistoryQueryHandler } from './application/queries/get-subject-history/get-subject-history.handler';
 import { GetUnseenAlertsQueryHandler } from './application/queries/get-unseen-alerts/get-unseen-alerts.handler';
 import { GetWorkshopAttendanceQueryHandler } from './application/queries/get-workshop-attendance/get-workshop-attendance.handler';
+import { GetWorkshopSessionNotHeldQueryHandler } from './application/queries/get-workshop-session-not-held/get-workshop-session-not-held.handler';
 import { AttendanceCalculationService } from './application/services/attendance-calculation.service';
 import { AttendanceCopyService } from './application/services/attendance-copy.service';
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
@@ -106,8 +109,11 @@ import { WorkshopAttendanceController } from './presentation/controllers/worksho
 		MarkAlertSeenHandler,
 		MarkDailySessionNotHeldHandler,
 		UnmarkDailySessionNotHeldHandler,
+		MarkWorkshopSessionNotHeldHandler,
+		UnmarkWorkshopSessionNotHeldHandler,
 		//queries
 		GetWorkshopAttendanceQueryHandler,
+		GetWorkshopSessionNotHeldQueryHandler,
 		GetMyWorkshopCommissionsQueryHandler,
 		GetDailyAttendanceQueryHandler,
 		GetDailySessionNotHeldQueryHandler,

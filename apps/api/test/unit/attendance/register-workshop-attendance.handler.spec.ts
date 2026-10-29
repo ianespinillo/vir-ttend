@@ -11,6 +11,7 @@ import {
 	DATE,
 	PRECEPTOR_ID,
 	TENANT,
+	buildNotHeldRepo,
 	buildPort,
 	buildRepo,
 	commission,
@@ -46,6 +47,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			repo,
 			unitOfWork,
 			emitter,
+			buildNotHeldRepo(),
 		);
 
 		await handler.execute(
@@ -71,6 +73,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			repo,
 			unitOfWork,
 			emitter,
+			buildNotHeldRepo(),
 		);
 		await handler.execute(
 			register([{ studentId: 's1', status: ATTENDANCE_STATUS.PRESENT }]),
@@ -85,6 +88,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			repo,
 			unitOfWork,
 			emitter,
+			buildNotHeldRepo(),
 		);
 		await handler.execute(
 			register([
@@ -111,6 +115,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			buildRepo(),
 			unitOfWork,
 			emitter,
+			buildNotHeldRepo(),
 		);
 		await expect(
 			handler.execute(
@@ -127,6 +132,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			repo,
 			unitOfWork,
 			emitter,
+			buildNotHeldRepo(),
 		);
 		const attempt = handler.execute(
 			register([
@@ -148,6 +154,7 @@ describe('RegisterWorkshopAttendanceHandler', () => {
 			buildRepo(),
 			unitOfWork,
 			emitter,
+			buildNotHeldRepo(),
 		);
 		await expect(
 			handler.execute(
@@ -163,7 +170,13 @@ describe('BulkRegisterWorkshopAttendanceHandler', () => {
 		const port = buildPort(commission(), [student('s1'), student('s2')]);
 		const handler = new BulkRegisterWorkshopAttendanceHandler(
 			port,
-			new RegisterWorkshopAttendanceHandler(port, repo, unitOfWork, emitter),
+			new RegisterWorkshopAttendanceHandler(
+				port,
+				repo,
+				unitOfWork,
+				emitter,
+				buildNotHeldRepo(),
+			),
 		);
 
 		await handler.execute(

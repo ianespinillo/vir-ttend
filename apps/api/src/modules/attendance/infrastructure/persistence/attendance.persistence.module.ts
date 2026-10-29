@@ -8,12 +8,14 @@ import { DailySessionNotHeldOrmEntity } from './entities/daily-session-not-held.
 import { JustificationOrmEntity } from './entities/justification.orm-entity';
 import { WorkshopAttendanceRecordOrmEntity } from './entities/workshop-attendance-record.orm-entity';
 import { WorkshopJustificationOrmEntity } from './entities/workshop-justification.orm-entity';
+import { WorkshopSessionNotHeldOrmEntity } from './entities/workshop-session-not-held.orm-entity';
 import { AttendanceAlertRepository } from './repository/attendance-alert.repository';
 import { AttendanceRecordRepository } from './repository/attendance-record.repository';
 import { DailySessionNotHeldRepository } from './repository/daily-session-not-held.repository';
 import { JustificationRepository } from './repository/justification.repository';
 import { WorkshopAttendanceRecordRepository } from './repository/workshop-attendance-record.repository';
 import { WorkshopJustificationRepository } from './repository/workshop-justification.repository';
+import { WorkshopSessionNotHeldRepository } from './repository/workshop-session-not-held.repository';
 
 @Module({
 	imports: [
@@ -24,6 +26,7 @@ import { WorkshopJustificationRepository } from './repository/workshop-justifica
 			WorkshopAttendanceRecordOrmEntity,
 			WorkshopJustificationOrmEntity,
 			DailySessionNotHeldOrmEntity,
+			WorkshopSessionNotHeldOrmEntity,
 		]),
 	],
 	providers: [
@@ -71,6 +74,16 @@ import { WorkshopJustificationRepository } from './repository/workshop-justifica
 			useExisting: DailySessionNotHeldRepository,
 		},
 		{
+			provide: WorkshopSessionNotHeldRepository,
+			useFactory: (em: EntityManager) =>
+				em.getRepository(WorkshopSessionNotHeldOrmEntity),
+			inject: [EntityManager],
+		},
+		{
+			provide: 'IWorkshopSessionNotHeldRepository',
+			useExisting: WorkshopSessionNotHeldRepository,
+		},
+		{
 			provide: 'IAttendanceRecordRepository',
 			useExisting: AttendanceRecordRepository,
 		},
@@ -92,6 +105,7 @@ import { WorkshopJustificationRepository } from './repository/workshop-justifica
 		'IAttendanceAlertRepository',
 		'IJustificationRepository',
 		'IDailySessionNotHeldRepository',
+		'IWorkshopSessionNotHeldRepository',
 		'IWorkshopAttendanceRecordRepository',
 		'IWorkshopJustificationRepository',
 	],

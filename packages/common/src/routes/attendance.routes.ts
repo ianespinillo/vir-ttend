@@ -19,5 +19,6 @@ export const ATTENDANCE_ROUTES = {
 	workshopJustify: (recordId: string) =>
 		`/attendance/workshop/records/${recordId}/justify`,
 	workshopJustifyBulk: '/attendance/workshop/records/justify/bulk',
+	workshopNotHeld: '/attendance/workshop/not-held',
 	workshopMyCommissions: '/attendance/workshop/my-commissions',
 } as const;
