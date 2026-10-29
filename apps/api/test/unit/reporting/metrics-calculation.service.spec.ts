@@ -74,6 +74,21 @@ describe('MetricsCalculationService', () => {
 			expect(result.daysGiven).toBe(1);
 		});
 
+		it('weighs a workshop absence 1 on a day the theory was not held', () => {
+			const result = service.calculateStudentMetrics(
+				[],
+				[
+					makeRecord(ATTENDANCE_STATUS.ABSENT, day(9)),
+					makeRecord(ATTENDANCE_STATUS.ABSENT, day(10)),
+				],
+				{ theoryNotHeldDays: ['2026-03-09'] },
+			);
+			// Monday: theory not held, 1; Tuesday: theory held, 0.5.
+			expect(result.absent).toBe(1.5);
+			expect(result.absenceBreakdown).toEqual({ daily: 0, workshop: 1.5 });
+			expect(result.daysGiven).toBe(2);
+		});
+
 		it('weighs a late 0.25, and a late beyond the tolerance 0.5', () => {
 			expect(
 				service.calculateStudentMetrics([makeRecord(ATTENDANCE_STATUS.LATE)])

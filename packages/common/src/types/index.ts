@@ -21,6 +21,7 @@ export * from './attendance/subject-attendance.response.type.js';
 export * from './attendance/subject-history.response.type.js';
 export * from './attendance/copy-attendance.response.type.js';
 export * from './attendance/workshop-attendance.response.type.js';
+export * from './attendance/session-not-held.response.type.js';
 export * from './alerts/alert.response.type.js';
 export * from './alerts/alerts-count.response.type.js';
 export * from './dashboard/course-snapshot.type.js';

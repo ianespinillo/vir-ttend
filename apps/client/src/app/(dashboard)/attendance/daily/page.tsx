@@ -16,21 +16,25 @@ import {
 	useCourseAttendanceHistory,
 	useCurrentUser,
 	useDailyAttendance,
+	useDailySessionNotHeld,
 	useJustifyAttendance,
+	useMarkDailySessionNotHeld,
 	useMyCourses,
 	useRegisterDailyAttendance,
+	useUnmarkDailySessionNotHeld,
 } from '@repo/hooks';
 import {
 	Button,
 	DailyAttendancePage,
 	ReviewJustificationsModal,
 	type StudentRowItem,
+	isSameSessionTarget,
 	localizeCourseName,
 } from '@repo/ui';
 import { endOfMonth, format, parseISO, startOfMonth, subDays } from 'date-fns';
 import { Copy, FileCheck } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 function getInitialDate(initialDate?: string): string {
@@ -49,6 +53,13 @@ function getBulkFailureCount(error: unknown): number | null {
 	if (response?.status !== 422) return null;
 	const details = response.data?.details;
 	return Array.isArray(details) ? details.length : 0;
+}
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+	const message = (error as { response?: { data?: ErrorResponse } } | undefined)
+		?.response?.data?.message;
+	if (Array.isArray(message)) return message.join('. ') || fallback;
+	return message || fallback;
 }
 
 export default function AttendanceDailyPage() {
@@ -130,6 +141,30 @@ export default function AttendanceDailyPage() {
 		courseId: dailyCourseId,
 		date: selectedDate,
 	});
+
+	const {
+		data: notHeldData,
+		isLoading: isLoadingNotHeld,
+		isError: isNotHeldError,
+		refetch: refetchNotHeld,
+	} = useDailySessionNotHeld(dailyCourseId, selectedDate);
+	const notHeld = notHeldData?.notHeld ? { reason: notHeldData.reason } : null;
+	// Unknown status: never offer registering as if the class was held.
+	const notHeldStatus = isNotHeldError
+		? 'error'
+		: isLoadingNotHeld
+			? 'loading'
+			: undefined;
+	const handleRetryNotHeld = useCallback(() => {
+		void refetchNotHeld();
+	}, [refetchNotHeld]);
+	const isStatusUnknown = Boolean(notHeldStatus);
+
+	// Latest selection, read after an async mark/unmark resolves.
+	const currentTargetRef = useRef({ id: selectedCourseId, date: selectedDate });
+	currentTargetRef.current = { id: selectedCourseId, date: selectedDate };
+	const markNotHeldMutation = useMarkDailySessionNotHeld();
+	const unmarkNotHeldMutation = useUnmarkDailySessionNotHeld();
 
 	const [localRecordsMap, setLocalRecordsMap] = useState<
 		Record<string, AttendanceRecord>
@@ -332,6 +367,48 @@ export default function AttendanceDailyPage() {
 		[selectedCourseId, selectedDate, copyDailyMutation, handleCloseCopy],
 	);
 
+	const handleMarkNotHeld = useCallback(
+		async (reason?: string) => {
+			if (!selectedCourseId || !selectedDate) return;
+			const requested = { id: selectedCourseId, date: selectedDate };
+			try {
+				await markNotHeldMutation.mutateAsync({
+					courseId: selectedCourseId,
+					date: selectedDate,
+					reason,
+				});
+				// Unsaved edits and the selection refer to records that no longer
+				// exist, unless the user already moved to another course or date.
+				if (isSameSessionTarget(requested, currentTargetRef.current)) {
+					setLocalRecordsMap({});
+					setOriginalRecordsMap({});
+					clearSelection();
+				}
+				toast.success('Clase marcada como no dictada');
+			} catch (error) {
+				toast.error(
+					getApiErrorMessage(error, 'Error al marcar la clase como no dictada'),
+				);
+			}
+		},
+		[selectedCourseId, selectedDate, markNotHeldMutation, clearSelection],
+	);
+
+	const handleUnmarkNotHeld = useCallback(async () => {
+		if (!selectedCourseId || !selectedDate) return;
+		try {
+			await unmarkNotHeldMutation.mutateAsync({
+				courseId: selectedCourseId,
+				date: selectedDate,
+			});
+			toast.success('Clase marcada como dictada');
+		} catch (error) {
+			toast.error(
+				getApiErrorMessage(error, 'Error al marcar la clase como dictada'),
+			);
+		}
+	}, [selectedCourseId, selectedDate, unmarkNotHeldMutation]);
+
 	const handleOpenJustify = useCallback((record: AttendanceRecord) => {
 		setSelectedRecordToJustify(record);
 		setIsJustifyOpen(true);
@@ -482,6 +559,14 @@ export default function AttendanceDailyPage() {
 				onConfirmChanges={handleConfirmChanges}
 				onResetChanges={handleResetChanges}
 				workshopAttendanceHref="/attendance/workshop"
+				notHeld={notHeld}
+				onMarkNotHeld={handleMarkNotHeld}
+				onUnmarkNotHeld={handleUnmarkNotHeld}
+				isNotHeldPending={
+					markNotHeldMutation.isPending || unmarkNotHeldMutation.isPending
+				}
+				notHeldStatus={notHeldStatus}
+				onRetryNotHeld={handleRetryNotHeld}
 				extraActions={
 					selectedCourseId ? (
 						<div className="flex flex-wrap items-center gap-2">
@@ -500,7 +585,9 @@ export default function AttendanceDailyPage() {
 								variant="outline"
 								size="sm"
 								onClick={handleOpenCopy}
-								disabled={copyDailyMutation.isPending}
+								disabled={
+									copyDailyMutation.isPending || Boolean(notHeld) || isStatusUnknown
+								}
 								className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
 							>
 								<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />

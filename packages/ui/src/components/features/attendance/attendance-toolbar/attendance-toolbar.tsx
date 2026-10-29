@@ -27,6 +27,8 @@ export interface AttendanceToolbarProps {
 	isBulkSaving?: boolean;
 	extraActions?: ReactNode;
 	disabled?: boolean;
+	/** Disables only the "mark all" quick actions (the date picker stays usable). */
+	quickActionsDisabled?: boolean;
 }
 
 export function AttendanceToolbar({
@@ -45,6 +47,7 @@ export function AttendanceToolbar({
 	isBulkSaving,
 	extraActions,
 	disabled,
+	quickActionsDisabled,
 }: AttendanceToolbarProps) {
 	const hasActiveSelection = selectedCourseId || selectedSubjectId;
 
@@ -82,7 +85,7 @@ export function AttendanceToolbar({
 			{hasActiveSelection && (
 				<QuickActions
 					onMarkAll={onMarkAll}
-					disabled={disabled || isBulkSaving}
+					disabled={disabled || quickActionsDisabled || isBulkSaving}
 					isLoading={isBulkSaving}
 				/>
 			)}

@@ -8,6 +8,7 @@ export class Course {
 	private readonly _isActive: boolean;
 	private readonly _yearNumber: number | null;
 	private readonly _shift: SHIFT | undefined;
+	private readonly _tenantId: string | undefined;
 
 	private constructor(
 		id: string,
@@ -17,7 +18,9 @@ export class Course {
 		level: LevelType,
 		yearNumber: number | null,
 		shift?: SHIFT,
+		tenantId?: string,
 	) {
+		this._tenantId = tenantId;
 		this._id = id;
 		this._name = name;
 		this._academicYearId = academicYearId;
@@ -34,6 +37,7 @@ export class Course {
 		level: LevelType,
 		yearNumber: number | null = null,
 		shift?: SHIFT,
+		tenantId?: string,
 	) {
 		return new Course(
 			id,
@@ -43,6 +47,7 @@ export class Course {
 			level,
 			yearNumber,
 			shift,
+			tenantId,
 		);
 	}
 
@@ -67,6 +72,10 @@ export class Course {
 
 	get yearNumber(): number | null {
 		return this._yearNumber;
+	}
+	/** Owning tenant; only set when the course is loaded through the port. */
+	get tenantId(): string | undefined {
+		return this._tenantId;
 	}
 	get shift(): SHIFT | undefined {
 		return this._shift;

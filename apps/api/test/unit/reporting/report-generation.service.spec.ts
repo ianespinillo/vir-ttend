@@ -92,6 +92,8 @@ describe('ReportGenerationService', () => {
 		attendanceRecordPort.findWorkshopByCourseAndDateRange.mockResolvedValue([]);
 		attendanceRecordPort.findDailyByStudentAndDateRange.mockResolvedValue([]);
 		attendanceRecordPort.findWorkshopByStudentAndDateRange.mockResolvedValue([]);
+		attendanceRecordPort.findTheoryNotHeldDates.mockResolvedValue([]);
+		academicYearPort.getNonWorkingDays.mockResolvedValue([]);
 
 		service = new ReportGenerationService(
 			attendanceRecordPort,
@@ -134,6 +136,7 @@ describe('ReportGenerationService', () => {
 			expect(academicYearPort.getWorkingDaysBYAcademicYear).toHaveBeenCalledWith(
 				'ay-1',
 				SHIFT.AFTERNOON,
+				'course-1',
 			);
 		});
 
@@ -196,6 +199,46 @@ describe('ReportGenerationService', () => {
 			expect(entry.absent).toBe(1);
 			expect(entry.absenceBreakdown).toEqual({ daily: 0.5, workshop: 0.5 });
 			expect(entry.daysGiven).toBe(1);
+		});
+
+		it('weighs a workshop absence 1 on a day the theory was marked as not held', async () => {
+			attendanceRecordPort.findWorkshopByCourseAndDateRange.mockResolvedValue([
+				makeRecord(ATTENDANCE_STATUS.ABSENT, 'student-1', jul1),
+				makeRecord(ATTENDANCE_STATUS.ABSENT, 'student-1', jul2),
+			]);
+			attendanceRecordPort.findTheoryNotHeldDates.mockResolvedValue([
+				`${YEAR}-07-01`,
+			]);
+
+			const entry = await entryOf('student-1');
+
+			expect(entry.absent).toBe(1.5);
+			expect(entry.absenceBreakdown).toEqual({ daily: 0, workshop: 1.5 });
+			const { from, to } = period.toDateRange();
+			expect(attendanceRecordPort.findTheoryNotHeldDates).toHaveBeenCalledWith(
+				'course-1',
+				from,
+				to,
+			);
+		});
+
+		it('weighs a workshop absence 1 on an institutional suspension of the course shift', async () => {
+			attendanceRecordPort.findWorkshopByCourseAndDateRange.mockResolvedValue([
+				makeRecord(ATTENDANCE_STATUS.ABSENT, 'student-1', jul1),
+			]);
+			academicYearPort.getNonWorkingDays.mockResolvedValue([`${YEAR}-07-01`]);
+
+			const entry = await entryOf('student-1');
+
+			expect(entry.absent).toBe(1);
+		});
+
+		it('looks for no not-held day in a workshop-only course', async () => {
+			coursePort.findById.mockResolvedValue(workshopOnlyCourse);
+
+			await service.generateMonthlyReport('course-7', period);
+
+			expect(attendanceRecordPort.findTheoryNotHeldDates).not.toHaveBeenCalled();
 		});
 
 		it('weighs a workshop absence 1 in a workshop-only course (7th year technical)', async () => {

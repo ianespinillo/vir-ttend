@@ -9,6 +9,7 @@ import {
 } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AfterCommitQueue } from '../after-commit.queue';
 import { AttendanceRecordOrmEntity } from '../entities/attendance-record.orm-entity';
+import { JustificationOrmEntity } from '../entities/justification.orm-entity';
 import { AttendanceRecordMapper } from '../mappers/attendance-record.mapper';
 
 export class AttendanceRecordRepository
@@ -134,6 +135,25 @@ export class AttendanceRecordRepository
 			date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
 		});
 		return orms.map((o) => AttendanceRecordMapper.toDomain(o));
+	}
+
+	async deleteDailyByCourseAndDate(
+		courseId: string,
+		date: Date,
+	): Promise<number> {
+		const day = date.toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
+		const where = { courseId, subjectId: null, date: day };
+		const records = await this.find(where, { fields: ['id'] });
+		if (records.length === 0) return 0;
+		// The justification FK has no ON DELETE CASCADE: remove those rows first.
+		await this.em.nativeDelete(JustificationOrmEntity, {
+			attendanceRecordId: { $in: records.map((record) => record.id) },
+		});
+		const deleted = await this.nativeDelete(where);
+		await this.afterCommit.defer(async () => {
+			await this.redis.del(`attendance:summary:${courseId}:${day}`);
+		});
+		return deleted;
 	}
 
 	async findDailyByCourseAndDateRange(

@@ -17,6 +17,7 @@ import { ISubjectPort } from '../../../src/modules/attendance/domain/ports/subje
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import { IWorkshopCommissionPort } from '../../../src/modules/attendance/domain/ports/workshop-commission.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
+import { IDailySessionNotHeldRepository } from '../../../src/modules/attendance/domain/repositories/daily-session-not-held.repository.interface';
 
 /**
  * Daily records (no subject) and subject records share one table. They must be
@@ -69,6 +70,7 @@ describe('daily and subject attendance coexistence', () => {
 			unitOfWork,
 			eventEmitter,
 			mock<ICoursePort>(),
+			mock<IDailySessionNotHeldRepository>(),
 		);
 		subjectHandler = new RegisterSubjectAttendanceHandler(
 			repo,

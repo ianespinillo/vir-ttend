@@ -21,4 +21,9 @@ export interface IWorkshopAttendanceRecordRepository {
 		to: Date,
 	): Promise<WorkshopAttendanceRecord[]>;
 	bulkSave(records: WorkshopAttendanceRecord[]): Promise<void>;
+	/**
+	 * Deletes every record of the commission on the calendar day (their
+	 * justifications go with them) and returns how many records were removed.
+	 */
+	deleteByCommissionAndDate(commissionId: string, date: Date): Promise<number>;
 }

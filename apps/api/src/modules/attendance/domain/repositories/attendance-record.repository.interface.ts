@@ -73,6 +73,13 @@ export interface IAttendanceRecordRepository {
 	): Promise<AttendanceRecord[]>;
 	bulkSave(records: AttendanceRecord[]): Promise<void>;
 
+	/**
+	 * Deletes the daily records (no subject) of a course for a calendar day,
+	 * with their justifications, and returns how many records were removed.
+	 * Subject records of that day are never touched.
+	 */
+	deleteDailyByCourseAndDate(courseId: string, date: Date): Promise<number>;
+
 	save(record: AttendanceRecord): Promise<void>;
 	getCourseSummaryForDate(
 		courseId: string,

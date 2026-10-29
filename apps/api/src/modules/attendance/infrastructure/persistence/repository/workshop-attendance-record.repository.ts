@@ -64,4 +64,16 @@ export class WorkshopAttendanceRecordRepository
 		}
 		await this.em.flush();
 	}
+
+	async deleteByCommissionAndDate(
+		commissionId: string,
+		date: Date,
+	): Promise<number> {
+		// workshop_justification.workshop_attendance_record_id is ON DELETE CASCADE,
+		// so deleting the records removes their justifications too.
+		return this.nativeDelete({
+			workshopCommissionId: commissionId,
+			date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+		});
+	}
 }

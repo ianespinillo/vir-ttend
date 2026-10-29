@@ -16,6 +16,13 @@ import type { StudentRowItem } from './attendance-grid/attendance-row';
 import { AttendanceDatePicker } from './attendance-toolbar/date-picker';
 import { QuickActions } from './attendance-toolbar/quick-actions';
 import { JustificationModal } from './justification-modal/justification-modal';
+import {
+	MarkNotHeldButton,
+	NotHeldLookupError,
+	type NotHeldLookupStatus,
+	NotHeldNotice,
+	type NotHeldState,
+} from './not-held-controls';
 
 export function formatCommissionLabel(
 	commission: Pick<MyWorkshopCommission, 'courseName' | 'code'>,
@@ -50,6 +57,20 @@ export interface WorkshopAttendancePageProps {
 	onBulkJustify?: () => void;
 	/** Set while the justification modal is open in bulk mode. */
 	bulkJustifyCount?: number;
+	/** Set when the workshop was marked as not held on the selected date. */
+	notHeld?: NotHeldState | null;
+	/** Marks the workshop as not held; deletes the day's saved attendance. */
+	onMarkNotHeld?: (reason?: string) => void;
+	onUnmarkNotHeld?: () => void;
+	isNotHeldPending?: boolean;
+	/**
+	 * Set while the not-held status of the selected day is unknown (loading or
+	 * failed): registering and marking are disabled until it is known.
+	 */
+	notHeldStatus?: NotHeldLookupStatus;
+	onRetryNotHeld?: () => void;
+	/** Saved records of the day, shown in the confirmation (defaults to the grid's). */
+	savedRecordsCount?: number;
 }
 
 export function WorkshopAttendancePage({
@@ -77,11 +98,25 @@ export function WorkshopAttendancePage({
 	onToggleSelectAll,
 	onBulkJustify,
 	bulkJustifyCount,
+	notHeld,
+	onMarkNotHeld,
+	onUnmarkNotHeld,
+	isNotHeldPending,
+	notHeldStatus,
+	onRetryNotHeld,
+	savedRecordsCount,
 }: Readonly<WorkshopAttendancePageProps>) {
 	const selectedCount = selectedRecordIds?.size ?? 0;
 	const selected = commissions.find(
 		(c) => c.commissionId === selectedCommissionId,
 	);
+	const isNotHeld = Boolean(selected) && Boolean(notHeld);
+	const isStatusUnknown = Boolean(selected) && Boolean(notHeldStatus);
+	const isStatusError = isStatusUnknown && notHeldStatus === 'error';
+	const savedCount =
+		savedRecordsCount ??
+		gridStudents.filter((student) => Boolean(student.attendanceRecord?.id))
+			.length;
 
 	return (
 		<div className="space-y-6">
@@ -96,7 +131,20 @@ export function WorkshopAttendancePage({
 					onDateChange={onDateChange}
 				/>
 				{selected && (
-					<QuickActions onMarkAll={onMarkAll} disabled={isSaving || !selected} />
+					<div className="flex flex-wrap items-center gap-2">
+						{onMarkNotHeld && !isNotHeld && selectedDate && (
+							<MarkNotHeldButton
+								kind="workshop"
+								savedRecordsCount={savedCount}
+								onConfirm={onMarkNotHeld}
+								disabled={isNotHeldPending || isStatusUnknown}
+							/>
+						)}
+						<QuickActions
+							onMarkAll={onMarkAll}
+							disabled={isSaving || isNotHeld || isStatusUnknown}
+						/>
+					</div>
 				)}
 			</div>
 
@@ -144,7 +192,18 @@ export function WorkshopAttendancePage({
 				)}
 			</section>
 
-			{selected && (
+			{isStatusError && <NotHeldLookupError onRetry={onRetryNotHeld} />}
+
+			{selected && isNotHeld && (
+				<NotHeldNotice
+					kind="workshop"
+					reason={notHeld?.reason}
+					onUnmark={onUnmarkNotHeld}
+					isPending={isNotHeldPending}
+				/>
+			)}
+
+			{selected && !isNotHeld && (
 				<>
 					{!selected.hasWorkshopToday && (
 						<output className="block rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
@@ -171,7 +230,7 @@ export function WorkshopAttendancePage({
 								variant="outline"
 								size="sm"
 								onClick={onBulkJustify}
-								disabled={isSaving}
+								disabled={isSaving || isStatusUnknown}
 							>
 								<FileText className="mr-1.5 h-4 w-4 shrink-0" />
 								Justificar seleccionados ({selectedCount})
@@ -190,7 +249,7 @@ export function WorkshopAttendancePage({
 							type="button"
 							size="sm"
 							onClick={onConfirmChanges}
-							disabled={isSaving || gridStudents.length === 0}
+							disabled={isSaving || isStatusUnknown || gridStudents.length === 0}
 						>
 							{isSaving ? 'Guardando...' : 'Confirmar'}
 						</Button>
