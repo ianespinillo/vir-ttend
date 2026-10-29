@@ -16,6 +16,7 @@ import { RolesGuard } from '../../../../common/guard/roles.guard';
 import { AttendanceMetricsResponseDto } from '../../application/dtos/attendance-metrics.response.dto';
 import { AttendanceRecordResponseDto } from '../../application/dtos/attendance-record.response.dto';
 import { DailySessionNotHeldResponseDto } from '../../application/dtos/daily-session-not-held.response.dto';
+import { GetDailySessionNotHeldRequestDto } from '../../application/dtos/mark-daily-session-not-held.request.dto';
 import { SubjectAttendanceResponseDto } from '../../application/dtos/subject-attendance.response.dto';
 import { SubjectHistoryResponseDto } from '../../application/dtos/subject-history.response.dto';
 import { GetAttendanceByStudentQueryHandler } from '../../application/queries/get-attendance-by-student/get-attendance-by-student.handler';
@@ -110,16 +111,22 @@ export class AttendanceQueryController {
 		description: 'Estado de la clase de teoría del día',
 		type: DailySessionNotHeldResponseDto,
 	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
 	@ApiResponse({ status: 401, description: 'No autenticado' })
 	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({ status: 404, description: 'Curso no encontrado' })
 	@Get('daily/not-held')
 	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 	async getDailyNotHeld(
-		@Query('courseId') courseId: string,
-		@Query('date') date: string,
+		@Query() dto: GetDailySessionNotHeldRequestDto,
+		@CurrentUser() user: JwtPayload,
 	) {
 		return this.getDailySessionNotHeldHandler.execute(
-			new GetDailySessionNotHeldQuery(courseId, new Date(date)),
+			new GetDailySessionNotHeldQuery(
+				user.tenantId,
+				dto.courseId,
+				new Date(dto.date),
+			),
 		);
 	}
 

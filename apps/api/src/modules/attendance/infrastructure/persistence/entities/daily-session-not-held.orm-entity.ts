@@ -25,11 +25,11 @@ export class DailySessionNotHeldOrmEntity {
 	date!: Date;
 
 	@Property({ type: 'text', nullable: true })
-	reason?: string;
+	reason?: string | null;
 
 	@Property({ type: 'uuid' })
 	createdBy!: string;
 
-	@Property({ type: 'timestamp' })
+	@Property({ type: 'timestamptz' })
 	createdAt!: Date;
 }

@@ -31,7 +31,8 @@ export class DailySessionNotHeldRepository
 	async save(marker: DailySessionNotHeld): Promise<void> {
 		const existing = await this.findOne({ id: marker.id });
 		if (existing) {
-			existing.reason = marker.reason ?? undefined;
+			// null (not undefined) so a cleared reason is written to the column.
+			existing.reason = marker.reason ?? null;
 		} else {
 			this.em.persist(DailySessionNotHeldMapper.toOrm(marker));
 		}

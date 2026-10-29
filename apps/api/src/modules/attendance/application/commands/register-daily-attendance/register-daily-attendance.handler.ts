@@ -33,12 +33,13 @@ export class RegisterDailyAttendanceHandler {
 	) {}
 	async execute(command: RegisterDailyAttendanceCommand): Promise<void> {
 		await assertCourseHasDailyAttendance(this.coursePort, command.courseId);
-		await assertDailySessionHeld(
-			this.notHeldRepo,
-			command.courseId,
-			command.date,
-		);
 		const changedRecords = await this.unitOfWork.run(async () => {
+			// Checked in the same transaction as the writes.
+			await assertDailySessionHeld(
+				this.notHeldRepo,
+				command.courseId,
+				command.date,
+			);
 			const existingByStudent = new Map(
 				(
 					await this.attendanceRepo.findDailyByCourseAndDate(

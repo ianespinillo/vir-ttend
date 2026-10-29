@@ -8,6 +8,7 @@ import { AttendanceRecord } from '../../../src/modules/attendance/domain/entitie
 import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../src/modules/attendance/domain/ports/student.port.interface';
+import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
 import { IDailySessionNotHeldRepository } from '../../../src/modules/attendance/domain/repositories/daily-session-not-held.repository.interface';
 
@@ -30,12 +31,15 @@ describe('BulkRegisterAttendanceHandler', () => {
 		eventEmitter = mock<EventEmitter2>();
 		notHeldRepo = mock<IDailySessionNotHeldRepository>();
 		notHeldRepo.findByCourseAndDate.mockResolvedValue(null);
+		const unitOfWork = mock<IUnitOfWorkPort>();
+		unitOfWork.run.mockImplementation(async (work) => work());
 		handler = new BulkRegisterAttendanceHandler(
 			attendanceRepo,
 			eventEmitter,
 			studentPort,
 			mock<ICoursePort>(),
 			notHeldRepo,
+			unitOfWork,
 		);
 	});
 

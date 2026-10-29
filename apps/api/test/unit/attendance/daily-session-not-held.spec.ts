@@ -1,3 +1,4 @@
+import { UniqueConstraintViolationException } from '@mikro-orm/core';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
 	ATTENDANCE_STATUS,
@@ -147,6 +148,32 @@ describe('daily session not held', () => {
 			expect(notHeldRepo.save).not.toHaveBeenCalled();
 		});
 
+		it('converges when a concurrent mark wins: the retry finds the marker and is a no-op', async () => {
+			// Mirrors the adapter: a unique violation re-runs the work once.
+			unitOfWork.run.mockImplementation(async (work) => {
+				try {
+					return await work();
+				} catch (error) {
+					if (!(error instanceof UniqueConstraintViolationException)) throw error;
+					return work();
+				}
+			});
+			attendanceRepo.deleteDailyByCourseAndDate.mockResolvedValue(0);
+			notHeldRepo.findByCourseAndDate
+				.mockResolvedValueOnce(null)
+				.mockResolvedValueOnce(buildMarker('Paro'));
+			notHeldRepo.save.mockRejectedValueOnce(
+				new UniqueConstraintViolationException(new Error('duplicate key')),
+			);
+
+			const result = await run('Paro');
+
+			expect(result).toEqual({ deletedRecords: 0 });
+			// First attempt tried to insert; the retry saw the marker and saved nothing.
+			expect(notHeldRepo.save).toHaveBeenCalledTimes(1);
+			expect(notHeldRepo.findByCourseAndDate).toHaveBeenCalledTimes(2);
+		});
+
 		it('rejects a workshop-only course', async () => {
 			coursePort.findById.mockResolvedValue(workshopOnly);
 
@@ -213,9 +240,9 @@ describe('daily session not held', () => {
 	});
 
 	describe('GetDailySessionNotHeldQueryHandler', () => {
-		const run = () =>
-			new GetDailySessionNotHeldQueryHandler(notHeldRepo).execute(
-				new GetDailySessionNotHeldQuery('course-id', date),
+		const run = (tenantId = 'tenant-id') =>
+			new GetDailySessionNotHeldQueryHandler(notHeldRepo, coursePort).execute(
+				new GetDailySessionNotHeldQuery(tenantId, 'course-id', date),
 			);
 
 		it('answers not held with the reason when the day is marked', async () => {
@@ -229,6 +256,18 @@ describe('daily session not held', () => {
 
 			expect(result.notHeld).toBe(false);
 			expect(result.reason).toBeUndefined();
+		});
+
+		it('reports a missing course as not found', async () => {
+			coursePort.findById.mockResolvedValue(null);
+
+			await expect(run()).rejects.toBeInstanceOf(NotFoundError);
+			expect(notHeldRepo.findByCourseAndDate).not.toHaveBeenCalled();
+		});
+
+		it('reports a course of another tenant as not found', async () => {
+			await expect(run('other-tenant')).rejects.toBeInstanceOf(NotFoundError);
+			expect(notHeldRepo.findByCourseAndDate).not.toHaveBeenCalled();
 		});
 	});
 
@@ -282,6 +321,16 @@ describe('daily session not held', () => {
 
 				expect(attendanceRepo.bulkSave).toHaveBeenCalledTimes(1);
 			});
+
+			it('checks the marker inside the unit of work', async () => {
+				notHeldRepo.findByCourseAndDate.mockResolvedValue(buildMarker());
+				unitOfWork.run.mockImplementation(async () => {
+					throw new Error('unit of work entered');
+				});
+
+				await expect(run()).rejects.toThrow('unit of work entered');
+				expect(notHeldRepo.findByCourseAndDate).not.toHaveBeenCalled();
+			});
 		});
 
 		describe('BulkRegisterAttendanceHandler', () => {
@@ -293,6 +342,7 @@ describe('daily session not held', () => {
 					studentPort,
 					coursePort,
 					notHeldRepo,
+					unitOfWork,
 				).execute(
 					new BulkRegisterAttendanceCommand(
 						'tenant-id',
@@ -325,6 +375,7 @@ describe('daily session not held', () => {
 					attendanceRepo,
 					coursePort,
 					notHeldRepo,
+					unitOfWork,
 				).execute(
 					new CopyDailyAttendanceCommand('user-id', 'course-id', targetDate, date),
 				);

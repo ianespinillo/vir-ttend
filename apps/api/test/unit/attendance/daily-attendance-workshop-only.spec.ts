@@ -123,6 +123,7 @@ describe('daily attendance in a workshop-only course (7th year technical)', () =
 				studentPort,
 				coursePort,
 				notHeldRepo,
+				unitOfWork,
 			).execute(
 				new BulkRegisterAttendanceCommand(
 					'tenant-id',
@@ -151,6 +152,7 @@ describe('daily attendance in a workshop-only course (7th year technical)', () =
 				attendanceRepo,
 				coursePort,
 				notHeldRepo,
+				unitOfWork,
 			).execute(
 				new CopyDailyAttendanceCommand(
 					'user-id',
