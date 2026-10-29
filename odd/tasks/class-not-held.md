@@ -1,7 +1,7 @@
 # Feature: Class not held (teacher absence)
 
 ## Status
-IN REVIEW (2026-10-29). Feature branch chain pushed; tracker PR #93 (draft) → `dev`, child PRs #94–#98.
+DONE (2026-10-29). Merged into `dev` locally (merge `494cef1` of `feat/class-not-held-05-web`, user request); not pushed. PR #93 brought only T1 to `dev`; #95–#98 were never merged on GitHub.
 
 ## Objective
 Let preceptors (and admins) mark that the theory shift of a course, or a workshop commission, was not held on a date (for example because the teacher was absent), so no student absence counts for it and the weighted absence of the other shift is correct.
@@ -81,3 +81,4 @@ Let preceptors (and admins) mark that the theory shift of a course, or a worksho
 - T5b commit `a6ef368`. Review assess (`--base-ref 7fee50e --committed-only`): medium, `review_due: false`, `under_budget` (373 lines) — no native review of its own; stated in PR #98.
 - Delivery (2026-10-29): branches pushed. Tracker `feat/class-not-held` reset to `ce5574b` plus an empty commit `6487057` (never pushed before, every commit kept on its slice branch). PRs: #93 tracker (draft, → `dev`); #94 01-weights (`eca736e`, +247 −8); #95 02-daily-marker (`ce16005`, `54fef7a`, +1409 −88, `size:exception`); #96 03-workshop-marker (`d04de72`, +1273 −3, `size:exception`); #97 04-calculations (`9bd7b0b`, `40a8bec`, +932 −116, `size:exception`); #98 05-web (`7fee50e`, `a6ef368`, +1337 −15, `size:exception`). Each PR diff verified to contain only its slice. Merge order: #94 → #95 → #96 → #97 → #98 into their parents, then #93 into `dev`; merges are the user's call.
 - Follow-ups: vacuous unmark-workshop assertion; convergence test mock-only; student report path test; redundant `(course_id, date)` `@Index` on the daily ORM entity; local `.env` files still point to 5436 (user to change to 5437).
+- Merge into `dev` (`494cef1`, no conflicts): checks on the merged tree — `ts:check` 9/9; api jest 142 suites/1103 tests; `packages/ui` vitest 38 files/264 tests; `packages/hooks` vitest 12 files/59 tests. No new authored content, so no new review (T1–T5 reviews already burned; T5b `under_budget`).
