@@ -30,6 +30,12 @@ export interface WeightedAbsenceInput {
 	 */
 	expectedContraturnoDays?: readonly string[];
 	/**
+	 * `YYYY-MM-DD` dates on which the daily (theory) shift was not held for the
+	 * student's course. On them the workshop was the only shift of the day, so a
+	 * workshop absence weighs 1 instead of 1/2.
+	 */
+	theoryNotHeldDays?: readonly string[];
+	/**
 	 * Workshop-only course (7th year technical, see `isWorkshopOnlyCourse`):
 	 * attendance is a single shift, so there is no contraturno halving. A
 	 * workshop absence weighs 1 and legacy daily records keep their full weight.
@@ -39,6 +45,8 @@ export interface WeightedAbsenceInput {
 
 export interface WeightedAbsenceOptions {
 	workshopOnly?: boolean;
+	/** Course-wide: the same theory-not-held dates apply to every student. */
+	theoryNotHeldDays?: readonly string[];
 }
 
 export interface WeightedAbsenceBreakdown {
@@ -103,7 +111,9 @@ function sumByDay(
  * the caller lists the date in `expectedContraturnoDays`. Each
  * date is capped at 1, the daily shift being counted first. In a workshop-only
  * course (`workshopOnly`) every shift is the only one of the day: absences weigh
- * 1 whether daily (legacy) or workshop.
+ * 1 whether daily (legacy) or workshop. On a date listed in `theoryNotHeldDays`
+ * the daily shift was not held, so the workshop was the only shift of the day
+ * and a workshop absence weighs 1 (justified too); lates keep their weight.
  */
 export function calculateWeightedAbsences(
 	input: WeightedAbsenceInput,
@@ -116,17 +126,16 @@ export function calculateWeightedAbsences(
 					...(input.expectedContraturnoDays ?? []),
 				],
 	);
-	const workshopAbsentWeight = input.workshopOnly
-		? DAILY_ABSENT_WEIGHT
-		: CONTRATURNO_SHIFT_WEIGHT;
+	const theoryNotHeld = new Set(input.theoryNotHeldDays ?? []);
+	const workshopAbsentWeightOf = (day: string) =>
+		input.workshopOnly || theoryNotHeld.has(day)
+			? DAILY_ABSENT_WEIGHT
+			: CONTRATURNO_SHIFT_WEIGHT;
 
 	const dailyByDay = sumByDay(input.dailyRecords, (day) =>
 		contraturnoDays.has(day) ? CONTRATURNO_SHIFT_WEIGHT : DAILY_ABSENT_WEIGHT,
 	);
-	const workshopByDay = sumByDay(
-		input.workshopRecords,
-		() => workshopAbsentWeight,
-	);
+	const workshopByDay = sumByDay(input.workshopRecords, workshopAbsentWeightOf);
 
 	let daily = 0;
 	let workshop = 0;
@@ -196,6 +205,7 @@ export function calculateWeightedAbsencesByStudent(
 				dailyRecords: daily,
 				workshopRecords: workshop,
 				workshopOnly: options.workshopOnly,
+				theoryNotHeldDays: options.theoryNotHeldDays,
 			}),
 			daysGiven: countDaysGiven(daily, workshop),
 		});
