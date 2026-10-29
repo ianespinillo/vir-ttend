@@ -41,6 +41,7 @@ export * from './lib/format';
 export * from './lib/report-format';
 export * from './lib/shift';
 export * from './lib/student-history';
+export * from './lib/session-target';
 
 // Shadcn primitives
 export * from './ui/alert';

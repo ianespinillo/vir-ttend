@@ -98,6 +98,7 @@ describe('daily session not held hooks', () => {
 			queryKeys.attendance.dailyNotHeld('course-1', '2026-03-10'),
 			queryKeys.attendance.daily('course-1', '2026-03-10'),
 			queryKeys.attendance.metrics('course-1', '2026-03-10'),
+			['attendance', 'history'],
 		]) {
 			expect(invalidate).toHaveBeenCalledWith({ queryKey });
 		}
@@ -140,6 +141,27 @@ describe('daily session not held hooks', () => {
 		expect(invalidate).toHaveBeenCalledWith({
 			queryKey: queryKeys.attendance.daily('course-1', '2026-03-10'),
 		});
+		expect(invalidate).toHaveBeenCalledWith({
+			queryKey: queryKeys.attendance.metrics('course-1', '2026-03-10'),
+		});
+		expect(invalidate).toHaveBeenCalledWith({
+			queryKey: ['attendance', 'history'],
+		});
+	});
+
+	it('does not invalidate when unmarking fails', async () => {
+		const { invalidate, wrapper } = createClient();
+		mock
+			.onDelete(ATTENDANCE_ROUTES.dailyNotHeld)
+			.reply(500, { message: 'Error' });
+
+		const { result } = renderHook(() => useUnmarkDailySessionNotHeld(), {
+			wrapper,
+		});
+		result.current.mutate({ courseId: 'course-1', date: '2026-03-10' });
+
+		await waitFor(() => expect(result.current.isError).toBe(true));
+		expect(invalidate).not.toHaveBeenCalled();
 	});
 });
 
@@ -217,5 +239,30 @@ describe('workshop session not held hooks', () => {
 		expect(invalidate).toHaveBeenCalledWith({
 			queryKey: queryKeys.attendance.workshopNotHeld('c-1', '2026-03-10'),
 		});
+		expect(invalidate).toHaveBeenCalledWith({
+			queryKey: queryKeys.attendance.workshop('c-1', '2026-03-10'),
+		});
+	});
+
+	it('does not invalidate when marking or unmarking fails', async () => {
+		const { invalidate, wrapper } = createClient();
+		mock.onPost(ATTENDANCE_ROUTES.workshopNotHeld).reply(500);
+		mock.onDelete(ATTENDANCE_ROUTES.workshopNotHeld).reply(500);
+
+		const { result } = renderHook(
+			() => ({
+				mark: useMarkWorkshopSessionNotHeld(),
+				unmark: useUnmarkWorkshopSessionNotHeld(),
+			}),
+			{ wrapper },
+		);
+		result.current.mark.mutate({ commissionId: 'c-1', date: '2026-03-10' });
+		result.current.unmark.mutate({ commissionId: 'c-1', date: '2026-03-10' });
+
+		await waitFor(() => {
+			expect(result.current.mark.isError).toBe(true);
+			expect(result.current.unmark.isError).toBe(true);
+		});
+		expect(invalidate).not.toHaveBeenCalled();
 	});
 });

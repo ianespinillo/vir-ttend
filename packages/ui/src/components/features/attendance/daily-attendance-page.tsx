@@ -28,6 +28,8 @@ import { CopyAttendanceModal } from './copy-attendance-modal';
 import { JustificationModal } from './justification-modal/justification-modal';
 import {
 	MarkNotHeldButton,
+	NotHeldLookupError,
+	type NotHeldLookupStatus,
 	NotHeldNotice,
 	type NotHeldState,
 } from './not-held-controls';
@@ -80,6 +82,12 @@ export interface DailyAttendancePageProps {
 	onMarkNotHeld?: (reason?: string) => void;
 	onUnmarkNotHeld?: () => void;
 	isNotHeldPending?: boolean;
+	/**
+	 * Set while the not-held status of the selected day is unknown (loading or
+	 * failed): registering, copying and marking are disabled until it is known.
+	 */
+	notHeldStatus?: NotHeldLookupStatus;
+	onRetryNotHeld?: () => void;
 	/** Saved records of the day, shown in the confirmation (defaults to the grid's). */
 	savedRecordsCount?: number;
 }
@@ -160,6 +168,8 @@ export function DailyAttendancePage({
 	onMarkNotHeld,
 	onUnmarkNotHeld,
 	isNotHeldPending,
+	notHeldStatus,
+	onRetryNotHeld,
 	savedRecordsCount,
 }: Readonly<DailyAttendancePageProps>) {
 	const dailyCourses = useMemo(
@@ -173,6 +183,8 @@ export function DailyAttendancePage({
 	const selectedCount = selectedRecordIds?.size ?? 0;
 	const hasDailyCourse = Boolean(selectedCourseId) && !selectedIsWorkshopOnly;
 	const isNotHeld = hasDailyCourse && Boolean(notHeld);
+	const isStatusUnknown = hasDailyCourse && Boolean(notHeldStatus);
+	const isStatusError = isStatusUnknown && notHeldStatus === 'error';
 	const savedCount =
 		savedRecordsCount ??
 		gridStudents.filter((student) => Boolean(student.attendanceRecord?.id))
@@ -183,7 +195,7 @@ export function DailyAttendancePage({
 				kind="theory"
 				savedRecordsCount={savedCount}
 				onConfirm={onMarkNotHeld}
-				disabled={isNotHeldPending}
+				disabled={isNotHeldPending || isStatusUnknown}
 			/>
 		) : null;
 
@@ -204,7 +216,7 @@ export function DailyAttendancePage({
 				isLoadingCourses={isLoadingCourses}
 				isBulkSaving={isBulkSaving}
 				disabled={!hasDailyCourse}
-				quickActionsDisabled={isNotHeld}
+				quickActionsDisabled={isNotHeld || isStatusUnknown}
 				extraActions={
 					hasDailyCourse ? (
 						<>
@@ -218,6 +230,8 @@ export function DailyAttendancePage({
 			{selectedIsWorkshopOnly && (
 				<WorkshopOnlyNotice href={workshopAttendanceHref} />
 			)}
+
+			{isStatusError && <NotHeldLookupError onRetry={onRetryNotHeld} />}
 
 			{isNotHeld && (
 				<NotHeldNotice
@@ -255,7 +269,7 @@ export function DailyAttendancePage({
 								variant="outline"
 								size="sm"
 								onClick={onBulkJustify}
-								disabled={isSaving}
+								disabled={isSaving || isStatusUnknown}
 							>
 								<FileText className="mr-1.5 h-4 w-4 shrink-0" />
 								Justificar seleccionados ({selectedCount})
@@ -274,7 +288,7 @@ export function DailyAttendancePage({
 							type="button"
 							size="sm"
 							onClick={onConfirmChanges}
-							disabled={isSaving}
+							disabled={isSaving || isStatusUnknown}
 						>
 							{isSaving ? 'Guardando...' : 'Confirmar'}
 						</Button>

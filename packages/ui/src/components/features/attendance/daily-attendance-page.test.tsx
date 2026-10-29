@@ -242,4 +242,64 @@ describe('DailyAttendancePage class not held', () => {
 			).toBeDisabled();
 		});
 	});
+
+	describe('when the not-held status is unknown', () => {
+		it('disables the actions while loading and keeps the grid without a notice', () => {
+			renderPage({
+				selectedCourseId: 'c-6',
+				gridStudents: [savedStudent('1')],
+				notHeldStatus: 'loading',
+				onMarkNotHeld: vi.fn(),
+			});
+			expect(screen.getByRole('button', { name: 'Confirmar' })).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Clase no dictada/ }),
+			).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Todos Presentes/ }),
+			).toBeDisabled();
+			expect(screen.queryByText(/No se pudo verificar/)).toBeNull();
+			expect(screen.queryByText('Marcar como dictada')).toBeNull();
+		});
+
+		it('shows an error with the actions disabled and retries', () => {
+			const props = renderPage({
+				selectedCourseId: 'c-6',
+				gridStudents: [savedStudent('1')],
+				notHeldStatus: 'error',
+				onRetryNotHeld: vi.fn(),
+				onMarkNotHeld: vi.fn(),
+			});
+			expect(
+				screen.getByText('No se pudo verificar si la clase se dictó.'),
+			).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Confirmar' })).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Clase no dictada/ }),
+			).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Todos Ausentes/ }),
+			).toBeDisabled();
+			fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+			expect(props.onRetryNotHeld).toHaveBeenCalledTimes(1);
+		});
+
+		it('changes nothing when the status props are absent', () => {
+			renderPage({
+				selectedCourseId: 'c-6',
+				gridStudents: [savedStudent('1')],
+				onMarkNotHeld: vi.fn(),
+			});
+			expect(screen.getByRole('button', { name: 'Confirmar' })).toBeEnabled();
+			expect(
+				screen.getByRole('button', { name: /Clase no dictada/ }),
+			).toBeEnabled();
+			expect(screen.queryByText(/No se pudo verificar/)).toBeNull();
+		});
+
+		it('ignores the status without a selected course', () => {
+			renderPage({ selectedCourseId: '', notHeldStatus: 'error' });
+			expect(screen.queryByText(/No se pudo verificar/)).toBeNull();
+		});
+	});
 });

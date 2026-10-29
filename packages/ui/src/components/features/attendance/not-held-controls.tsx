@@ -29,6 +29,12 @@ export interface NotHeldState {
 	reason?: string;
 }
 
+/**
+ * Status of the not-held lookup while it cannot be trusted: absent means known
+ * (held or not held), so existing usages keep rendering as before.
+ */
+export type NotHeldLookupStatus = 'loading' | 'error';
+
 export type NotHeldKind = 'theory' | 'workshop';
 
 const COPY = {
@@ -162,5 +168,25 @@ export function NotHeldNotice({
 				</EmptyContent>
 			)}
 		</Empty>
+	);
+}
+
+export interface NotHeldLookupErrorProps {
+	onRetry?: () => void;
+}
+
+/** Shown when it could not be verified whether the class was held. */
+export function NotHeldLookupError({
+	onRetry,
+}: Readonly<NotHeldLookupErrorProps>) {
+	return (
+		<output className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+			<span>No se pudo verificar si la clase se dictó.</span>
+			{onRetry && (
+				<Button type="button" variant="outline" size="sm" onClick={onRetry}>
+					Reintentar
+				</Button>
+			)}
+		</output>
 	);
 }

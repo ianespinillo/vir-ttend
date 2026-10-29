@@ -18,6 +18,8 @@ import { QuickActions } from './attendance-toolbar/quick-actions';
 import { JustificationModal } from './justification-modal/justification-modal';
 import {
 	MarkNotHeldButton,
+	NotHeldLookupError,
+	type NotHeldLookupStatus,
 	NotHeldNotice,
 	type NotHeldState,
 } from './not-held-controls';
@@ -61,6 +63,12 @@ export interface WorkshopAttendancePageProps {
 	onMarkNotHeld?: (reason?: string) => void;
 	onUnmarkNotHeld?: () => void;
 	isNotHeldPending?: boolean;
+	/**
+	 * Set while the not-held status of the selected day is unknown (loading or
+	 * failed): registering and marking are disabled until it is known.
+	 */
+	notHeldStatus?: NotHeldLookupStatus;
+	onRetryNotHeld?: () => void;
 	/** Saved records of the day, shown in the confirmation (defaults to the grid's). */
 	savedRecordsCount?: number;
 }
@@ -94,6 +102,8 @@ export function WorkshopAttendancePage({
 	onMarkNotHeld,
 	onUnmarkNotHeld,
 	isNotHeldPending,
+	notHeldStatus,
+	onRetryNotHeld,
 	savedRecordsCount,
 }: Readonly<WorkshopAttendancePageProps>) {
 	const selectedCount = selectedRecordIds?.size ?? 0;
@@ -101,6 +111,8 @@ export function WorkshopAttendancePage({
 		(c) => c.commissionId === selectedCommissionId,
 	);
 	const isNotHeld = Boolean(selected) && Boolean(notHeld);
+	const isStatusUnknown = Boolean(selected) && Boolean(notHeldStatus);
+	const isStatusError = isStatusUnknown && notHeldStatus === 'error';
 	const savedCount =
 		savedRecordsCount ??
 		gridStudents.filter((student) => Boolean(student.attendanceRecord?.id))
@@ -125,10 +137,13 @@ export function WorkshopAttendancePage({
 								kind="workshop"
 								savedRecordsCount={savedCount}
 								onConfirm={onMarkNotHeld}
-								disabled={isNotHeldPending}
+								disabled={isNotHeldPending || isStatusUnknown}
 							/>
 						)}
-						<QuickActions onMarkAll={onMarkAll} disabled={isSaving || isNotHeld} />
+						<QuickActions
+							onMarkAll={onMarkAll}
+							disabled={isSaving || isNotHeld || isStatusUnknown}
+						/>
 					</div>
 				)}
 			</div>
@@ -177,6 +192,8 @@ export function WorkshopAttendancePage({
 				)}
 			</section>
 
+			{isStatusError && <NotHeldLookupError onRetry={onRetryNotHeld} />}
+
 			{selected && isNotHeld && (
 				<NotHeldNotice
 					kind="workshop"
@@ -213,7 +230,7 @@ export function WorkshopAttendancePage({
 								variant="outline"
 								size="sm"
 								onClick={onBulkJustify}
-								disabled={isSaving}
+								disabled={isSaving || isStatusUnknown}
 							>
 								<FileText className="mr-1.5 h-4 w-4 shrink-0" />
 								Justificar seleccionados ({selectedCount})
@@ -232,7 +249,7 @@ export function WorkshopAttendancePage({
 							type="button"
 							size="sm"
 							onClick={onConfirmChanges}
-							disabled={isSaving || gridStudents.length === 0}
+							disabled={isSaving || isStatusUnknown || gridStudents.length === 0}
 						>
 							{isSaving ? 'Guardando...' : 'Confirmar'}
 						</Button>

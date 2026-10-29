@@ -281,4 +281,54 @@ describe('WorkshopAttendancePage workshop not held', () => {
 			expect(props.onUnmarkNotHeld).toHaveBeenCalledTimes(1);
 		});
 	});
+
+	describe('when the not-held status is unknown', () => {
+		it('disables the actions while loading without showing a notice', () => {
+			renderPage({
+				selectedCommissionId: 'c-1',
+				notHeldStatus: 'loading',
+				onMarkNotHeld: vi.fn(),
+			});
+			expect(screen.getByRole('button', { name: 'Confirmar' })).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Todos Presentes/ }),
+			).toBeDisabled();
+			expect(screen.queryByText(/No se pudo verificar/)).toBeNull();
+		});
+
+		it('shows an error with the actions disabled and retries', () => {
+			const props = renderPage({
+				selectedCommissionId: 'c-1',
+				notHeldStatus: 'error',
+				onRetryNotHeld: vi.fn(),
+				onMarkNotHeld: vi.fn(),
+			});
+			expect(
+				screen.getByText('No se pudo verificar si la clase se dictó.'),
+			).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Confirmar' })).toBeDisabled();
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeDisabled();
+			fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+			expect(props.onRetryNotHeld).toHaveBeenCalledTimes(1);
+		});
+
+		it('changes nothing when the status props are absent', () => {
+			renderPage({ selectedCommissionId: 'c-1', onMarkNotHeld: vi.fn() });
+			expect(screen.getByRole('button', { name: 'Confirmar' })).toBeEnabled();
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeEnabled();
+			expect(screen.queryByText(/No se pudo verificar/)).toBeNull();
+		});
+
+		it('ignores the status without a selected commission', () => {
+			renderPage({ selectedCommissionId: '', notHeldStatus: 'error' });
+			expect(screen.queryByText(/No se pudo verificar/)).toBeNull();
+		});
+	});
 });

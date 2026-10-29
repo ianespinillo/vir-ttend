@@ -15,9 +15,13 @@ import {
 	useWorkshopAttendance,
 	useWorkshopSessionNotHeld,
 } from '@repo/hooks';
-import { type StudentRowItem, WorkshopAttendancePage } from '@repo/ui';
+import {
+	type StudentRowItem,
+	WorkshopAttendancePage,
+	isSameSessionTarget,
+} from '@repo/ui';
 import { format } from 'date-fns';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 function getInitialDate(): string {
@@ -60,13 +64,29 @@ export default function AttendanceWorkshopPage() {
 		date: selectedDate,
 	});
 
-	const { data: notHeldStatus } = useWorkshopSessionNotHeld(
-		selectedCommissionId,
-		selectedDate,
-	);
-	const notHeld = notHeldStatus?.notHeld
-		? { reason: notHeldStatus.reason }
-		: null;
+	const {
+		data: notHeldData,
+		isLoading: isLoadingNotHeld,
+		isError: isNotHeldError,
+		refetch: refetchNotHeld,
+	} = useWorkshopSessionNotHeld(selectedCommissionId, selectedDate);
+	const notHeld = notHeldData?.notHeld ? { reason: notHeldData.reason } : null;
+	// Unknown status: never offer registering as if the workshop was held.
+	const notHeldStatus = isNotHeldError
+		? 'error'
+		: isLoadingNotHeld
+			? 'loading'
+			: undefined;
+	const handleRetryNotHeld = useCallback(() => {
+		void refetchNotHeld();
+	}, [refetchNotHeld]);
+
+	// Latest selection, read after an async mark/unmark resolves.
+	const currentTargetRef = useRef({
+		id: selectedCommissionId,
+		date: selectedDate,
+	});
+	currentTargetRef.current = { id: selectedCommissionId, date: selectedDate };
 	const markNotHeldMutation = useMarkWorkshopSessionNotHeld();
 	const unmarkNotHeldMutation = useUnmarkWorkshopSessionNotHeld();
 
@@ -204,15 +224,19 @@ export default function AttendanceWorkshopPage() {
 	const handleMarkNotHeld = useCallback(
 		async (reason?: string) => {
 			if (!selectedCommissionId || !selectedDate) return;
+			const requested = { id: selectedCommissionId, date: selectedDate };
 			try {
 				await markNotHeldMutation.mutateAsync({
 					commissionId: selectedCommissionId,
 					date: selectedDate,
 					reason,
 				});
-				// Unsaved edits and the selection refer to records that no longer exist.
-				setLocalStatuses({});
-				clearSelection();
+				// Unsaved edits and the selection refer to records that no longer
+				// exist, unless the user already moved to another commission or date.
+				if (isSameSessionTarget(requested, currentTargetRef.current)) {
+					setLocalStatuses({});
+					clearSelection();
+				}
 				toast.success('Taller marcado como no dictado');
 			} catch (error) {
 				toast.error(
@@ -380,6 +404,8 @@ export default function AttendanceWorkshopPage() {
 			isNotHeldPending={
 				markNotHeldMutation.isPending || unmarkNotHeldMutation.isPending
 			}
+			notHeldStatus={notHeldStatus}
+			onRetryNotHeld={handleRetryNotHeld}
 		/>
 	);
 }

@@ -28,12 +28,13 @@ import {
 	DailyAttendancePage,
 	ReviewJustificationsModal,
 	type StudentRowItem,
+	isSameSessionTarget,
 	localizeCourseName,
 } from '@repo/ui';
 import { endOfMonth, format, parseISO, startOfMonth, subDays } from 'date-fns';
 import { Copy, FileCheck } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 function getInitialDate(initialDate?: string): string {
@@ -141,13 +142,27 @@ export default function AttendanceDailyPage() {
 		date: selectedDate,
 	});
 
-	const { data: notHeldStatus } = useDailySessionNotHeld(
-		dailyCourseId,
-		selectedDate,
-	);
-	const notHeld = notHeldStatus?.notHeld
-		? { reason: notHeldStatus.reason }
-		: null;
+	const {
+		data: notHeldData,
+		isLoading: isLoadingNotHeld,
+		isError: isNotHeldError,
+		refetch: refetchNotHeld,
+	} = useDailySessionNotHeld(dailyCourseId, selectedDate);
+	const notHeld = notHeldData?.notHeld ? { reason: notHeldData.reason } : null;
+	// Unknown status: never offer registering as if the class was held.
+	const notHeldStatus = isNotHeldError
+		? 'error'
+		: isLoadingNotHeld
+			? 'loading'
+			: undefined;
+	const handleRetryNotHeld = useCallback(() => {
+		void refetchNotHeld();
+	}, [refetchNotHeld]);
+	const isStatusUnknown = Boolean(notHeldStatus);
+
+	// Latest selection, read after an async mark/unmark resolves.
+	const currentTargetRef = useRef({ id: selectedCourseId, date: selectedDate });
+	currentTargetRef.current = { id: selectedCourseId, date: selectedDate };
 	const markNotHeldMutation = useMarkDailySessionNotHeld();
 	const unmarkNotHeldMutation = useUnmarkDailySessionNotHeld();
 
@@ -355,16 +370,20 @@ export default function AttendanceDailyPage() {
 	const handleMarkNotHeld = useCallback(
 		async (reason?: string) => {
 			if (!selectedCourseId || !selectedDate) return;
+			const requested = { id: selectedCourseId, date: selectedDate };
 			try {
 				await markNotHeldMutation.mutateAsync({
 					courseId: selectedCourseId,
 					date: selectedDate,
 					reason,
 				});
-				// Unsaved edits and the selection refer to records that no longer exist.
-				setLocalRecordsMap({});
-				setOriginalRecordsMap({});
-				clearSelection();
+				// Unsaved edits and the selection refer to records that no longer
+				// exist, unless the user already moved to another course or date.
+				if (isSameSessionTarget(requested, currentTargetRef.current)) {
+					setLocalRecordsMap({});
+					setOriginalRecordsMap({});
+					clearSelection();
+				}
 				toast.success('Clase marcada como no dictada');
 			} catch (error) {
 				toast.error(
@@ -546,6 +565,8 @@ export default function AttendanceDailyPage() {
 				isNotHeldPending={
 					markNotHeldMutation.isPending || unmarkNotHeldMutation.isPending
 				}
+				notHeldStatus={notHeldStatus}
+				onRetryNotHeld={handleRetryNotHeld}
 				extraActions={
 					selectedCourseId ? (
 						<div className="flex flex-wrap items-center gap-2">
@@ -564,7 +585,9 @@ export default function AttendanceDailyPage() {
 								variant="outline"
 								size="sm"
 								onClick={handleOpenCopy}
-								disabled={copyDailyMutation.isPending || Boolean(notHeld)}
+								disabled={
+									copyDailyMutation.isPending || Boolean(notHeld) || isStatusUnknown
+								}
 								className="border-blue-500/30 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-500/20 shadow-xs"
 							>
 								<Copy className="mr-1.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
