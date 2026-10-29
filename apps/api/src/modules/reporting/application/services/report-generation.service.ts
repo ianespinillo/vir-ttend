@@ -3,6 +3,7 @@ import { LevelType } from '@repo/common';
 import { NotFoundError } from '../../../../common/errors';
 import { toDateKey } from '../../../attendance/domain/services/weighted-absence';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
+import { Course } from '../../domain/entities/course.entity';
 import { IAcademicYearPort } from '../../domain/ports/academic-year.port.interface';
 import { IAttendanceAlertPort } from '../../domain/ports/attendance-alert.port.interface';
 import { IAttendanceRecordPort } from '../../domain/ports/attendance.port.interface';
@@ -44,13 +45,14 @@ export class ReportGenerationService {
 		// Two bulk reads for the whole course; the weighting is applied per student
 		// in memory, so the queries do not grow with the number of students.
 		const { from, to } = period.toDateRange();
-		const [dailyRecords, workshopRecords] = await Promise.all([
+		const [dailyRecords, workshopRecords, theoryNotHeldDays] = await Promise.all([
 			this.attendanceRecordPort.findDailyByCourseAndDateRange(courseId, from, to),
 			this.attendanceRecordPort.findWorkshopByCourseAndDateRange(
 				courseId,
 				from,
 				to,
 			),
+			this.theoryNotHeldDays(course, from, to),
 		]);
 
 		const dailyPerStudent = this.groupByStudent(dailyRecords);
@@ -67,6 +69,7 @@ export class ReportGenerationService {
 					dailyPerStudent.get(id) ?? [],
 					workshopPerStudent.get(id) ?? [],
 					course.isWorkshopOnly,
+					theoryNotHeldDays,
 				),
 			),
 		);
@@ -74,6 +77,7 @@ export class ReportGenerationService {
 		const workingDays = await this.academicYearPort.getWorkingDaysBYAcademicYear(
 			course.academicYearId,
 			course.shift,
+			courseId,
 		);
 
 		return MonthlyReportData.fromData({
@@ -109,18 +113,23 @@ export class ReportGenerationService {
 		const courseId = (dailyRecords[0] ?? workshopRecords[0])?.courseId;
 		const course = courseId ? await this.coursePort.findById(courseId) : null;
 		const workshopOnly = course?.isWorkshopOnly ?? false;
+		const theoryNotHeldDays = course
+			? await this.theoryNotHeldDays(course, year.startDate, year.endDate)
+			: [];
 
 		const basic = await this.buildStudentReport(
 			studentId,
 			dailyRecords,
 			workshopRecords,
 			workshopOnly,
+			theoryNotHeldDays,
 		);
 
 		const months = this.buildMonthlyBreakdown(
 			dailyRecords,
 			workshopRecords,
 			workshopOnly,
+			theoryNotHeldDays,
 		);
 		const totals = this.aggregateMonthlyTotals(months);
 
@@ -141,11 +150,34 @@ export class ReportGenerationService {
 
 	// ---------- helpers privados ----------
 
+	/**
+	 * Days (`YYYY-MM-DD`) with no theory class for the course: its marked days plus
+	 * the institutional suspensions of its shift. A workshop-only course has none.
+	 */
+	private async theoryNotHeldDays(
+		course: Course,
+		from: Date,
+		to: Date,
+	): Promise<string[]> {
+		if (course.isWorkshopOnly) return [];
+		const [marked, suspended] = await Promise.all([
+			this.attendanceRecordPort.findTheoryNotHeldDates(course.id, from, to),
+			this.academicYearPort.getNonWorkingDays(
+				course.academicYearId,
+				course.shift,
+				from,
+				to,
+			),
+		]);
+		return [...new Set([...marked, ...suspended])];
+	}
+
 	private async buildStudentReport(
 		id: string,
 		dailyRecords: AttendanceRecord[],
 		workshopRecords: AttendanceRecord[],
 		workshopOnly: boolean,
+		theoryNotHeldDays: string[],
 	): Promise<StudentReportEntry> {
 		const student = await this.studentPort.findStudent(id);
 		if (!student) throw new NotFoundError('Estudiante no encontrado');
@@ -154,7 +186,7 @@ export class ReportGenerationService {
 		const metrics = this.metrics.calculateStudentMetrics(
 			dailyRecords,
 			workshopRecords,
-			{ workshopOnly },
+			{ workshopOnly, theoryNotHeldDays },
 		);
 
 		return {
@@ -194,6 +226,7 @@ export class ReportGenerationService {
 		dailyRecords: AttendanceRecord[],
 		workshopRecords: AttendanceRecord[],
 		workshopOnly: boolean,
+		theoryNotHeldDays: string[],
 	): StudentMonthlyEntry[] {
 		const keys = new Set(
 			[...dailyRecords, ...workshopRecords].map((r) => this.monthKeyOf(r)),
@@ -206,7 +239,7 @@ export class ReportGenerationService {
 				const metrics = this.metrics.calculateStudentMetrics(
 					dailyRecords.filter((r) => this.monthKeyOf(r) === key),
 					workshopRecords.filter((r) => this.monthKeyOf(r) === key),
-					{ workshopOnly },
+					{ workshopOnly, theoryNotHeldDays },
 				);
 
 				return {

@@ -18,6 +18,15 @@ export interface IAttendanceRecordPort {
 		from: Date,
 		to: Date,
 	): Promise<AttendanceRecord[]>;
+	/**
+	 * Days (`YYYY-MM-DD`) in the range on which the course's theory shift was
+	 * marked as not held.
+	 */
+	findTheoryNotHeldDates(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<string[]>;
 	findDailyByStudentAndDateRange(
 		studentId: string,
 		from: Date,

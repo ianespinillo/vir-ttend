@@ -40,7 +40,7 @@ export class GenerateAlertHandler {
 				command.studentId,
 				command.academicYearId,
 				command.triggerDate,
-				{ workshopOnly: course.isWorkshopOnly },
+				{ workshopOnly: course.isWorkshopOnly, courseId: command.courseId },
 			);
 		const alerts = await this.alertRepo.findByStudentId(command.studentId);
 		const currentYearAlerts = alerts.filter(

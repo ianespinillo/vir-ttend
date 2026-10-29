@@ -61,6 +61,10 @@ export const queryKeys = {
 			['attendance', 'workshop', 'commissions', date] as const,
 		workshop: (commissionId: string, date: string) =>
 			['attendance', 'workshop', commissionId, date] as const,
+		dailyNotHeld: (courseId: string, date: string) =>
+			['attendance', 'daily-not-held', courseId, date] as const,
+		workshopNotHeld: (commissionId: string, date: string) =>
+			['attendance', 'workshop-not-held', commissionId, date] as const,
 	},
 	alerts: {
 		list: (filters?: Record<string, unknown>) =>

@@ -20,7 +20,9 @@ export class MetricsCalculationService {
 	/**
 	 * @param dailyRecords daily attendance only (no subject records)
 	 * @param workshopRecords workshop attendance of the same student and period
-	 * @param options `workshopOnly` for a 7th-year technical course
+	 * @param options `workshopOnly` for a 7th-year technical course;
+	 *   `theoryNotHeldDays` are the days with no theory class (a workshop absence
+	 *   weighs 1 then)
 	 */
 	calculateStudentMetrics(
 		dailyRecords: AttendanceRecord[],
@@ -31,6 +33,7 @@ export class MetricsCalculationService {
 			dailyRecords,
 			workshopRecords,
 			workshopOnly: options.workshopOnly,
+			theoryNotHeldDays: options.theoryNotHeldDays,
 		});
 		const daysGiven = countDaysGiven(dailyRecords, workshopRecords);
 		const absencePercent = daysGiven > 0 ? (total / daysGiven) * 100 : null;

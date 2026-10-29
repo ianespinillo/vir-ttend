@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AttendanceRecord as AttendanceAttendanceRecord } from '../../../attendance/domain/entities/attendance-record.entity';
 import { WorkshopAttendanceRecord } from '../../../attendance/domain/entities/workshop-attendance-record.entity';
+import { IDailySessionNotHeldRepository } from '../../../attendance/domain/repositories/daily-session-not-held.repository.interface';
 import { IWorkshopAttendanceRecordRepository } from '../../../attendance/domain/repositories/workshop-attendance-record.repository.interface';
+import { toDateKey } from '../../../attendance/domain/services/weighted-absence';
 import { AttendanceRecordRepository } from '../../../attendance/infrastructure/persistence/repository/attendance-record.repository';
 import { AttendanceRecord } from '../../domain/entities/attendance-record.entity';
 import { IAttendanceRecordPort } from '../../domain/ports/attendance.port.interface';
@@ -12,6 +14,8 @@ export class AttendanceRecordAdapter implements IAttendanceRecordPort {
 		private readonly attendanceRepo: AttendanceRecordRepository,
 		@Inject('IWorkshopAttendanceRecordRepository')
 		private readonly workshopRepo: IWorkshopAttendanceRecordRepository,
+		@Inject('IDailySessionNotHeldRepository')
+		private readonly notHeldRepo: IDailySessionNotHeldRepository,
 	) {}
 	async findDailyByCourseAndDateRange(
 		courseId: string,
@@ -36,6 +40,18 @@ export class AttendanceRecordAdapter implements IAttendanceRecordPort {
 			to,
 		);
 		return records.map(this.toDomain);
+	}
+	async findTheoryNotHeldDates(
+		courseId: string,
+		from: Date,
+		to: Date,
+	): Promise<string[]> {
+		const markers = await this.notHeldRepo.findByCourseAndDateRange(
+			courseId,
+			from,
+			to,
+		);
+		return markers.map((marker) => toDateKey(marker.date));
 	}
 	async findDailyByStudentAndDateRange(
 		studentId: string,

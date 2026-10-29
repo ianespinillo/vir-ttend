@@ -60,6 +60,36 @@ describe('AttendanceRecordRepository', () => {
 		});
 	});
 
+	describe('deleteDailyByCourseAndDate', () => {
+		const day = new Date('2026-07-06T00:00:00Z');
+		const where = { courseId: 'course-1', subjectId: null, date: '2026-07-06' };
+
+		it('deletes nothing when the day has no daily records', async () => {
+			em.find.mockResolvedValue([]);
+
+			expect(await repository.deleteDailyByCourseAndDate('course-1', day)).toBe(0);
+
+			expect(em.find.mock.calls[0][1]).toEqual(where);
+			expect(em.nativeDelete).not.toHaveBeenCalled();
+		});
+
+		it('deletes the justifications and then only the daily records, never subject ones', async () => {
+			em.find.mockResolvedValue([{ id: 'r1' }, { id: 'r2' }] as never);
+			em.nativeDelete.mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+
+			expect(await repository.deleteDailyByCourseAndDate('course-1', day)).toBe(2);
+
+			expect(em.nativeDelete).toHaveBeenCalledTimes(2);
+			expect(em.nativeDelete.mock.calls[0][1]).toEqual({
+				attendanceRecordId: { $in: ['r1', 'r2'] },
+			});
+			expect(em.nativeDelete.mock.calls[1][1]).toEqual(where);
+			expect(redis.del).toHaveBeenCalledWith(
+				'attendance:summary:course-1:2026-07-06',
+			);
+		});
+	});
+
 	describe('bulkSave cache invalidation', () => {
 		const records = [
 			record('course-1', '2026-07-06'),

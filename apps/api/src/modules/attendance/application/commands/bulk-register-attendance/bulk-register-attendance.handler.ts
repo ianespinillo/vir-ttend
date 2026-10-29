@@ -4,8 +4,13 @@ import { AttendanceRecord } from '../../../domain/entities/attendance-record.ent
 import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-registered.event';
 import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IStudentPort } from '../../../domain/ports/student.port.interface';
+import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { assertCourseHasDailyAttendance } from '../../services/daily-attendance.policy';
+import { IDailySessionNotHeldRepository } from '../../../domain/repositories/daily-session-not-held.repository.interface';
+import {
+	assertCourseHasDailyAttendance,
+	assertDailySessionHeld,
+} from '../../services/daily-attendance.policy';
 import { BulkRegisterAttendanceCommand } from './bulk-register-attendance.command';
 @Injectable()
 export class BulkRegisterAttendanceHandler {
@@ -17,32 +22,45 @@ export class BulkRegisterAttendanceHandler {
 		private readonly studentFinder: IStudentPort,
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
+		@Inject('IDailySessionNotHeldRepository')
+		private readonly notHeldRepo: IDailySessionNotHeldRepository,
+		@Inject('IUnitOfWorkPort')
+		private readonly unitOfWork: IUnitOfWorkPort,
 	) {}
 	async execute(command: BulkRegisterAttendanceCommand): Promise<void> {
 		await assertCourseHasDailyAttendance(this.coursePort, command.courseId);
-		const students = await this.studentFinder.getByCourseId(command.courseId);
-		const records = await Promise.all(
-			students.map(async (student) => {
-				const existing = await this.attendanceRepo.findByStudentAndCourseAndDate(
-					command.courseId,
-					student.id,
-					command.date,
-				);
-				if (existing) {
-					existing.updateStatus(command.defaultStatus, command.editedBy);
-					return existing;
-				}
-				return AttendanceRecord.create({
-					tenantId: command.tenantId,
-					courseId: command.courseId,
-					studentId: student.id,
-					status: command.defaultStatus,
-					date: command.date,
-					editedBy: command.editedBy,
-				});
-			}),
-		);
-		await this.attendanceRepo.bulkSave(records);
+		const records = await this.unitOfWork.run(async () => {
+			// Checked in the same transaction as the writes.
+			await assertDailySessionHeld(
+				this.notHeldRepo,
+				command.courseId,
+				command.date,
+			);
+			const students = await this.studentFinder.getByCourseId(command.courseId);
+			const toSave = await Promise.all(
+				students.map(async (student) => {
+					const existing = await this.attendanceRepo.findByStudentAndCourseAndDate(
+						command.courseId,
+						student.id,
+						command.date,
+					);
+					if (existing) {
+						existing.updateStatus(command.defaultStatus, command.editedBy);
+						return existing;
+					}
+					return AttendanceRecord.create({
+						tenantId: command.tenantId,
+						courseId: command.courseId,
+						studentId: student.id,
+						status: command.defaultStatus,
+						date: command.date,
+						editedBy: command.editedBy,
+					});
+				}),
+			);
+			await this.attendanceRepo.bulkSave(toSave);
+			return toSave;
+		});
 		records.forEach((r) => {
 			this.em.emit(
 				'attendance.registered',

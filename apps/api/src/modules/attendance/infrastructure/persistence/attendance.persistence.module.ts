@@ -4,14 +4,18 @@ import { Module } from '@nestjs/common';
 import { AfterCommitQueue } from './after-commit.queue';
 import { AttendanceAlertOrmEntity } from './entities/attendance-alert.orm-entity';
 import { AttendanceRecordOrmEntity } from './entities/attendance-record.orm-entity';
+import { DailySessionNotHeldOrmEntity } from './entities/daily-session-not-held.orm-entity';
 import { JustificationOrmEntity } from './entities/justification.orm-entity';
 import { WorkshopAttendanceRecordOrmEntity } from './entities/workshop-attendance-record.orm-entity';
 import { WorkshopJustificationOrmEntity } from './entities/workshop-justification.orm-entity';
+import { WorkshopSessionNotHeldOrmEntity } from './entities/workshop-session-not-held.orm-entity';
 import { AttendanceAlertRepository } from './repository/attendance-alert.repository';
 import { AttendanceRecordRepository } from './repository/attendance-record.repository';
+import { DailySessionNotHeldRepository } from './repository/daily-session-not-held.repository';
 import { JustificationRepository } from './repository/justification.repository';
 import { WorkshopAttendanceRecordRepository } from './repository/workshop-attendance-record.repository';
 import { WorkshopJustificationRepository } from './repository/workshop-justification.repository';
+import { WorkshopSessionNotHeldRepository } from './repository/workshop-session-not-held.repository';
 
 @Module({
 	imports: [
@@ -21,6 +25,8 @@ import { WorkshopJustificationRepository } from './repository/workshop-justifica
 			AttendanceAlertOrmEntity,
 			WorkshopAttendanceRecordOrmEntity,
 			WorkshopJustificationOrmEntity,
+			DailySessionNotHeldOrmEntity,
+			WorkshopSessionNotHeldOrmEntity,
 		]),
 	],
 	providers: [
@@ -58,6 +64,26 @@ import { WorkshopJustificationRepository } from './repository/workshop-justifica
 			inject: [EntityManager],
 		},
 		{
+			provide: DailySessionNotHeldRepository,
+			useFactory: (em: EntityManager) =>
+				em.getRepository(DailySessionNotHeldOrmEntity),
+			inject: [EntityManager],
+		},
+		{
+			provide: 'IDailySessionNotHeldRepository',
+			useExisting: DailySessionNotHeldRepository,
+		},
+		{
+			provide: WorkshopSessionNotHeldRepository,
+			useFactory: (em: EntityManager) =>
+				em.getRepository(WorkshopSessionNotHeldOrmEntity),
+			inject: [EntityManager],
+		},
+		{
+			provide: 'IWorkshopSessionNotHeldRepository',
+			useExisting: WorkshopSessionNotHeldRepository,
+		},
+		{
 			provide: 'IAttendanceRecordRepository',
 			useExisting: AttendanceRecordRepository,
 		},
@@ -78,6 +104,8 @@ import { WorkshopJustificationRepository } from './repository/workshop-justifica
 		'IAttendanceRecordRepository',
 		'IAttendanceAlertRepository',
 		'IJustificationRepository',
+		'IDailySessionNotHeldRepository',
+		'IWorkshopSessionNotHeldRepository',
 		'IWorkshopAttendanceRecordRepository',
 		'IWorkshopJustificationRepository',
 	],

@@ -1,11 +1,13 @@
 import { ATTENDANCE_STATUS, AttendanceStatus, ROLES } from '@repo/common';
 import { Student } from '../../../src/modules/attendance/domain/entities/student.entity';
 import { WorkshopAttendanceRecord } from '../../../src/modules/attendance/domain/entities/workshop-attendance-record.entity';
+import { WorkshopSessionNotHeld } from '../../../src/modules/attendance/domain/entities/workshop-session-not-held.entity';
 import {
 	IWorkshopCommissionPort,
 	WorkshopCommissionInfo,
 } from '../../../src/modules/attendance/domain/ports/workshop-commission.port.interface';
 import { IWorkshopAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/workshop-attendance-record.repository.interface';
+import { IWorkshopSessionNotHeldRepository } from '../../../src/modules/attendance/domain/repositories/workshop-session-not-held.repository.interface';
 
 export const TENANT = 'tenant-1';
 export const PRECEPTOR_ID = 'preceptor-1';
@@ -46,6 +48,37 @@ export function buildPort(
 }
 
 /** In-memory repository keyed by student id for a single commission and date. */
+/** Marker repository holding at most one marker; `initial` starts it marked. */
+export function buildNotHeldRepo(
+	initial: WorkshopSessionNotHeld | null = null,
+): jest.Mocked<IWorkshopSessionNotHeldRepository> {
+	let marker = initial;
+	return {
+		findByCommissionAndDate: jest.fn().mockImplementation(async () => marker),
+		findByCommissionAndDateRange: jest
+			.fn()
+			.mockImplementation(async () => (marker ? [marker] : [])),
+		findByCommissionIdsAndDateRange: jest
+			.fn()
+			.mockImplementation(async () => (marker ? [marker] : [])),
+		save: jest.fn().mockImplementation(async (saved) => {
+			marker = saved;
+		}),
+		delete: jest.fn().mockImplementation(async () => {
+			marker = null;
+		}),
+	};
+}
+
+export const notHeldMarker = (reason?: string) =>
+	WorkshopSessionNotHeld.create({
+		tenantId: TENANT,
+		workshopCommissionId: 'commission-1',
+		date: DATE,
+		reason,
+		createdBy: PRECEPTOR_ID,
+	});
+
 export function buildRepo(
 	initial: WorkshopAttendanceRecord[] = [],
 ): jest.Mocked<IWorkshopAttendanceRecordRepository> & {
@@ -73,6 +106,11 @@ export function buildRepo(
 		bulkSave: jest.fn().mockImplementation(async (records) => {
 			saved.push(records);
 			for (const r of records) store.set(r.studentId, r);
+		}),
+		deleteByCommissionAndDate: jest.fn().mockImplementation(async () => {
+			const deleted = store.size;
+			store.clear();
+			return deleted;
 		}),
 	};
 }

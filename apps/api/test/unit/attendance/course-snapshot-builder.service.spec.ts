@@ -50,6 +50,7 @@ describe('CourseSnapshotBuilderService', () => {
 		workshop?: WorkshopAttendanceRecord[];
 		workshopOnly?: boolean;
 		shift?: string;
+		theoryNotHeldDays?: string[];
 	}) {
 		const attendanceRepo = {
 			getCourseSummaryForDate: jest.fn().mockResolvedValue(rawCounts),
@@ -68,6 +69,9 @@ describe('CourseSnapshotBuilderService', () => {
 				shift: opts.shift,
 			}),
 		};
+		const theoryNotHeldDays = {
+			forCourse: jest.fn().mockResolvedValue(opts.theoryNotHeldDays ?? []),
+		};
 		const attendanceService = {
 			getExpectedClassesForCourse: jest.fn().mockResolvedValue(2),
 		};
@@ -76,8 +80,15 @@ describe('CourseSnapshotBuilderService', () => {
 			workshopRepo as never,
 			coursePort as never,
 			attendanceService as never,
+			theoryNotHeldDays as never,
 		);
-		return { service, attendanceRepo, workshopRepo, attendanceService };
+		return {
+			service,
+			attendanceRepo,
+			workshopRepo,
+			attendanceService,
+			theoryNotHeldDays,
+		};
 	}
 
 	it('reports the weighted absence total of the course over the days given', async () => {
@@ -137,6 +148,28 @@ describe('CourseSnapshotBuilderService', () => {
 
 		expect(json.absent).toBe(1);
 		expect(json.workshopOnly).toBe(true);
+	});
+
+	it('weighs a workshop absence 1 on a day the theory was not held', async () => {
+		const { service, theoryNotHeldDays } = build({
+			workshop: [
+				workshop('ana', MON, ATTENDANCE_STATUS.ABSENT),
+				workshop('ana', TUE, ATTENDANCE_STATUS.ABSENT),
+			],
+			theoryNotHeldDays: ['2026-03-09'],
+		});
+
+		const json = (
+			await service.buildCourseSnapshot('course-1', MON, TUE)
+		).toJSON();
+
+		// Monday: theory not held, 1; Tuesday: theory held, 0.5.
+		expect(json.absent).toBe(1.5);
+		expect(theoryNotHeldDays.forCourse).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'course-1' }),
+			MON,
+			TUE,
+		);
 	});
 
 	it('does not flag a regular course snapshot', async () => {

@@ -1,9 +1,12 @@
-import { ATTENDANCE_STATUS, DAYOFWEEK } from '@repo/common';
+import { ATTENDANCE_STATUS, DAYOFWEEK, SHIFT } from '@repo/common';
 import { NotFoundError } from '../../../src/common/errors';
+import { AcademicYear as InstitutionalYear } from '../../../src/modules/academic/domain/entities/academic-year.entity';
 import { StudentWeightedAbsencesService } from '../../../src/modules/attendance/application/services/student-weighted-absences.service';
+import { TheoryNotHeldDaysService } from '../../../src/modules/attendance/application/services/theory-not-held-days.service';
 import { AcademicYear } from '../../../src/modules/attendance/domain/entities/academic-year.entity';
 import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { WorkshopAttendanceRecord } from '../../../src/modules/attendance/domain/entities/workshop-attendance-record.entity';
+import { AcademicYearAdapter } from '../../../src/modules/attendance/infrastructure/adapters/academic-year.adapter';
 
 const utc = (day: string) => new Date(`${day}T00:00:00.000Z`);
 // 2026-03-09 is a Monday.
@@ -54,8 +57,15 @@ describe('StudentWeightedAbsencesService', () => {
 	function build(opts: {
 		daily?: AttendanceRecord[];
 		workshop?: WorkshopAttendanceRecord[];
-		commission?: { courseId: string; number: number } | null;
+		commission?: { id?: string; courseId: string; number: number } | null;
 		workshopDays?: DAYOFWEEK[];
+		/** Days the preceptor marked the theory of the course as not held. */
+		theoryMarkers?: string[];
+		/** Institutional suspension of a day, optionally scoped to shifts. */
+		suspension?: { day: string; shifts?: SHIFT[] };
+		courseShift?: SHIFT;
+		/** Days the workshop of the commission was marked as not held. */
+		workshopMarkers?: string[];
 	}) {
 		const attendanceRepo = {
 			findDailyByStudentAndDateRange: jest
@@ -65,7 +75,59 @@ describe('StudentWeightedAbsencesService', () => {
 		const workshopRepo = {
 			findByStudentAndDateRange: jest.fn().mockResolvedValue(opts.workshop ?? []),
 		};
-		const academicYearPort = { findById: jest.fn().mockResolvedValue(year) };
+		const suspension = opts.suspension;
+		const academicYearPort = suspension
+			? new AcademicYearAdapter(
+					{
+						findById: jest.fn().mockResolvedValue(
+							InstitutionalYear.reconstitute({
+								id: 'year-1',
+								tenantId: 't',
+								year: 2026,
+								startDate: utc('2026-03-02'),
+								endDate: utc('2026-12-18'),
+								nonWorkingDays: [utc(suspension.day)],
+								nonWorkingDayShifts: suspension.shifts
+									? { [suspension.day]: suspension.shifts }
+									: {},
+								absenceThresholdPercent: 25,
+								lateCountAbscenseAfterMinutes: 20,
+								isActive: true,
+								createdAt: new Date(),
+								updatedAt: new Date(),
+							}),
+						),
+					} as never,
+					{} as never,
+				)
+			: {
+					findById: jest.fn().mockResolvedValue(year),
+					getNonWorkingDays: jest.fn().mockResolvedValue([]),
+				};
+		const coursePort = {
+			findById: jest.fn().mockResolvedValue({
+				id: 'course-1',
+				academicYearId: 'year-1',
+				shift: opts.courseShift,
+				isWorkshopOnly: false,
+			}),
+		};
+		const dailyNotHeldRepo = {
+			findByCourseAndDateRange: jest
+				.fn()
+				.mockResolvedValue(
+					(opts.theoryMarkers ?? []).map((day) => ({ date: utc(day) })),
+				),
+		};
+		const workshopNotHeldRepo = {
+			findByCommissionAndDate: jest
+				.fn()
+				.mockImplementation(async (_commissionId: string, date: Date) =>
+					(opts.workshopMarkers ?? []).includes(date.toISOString().slice(0, 10))
+						? { date }
+						: null,
+				),
+		};
 		const commissionPort = {
 			findByStudent: jest.fn().mockResolvedValue(opts.commission ?? null),
 			getWorkshopDays: jest.fn().mockResolvedValue(opts.workshopDays ?? []),
@@ -75,6 +137,12 @@ describe('StudentWeightedAbsencesService', () => {
 			workshopRepo as never,
 			academicYearPort as never,
 			commissionPort as never,
+			coursePort as never,
+			workshopNotHeldRepo as never,
+			new TheoryNotHeldDaysService(
+				dailyNotHeldRepo as never,
+				academicYearPort as never,
+			),
 		);
 		return {
 			service,
@@ -82,6 +150,7 @@ describe('StudentWeightedAbsencesService', () => {
 			workshopRepo,
 			academicYearPort,
 			commissionPort,
+			workshopNotHeldRepo,
 		};
 	}
 
@@ -135,8 +204,92 @@ describe('StudentWeightedAbsencesService', () => {
 		expect(result.total).toBe(0.5);
 	});
 
+	describe('when the theory was not held', () => {
+		const absentWorkshop = [workshopRecord(MON, ATTENDANCE_STATUS.ABSENT)];
+		const weigh = (service: StudentWeightedAbsencesService, courseId?: string) =>
+			service.getStudentWeightedAbsences('student-1', 'year-1', undefined, {
+				courseId,
+			});
+
+		it('weighs a workshop absence 1 on a day the preceptor marked the theory not held', async () => {
+			const { service } = build({
+				workshop: absentWorkshop,
+				theoryMarkers: ['2026-03-09'],
+			});
+
+			const result = await weigh(service, 'course-1');
+
+			expect(result.total).toBe(1);
+			expect(result.breakdown).toEqual({ daily: 0, workshop: 1 });
+		});
+
+		it('keeps 0.5 on the days the theory was held', async () => {
+			const { service } = build({
+				workshop: absentWorkshop,
+				theoryMarkers: ['2026-03-10'],
+			});
+
+			expect((await weigh(service, 'course-1')).total).toBe(0.5);
+		});
+
+		it('weighs it 1 on an institutional suspension of the whole school', async () => {
+			const { service } = build({
+				workshop: absentWorkshop,
+				suspension: { day: '2026-03-09' },
+				courseShift: SHIFT.AFTERNOON,
+			});
+
+			expect((await weigh(service, 'course-1')).total).toBe(1);
+		});
+
+		it('weighs it 1 on a suspension scoped to the shift of the course', async () => {
+			const { service } = build({
+				workshop: absentWorkshop,
+				suspension: { day: '2026-03-09', shifts: [SHIFT.MORNING] },
+				courseShift: SHIFT.MORNING,
+			});
+
+			expect((await weigh(service, 'course-1')).total).toBe(1);
+		});
+
+		it('keeps 0.5 when the suspension is scoped to another shift', async () => {
+			const { service } = build({
+				workshop: absentWorkshop,
+				suspension: { day: '2026-03-09', shifts: [SHIFT.MORNING] },
+				courseShift: SHIFT.AFTERNOON,
+			});
+
+			expect((await weigh(service, 'course-1')).total).toBe(0.5);
+		});
+
+		it('does not look for them without a course', async () => {
+			const { service } = build({
+				workshop: absentWorkshop,
+				theoryMarkers: ['2026-03-09'],
+			});
+
+			expect((await weigh(service)).total).toBe(0.5);
+		});
+
+		it('applies to the alert total too', async () => {
+			const { service } = build({
+				workshop: absentWorkshop,
+				theoryMarkers: ['2026-03-09'],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+				undefined,
+				{ courseId: 'course-1' },
+			);
+
+			expect(result.total).toBe(1);
+		});
+	});
+
 	describe('for alert evaluation', () => {
-		const commission = { courseId: 'course-1', number: 1 };
+		const commission = { id: 'commission-1', courseId: 'course-1', number: 1 };
 		const noonOf = (day: Date) => new Date(day.getTime() + 12 * 3600_000);
 		afterEach(() => jest.useRealTimers());
 
@@ -207,6 +360,46 @@ describe('StudentWeightedAbsencesService', () => {
 			);
 
 			expect(result.total).toBe(1);
+		});
+
+		it('weighs the trigger date 1 when the workshop of that day was marked as not held', async () => {
+			const { service, workshopNotHeldRepo } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+				workshopMarkers: ['2026-03-09'],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+				'2026-03-09',
+				{ now: noonOf(MON) },
+			);
+
+			expect(result.total).toBe(1);
+			expect(workshopNotHeldRepo.findByCommissionAndDate).toHaveBeenCalledWith(
+				'commission-1',
+				MON,
+			);
+		});
+
+		it('keeps 0.5 when only another day of the workshop was marked as not held', async () => {
+			const { service } = build({
+				daily: [dailyRecord(MON, ATTENDANCE_STATUS.ABSENT)],
+				commission,
+				workshopDays: [DAYOFWEEK.MONDAY],
+				workshopMarkers: ['2026-03-02'],
+			});
+
+			const result = await service.getStudentWeightedAbsencesForAlert(
+				'student-1',
+				'year-1',
+				'2026-03-09',
+				{ now: noonOf(MON) },
+			);
+
+			expect(result.total).toBe(0.5);
 		});
 
 		it('ignores the clock: an evening save after 21:00 (UTC-3) still judges the record date', async () => {
@@ -369,7 +562,7 @@ describe('StudentWeightedAbsencesService', () => {
 
 	it('rejects an unknown academic year', async () => {
 		const { service, academicYearPort } = build({});
-		academicYearPort.findById.mockResolvedValue(null);
+		(academicYearPort.findById as jest.Mock).mockResolvedValue(null);
 
 		const attempt = service.getStudentWeightedAbsences('student-1', 'nope');
 		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);

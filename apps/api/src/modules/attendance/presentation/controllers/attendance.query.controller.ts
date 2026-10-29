@@ -15,6 +15,8 @@ import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
 import { RolesGuard } from '../../../../common/guard/roles.guard';
 import { AttendanceMetricsResponseDto } from '../../application/dtos/attendance-metrics.response.dto';
 import { AttendanceRecordResponseDto } from '../../application/dtos/attendance-record.response.dto';
+import { DailySessionNotHeldResponseDto } from '../../application/dtos/daily-session-not-held.response.dto';
+import { GetDailySessionNotHeldRequestDto } from '../../application/dtos/mark-daily-session-not-held.request.dto';
 import { SubjectAttendanceResponseDto } from '../../application/dtos/subject-attendance.response.dto';
 import { SubjectHistoryResponseDto } from '../../application/dtos/subject-history.response.dto';
 import { GetAttendanceByStudentQueryHandler } from '../../application/queries/get-attendance-by-student/get-attendance-by-student.handler';
@@ -25,6 +27,8 @@ import { GetAttendanceMetricsQueryHandler } from '../../application/queries/get-
 import { GetAttendanceMetricsQuery } from '../../application/queries/get-attendance-metrics/get-attendance-metrics.query';
 import { GetDailyAttendanceQueryHandler } from '../../application/queries/get-daily-attendance/get-daily-attendance.handler';
 import { GetDailyAttendanceQuery } from '../../application/queries/get-daily-attendance/get-daily-attendance.query';
+import { GetDailySessionNotHeldQueryHandler } from '../../application/queries/get-daily-session-not-held/get-daily-session-not-held.handler';
+import { GetDailySessionNotHeldQuery } from '../../application/queries/get-daily-session-not-held/get-daily-session-not-held.query';
 import { GetSubjectAttendanceQueryHandler } from '../../application/queries/get-subject-attendance/get-subject-attendance.handler';
 import { GetSubjectAttendanceQuery } from '../../application/queries/get-subject-attendance/get-subject-attendance.query';
 import { GetSubjectHistoryQueryHandler } from '../../application/queries/get-subject-history/get-subject-history.handler';
@@ -37,6 +41,7 @@ import { GetSubjectHistoryQuery } from '../../application/queries/get-subject-hi
 export class AttendanceQueryController {
 	constructor(
 		private readonly getDailyAttendanceHandler: GetDailyAttendanceQueryHandler,
+		private readonly getDailySessionNotHeldHandler: GetDailySessionNotHeldQueryHandler,
 		private readonly getAttendanceMetricsHandler: GetAttendanceMetricsQueryHandler,
 		private readonly getAttendanceByStudentHandler: GetAttendanceByStudentQueryHandler,
 		private readonly getAttendanceHistoryHandler: GetAttendanceHistoryQueryHandler,
@@ -79,6 +84,49 @@ export class AttendanceQueryController {
 	) {
 		return this.getDailyAttendanceHandler.execute(
 			new GetDailyAttendanceQuery(courseId, new Date(date)),
+		);
+	}
+
+	@ApiOperation({
+		summary: 'Saber si la clase de teoría de un curso se marcó como no dictada',
+		description:
+			'Devuelve si el turno de teoría del curso está marcado como no dictado en la fecha indicada y el motivo informado. Roles permitidos: preceptor, admin. URL de ejemplo: GET /attendance/daily/not-held?courseId=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d&date=2026-03-10. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }.',
+	})
+	@ApiQuery({
+		name: 'courseId',
+		required: true,
+		description: 'Identificador del curso',
+		example: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+		type: String,
+	})
+	@ApiQuery({
+		name: 'date',
+		required: true,
+		description: 'Fecha de la clase (YYYY-MM-DD)',
+		example: '2026-03-10',
+		type: String,
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Estado de la clase de teoría del día',
+		type: DailySessionNotHeldResponseDto,
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({ status: 403, description: 'Rol no autorizado' })
+	@ApiResponse({ status: 404, description: 'Curso no encontrado' })
+	@Get('daily/not-held')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async getDailyNotHeld(
+		@Query() dto: GetDailySessionNotHeldRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.getDailySessionNotHeldHandler.execute(
+			new GetDailySessionNotHeldQuery(
+				user.tenantId,
+				dto.courseId,
+				new Date(dto.date),
+			),
 		);
 	}
 
