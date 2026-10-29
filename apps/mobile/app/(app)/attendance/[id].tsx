@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
 	ArrowLeft,
+	CalendarOff,
 	Check,
 	CheckCheck,
 	Clock,
@@ -44,6 +45,13 @@ import {
 import { JustificationBadge } from '../../../src/features/attendance/justification-badge';
 import { JustifySheet } from '../../../src/features/attendance/justify-sheet';
 import { MonthlyJustificationsModal } from '../../../src/features/attendance/monthly-justifications-modal';
+import {
+	HINT_NOT_HELD_OFFLINE,
+	NOT_HELD_COPY,
+} from '../../../src/features/attendance/not-held';
+import { NotHeldLookupError } from '../../../src/features/attendance/not-held-lookup-error';
+import { NotHeldNotice } from '../../../src/features/attendance/not-held-notice';
+import { NotHeldSheet } from '../../../src/features/attendance/not-held-sheet';
 import { attendanceQueries } from '../../../src/features/attendance/queries';
 import { queryKeys } from '../../../src/features/attendance/query-keys';
 import { StatusPicker } from '../../../src/features/attendance/status-picker';
@@ -59,6 +67,7 @@ import {
 	useAttendanceDate,
 } from '../../../src/features/attendance/use-attendance-date';
 import { useJustifyAttendance } from '../../../src/features/attendance/use-justify-attendance';
+import { useDailyNotHeld } from '../../../src/features/attendance/use-session-not-held';
 import { useIsOnline } from '../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../src/features/offline/use-outbox';
 import { useServerReachability } from '../../../src/features/offline/use-server-reachability';
@@ -180,6 +189,8 @@ function DailySheet({
 	const [isMonthOpen, setIsMonthOpen] = useState(false);
 	const justify = useJustifyAttendance();
 	const [isSaving, setIsSaving] = useState(false);
+	const [isNotHeldOpen, setIsNotHeldOpen] = useState(false);
+	const notHeld = useDailyNotHeld();
 	// `hasUserEdits`: once the user edits, server data must not overwrite them.
 
 	// Students of the course: shared key, filled by the offline preload.
@@ -213,6 +224,24 @@ function DailySheet({
 		isError: isDayError,
 	});
 
+	// Not-held status (preceptor only; the endpoint is not open to other roles).
+	const {
+		data: notHeldStatus,
+		isError: isNotHeldError,
+		refetch: refetchNotHeld,
+	} = useQuery({
+		...attendanceQueries.dailyNotHeld(courseId, dateStr),
+		enabled: !!courseId && isPreceptor,
+	});
+	const isNotHeld = notHeldStatus?.notHeld === true;
+	// Online and not verified yet (loading or failed): saving and marking wait.
+	// Offline with no cached status stays usable; the server still rejects a
+	// marked day when the outbox syncs.
+	const isNotHeldUnverified =
+		isPreceptor && online && notHeldStatus === undefined;
+	const isNotHeldBusy = notHeld.mark.isPending || notHeld.unmark.isPending;
+	const canMarkNotHeld = online && notHeldStatus !== undefined && !isNotHeldBusy;
+
 	const students = studentsData ?? NO_STUDENTS;
 	// Offline and never downloaded: the query is paused, not loading or failed.
 	const isOfflineWithoutRoster =
@@ -242,7 +271,7 @@ function DailySheet({
 		}
 
 		setAttendanceMap(map);
-	}, [students, existingAttendance, outboxItem]);
+	}, [students, existingAttendance, outboxItem, isNotHeld]);
 
 	const applyStatusChange = (studentId: string, status: AttendanceStatus) => {
 		hasUserEdits.current = true;
@@ -368,8 +397,35 @@ function DailySheet({
 		return { present, absent, late, justified, total: students.length };
 	}, [attendanceMap, students]);
 
+	// Both callbacks run only while this sheet (course + day) is still mounted,
+	// so the local edits cleared here always belong to the day acted on.
+	const confirmNotHeld = (reason?: string) => {
+		notHeld.mark.mutate(
+			{ targetId: courseId, date: dateStr, reason },
+			{
+				onSuccess: () => {
+					hasUserEdits.current = false;
+					setIsNotHeldOpen(false);
+					notHeld.mark.reset();
+				},
+			},
+		);
+	};
+
+	const unmarkNotHeld = () => {
+		notHeld.unmark.mutate(
+			{ targetId: courseId, date: dateStr },
+			{
+				onSuccess: () => {
+					hasUserEdits.current = false;
+					notHeld.unmark.reset();
+				},
+			},
+		);
+	};
+
 	const handleSave = async () => {
-		if (students.length === 0) return;
+		if (students.length === 0 || isNotHeldUnverified || isNotHeld) return;
 		setIsSaving(true);
 		try {
 			// Justified students are left out: their status belongs to the justification.
@@ -412,62 +468,100 @@ function DailySheet({
 						<Text className="text-xl font-bold text-foreground">{courseName}</Text>
 					</View>
 
-					<TouchableOpacity
-						onPress={markAllPresent}
-						className="flex-row items-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 px-3 py-2 active:bg-emerald-100 dark:active:bg-emerald-500/25"
-					>
-						<CheckCheck size={16} color={theme.status.success.icon} />
-						<Text className="ml-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-							Todos presentes
-						</Text>
-					</TouchableOpacity>
+					{isNotHeld ? null : (
+						<TouchableOpacity
+							onPress={markAllPresent}
+							className="flex-row items-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 px-3 py-2 active:bg-emerald-100 dark:active:bg-emerald-500/25"
+						>
+							<CheckCheck size={16} color={theme.status.success.icon} />
+							<Text className="ml-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+								Todos presentes
+							</Text>
+						</TouchableOpacity>
+					)}
 				</View>
 
 				<AttendanceDateBar nav={nav} />
 
 				{isPreceptor ? (
-					<TouchableOpacity
-						onPress={() => setIsMonthOpen(true)}
-						className="mt-3 flex-row items-center self-start rounded-lg border border-primary-200 dark:border-primary-ink/40 bg-primary-50 dark:bg-primary-ink/15 px-3 py-1.5 active:bg-primary-100 dark:active:bg-primary-ink/25"
-					>
-						<FileCheck size={14} color={theme.primaryInk} />
-						<Text className="ml-1.5 text-xs font-bold text-primary-700 dark:text-primary-ink">
-							Justificaciones del mes
-						</Text>
-					</TouchableOpacity>
+					<View className="mt-3 flex-row flex-wrap items-center">
+						<TouchableOpacity
+							onPress={() => setIsMonthOpen(true)}
+							className="mr-2 flex-row items-center rounded-lg border border-primary-200 dark:border-primary-ink/40 bg-primary-50 dark:bg-primary-ink/15 px-3 py-1.5 active:bg-primary-100 dark:active:bg-primary-ink/25"
+						>
+							<FileCheck size={14} color={theme.primaryInk} />
+							<Text className="ml-1.5 text-xs font-bold text-primary-700 dark:text-primary-ink">
+								Justificaciones del mes
+							</Text>
+						</TouchableOpacity>
+						{isNotHeld ? null : (
+							<TouchableOpacity
+								onPress={() => {
+									notHeld.mark.reset();
+									setIsNotHeldOpen(true);
+								}}
+								disabled={!canMarkNotHeld}
+								className="flex-row items-center rounded-lg border px-3 py-1.5"
+								style={{
+									backgroundColor: theme.status.warning.background,
+									borderColor: theme.status.warning.border,
+									opacity: canMarkNotHeld ? 1 : 0.4,
+								}}
+							>
+								<CalendarOff size={14} color={theme.status.warning.icon} />
+								<Text
+									className="ml-1.5 text-xs font-bold"
+									style={{ color: theme.status.warning.strongText }}
+								>
+									{NOT_HELD_COPY.theory.action}
+								</Text>
+							</TouchableOpacity>
+						)}
+					</View>
+				) : null}
+				{isPreceptor && !online && !isNotHeld ? (
+					<Text className="mt-1.5 text-[11px] text-muted-foreground">
+						{HINT_NOT_HELD_OFFLINE}
+					</Text>
 				) : null}
 
 				{/* Summary badges */}
-				<View className="mt-3.5 flex-row space-x-2">
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/15 py-1.5 border border-emerald-100 dark:border-emerald-500/25">
-						<Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-							{counts.present} P
-						</Text>
-					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/15 py-1.5 border border-red-100 dark:border-red-500/25">
-						<Text className="text-xs font-bold text-red-700 dark:text-red-300">
-							{counts.absent} A
-						</Text>
-					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/15 py-1.5 border border-amber-100 dark:border-amber-500/25">
-						<Text className="text-xs font-bold text-amber-700 dark:text-amber-300">
-							{counts.late} T
-						</Text>
-					</View>
-					{counts.justified > 0 ? (
-						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-ink/15 py-1.5 border border-primary-100 dark:border-primary-ink/25">
-							<Text className="text-xs font-bold text-primary-700 dark:text-primary-ink">
-								{counts.justified} J
+				{isNotHeld ? null : (
+					<View className="mt-3.5 flex-row space-x-2">
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/15 py-1.5 border border-emerald-100 dark:border-emerald-500/25">
+							<Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+								{counts.present} P
 							</Text>
 						</View>
-					) : null}
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-muted py-1.5">
-						<Text className="text-xs font-bold text-neutral-600">
-							{counts.total} Total
-						</Text>
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/15 py-1.5 border border-red-100 dark:border-red-500/25">
+							<Text className="text-xs font-bold text-red-700 dark:text-red-300">
+								{counts.absent} A
+							</Text>
+						</View>
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/15 py-1.5 border border-amber-100 dark:border-amber-500/25">
+							<Text className="text-xs font-bold text-amber-700 dark:text-amber-300">
+								{counts.late} T
+							</Text>
+						</View>
+						{counts.justified > 0 ? (
+							<View className="flex-1 flex-row items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-ink/15 py-1.5 border border-primary-100 dark:border-primary-ink/25">
+								<Text className="text-xs font-bold text-primary-700 dark:text-primary-ink">
+									{counts.justified} J
+								</Text>
+							</View>
+						) : null}
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-muted py-1.5">
+							<Text className="text-xs font-bold text-neutral-600">
+								{counts.total} Total
+							</Text>
+						</View>
 					</View>
-				</View>
+				)}
 			</View>
+
+			{isNotHeldUnverified && isNotHeldError ? (
+				<NotHeldLookupError kind="theory" onRetry={() => refetchNotHeld()} />
+			) : null}
 
 			{/* Outbox Status Banner */}
 			{outboxItem && (
@@ -529,7 +623,15 @@ function DailySheet({
 			)}
 
 			{/* Student Roster */}
-			{isLoadingStudents ? (
+			{isNotHeld ? (
+				<NotHeldNotice
+					kind="theory"
+					reason={notHeldStatus?.reason}
+					onUnmark={isPreceptor && online ? unmarkNotHeld : undefined}
+					isUnmarking={notHeld.unmark.isPending}
+					errorMessage={notHeld.unmark.errorMessage}
+				/>
+			) : isLoadingStudents ? (
 				<View className="flex-1 items-center justify-center">
 					<ActivityIndicator size="large" color={theme.primaryInk} />
 					<Text className="mt-3 text-sm text-muted-foreground">
@@ -661,11 +763,11 @@ function DailySheet({
 			)}
 
 			{/* Sticky Bottom Confirmation Bar */}
-			{students.length > 0 && dayState === 'ready' && (
+			{!isNotHeld && students.length > 0 && dayState === 'ready' && (
 				<View className="border-t border-border bg-card px-5 py-4 shadow-lg">
 					<TouchableOpacity
 						onPress={handleSave}
-						disabled={isSaving}
+						disabled={isSaving || isNotHeldUnverified}
 						className="items-center justify-center rounded-xl bg-primary py-3.5 shadow-sm active:bg-primary-700 disabled:opacity-50"
 					>
 						{isSaving ? (
@@ -680,6 +782,21 @@ function DailySheet({
 				</View>
 			)}
 
+			<NotHeldSheet
+				visible={isNotHeldOpen}
+				kind="theory"
+				savedRecordsCount={
+					(existingAttendance?.records ?? []).filter((r) => r.status).length
+				}
+				isSubmitting={notHeld.mark.isPending}
+				errorMessage={notHeld.mark.errorMessage}
+				onCancel={() => {
+					if (notHeld.mark.isPending) return;
+					setIsNotHeldOpen(false);
+					notHeld.mark.reset();
+				}}
+				onConfirm={confirmNotHeld}
+			/>
 			<JustifySheet
 				visible={justifyTarget !== null}
 				studentName={justifyTarget?.name}

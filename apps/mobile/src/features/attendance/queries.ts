@@ -11,6 +11,8 @@ import {
 	fetchSubjectAttendance,
 	fetchSubjectStudents,
 	fetchWorkshopAttendance,
+	getDailyNotHeld,
+	getWorkshopNotHeld,
 } from './api';
 import { queryKeys } from './query-keys';
 
@@ -73,5 +75,15 @@ export const attendanceQueries = {
 		queryOptions({
 			queryKey: queryKeys.workshopAttendance(commissionId, date),
 			queryFn: () => fetchWorkshopAttendance(commissionId, date),
+		}),
+	dailyNotHeld: (courseId: string, date: string) =>
+		queryOptions({
+			queryKey: queryKeys.dailyNotHeld(courseId, date),
+			queryFn: () => getDailyNotHeld(courseId, date),
+		}),
+	workshopNotHeld: (commissionId: string, date: string) =>
+		queryOptions({
+			queryKey: queryKeys.workshopNotHeld(commissionId, date),
+			queryFn: () => getWorkshopNotHeld(commissionId, date),
 		}),
 };
