@@ -35,6 +35,7 @@ export class CourseAdapter implements ICoursePort {
 			course.level,
 			course.yearNumber,
 			course.shift,
+			course.tenantId,
 		);
 	}
 	async findByPreceptorId(preceptorId: string): Promise<Course[]> {

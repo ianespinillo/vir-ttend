@@ -8,12 +8,14 @@ import { AttendanceRecord } from '../../../src/modules/attendance/domain/entitie
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../src/modules/attendance/domain/repositories/attendance-record.repository.interface';
+import { IDailySessionNotHeldRepository } from '../../../src/modules/attendance/domain/repositories/daily-session-not-held.repository.interface';
 
 describe('RegisterDailyAttendanceHandler', () => {
 	let handler: RegisterDailyAttendanceHandler;
 	let attendanceRepo: MockProxy<IAttendanceRecordRepository>;
 	let unitOfWork: MockProxy<IUnitOfWorkPort>;
 	let eventEmitter: MockProxy<EventEmitter2>;
+	let notHeldRepo: MockProxy<IDailySessionNotHeldRepository>;
 
 	const date = new Date('2025-03-10');
 	const buildCommand = (
@@ -44,11 +46,14 @@ describe('RegisterDailyAttendanceHandler', () => {
 		unitOfWork = mock<IUnitOfWorkPort>();
 		unitOfWork.run.mockImplementation(async (work) => work());
 		eventEmitter = mock<EventEmitter2>();
+		notHeldRepo = mock<IDailySessionNotHeldRepository>();
+		notHeldRepo.findByCourseAndDate.mockResolvedValue(null);
 		handler = new RegisterDailyAttendanceHandler(
 			attendanceRepo,
 			unitOfWork,
 			eventEmitter,
 			mock<ICoursePort>(),
+			notHeldRepo,
 		);
 	});
 

@@ -2,6 +2,7 @@ export const ATTENDANCE_ROUTES = {
 	daily: '/attendance/daily',
 	dailyAll: '/attendance/daily/all',
 	dailyCopy: '/attendance/daily/copy',
+	dailyNotHeld: '/attendance/daily/not-held',
 	subject: '/attendance/subject',
 	subjectAll: '/attendance/subject/all',
 	subjectCopy: '/attendance/subject/copy',
