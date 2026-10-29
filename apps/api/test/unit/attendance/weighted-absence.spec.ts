@@ -172,6 +172,50 @@ describe('calculateWeightedAbsences', () => {
 		});
 	});
 
+	describe('theory not held', () => {
+		it.each([
+			[ATTENDANCE_STATUS.ABSENT, DAILY_ABSENT_WEIGHT],
+			[ATTENDANCE_STATUS.JUSTIFIED, DAILY_ABSENT_WEIGHT],
+			[ATTENDANCE_STATUS.LATE, LATE_WEIGHT],
+			[ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE, LATE_BEYOND_TOLERANCE_WEIGHT],
+		])('workshop %s weighs %d when theory was not held', (status, weight) => {
+			const result = run({
+				workshopRecords: [daily(status)],
+				theoryNotHeldDays: [MONDAY],
+			});
+			expect(result.total).toBe(weight);
+			expect(result.breakdown).toEqual({ daily: 0, workshop: weight });
+		});
+
+		it('keeps the 1/2 weight of a workshop absence when theory was held', () => {
+			const result = run({
+				workshopRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+				theoryNotHeldDays: [TUESDAY],
+			});
+			expect(result.total).toBe(CONTRATURNO_SHIFT_WEIGHT);
+		});
+
+		it('only affects the listed day', () => {
+			const result = run({
+				workshopRecords: [
+					daily(ATTENDANCE_STATUS.ABSENT, MONDAY),
+					daily(ATTENDANCE_STATUS.ABSENT, TUESDAY),
+				],
+				theoryNotHeldDays: [MONDAY],
+			});
+			expect(result.total).toBe(1.5);
+		});
+
+		it('never exceeds the per-day cap', () => {
+			const result = run({
+				dailyRecords: [daily(ATTENDANCE_STATUS.LATE_BEYOND_TOLERANCE)],
+				workshopRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+				theoryNotHeldDays: [MONDAY],
+			});
+			expect(result.total).toBe(MAX_DAILY_ABSENCE);
+		});
+	});
+
 	describe('per-day cap', () => {
 		it('never exceeds 1 with several daily records and a workshop absence', () => {
 			const result = run({
@@ -295,6 +339,20 @@ describe('calculateWeightedAbsencesByStudent', () => {
 		});
 	});
 
+	it('forwards the course-wide theory-not-held dates to every student', () => {
+		const result = calculateWeightedAbsencesByStudent(
+			[],
+			[
+				rec('ana', ATTENDANCE_STATUS.ABSENT, MONDAY),
+				rec('ana', ATTENDANCE_STATUS.ABSENT, TUESDAY),
+				rec('beto', ATTENDANCE_STATUS.ABSENT, MONDAY),
+			],
+			{ theoryNotHeldDays: [MONDAY] },
+		);
+		expect(result.get('ana')?.total).toBe(1.5);
+		expect(result.get('beto')?.total).toBe(1);
+	});
+
 	it('leaves out students without records', () => {
 		expect(calculateWeightedAbsencesByStudent([], []).size).toBe(0);
 	});
@@ -340,6 +398,15 @@ describe('workshop-only course (7th year technical)', () => {
 		const result = run({
 			dailyRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
 			expectedContraturnoDays: [MONDAY],
+			workshopOnly: true,
+		});
+		expect(result.total).toBe(1);
+	});
+
+	it('is unchanged by theory-not-held days (already weighs 1)', () => {
+		const result = run({
+			workshopRecords: [daily(ATTENDANCE_STATUS.ABSENT)],
+			theoryNotHeldDays: [MONDAY],
 			workshopOnly: true,
 		});
 		expect(result.total).toBe(1);
