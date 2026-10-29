@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
+	CalendarOff,
 	CheckCheck,
 	Clock,
 	CloudOff,
@@ -27,6 +28,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AttendanceDateBar } from '../../../../src/features/attendance/attendance-date-bar';
 import { resolveDayDataState } from '../../../../src/features/attendance/date-nav';
 import { toSavableRecords } from '../../../../src/features/attendance/justification';
+import {
+	HINT_NOT_HELD_OFFLINE,
+	NOT_HELD_COPY,
+} from '../../../../src/features/attendance/not-held';
+import { NotHeldLookupError } from '../../../../src/features/attendance/not-held-lookup-error';
+import { NotHeldNotice } from '../../../../src/features/attendance/not-held-notice';
+import { NotHeldSheet } from '../../../../src/features/attendance/not-held-sheet';
 import { attendanceQueries } from '../../../../src/features/attendance/queries';
 import { StatusPicker } from '../../../../src/features/attendance/status-picker';
 import type { AttendanceStatus } from '../../../../src/features/attendance/types';
@@ -34,6 +42,7 @@ import {
 	type AttendanceDateNav,
 	useAttendanceDate,
 } from '../../../../src/features/attendance/use-attendance-date';
+import { useWorkshopNotHeld } from '../../../../src/features/attendance/use-session-not-held';
 import { useIsOnline } from '../../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../../src/features/offline/use-outbox';
 import { useServerReachability } from '../../../../src/features/offline/use-server-reachability';
@@ -98,6 +107,8 @@ function WorkshopSheet({
 		Record<string, AttendanceStatus>
 	>({});
 	const [isSaving, setIsSaving] = useState(false);
+	const [isNotHeldOpen, setIsNotHeldOpen] = useState(false);
+	const notHeld = useWorkshopNotHeld();
 
 	// The commission's roster comes with the day's statuses (`status` unset
 	// when not taken); the offline preload fills today's entry.
@@ -128,6 +139,23 @@ function WorkshopSheet({
 		myCommissions?.find((c) => c.commissionId === commissionId)
 			?.hasWorkshopToday === false;
 
+	// Not-held status of the workshop on this day.
+	const {
+		data: notHeldStatus,
+		isError: isNotHeldError,
+		refetch: refetchNotHeld,
+	} = useQuery({
+		...attendanceQueries.workshopNotHeld(commissionId, dateStr),
+		enabled: !!commissionId,
+	});
+	const isNotHeld = notHeldStatus?.notHeld === true;
+	// Online and not verified yet (loading or failed): saving and marking wait.
+	// Offline with no cached status stays usable; the server still rejects a
+	// marked day when the outbox syncs.
+	const isNotHeldUnverified = online && notHeldStatus === undefined;
+	const isNotHeldBusy = notHeld.mark.isPending || notHeld.unmark.isPending;
+	const canMarkNotHeld = online && notHeldStatus !== undefined && !isNotHeldBusy;
+
 	const students = workshop?.records ?? [];
 
 	// Populate attendance state from outbox, existing attendance or default
@@ -148,7 +176,7 @@ function WorkshopSheet({
 			if (!map[s.studentId]) map[s.studentId] = 'present';
 		}
 		setAttendanceMap(map);
-	}, [workshop, outboxItem]);
+	}, [workshop, outboxItem, isNotHeld]);
 
 	const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
 		hasUserEdits.current = true;
@@ -176,8 +204,35 @@ function WorkshopSheet({
 		return { present, absent, late, total: students.length };
 	}, [attendanceMap, students.length]);
 
+	// Both callbacks run only while this sheet (commission + day) is still
+	// mounted, so the local edits cleared here belong to the day acted on.
+	const confirmNotHeld = (reason?: string) => {
+		notHeld.mark.mutate(
+			{ targetId: commissionId, date: dateStr, reason },
+			{
+				onSuccess: () => {
+					hasUserEdits.current = false;
+					setIsNotHeldOpen(false);
+					notHeld.mark.reset();
+				},
+			},
+		);
+	};
+
+	const unmarkNotHeld = () => {
+		notHeld.unmark.mutate(
+			{ targetId: commissionId, date: dateStr },
+			{
+				onSuccess: () => {
+					hasUserEdits.current = false;
+					notHeld.unmark.reset();
+				},
+			},
+		);
+	};
+
 	const handleSave = async () => {
-		if (students.length === 0) return;
+		if (students.length === 0 || isNotHeldUnverified || isNotHeld) return;
 		setIsSaving(true);
 		try {
 			const records = toSavableRecords(attendanceMap);
@@ -221,18 +276,49 @@ function WorkshopSheet({
 						</Text>
 					</View>
 
-					<TouchableOpacity
-						onPress={markAllPresent}
-						className="flex-row items-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 px-3 py-2 active:bg-emerald-100 dark:active:bg-emerald-500/25"
-					>
-						<CheckCheck size={16} color={theme.status.success.icon} />
-						<Text className="ml-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-							Todos presentes
-						</Text>
-					</TouchableOpacity>
+					{isNotHeld ? null : (
+						<TouchableOpacity
+							onPress={markAllPresent}
+							className="flex-row items-center rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 px-3 py-2 active:bg-emerald-100 dark:active:bg-emerald-500/25"
+						>
+							<CheckCheck size={16} color={theme.status.success.icon} />
+							<Text className="ml-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+								Todos presentes
+							</Text>
+						</TouchableOpacity>
+					)}
 				</View>
 
 				<AttendanceDateBar nav={nav} />
+
+				{isNotHeld ? null : (
+					<TouchableOpacity
+						onPress={() => {
+							notHeld.mark.reset();
+							setIsNotHeldOpen(true);
+						}}
+						disabled={!canMarkNotHeld}
+						className="mt-3 flex-row items-center self-start rounded-lg border px-3 py-1.5"
+						style={{
+							backgroundColor: theme.status.warning.background,
+							borderColor: theme.status.warning.border,
+							opacity: canMarkNotHeld ? 1 : 0.4,
+						}}
+					>
+						<CalendarOff size={14} color={theme.status.warning.icon} />
+						<Text
+							className="ml-1.5 text-xs font-bold"
+							style={{ color: theme.status.warning.strongText }}
+						>
+							{NOT_HELD_COPY.workshop.action}
+						</Text>
+					</TouchableOpacity>
+				)}
+				{!online && !isNotHeld ? (
+					<Text className="mt-1.5 text-[11px] text-muted-foreground">
+						{HINT_NOT_HELD_OFFLINE}
+					</Text>
+				) : null}
 
 				{hasNoWorkshop ? (
 					<View className="mt-3 flex-row items-center rounded-lg border border-border bg-muted px-3 py-2">
@@ -244,29 +330,35 @@ function WorkshopSheet({
 				) : null}
 
 				{/* Summary badges */}
-				<View className="mt-3.5 flex-row space-x-2">
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/15 py-1.5 border border-emerald-100 dark:border-emerald-500/25">
-						<Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-							{counts.present} P
-						</Text>
+				{isNotHeld ? null : (
+					<View className="mt-3.5 flex-row space-x-2">
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/15 py-1.5 border border-emerald-100 dark:border-emerald-500/25">
+							<Text className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+								{counts.present} P
+							</Text>
+						</View>
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/15 py-1.5 border border-red-100 dark:border-red-500/25">
+							<Text className="text-xs font-bold text-red-700 dark:text-red-300">
+								{counts.absent} A
+							</Text>
+						</View>
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/15 py-1.5 border border-amber-100 dark:border-amber-500/25">
+							<Text className="text-xs font-bold text-amber-700 dark:text-amber-300">
+								{counts.late} T
+							</Text>
+						</View>
+						<View className="flex-1 flex-row items-center justify-center rounded-lg bg-muted py-1.5">
+							<Text className="text-xs font-bold text-neutral-600">
+								{counts.total} Total
+							</Text>
+						</View>
 					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/15 py-1.5 border border-red-100 dark:border-red-500/25">
-						<Text className="text-xs font-bold text-red-700 dark:text-red-300">
-							{counts.absent} A
-						</Text>
-					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/15 py-1.5 border border-amber-100 dark:border-amber-500/25">
-						<Text className="text-xs font-bold text-amber-700 dark:text-amber-300">
-							{counts.late} T
-						</Text>
-					</View>
-					<View className="flex-1 flex-row items-center justify-center rounded-lg bg-muted py-1.5">
-						<Text className="text-xs font-bold text-neutral-600">
-							{counts.total} Total
-						</Text>
-					</View>
-				</View>
+				)}
 			</View>
+
+			{isNotHeldUnverified && isNotHeldError ? (
+				<NotHeldLookupError kind="workshop" onRetry={() => refetchNotHeld()} />
+			) : null}
 
 			{/* Outbox Status Banner */}
 			{outboxItem && (
@@ -328,7 +420,15 @@ function WorkshopSheet({
 			)}
 
 			{/* Student Roster */}
-			{dayState === 'loading' ? (
+			{isNotHeld ? (
+				<NotHeldNotice
+					kind="workshop"
+					reason={notHeldStatus?.reason}
+					onUnmark={online ? unmarkNotHeld : undefined}
+					isUnmarking={notHeld.unmark.isPending}
+					errorMessage={notHeld.unmark.errorMessage}
+				/>
+			) : dayState === 'loading' ? (
 				<View className="flex-1 items-center justify-center">
 					<ActivityIndicator size="large" color={theme.primaryInk} />
 					<Text className="mt-3 text-sm text-muted-foreground">
@@ -398,11 +498,11 @@ function WorkshopSheet({
 			)}
 
 			{/* Sticky Bottom Confirmation Bar */}
-			{students.length > 0 && dayState === 'ready' && (
+			{!isNotHeld && students.length > 0 && dayState === 'ready' && (
 				<View className="border-t border-border bg-card px-5 py-4 shadow-lg">
 					<TouchableOpacity
 						onPress={handleSave}
-						disabled={isSaving}
+						disabled={isSaving || isNotHeldUnverified}
 						className="items-center justify-center rounded-xl bg-primary py-3.5 shadow-sm active:bg-primary-700 disabled:opacity-50"
 					>
 						{isSaving ? (
@@ -416,6 +516,19 @@ function WorkshopSheet({
 					</TouchableOpacity>
 				</View>
 			)}
+			<NotHeldSheet
+				visible={isNotHeldOpen}
+				kind="workshop"
+				savedRecordsCount={students.filter((r) => r.status).length}
+				isSubmitting={notHeld.mark.isPending}
+				errorMessage={notHeld.mark.errorMessage}
+				onCancel={() => {
+					if (notHeld.mark.isPending) return;
+					setIsNotHeldOpen(false);
+					notHeld.mark.reset();
+				}}
+				onConfirm={confirmNotHeld}
+			/>
 		</SafeAreaView>
 	);
 }

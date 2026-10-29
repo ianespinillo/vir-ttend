@@ -1,7 +1,7 @@
 # Feature: Mobile class and workshop not held
 
 ## Status
-IN PROGRESS (2026-10-29). Branch `feat/mobile-not-held` from `dev` (`299ba60`, release 1.5.0, PR #99).
+IMPLEMENTED (2026-10-29), pending delivery. Branch `feat/mobile-not-held` from `dev` (`299ba60`, release 1.5.0, PR #99).
 
 ## Objective
 Let preceptors mark the theory class of a course ("Clase no dictada") and a workshop commission ("Taller no dictado") as not held from the mobile app, like the web pages, and stop offering attendance on a marked day.
@@ -27,7 +27,7 @@ Let preceptors mark the theory class of a course ("Clase no dictada") and a work
 
 ## Checklist
 - [x] T1: Data layer + sheet + daily screen — api fetchers, query keys/options, mark/unmark hooks for daily and workshop, `NotHeldSheet` and notice components, daily screen integration (status query, "Clase no dictada" action, notice with "Habilitar asistencia" unmark, disabled save bar while marked/unknown online). Route: delegated writer (2+ non-trivial files).
-- [ ] T2: Workshop screen integration — "Taller no dictado" action, notice, unmark, disabled save bar. Route: delegated writer (same writer, follows T1).
+- [x] T2: Workshop screen integration — "Taller no dictado" action, notice, unmark, disabled save bar. Route: delegated writer (same writer, follows T1).
 
 ## Acceptance criteria
 - On a day marked not held, the daily/workshop screen shows the notice (with the reason when present) instead of the list, and no save action.
@@ -46,6 +46,7 @@ Let preceptors mark the theory class of a course ("Clase no dictada") and a work
 ## Progress
 - Exploration done (mapper): screens, outbox, API endpoints, web hooks.
 - T1 done (route: delegated writer). `pnpm --filter mobile ts:check`: pass. `pnpm lint:check`: pass (1548 files). Preceptor-only status query on the daily screen; offline-unknown stays usable.
+- T2 done (route: delegated writer). `pnpm --filter mobile ts:check`: pass. `pnpm lint:check`: pass (1548 files). Workshop screen reuses the T1 components and `useWorkshopNotHeld`.
 
 ## Next step
-- T2.
+- Close: manual check on device, then delivery (push/PR) by the user.
