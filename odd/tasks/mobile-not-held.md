@@ -48,5 +48,8 @@ Let preceptors mark the theory class of a course ("Clase no dictada") and a work
 - T1 done (route: delegated writer). `pnpm --filter mobile ts:check`: pass. `pnpm lint:check`: pass (1548 files). Preceptor-only status query on the daily screen; offline-unknown stays usable.
 - T2 done (route: delegated writer). `pnpm --filter mobile ts:check`: pass. `pnpm lint:check`: pass (1548 files). Workshop screen reuses the T1 components and `useWorkshopNotHeld`.
 
+- Review (lineage `review-36dffd1407cc2897`, medium, 11 files/945 lines from `582ebc4`, lens reliability): granted, approved, acknowledged (authority burned). Advisory, non-blocking: R3-001/R3-002 the mark sheet can warn "nothing to delete" while the day's records are still loading or failed (mark is not gated on the roster being ready); R3-003 workshop status query has no role gate; R3-004 no tests for `not-held.ts` helpers (no mobile runner).
+- Delivery (user, 2026-10-29: "agregalo a la pr de la 1.5"): merged into `dev` (`bd76602`), shipped in release PR #99; 1.5.0 release notes mention mobile.
+
 ## Next step
-- Close: manual check on device, then delivery (push/PR) by the user.
+- Follow-up: gate the mark action on the day's records being loaded (R3-001/R3-002); manual check on device.

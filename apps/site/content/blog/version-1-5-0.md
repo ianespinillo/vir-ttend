@@ -14,6 +14,7 @@ tags: [asistencia, taller, inasistencias]
 - Ese día no se registra asistencia y **no cuentan inasistencias** para los alumnos.
 - Si ya se había tomado asistencia, se avisa antes de confirmar: los registros de ese día se eliminan.
 - La marca se puede quitar para volver a tomar asistencia. Los registros eliminados no se recuperan.
+- También desde la **app móvil**: los preceptores pueden marcar la clase o el taller como no dictado desde la pantalla de asistencia, y ese día ven un aviso en lugar de la lista de alumnos. Marcar y desmarcar requiere conexión.
 
 ## Inasistencias cuando no hubo teoría
 
