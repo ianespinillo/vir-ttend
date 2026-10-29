@@ -1,3 +1,8 @@
+import { ATTENDANCE_ROUTES } from '@repo/common/routes';
+import type {
+	MarkSessionNotHeldResult,
+	SessionNotHeldStatus,
+} from '@repo/common/types';
 import axios, { type AxiosResponse } from 'axios';
 import { api } from '../../services/api';
 import type { JustifyPayload } from './justification';
@@ -169,4 +174,67 @@ export const fetchSubjectAttendance = async (
 		date,
 		records: payload?.records ?? [],
 	};
+};
+
+/** Whether the course's theory class was marked as not held on `date`. */
+export const getDailyNotHeld = async (
+	courseId: string,
+	date: string,
+): Promise<SessionNotHeldStatus> =>
+	unwrap<SessionNotHeldStatus>(
+		await api.get(ATTENDANCE_ROUTES.dailyNotHeld, {
+			params: { courseId, date },
+		}),
+	);
+
+/** Marks the class as not held; the server deletes the day's saved records. */
+export const markDailyNotHeld = async (
+	courseId: string,
+	date: string,
+	reason?: string,
+): Promise<MarkSessionNotHeldResult> =>
+	unwrap<MarkSessionNotHeldResult>(
+		await api.post(ATTENDANCE_ROUTES.dailyNotHeld, { courseId, date, reason }),
+	);
+
+/** Idempotent: unmarking a day that is not marked succeeds too. */
+export const unmarkDailyNotHeld = async (
+	courseId: string,
+	date: string,
+): Promise<void> => {
+	await api.delete(ATTENDANCE_ROUTES.dailyNotHeld, {
+		params: { courseId, date },
+	});
+};
+
+export const getWorkshopNotHeld = async (
+	commissionId: string,
+	date: string,
+): Promise<SessionNotHeldStatus> =>
+	unwrap<SessionNotHeldStatus>(
+		await api.get(ATTENDANCE_ROUTES.workshopNotHeld, {
+			params: { commissionId, date },
+		}),
+	);
+
+export const markWorkshopNotHeld = async (
+	commissionId: string,
+	date: string,
+	reason?: string,
+): Promise<MarkSessionNotHeldResult> =>
+	unwrap<MarkSessionNotHeldResult>(
+		await api.post(ATTENDANCE_ROUTES.workshopNotHeld, {
+			commissionId,
+			date,
+			reason,
+		}),
+	);
+
+export const unmarkWorkshopNotHeld = async (
+	commissionId: string,
+	date: string,
+): Promise<void> => {
+	await api.delete(ATTENDANCE_ROUTES.workshopNotHeld, {
+		params: { commissionId, date },
+	});
 };

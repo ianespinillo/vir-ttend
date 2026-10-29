@@ -26,7 +26,7 @@ Let preceptors mark the theory class of a course ("Clase no dictada") and a work
 - Mobile test runner (none exists in `apps/mobile`).
 
 ## Checklist
-- [ ] T1: Data layer + sheet + daily screen — api fetchers, query keys/options, mark/unmark hooks for daily and workshop, `NotHeldSheet` and notice components, daily screen integration (status query, "Clase no dictada" action, notice with "Habilitar asistencia" unmark, disabled save bar while marked/unknown online). Route: delegated writer (2+ non-trivial files).
+- [x] T1: Data layer + sheet + daily screen — api fetchers, query keys/options, mark/unmark hooks for daily and workshop, `NotHeldSheet` and notice components, daily screen integration (status query, "Clase no dictada" action, notice with "Habilitar asistencia" unmark, disabled save bar while marked/unknown online). Route: delegated writer (2+ non-trivial files).
 - [ ] T2: Workshop screen integration — "Taller no dictado" action, notice, unmark, disabled save bar. Route: delegated writer (same writer, follows T1).
 
 ## Acceptance criteria
@@ -45,6 +45,7 @@ Let preceptors mark the theory class of a course ("Clase no dictada") and a work
 
 ## Progress
 - Exploration done (mapper): screens, outbox, API endpoints, web hooks.
+- T1 done (route: delegated writer). `pnpm --filter mobile ts:check`: pass. `pnpm lint:check`: pass (1548 files). Preceptor-only status query on the daily screen; offline-unknown stays usable.
 
 ## Next step
-- T1.
+- T2.
