@@ -7,13 +7,15 @@ import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-reg
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IWorkshopCommissionPort } from '../../../domain/ports/workshop-commission.port.interface';
 import { IWorkshopAttendanceRecordRepository } from '../../../domain/repositories/workshop-attendance-record.repository.interface';
+import { IWorkshopSessionNotHeldRepository } from '../../../domain/repositories/workshop-session-not-held.repository.interface';
 import { assertCanManageWorkshopAttendance } from '../../services/workshop-attendance-access.policy';
+import { assertWorkshopSessionHeld } from '../../services/workshop-session-held.policy';
 import { RegisterWorkshopAttendanceCommand } from './register-workshop-attendance.command';
 
 /**
  * Upserts the workshop attendance of a commission for a date. Only the
  * commission's ACTIVE students can be recorded. Idempotent: unchanged records
- * are not saved. Announces each created or changed record so the student's
+ * are not saved. Rejected on a day marked as not held. Announces each created or changed record so the student's
  * absence alerts are re-evaluated once the transaction committed.
  */
 @Injectable()
@@ -26,6 +28,8 @@ export class RegisterWorkshopAttendanceHandler {
 		@Inject('IUnitOfWorkPort')
 		private readonly unitOfWork: IUnitOfWorkPort,
 		private readonly em: EventEmitter2,
+		@Inject('IWorkshopSessionNotHeldRepository')
+		private readonly notHeldRepo: IWorkshopSessionNotHeldRepository,
 	) {}
 
 	async execute(command: RegisterWorkshopAttendanceCommand): Promise<void> {
@@ -56,6 +60,12 @@ export class RegisterWorkshopAttendanceHandler {
 		}
 
 		const changedRecords = await this.unitOfWork.run(async () => {
+			// Checked in the same transaction as the writes.
+			await assertWorkshopSessionHeld(
+				this.notHeldRepo,
+				commission.id,
+				command.date,
+			);
 			const existingByStudent = new Map(
 				(
 					await this.attendanceRepo.findByCommissionAndDate(

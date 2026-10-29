@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
 	Post,
@@ -25,10 +26,18 @@ import { BulkRegisterWorkshopAttendanceCommand } from '../../application/command
 import { BulkRegisterWorkshopAttendanceHandler } from '../../application/commands/bulk-register-workshop-attendance/bulk-register-workshop-attendance.handler';
 import { JustifyWorkshopAttendanceCommand } from '../../application/commands/justify-workshop-attendance/justify-workshop-attendance.command';
 import { JustifyWorkshopAttendanceHandler } from '../../application/commands/justify-workshop-attendance/justify-workshop-attendance.handler';
+import { MarkWorkshopSessionNotHeldCommand } from '../../application/commands/mark-workshop-session-not-held/mark-workshop-session-not-held.command';
+import { MarkWorkshopSessionNotHeldHandler } from '../../application/commands/mark-workshop-session-not-held/mark-workshop-session-not-held.handler';
 import { RegisterWorkshopAttendanceCommand } from '../../application/commands/register-workshop-attendance/register-workshop-attendance.command';
 import { RegisterWorkshopAttendanceHandler } from '../../application/commands/register-workshop-attendance/register-workshop-attendance.handler';
+import { UnmarkWorkshopSessionNotHeldCommand } from '../../application/commands/unmark-workshop-session-not-held/unmark-workshop-session-not-held.command';
+import { UnmarkWorkshopSessionNotHeldHandler } from '../../application/commands/unmark-workshop-session-not-held/unmark-workshop-session-not-held.handler';
 import { BulkJustifyAttendanceRequestDto } from '../../application/dtos/bulk-justify-attendance.request.dto';
 import { JustifyAttendanceRequestDto } from '../../application/dtos/justify-attendance.request.dto';
+import {
+	MarkWorkshopSessionNotHeldRequestDto,
+	WorkshopSessionNotHeldQueryRequestDto,
+} from '../../application/dtos/mark-workshop-session-not-held.request.dto';
 import {
 	BulkRegisterWorkshopAttendanceRequestDto,
 	GetMyWorkshopCommissionsRequestDto,
@@ -39,10 +48,13 @@ import {
 	MyWorkshopCommissionResponseDto,
 	WorkshopAttendanceResponseDto,
 } from '../../application/dtos/workshop-attendance.response.dto';
+import { WorkshopSessionNotHeldResponseDto } from '../../application/dtos/workshop-session-not-held.response.dto';
 import { GetMyWorkshopCommissionsQueryHandler } from '../../application/queries/get-my-workshop-commissions/get-my-workshop-commissions.handler';
 import { GetMyWorkshopCommissionsQuery } from '../../application/queries/get-my-workshop-commissions/get-my-workshop-commissions.query';
 import { GetWorkshopAttendanceQueryHandler } from '../../application/queries/get-workshop-attendance/get-workshop-attendance.handler';
 import { GetWorkshopAttendanceQuery } from '../../application/queries/get-workshop-attendance/get-workshop-attendance.query';
+import { GetWorkshopSessionNotHeldQueryHandler } from '../../application/queries/get-workshop-session-not-held/get-workshop-session-not-held.handler';
+import { GetWorkshopSessionNotHeldQuery } from '../../application/queries/get-workshop-session-not-held/get-workshop-session-not-held.query';
 
 @Controller('attendance/workshop')
 @ApiTags('Attendance')
@@ -56,6 +68,9 @@ export class WorkshopAttendanceController {
 		private readonly getMyCommissionsHandler: GetMyWorkshopCommissionsQueryHandler,
 		private readonly justifyHandler: JustifyWorkshopAttendanceHandler,
 		private readonly bulkJustifyHandler: BulkJustifyWorkshopAttendanceHandler,
+		private readonly markNotHeldHandler: MarkWorkshopSessionNotHeldHandler,
+		private readonly unmarkNotHeldHandler: UnmarkWorkshopSessionNotHeldHandler,
+		private readonly getNotHeldHandler: GetWorkshopSessionNotHeldQueryHandler,
 	) {}
 
 	@ApiOperation({
@@ -264,6 +279,108 @@ export class WorkshopAttendanceController {
 				dto.recordIds,
 				dto.reason,
 				dto.notes,
+			),
+		);
+	}
+
+	@ApiOperation({
+		summary: 'Marcar el taller de una comisión como no dictado',
+		description: `Marca que el taller de la comisión no se dictó en la fecha indicada (por ejemplo, por ausencia del docente). Borra los registros de asistencia de taller ya cargados ese día y bloquea nuevos registros hasta desmarcar. Es idempotente: si ya estaba marcado solo actualiza el motivo. Roles permitidos: admin, y preceptor asignado a la comisión. Body de ejemplo:
+{
+  "commissionId": "4d7a2b1c-3e5f-4a6b-8c9d-0e1f2a3b4c5d",
+  "date": "2026-03-10",
+  "reason": "Ausencia del docente"
+}`,
+	})
+	@ApiResponse({
+		status: 201,
+		description:
+			'Taller marcado como no dictado. Las respuestas exitosas se envuelven en { success: true, data, timeStamp }; data es { deletedRecords: number }.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({
+		status: 403,
+		description: 'No sos el preceptor de la comisión',
+	})
+	@ApiResponse({ status: 404, description: 'Comisión no encontrada' })
+	@Post('not-held')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async markNotHeld(
+		@Body() dto: MarkWorkshopSessionNotHeldRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.markNotHeldHandler.execute(
+			new MarkWorkshopSessionNotHeldCommand(
+				user.tenantId,
+				user.sub,
+				user.role,
+				dto.commissionId,
+				new Date(dto.date),
+				dto.reason,
+			),
+		);
+	}
+
+	@ApiOperation({
+		summary: 'Quitar la marca de taller no dictado',
+		description:
+			'Quita la marca de no dictado de la comisión para la fecha indicada y reabre el registro de asistencia. Los registros borrados al marcar no se restauran. Es idempotente. Roles permitidos: admin, y preceptor asignado a la comisión. URL de ejemplo: DELETE /attendance/workshop/not-held?commissionId=4d7a2b1c-3e5f-4a6b-8c9d-0e1f2a3b4c5d&date=2026-03-10.',
+	})
+	@ApiResponse({
+		status: 200,
+		description: 'Marca quitada. No devuelve cuerpo.',
+	})
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({
+		status: 403,
+		description: 'No sos el preceptor de la comisión',
+	})
+	@ApiResponse({ status: 404, description: 'Comisión no encontrada' })
+	@Delete('not-held')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async unmarkNotHeld(
+		@Query() dto: WorkshopSessionNotHeldQueryRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.unmarkNotHeldHandler.execute(
+			new UnmarkWorkshopSessionNotHeldCommand(
+				user.tenantId,
+				user.sub,
+				user.role,
+				dto.commissionId,
+				new Date(dto.date),
+			),
+		);
+	}
+
+	@ApiOperation({
+		summary: 'Saber si el taller de una comisión se marcó como no dictado',
+		description:
+			'Devuelve si el taller de la comisión está marcado como no dictado en la fecha indicada y el motivo informado. Roles permitidos: admin, y preceptor asignado a la comisión. URL de ejemplo: GET /attendance/workshop/not-held?commissionId=4d7a2b1c-3e5f-4a6b-8c9d-0e1f2a3b4c5d&date=2026-03-10.',
+	})
+	@ApiResponse({ status: 200, type: WorkshopSessionNotHeldResponseDto })
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({ status: 401, description: 'No autenticado' })
+	@ApiResponse({
+		status: 403,
+		description: 'No sos el preceptor de la comisión',
+	})
+	@ApiResponse({ status: 404, description: 'Comisión no encontrada' })
+	@Get('not-held')
+	@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
+	async getNotHeld(
+		@Query() dto: WorkshopSessionNotHeldQueryRequestDto,
+		@CurrentUser() user: JwtPayload,
+	) {
+		return this.getNotHeldHandler.execute(
+			new GetWorkshopSessionNotHeldQuery(
+				user.tenantId,
+				user.sub,
+				user.role,
+				dto.commissionId,
+				new Date(dto.date),
 			),
 		);
 	}
