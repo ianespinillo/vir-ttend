@@ -41,6 +41,7 @@ import { AttendanceCopyService } from './application/services/attendance-copy.se
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
 import { StudentWeightedAbsencesService } from './application/services/student-weighted-absences.service';
 import { SubjectRosterService } from './application/services/subject-roster.service';
+import { TheoryNotHeldDaysService } from './application/services/theory-not-held-days.service';
 import { AcademicYearAdapter } from './infrastructure/adapters/academic-year.adapter';
 import { CourseAdapter } from './infrastructure/adapters/course.adapter';
 import { ScheduleAdapter } from './infrastructure/adapters/schedule.adapter';
@@ -134,6 +135,7 @@ import { WorkshopAttendanceController } from './presentation/controllers/worksho
 		AttendanceCopyService,
 		CourseSnapshotBuilderService,
 		StudentWeightedAbsencesService,
+		TheoryNotHeldDaysService,
 		SubjectRosterService,
 		//event listeners
 		AttendanceRegisteredListener,

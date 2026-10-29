@@ -132,6 +132,7 @@ describe('GenerateAlertHandler', () => {
 			weightedAbsences.getStudentWeightedAbsencesForAlert,
 		).toHaveBeenCalledWith('student-1', 'year-1', '2026-03-09', {
 			workshopOnly: false,
+			courseId: 'course-1',
 		});
 	});
 
@@ -144,6 +145,7 @@ describe('GenerateAlertHandler', () => {
 			weightedAbsences.getStudentWeightedAbsencesForAlert,
 		).toHaveBeenCalledWith('student-1', 'year-1', undefined, {
 			workshopOnly: true,
+			courseId: 'course-1',
 		});
 	});
 
@@ -306,6 +308,7 @@ describe('GenerateAlertHandler', () => {
 			];
 			const commissionPort = {
 				findByStudent: jest.fn().mockResolvedValue({
+					id: 'commission-1',
 					courseId: 'course-1',
 					number: 1,
 				}),
@@ -320,6 +323,11 @@ describe('GenerateAlertHandler', () => {
 				{ findByStudentAndDateRange: jest.fn().mockResolvedValue([]) } as never,
 				academicPort,
 				commissionPort as never,
+				coursePort,
+				{
+					findByCommissionAndDate: jest.fn().mockResolvedValue(null),
+				} as never,
+				{ forCourse: jest.fn().mockResolvedValue([]) } as never,
 			);
 			return new GenerateAlertHandler(
 				academicPort,
