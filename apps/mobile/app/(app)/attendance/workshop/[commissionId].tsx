@@ -1,3 +1,4 @@
+import { workshopAvailabilityOn, workshopDaysOf } from '@repo/common/constants';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -31,6 +32,8 @@ import { toSavableRecords } from '../../../../src/features/attendance/justificat
 import {
 	HINT_NOT_HELD_OFFLINE,
 	NOT_HELD_COPY,
+	WORKSHOP_NOT_SCHEDULED_MESSAGE,
+	WORKSHOP_NO_SCHEDULE_NOTICE,
 } from '../../../../src/features/attendance/not-held';
 import { NotHeldLookupError } from '../../../../src/features/attendance/not-held-lookup-error';
 import { NotHeldNotice } from '../../../../src/features/attendance/not-held-notice';
@@ -135,9 +138,28 @@ function WorkshopSheet({
 	const { data: myCommissions } = useQuery(
 		attendanceQueries.myWorkshopCommissions(dateStr),
 	);
-	const hasNoWorkshop =
-		myCommissions?.find((c) => c.commissionId === commissionId)
-			?.hasWorkshopToday === false;
+	const commission = myCommissions?.find((c) => c.commissionId === commissionId);
+	const hasNoWorkshop = commission?.hasWorkshopToday === false;
+
+	// What the course schedule says about this day. Unknown (loading, offline or
+	// failed) keeps the not-held action available and shows no schedule notice.
+	const { data: scheduleSlots } = useQuery({
+		...attendanceQueries.courseSchedule(commission?.courseId ?? ''),
+		enabled: !!commission?.courseId,
+	});
+	const { data: courseSubjects } = useQuery({
+		...attendanceQueries.courseSubjects(commission?.courseId ?? ''),
+		enabled: !!commission?.courseId,
+	});
+	const availability =
+		commission && scheduleSlots && courseSubjects
+			? workshopAvailabilityOn(
+					workshopDaysOf(scheduleSlots, courseSubjects, commission.number),
+					dateStr,
+				)
+			: undefined;
+	const isNotScheduled = availability === 'unscheduled';
+	const hasNoSchedule = availability === 'no-schedule';
 
 	// Not-held status of the workshop on this day.
 	const {
@@ -291,7 +313,7 @@ function WorkshopSheet({
 
 				<AttendanceDateBar nav={nav} />
 
-				{isNotHeld ? null : (
+				{isNotHeld || isNotScheduled ? null : (
 					<TouchableOpacity
 						onPress={() => {
 							notHeld.mark.reset();
@@ -314,13 +336,38 @@ function WorkshopSheet({
 						</Text>
 					</TouchableOpacity>
 				)}
-				{!online && !isNotHeld ? (
+				{!online && !isNotHeld && !isNotScheduled ? (
 					<Text className="mt-1.5 text-[11px] text-muted-foreground">
 						{HINT_NOT_HELD_OFFLINE}
 					</Text>
 				) : null}
 
-				{hasNoWorkshop ? (
+				{isNotScheduled && !isNotHeld ? (
+					<View className="mt-3 flex-row items-center rounded-lg border border-border bg-muted px-3 py-2">
+						<Info size={13} color={theme.mutedForeground} />
+						<Text className="ml-2 flex-1 text-xs text-neutral-600">
+							{WORKSHOP_NOT_SCHEDULED_MESSAGE}
+						</Text>
+					</View>
+				) : null}
+				{hasNoSchedule && !isNotHeld ? (
+					<View
+						className="mt-3 flex-row items-start rounded-lg border px-3 py-2"
+						style={{
+							backgroundColor: theme.status.warning.background,
+							borderColor: theme.status.warning.border,
+						}}
+					>
+						<AlertCircle size={13} color={theme.status.warning.icon} />
+						<Text
+							className="ml-2 flex-1 text-xs"
+							style={{ color: theme.status.warning.strongText }}
+						>
+							{WORKSHOP_NO_SCHEDULE_NOTICE}
+						</Text>
+					</View>
+				) : null}
+				{hasNoWorkshop && availability === undefined ? (
 					<View className="mt-3 flex-row items-center rounded-lg border border-border bg-muted px-3 py-2">
 						<Info size={13} color={theme.mutedForeground} />
 						<Text className="ml-2 flex-1 text-xs text-neutral-600">

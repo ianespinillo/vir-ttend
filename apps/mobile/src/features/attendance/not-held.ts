@@ -34,6 +34,13 @@ export const NOT_HELD_COPY = {
 	},
 } as const;
 
+/** Shown instead of the workshop not-held action on a day without workshop. */
+export const WORKSHOP_NOT_SCHEDULED_MESSAGE = 'No corresponde taller este día';
+
+/** Shown when the commission has no workshop schedule loaded. */
+export const WORKSHOP_NO_SCHEDULE_NOTICE =
+	'Esta comisión no tiene el horario de taller cargado, por eso el sistema no puede saber qué días hay taller. Cargá el horario del curso desde la web (Cursos, horario del curso).';
+
 export const HINT_NOT_HELD_OFFLINE = 'Necesitás conexión para marcar el día';
 export const FALLBACK_NOT_HELD_ERROR =
 	'No se pudo actualizar el día. Intentá nuevamente.';

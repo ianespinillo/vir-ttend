@@ -1,5 +1,7 @@
-import { ATTENDANCE_ROUTES } from '@repo/common/routes';
+import { ACADEMIC_ROUTES, ATTENDANCE_ROUTES } from '@repo/common/routes';
 import type {
+	IScheduleSlotResponse,
+	ISubjectResponse,
 	MarkSessionNotHeldResult,
 	SessionNotHeldStatus,
 } from '@repo/common/types';
@@ -139,6 +141,22 @@ export const fetchWorkshopAttendance = async (
 		unwrap(
 			await api.get('/attendance/workshop', { params: { commissionId, date } }),
 		),
+	);
+
+/** Schedule slots of a course (any day, any subject). */
+export const fetchCourseSchedule = async (
+	courseId: string,
+): Promise<IScheduleSlotResponse[]> =>
+	asArray<IScheduleSlotResponse>(
+		unwrap(await api.get(ACADEMIC_ROUTES.schedule, { params: { courseId } })),
+	);
+
+/** Subjects of a course; their kind tells workshop slots from theory ones. */
+export const fetchCourseSubjects = async (
+	courseId: string,
+): Promise<ISubjectResponse[]> =>
+	asArray<ISubjectResponse>(
+		unwrap(await api.get(ACADEMIC_ROUTES.subjects, { params: { courseId } })),
 	);
 
 export const fetchMySubjects = async (): Promise<MySubject[]> =>
