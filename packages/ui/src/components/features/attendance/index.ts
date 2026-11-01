@@ -16,3 +16,4 @@ export * from './subject-attendance-page';
 export * from './review-justifications-modal';
 export * from './workshop-attendance-page';
 export * from './not-held-controls';
+export * from './workshop-schedule-notices';

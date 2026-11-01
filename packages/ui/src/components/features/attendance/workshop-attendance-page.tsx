@@ -4,6 +4,7 @@ import type {
 	AttendanceRecord,
 	AttendanceStatus,
 	MyWorkshopCommission,
+	WorkshopAvailability,
 } from '@repo/common';
 import { FileText, Wrench } from 'lucide-react';
 import { cn } from '../../../lib/utils';
@@ -23,6 +24,10 @@ import {
 	NotHeldNotice,
 	type NotHeldState,
 } from './not-held-controls';
+import {
+	WorkshopNoScheduleBanner,
+	WorkshopNotScheduledMessage,
+} from './workshop-schedule-notices';
 
 export function formatCommissionLabel(
 	commission: Pick<MyWorkshopCommission, 'courseName' | 'code'>,
@@ -71,6 +76,13 @@ export interface WorkshopAttendancePageProps {
 	onRetryNotHeld?: () => void;
 	/** Saved records of the day, shown in the confirmation (defaults to the grid's). */
 	savedRecordsCount?: number;
+	/**
+	 * What the commission's schedule says about the selected day. Absent while
+	 * unknown (loading, failed): nothing is hidden and no banner is shown.
+	 */
+	workshopAvailability?: WorkshopAvailability;
+	/** Where the course schedule is loaded, linked from the no-schedule banner. */
+	scheduleHref?: string;
 }
 
 export function WorkshopAttendancePage({
@@ -105,6 +117,8 @@ export function WorkshopAttendancePage({
 	notHeldStatus,
 	onRetryNotHeld,
 	savedRecordsCount,
+	workshopAvailability,
+	scheduleHref,
 }: Readonly<WorkshopAttendancePageProps>) {
 	const selectedCount = selectedRecordIds?.size ?? 0;
 	const selected = commissions.find(
@@ -113,6 +127,7 @@ export function WorkshopAttendancePage({
 	const isNotHeld = Boolean(selected) && Boolean(notHeld);
 	const isStatusUnknown = Boolean(selected) && Boolean(notHeldStatus);
 	const isStatusError = isStatusUnknown && notHeldStatus === 'error';
+	const isNotScheduled = workshopAvailability === 'unscheduled';
 	const savedCount =
 		savedRecordsCount ??
 		gridStudents.filter((student) => Boolean(student.attendanceRecord?.id))
@@ -132,7 +147,8 @@ export function WorkshopAttendancePage({
 				/>
 				{selected && (
 					<div className="flex flex-wrap items-center gap-2">
-						{onMarkNotHeld && !isNotHeld && selectedDate && (
+						{isNotScheduled && !isNotHeld && <WorkshopNotScheduledMessage />}
+						{onMarkNotHeld && !isNotHeld && !isNotScheduled && selectedDate && (
 							<MarkNotHeldButton
 								kind="workshop"
 								savedRecordsCount={savedCount}
@@ -205,7 +221,10 @@ export function WorkshopAttendancePage({
 
 			{selected && !isNotHeld && (
 				<>
-					{!selected.hasWorkshopToday && (
+					{workshopAvailability === 'no-schedule' && (
+						<WorkshopNoScheduleBanner scheduleHref={scheduleHref} />
+					)}
+					{workshopAvailability === undefined && !selected.hasWorkshopToday && (
 						<output className="block rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
 							Esta comisión no tiene taller programado este día. Podés registrar la
 							asistencia igualmente si el taller se dictó.
