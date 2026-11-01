@@ -9,3 +9,4 @@ export * from './holidays.constants.js';
 export * from './nav.js';
 export * from './subject-kind.enum.js';
 export * from './workshop-only-course.js';
+export * from './workshop-schedule.js';
