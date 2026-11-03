@@ -4,7 +4,10 @@ import { AttendanceRecord } from '../../../domain/entities/attendance-record.ent
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceCopyService } from '../../services/attendance-copy.service';
-import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanWriteSubjectAttendance,
+	taughtCommissionsOf,
+} from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { CopyAttendanceCommand } from './copy-attendance.command';
 
@@ -21,11 +24,12 @@ export class CopyAttendanceHandler {
 	async execute(command: CopyAttendanceCommand): Promise<void> {
 		const subject = await this.subjectPort.getSubjectById(command.subjectId);
 		if (!subject) throw new NotFoundError('Materia no encontrada');
-		assertCanWriteSubjectAttendance(subject, {
+		const actor = {
 			userId: command.userId,
 			role: command.userRole,
 			tenantId: command.tenantId,
-		});
+		};
+		assertCanWriteSubjectAttendance(subject, actor);
 		const sourceRecords = await this.copyAttendanceService.getLastClassRecords(
 			command.subjectId,
 			command.sourceDate ?? command.targetDate,
@@ -47,6 +51,8 @@ export class CopyAttendanceHandler {
 		const roster = await this.rosterService.getActiveRoster(
 			subject,
 			command.targetDate,
+			undefined,
+			taughtCommissionsOf(subject, actor),
 		);
 		const rosterIds = new Set(roster.map((student) => student.id));
 		for (const record of sourceRecords) {

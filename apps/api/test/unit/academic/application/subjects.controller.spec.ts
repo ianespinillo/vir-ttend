@@ -147,9 +147,10 @@ describe('SubjectsController (teacher endpoints)', () => {
 			updatedAt: new Date(),
 		});
 
-		expect(new SubjectResponseDto(subject, 'Ada Lovelace').teacherName).toBe(
-			'Ada Lovelace',
-		);
+		expect(
+			new SubjectResponseDto(subject, new Map([['teacher-1', 'Ada Lovelace']]))
+				.teacherName,
+		).toBe('Ada Lovelace');
 		expect(new SubjectResponseDto(subject).teacherName).toBeUndefined();
 	});
 

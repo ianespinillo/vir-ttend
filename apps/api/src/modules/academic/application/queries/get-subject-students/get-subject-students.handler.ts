@@ -9,14 +9,20 @@ import { IStudentRepository } from '../../../domain/repositories/student.reposit
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { IWorkshopCommissionRepository } from '../../../domain/repositories/workshop-commission.repository.interface';
 import { CourseService } from '../../../domain/services/course.service';
+import { TaughtCommissions } from '../../../domain/value-objects/subject-teacher-assignment.vo';
 import { StudentResponseDto } from '../../dtos/student.response.dto';
 import { GetSubjectStudentsQuery } from './get-subject-students.query';
-import { resolveSubjectAudience, weekdayOf } from './subject-audience';
+import {
+	resolveSubjectAudience,
+	restrictAudience,
+	weekdayOf,
+} from './subject-audience';
 
 /**
  * Active roster of a subject: the whole course, or only the workshop
  * commission(s) its slots target (on the query date's weekday, or all of them
- * without a date). Teachers can only read the roster of their own subjects;
+ * without a date). Teachers can only read the roster of their own subjects, limited to the
+ * commissions they teach;
  * admins and preceptors can read any.
  */
 @Injectable()
@@ -43,14 +49,15 @@ export class GetSubjectStudentsHandler {
 		if (!course || (query.tenantId && course.tenantId !== query.tenantId)) {
 			throw new ForbiddenError('La materia no pertenece a su escuela.');
 		}
-		if (
-			query.requesterRole === ROLES.TEACHER &&
-			subject.teacherId !== query.requesterId
-		) {
+		const isTeacher = query.requesterRole === ROLES.TEACHER;
+		if (isTeacher && !subject.isTaughtBy(query.requesterId)) {
 			throw new ForbiddenError('La materia no está asignada a este docente.');
 		}
+		const taught = isTeacher
+			? subject.commissionsTaughtBy(query.requesterId)
+			: 'all';
 
-		const students = (await this.findRoster(subject, query.date))
+		const students = (await this.findRoster(subject, taught, query.date))
 			.filter(
 				(s) => s.status === STUDENTSTATUS.ACTIVE && s.tenantId === query.tenantId,
 			)
@@ -66,21 +73,35 @@ export class GetSubjectStudentsHandler {
 		return students.map((s) => new StudentResponseDto(s, courseName));
 	}
 
-	/** Students of the subject's audience; inactive ones are filtered by the caller. */
-	private async findRoster(subject: Subject, date?: Date): Promise<Student[]> {
+	/**
+	 * Students of the subject's audience, narrowed to the commissions the
+	 * requester teaches; inactive ones are filtered by the caller.
+	 */
+	private async findRoster(
+		subject: Subject,
+		taught: TaughtCommissions,
+		date?: Date,
+	): Promise<Student[]> {
 		const slots = await this.scheduleRepo.findBySubject(subject.id.getRaw());
-		const audience = resolveSubjectAudience(
-			slots,
-			date ? weekdayOf(date) : undefined,
+		const audience = restrictAudience(
+			resolveSubjectAudience(slots, date ? weekdayOf(date) : undefined),
+			taught,
 		);
 		if (audience === 'whole-course')
 			return this.studentRepo.findByCourse(subject.courseId);
 
 		const commissions = await this.commissionRepo.findByCourse(subject.courseId);
+		// A course without commissions has nobody to split: everyone attends.
+		if (commissions.length === 0)
+			return this.studentRepo.findByCourse(subject.courseId);
 		const commissionIds: string[] = [];
 		for (const number of audience) {
 			const commission = commissions.find((c) => c.number === number);
-			if (!commission) return this.studentRepo.findByCourse(subject.courseId);
+			if (!commission) {
+				if (taught === 'all')
+					return this.studentRepo.findByCourse(subject.courseId);
+				continue;
+			}
 			commissionIds.push(commission.id);
 		}
 		const perCommission = await Promise.all(

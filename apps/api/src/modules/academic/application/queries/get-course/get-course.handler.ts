@@ -5,6 +5,7 @@ import { ICourseRepository } from '../../../domain/repositories/course.repositor
 import { IScheduleRepository } from '../../../domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { CourseDetailResponseDto } from '../../dtos/course-detail.response.dto';
+import { loadTeacherNames } from '../load-teacher-names';
 import { GetCourseQuery } from './get-course.query';
 
 @Injectable()
@@ -27,14 +28,7 @@ export class GetCourseHandler {
 			: null;
 		const schedules = await this.slotRepo.findByCourse(course.id.getRaw());
 		const subjects = await this.subjectRepo.findByCourse(course.id.getRaw());
-		const teacherIds = Array.from(
-			new Set(
-				subjects.map((s) => s.teacherId).filter((id): id is string => Boolean(id)),
-			),
-		);
-		const teachers =
-			teacherIds.length > 0 ? await this.userRepo.findByIds(teacherIds) : [];
-		const teacherMap = new Map(teachers.map((t) => [t.id, t.fullName]));
+		const teacherMap = await loadTeacherNames(this.userRepo, subjects);
 
 		return new CourseDetailResponseDto(
 			course,

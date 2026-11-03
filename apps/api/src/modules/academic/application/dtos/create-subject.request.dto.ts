@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import { Type } from 'class-transformer';
 import {
+	ArrayMaxSize,
+	IsArray,
 	IsEnum,
 	IsNotEmpty,
 	IsNumber,
@@ -8,7 +11,9 @@ import {
 	IsString,
 	MaxLength,
 	Min,
+	ValidateNested,
 } from 'class-validator';
+import { SubjectTeacherRequestDto } from './subject-teacher.request.dto';
 
 export class CreateSubjectRequestDto {
 	@IsNotEmpty()
@@ -39,6 +44,18 @@ export class CreateSubjectRequestDto {
 		example: 'Laura Gómez',
 	})
 	teacherName?: string;
+
+	@IsOptional()
+	@IsArray()
+	@ArrayMaxSize(2)
+	@ValidateNested({ each: true })
+	@Type(() => SubjectTeacherRequestDto)
+	@ApiPropertyOptional({
+		type: [SubjectTeacherRequestDto],
+		description:
+			'Docente por comisión de taller (solo materias de taller de un curso con dos comisiones). Si se envía, tiene prioridad sobre teacherId / teacherName; un único elemento con commissionNumber null equivale a un docente para toda la materia.',
+	})
+	teachers?: SubjectTeacherRequestDto[];
 
 	@IsNotEmpty({ message: 'El nombre de la materia es obligatorio.' })
 	@IsString()
