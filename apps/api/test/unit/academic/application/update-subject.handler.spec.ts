@@ -12,10 +12,12 @@ import { UpdateSubjectHandler } from '../../../../src/modules/academic/applicati
 import { Course } from '../../../../src/modules/academic/domain/entities/course.entity';
 import { ScheduleSlot } from '../../../../src/modules/academic/domain/entities/schedule-slot.entity';
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
+import { WorkshopCommission } from '../../../../src/modules/academic/domain/entities/workshop-commission.entity';
 import { IMembershipPort } from '../../../../src/modules/academic/domain/ports/membership.port.interface';
 import { ICourseRepository } from '../../../../src/modules/academic/domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../../src/modules/academic/domain/repositories/schedule.repository.interface';
 import { ISubjectRepository } from '../../../../src/modules/academic/domain/repositories/subject.repository.interface';
+import { IWorkshopCommissionRepository } from '../../../../src/modules/academic/domain/repositories/workshop-commission.repository.interface';
 import { expectRejection } from '../expect-rejection';
 
 describe('UpdateSubjectHandler', () => {
@@ -24,6 +26,7 @@ describe('UpdateSubjectHandler', () => {
 	let scheduleRepo: MockProxy<IScheduleRepository>;
 	let courseRepo: MockProxy<ICourseRepository>;
 	let membershipPort: MockProxy<IMembershipPort>;
+	let commissionRepo: MockProxy<IWorkshopCommissionRepository>;
 
 	const course = Course.reconstitute({
 		id: 'course-1',
@@ -77,11 +80,13 @@ describe('UpdateSubjectHandler', () => {
 		scheduleRepo = mock<IScheduleRepository>();
 		courseRepo = mock<ICourseRepository>();
 		membershipPort = mock<IMembershipPort>();
+		commissionRepo = mock<IWorkshopCommissionRepository>();
 		handler = new UpdateSubjectHandler(
 			subjectRepo,
 			scheduleRepo,
 			courseRepo,
 			membershipPort,
+			commissionRepo,
 		);
 	});
 
@@ -207,5 +212,154 @@ describe('UpdateSubjectHandler', () => {
 			'El profesor no pertenece a la institución.',
 		);
 		expect(subjectRepo.save).not.toHaveBeenCalled();
+	});
+
+	describe('teachers per commission', () => {
+		const twoCommissions = [1, 2].map((number) =>
+			WorkshopCommission.create({
+				tenantId: 'tenant-1',
+				courseId: 'course-1',
+				number: number as 1 | 2,
+			}),
+		);
+		const perCommission = new UpdateSubjectCommand(
+			'sub-1',
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			[
+				{ commissionNumber: 1, teacherId: 'teacher-a' },
+				{ commissionNumber: 2, teacherId: 'teacher-b' },
+			],
+		);
+
+		it('replaces the assignments with one teacher per commission', async () => {
+			subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.WORKSHOP));
+			courseRepo.findById.mockResolvedValue(course);
+			membershipPort.belongsToTenant.mockResolvedValue(true);
+			commissionRepo.findByCourse.mockResolvedValue(twoCommissions);
+
+			await handler.execute(perCommission);
+
+			const saved = subjectRepo.save.mock.calls[0][0];
+			expect(saved.teachers.map((t) => [t.commissionNumber, t.teacherId])).toEqual(
+				[
+					[1, 'teacher-a'],
+					[2, 'teacher-b'],
+				],
+			);
+			expect(membershipPort.belongsToTenant).toHaveBeenCalledWith(
+				'teacher-a',
+				'tenant-1',
+			);
+			expect(membershipPort.belongsToTenant).toHaveBeenCalledWith(
+				'teacher-b',
+				'tenant-1',
+			);
+		});
+
+		it('rejects a teacher of another institution in any commission', async () => {
+			subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.WORKSHOP));
+			courseRepo.findById.mockResolvedValue(course);
+			membershipPort.belongsToTenant.mockImplementation(
+				async (id) => id !== 'teacher-b',
+			);
+			commissionRepo.findByCourse.mockResolvedValue(twoCommissions);
+
+			await expectRejection(
+				handler.execute(perCommission),
+				DomainError,
+				'El profesor no pertenece a la institución.',
+			);
+			expect(subjectRepo.save).not.toHaveBeenCalled();
+		});
+
+		it('rejects commission teachers when the course has fewer than two commissions', async () => {
+			subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.WORKSHOP));
+			courseRepo.findById.mockResolvedValue(course);
+			membershipPort.belongsToTenant.mockResolvedValue(true);
+			commissionRepo.findByCourse.mockResolvedValue(twoCommissions.slice(0, 1));
+
+			await expectRejection(
+				handler.execute(perCommission),
+				BusinessRuleError,
+				'El curso debe tener dos comisiones de taller para asignar un docente por comisión.',
+			);
+			expect(subjectRepo.save).not.toHaveBeenCalled();
+		});
+
+		it('rejects commission teachers on a theory subject', async () => {
+			subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.THEORY));
+			courseRepo.findById.mockResolvedValue(course);
+			membershipPort.belongsToTenant.mockResolvedValue(true);
+			commissionRepo.findByCourse.mockResolvedValue(twoCommissions);
+
+			await expectRejection(
+				handler.execute(perCommission),
+				DomainError,
+				'Solo los talleres pueden tener un docente por comisión.',
+			);
+			expect(subjectRepo.save).not.toHaveBeenCalled();
+		});
+
+		it('accepts commission teachers together with the change to workshop', async () => {
+			subjectRepo.findById.mockResolvedValue(makeSubject(SUBJECT_KIND.THEORY));
+			courseRepo.findById.mockResolvedValue(course);
+			membershipPort.belongsToTenant.mockResolvedValue(true);
+			commissionRepo.findByCourse.mockResolvedValue(twoCommissions);
+
+			await handler.execute(
+				new UpdateSubjectCommand(
+					'sub-1',
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					SUBJECT_KIND.WORKSHOP,
+					undefined,
+					perCommission.teachers,
+				),
+			);
+
+			const saved = subjectRepo.save.mock.calls[0][0];
+			expect(saved.kind).toBe(SUBJECT_KIND.WORKSHOP);
+			expect(saved.hasCommissionTeachers).toBe(true);
+		});
+
+		it('a whole-subject teacherId replaces the commission teachers', async () => {
+			subjectRepo.findById.mockResolvedValue(
+				Subject.reconstitute({
+					id: 'sub-1',
+					courseId: 'course-1',
+					kind: SUBJECT_KIND.WORKSHOP,
+					teachers: [
+						{ commissionNumber: 1, teacherId: 'teacher-a' },
+						{ commissionNumber: 2, teacherId: 'teacher-b' },
+					],
+					name: 'Original',
+					area: 'AreaOriginal',
+					weeklyHours: 4,
+					createdAt: new Date(),
+					updatedAt: new Date(),
+				}),
+			);
+			courseRepo.findById.mockResolvedValue(course);
+			membershipPort.belongsToTenant.mockResolvedValue(true);
+
+			await handler.execute(new UpdateSubjectCommand('sub-1', 'teacher-c'));
+
+			const saved = subjectRepo.save.mock.calls[0][0];
+			expect(saved.teachers).toEqual([
+				{
+					commissionNumber: null,
+					teacherId: 'teacher-c',
+					teacherName: undefined,
+				},
+			]);
+			expect(commissionRepo.findByCourse).not.toHaveBeenCalled();
+		});
 	});
 });

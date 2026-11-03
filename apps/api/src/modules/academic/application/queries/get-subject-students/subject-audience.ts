@@ -46,3 +46,17 @@ export function resolveSubjectAudience(
 	}
 	return [...numbers].sort((a, b) => a - b);
 }
+
+/**
+ * Narrows an audience to the commissions a teacher teaches ('all' keeps it
+ * as is). A whole-course audience becomes the teacher's commissions; a
+ * commission audience keeps only the ones they teach (possibly none).
+ */
+export function restrictAudience(
+	audience: SubjectAudience,
+	taught: 'all' | CommissionNumber[],
+): SubjectAudience {
+	if (taught === 'all') return audience;
+	if (audience === 'whole-course') return [...taught].sort((a, b) => a - b);
+	return audience.filter((number) => taught.includes(number));
+}

@@ -1,6 +1,8 @@
-import { EntityManager } from '@mikro-orm/core';
+import { Collection, EntityManager } from '@mikro-orm/core';
+import { SUBJECT_KIND } from '@repo/common';
 import { Subject } from '../../../../src/modules/academic/domain/entities/subject.entity';
 import { CourseOrmEntity } from '../../../../src/modules/academic/infrastructure/persistence/entities/courses.orm-entity';
+import { SubjectTeacherOrmEntity } from '../../../../src/modules/academic/infrastructure/persistence/entities/subject-teacher.orm-entity';
 import { SubjectOrmEntity } from '../../../../src/modules/academic/infrastructure/persistence/entities/subject.orm-entity';
 import { SubjectMapper } from '../../../../src/modules/academic/infrastructure/persistence/mappers/subject.mapper';
 
@@ -23,7 +25,9 @@ describe('SubjectMapper', () => {
 
 		expect(orm.courseId).toBe(courseId);
 		expect(orm.course).toEqual({ id: courseId });
-		expect(orm.teacherId).toBe('teacher-uuid-1');
+		expect(
+			SubjectMapper.teachersToOrm(domain, orm).map((t) => t.teacherId),
+		).toEqual(['teacher-uuid-1']);
 		expect(em.getReference).toHaveBeenCalledWith(CourseOrmEntity, courseId);
 	});
 
@@ -51,7 +55,6 @@ describe('SubjectMapper', () => {
 		const orm = Object.assign(new SubjectOrmEntity(), {
 			id: 'subject-uuid-1',
 			courseId: 'course-uuid-1',
-			teacherId: 'teacher-uuid-1',
 			name: 'Matemática',
 			area: 'Exactas',
 			weeklyHours: 5,
@@ -79,8 +82,38 @@ describe('SubjectMapper', () => {
 
 		const orm = SubjectMapper.toOrm(domain, em);
 
-		expect(orm.teacherId).toBeNull();
-		expect(orm.teacherName).toBe('Laura Gómez');
+		const [row] = SubjectMapper.teachersToOrm(domain, orm);
+		expect(row.teacherId).toBeNull();
+		expect(row.teacherName).toBe('Laura Gómez');
+		expect(row.commissionNumber).toBeNull();
+		orm.teachers = new Collection<SubjectTeacherOrmEntity>(orm, [row]);
 		expect(SubjectMapper.toDomain(orm).teacherName).toBe('Laura Gómez');
+	});
+
+	it('maps one teacher per commission both ways', () => {
+		const domain = Subject.create({
+			courseId: 'course-uuid-1',
+			kind: SUBJECT_KIND.WORKSHOP,
+			teachers: [
+				{ commissionNumber: 1, teacherId: 'teacher-a' },
+				{ commissionNumber: 2, teacherName: 'Laura Gómez' },
+			],
+			name: 'Carpintería',
+			area: 'Taller',
+			weeklyHours: 4,
+		});
+		const em = {
+			getReference: jest.fn((_entity: unknown, id: string) => ({ id })),
+		} as unknown as EntityManager;
+
+		const orm = SubjectMapper.toOrm(domain, em);
+
+		const rows = SubjectMapper.teachersToOrm(domain, orm);
+		expect(rows.map((t) => [t.commissionNumber, t.teacherId])).toEqual([
+			[1, 'teacher-a'],
+			[2, null],
+		]);
+		orm.teachers = new Collection<SubjectTeacherOrmEntity>(orm, rows);
+		expect(SubjectMapper.toDomain(orm).teachers).toEqual(domain.teachers);
 	});
 });

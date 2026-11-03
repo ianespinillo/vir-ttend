@@ -28,7 +28,8 @@ export function useUpdateSubject() {
 				ACADEMIC_ROUTES.subject(id),
 				data,
 			);
-			if (data.teacherId) {
+			// `teachers` already carries the assignment; a whole-subject PUT would collapse a split.
+			if (data.teacherId && !data.teachers) {
 				await apiClient.put<ApiResponse<void>>(ACADEMIC_ROUTES.subjectTeacher(id), {
 					teacherId: data.teacherId,
 				});
