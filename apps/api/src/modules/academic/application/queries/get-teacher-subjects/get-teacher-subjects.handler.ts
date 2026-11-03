@@ -4,6 +4,7 @@ import { IUserRepository } from '../../../../identity/domain/repositories/user.r
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
 import { SubjectResponseDto } from '../../dtos/subject.response.dto';
+import { loadTeacherNames } from '../load-teacher-names';
 import { GetTeacherSubjectsQuery } from './get-teacher-subjects.query';
 
 @Injectable()
@@ -27,20 +28,13 @@ export class GetTeacherSubjectsQueryHandler {
 			? await this.subjectRepo.findByTeacherAndCourses(query.teacherId, courseIds)
 			: await this.subjectRepo.findByCourses(courseIds);
 
-		const teacherIds = Array.from(
-			new Set(
-				subjects.map((s) => s.teacherId).filter((id): id is string => Boolean(id)),
-			),
-		);
-		const teachers =
-			teacherIds.length > 0 ? await this.userRepo.findByIds(teacherIds) : [];
-		const teacherMap = new Map(teachers.map((t) => [t.id, t.fullName]));
+		const teacherMap = await loadTeacherNames(this.userRepo, subjects);
 
 		return subjects.map((s) => {
 			const course = courseById.get(s.courseId);
 			return new SubjectResponseDto(
 				s,
-				s.teacherId ? teacherMap.get(s.teacherId) : undefined,
+				teacherMap,
 				course ? hasSubjectAttendance({ kind: s.kind, course }) : true,
 			);
 		});

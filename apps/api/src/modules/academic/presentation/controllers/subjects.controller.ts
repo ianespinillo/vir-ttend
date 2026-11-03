@@ -31,6 +31,7 @@ import { DeleteSubjectCommand } from '../../application/commands/delete-subject/
 import { DeleteSubjectHandler } from '../../application/commands/delete-subject/delete-subject.handler';
 import { UpdateSubjectCommand } from '../../application/commands/update-subject/update-subject.command';
 import { UpdateSubjectHandler } from '../../application/commands/update-subject/update-subject.handler';
+import { AssignTeacherRequestDto } from '../../application/dtos/assign-teacher.request.dto';
 import { CreateSubjectRequestDto } from '../../application/dtos/create-subject.request.dto';
 import { MySubjectResponseDto } from '../../application/dtos/my-subject.response.dto';
 import { StudentResponseDto } from '../../application/dtos/student.response.dto';
@@ -66,7 +67,7 @@ export class SubjectsController {
 	@ApiOperation({
 		summary: 'Crear una materia',
 		description:
-			'Crea una nueva materia para el curso indicado, opcionalmente con un docente que pertenezca al tenant del curso o, si el docente no tiene usuario, con su nombre (teacherName). Roles permitidos: admin, preceptor. ' +
+			'Crea una nueva materia para el curso indicado, opcionalmente con un docente que pertenezca al tenant del curso o, si el docente no tiene usuario, con su nombre (teacherName). Los talleres de un curso con dos comisiones pueden tener un docente por comisión con teachers: [{"commissionNumber": 1, "teacherId": "..."}, {"commissionNumber": 2, "teacherName": "..."}] (tiene prioridad sobre teacherId / teacherName). Roles permitidos: admin, preceptor. ' +
 			'Body de ejemplo: {"courseId": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "teacherId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "name": "Matemática", "area": "Ciencias Exactas", "weeklyHours": 5}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
@@ -84,6 +85,7 @@ export class SubjectsController {
 				dto.weeklyHours,
 				dto.kind,
 				dto.teacherName,
+				dto.teachers,
 			),
 		);
 	}
@@ -218,7 +220,7 @@ export class SubjectsController {
 	@ApiOperation({
 		summary: 'Actualizar una materia',
 		description:
-			'Actualiza el docente (con usuario o solo nombre vía teacherName), nombre, área y/o carga horaria semanal de una materia existente. Roles permitidos: admin, preceptor. ' +
+			'Actualiza el docente (con usuario o solo nombre vía teacherName; teachers reemplaza los docentes por comisión), nombre, área y/o carga horaria semanal de una materia existente. Roles permitidos: admin, preceptor. ' +
 			'Body de ejemplo: {"teacherId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "name": "Matemática", "area": "Ciencias Exactas", "weeklyHours": 6}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
@@ -242,6 +244,7 @@ export class SubjectsController {
 				dto.weeklyHours,
 				dto.kind,
 				dto.teacherName,
+				dto.teachers,
 			),
 		);
 	}
@@ -274,7 +277,7 @@ export class SubjectsController {
 		summary: 'Asignar un docente a una materia',
 		description:
 			'Asigna un docente con rol teacher y perteneciente al tenant del usuario autenticado a una materia existente. Roles permitidos: admin. ' +
-			'Body de ejemplo: {"teacherId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"}. ' +
+			'Con commissionNumber (1 o 2, solo talleres de un curso con dos comisiones) asigna el docente a esa comisión; sin él cubre toda la materia. Body de ejemplo: {"teacherId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "commissionNumber": 1}. ' +
 			'La respuesta exitosa se envuelve en { success, data, timeStamp } y los errores en { statusCode, timestamp, path, method, message, error }.',
 	})
 	@ApiParam({
@@ -289,11 +292,16 @@ export class SubjectsController {
 	@ApiResponse({ status: 404, description: 'Materia no encontrada' })
 	async assignTeacher(
 		@Param('id') id: string,
-		@Body('teacherId') teacherId: string,
+		@Body() dto: AssignTeacherRequestDto,
 		@CurrentUser() user: JwtPayload,
 	) {
 		return this.assignTeacherHandler.execute(
-			new AssignTeacherCommand(id, teacherId, user.tenantId),
+			new AssignTeacherCommand(
+				id,
+				dto.teacherId,
+				user.tenantId,
+				dto.commissionNumber ?? null,
+			),
 		);
 	}
 }

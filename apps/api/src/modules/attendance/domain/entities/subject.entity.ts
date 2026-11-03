@@ -1,3 +1,14 @@
+import { CommissionNumber } from '@repo/common';
+
+/** Commissions a user teaches in a subject: 'all' (whole subject) or the listed ones. */
+export type TaughtCommissions = 'all' | CommissionNumber[];
+
+/** A teacher of the subject; a null commission covers the whole subject. */
+export interface SubjectTeacher {
+	readonly commissionNumber: CommissionNumber | null;
+	readonly teacherId: string;
+}
+
 export class Subject {
 	private readonly _id: string;
 	private readonly _courseId: string;
@@ -5,12 +16,14 @@ export class Subject {
 	private readonly _teacherId: string;
 	private readonly _tenantId: string;
 	private readonly _hasOwnAttendance: boolean;
+	private readonly _teachers: readonly SubjectTeacher[];
 	private constructor(
 		id: string,
 		courseId: string,
 		subjectName: string,
 		teacherId: string,
 		tenantId = '',
+		teachers?: readonly SubjectTeacher[],
 		hasOwnAttendance = true,
 	) {
 		this._id = id;
@@ -19,13 +32,20 @@ export class Subject {
 		this._teacherId = teacherId;
 		this._tenantId = tenantId;
 		this._hasOwnAttendance = hasOwnAttendance;
+		this._teachers =
+			teachers ?? (teacherId ? [{ commissionNumber: null, teacherId }] : []);
 	}
+	/**
+	 * @param teachers every teacher assignment; when omitted, `teacherId` is
+	 * taken as the teacher of the whole subject.
+	 */
 	static reconstitute(
 		id: string,
 		courseId: string,
 		subjectName: string,
 		teacherId: string,
 		tenantId = '',
+		teachers?: readonly SubjectTeacher[],
 		hasOwnAttendance = true,
 	) {
 		return new Subject(
@@ -34,6 +54,7 @@ export class Subject {
 			subjectName,
 			teacherId,
 			tenantId,
+			teachers,
 			hasOwnAttendance,
 		);
 	}
@@ -50,6 +71,7 @@ export class Subject {
 		return this._courseId;
 	}
 
+	/** The single teacher older callers know: whole subject, else commission 1's. */
 	get teacherId(): string {
 		return this._teacherId;
 	}
@@ -64,5 +86,21 @@ export class Subject {
 	 */
 	get hasOwnAttendance(): boolean {
 		return this._hasOwnAttendance;
+	}
+
+	get teachers(): readonly SubjectTeacher[] {
+		return this._teachers;
+	}
+
+	/** Commissions this user teaches; [] when not a teacher of the subject. */
+	commissionsTaughtBy(userId: string): TaughtCommissions {
+		const own = this._teachers.filter((t) => t.teacherId === userId);
+		if (own.some((t) => t.commissionNumber === null)) return 'all';
+		return own.map((t) => t.commissionNumber as CommissionNumber);
+	}
+
+	isTaughtBy(userId: string): boolean {
+		const taught = this.commissionsTaughtBy(userId);
+		return taught === 'all' || taught.length > 0;
 	}
 }

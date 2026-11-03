@@ -201,6 +201,26 @@ jobs:
             # migration step below can connect to the database.
             docker compose -f compose.prod.yml -f compose.ci.yml up -d --wait postgres redis
 
+            # Pre-deploy backup, BEFORE any migration touches the schema. A failed
+            # or invalid dump aborts the deploy (set -e): no backup, no deploy.
+            # Rollback runbook: docs/ci-cd.md "Rollback".
+            BACKUP_DIR=/home/ubuntu/backups
+            BACKUP_KEEP=10
+            mkdir -p "$BACKUP_DIR"
+            BACKUP_FILE="$BACKUP_DIR/pre-deploy-$(date -u +%Y%m%dT%H%M%SZ)-${DEPLOY_SHA:0:12}.dump"
+            # -T: no TTY, a TTY corrupts the binary custom-format dump.
+            docker compose -f compose.prod.yml -f compose.ci.yml exec -T postgres \
+              sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$BACKUP_FILE.partial"
+            if [ "$(head -c 5 "$BACKUP_FILE.partial")" != "PGDMP" ]; then
+              echo "Pre-deploy backup is not a valid pg_dump archive; aborting deploy" >&2
+              rm -f "$BACKUP_FILE.partial"
+              exit 1
+            fi
+            mv "$BACKUP_FILE.partial" "$BACKUP_FILE"
+            echo "Pre-deploy backup: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
+            # Keep the newest $BACKUP_KEEP pre-deploy dumps.
+            ls -1t "$BACKUP_DIR"/pre-deploy-*.dump | tail -n +$((BACKUP_KEEP + 1)) | xargs -r rm --
+
             # Explicit migration step, BEFORE the app containers start.
             # The runner image ships the migration sources (see docs/ci-cd.md).
             docker compose -f compose.prod.yml -f compose.ci.yml run --rm --no-deps \
@@ -208,11 +228,15 @@ jobs:
 
             docker compose -f compose.prod.yml -f compose.ci.yml up -d --wait
 
-            # Belt-and-braces health probe from inside the API container
+            # Health probe from inside the API container. The api service has no
+            # compose healthcheck, so `up --wait` only waits for "running": this
+            # probe is the real gate and fails the deploy when the API never answers.
+            healthy=0
             for i in $(seq 1 12); do
               if docker compose -f compose.prod.yml -f compose.ci.yml exec -T api \
                 wget -q --spider http://localhost:3001/health >/dev/null 2>&1; then
                 echo "API health OK"
+                healthy=1
                 break
               fi
               echo "Waiting for API health... ($i/12)"
@@ -220,3 +244,10 @@ jobs:
             done
 
             docker compose -f compose.prod.yml -f compose.ci.yml ps
+
+            if [ "$healthy" -ne 1 ]; then
+              echo "API health check failed after 12 attempts; recent api logs:" >&2
+              docker compose -f compose.prod.yml -f compose.ci.yml logs --tail=100 api >&2 || true
+              echo "Rollback: docs/ci-cd.md \"Rollback\". Pre-deploy backup: $BACKUP_FILE" >&2
+              exit 1
+            fi

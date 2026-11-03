@@ -361,6 +361,7 @@ describe('RegisterSubjectAttendanceHandler', () => {
 				'Math',
 				'teacher-1',
 				'tenant-1',
+				undefined,
 				false,
 			),
 		);

@@ -7,6 +7,7 @@ import { AttendanceCopyService } from '../../services/attendance-copy.service';
 import {
 	assertCanWriteSubjectAttendance,
 	assertSubjectHasOwnAttendance,
+	taughtCommissionsOf,
 } from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { CopyAttendanceCommand } from './copy-attendance.command';
@@ -24,11 +25,12 @@ export class CopyAttendanceHandler {
 	async execute(command: CopyAttendanceCommand): Promise<void> {
 		const subject = await this.subjectPort.getSubjectById(command.subjectId);
 		if (!subject) throw new NotFoundError('Materia no encontrada');
-		assertCanWriteSubjectAttendance(subject, {
+		const actor = {
 			userId: command.userId,
 			role: command.userRole,
 			tenantId: command.tenantId,
-		});
+		};
+		assertCanWriteSubjectAttendance(subject, actor);
 		assertSubjectHasOwnAttendance(subject);
 		const sourceRecords = await this.copyAttendanceService.getLastClassRecords(
 			command.subjectId,
@@ -51,6 +53,8 @@ export class CopyAttendanceHandler {
 		const roster = await this.rosterService.getActiveRoster(
 			subject,
 			command.targetDate,
+			undefined,
+			taughtCommissionsOf(subject, actor),
 		);
 		const rosterIds = new Set(roster.map((student) => student.id));
 		for (const record of sourceRecords) {

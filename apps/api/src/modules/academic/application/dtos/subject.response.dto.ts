@@ -1,8 +1,51 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ISubjectResponse, SUBJECT_KIND, SubjectKindType } from '@repo/common';
+import {
+	CommissionNumber,
+	ISubjectResponse,
+	ISubjectTeacherResponse,
+	SUBJECT_KIND,
+	SubjectKindType,
+} from '@repo/common';
 import { Subject } from '../../domain/entities/subject.entity';
 
 // subject.response.dto.ts
+export class SubjectTeacherResponseDto implements ISubjectTeacherResponse {
+	@ApiProperty({
+		type: Number,
+		nullable: true,
+		enum: [1, 2],
+		description:
+			'Comisión de taller que dicta el docente; null cuando cubre toda la materia.',
+		example: 1,
+	})
+	commissionNumber: CommissionNumber | null;
+
+	@ApiPropertyOptional({
+		type: String,
+		description: 'ID del docente con usuario.',
+		example: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+	})
+	teacherId?: string;
+
+	@ApiPropertyOptional({
+		type: String,
+		description:
+			'Nombre del docente: el del usuario asignado o, si no tiene usuario, el nombre cargado a mano.',
+		example: 'Juan Pérez',
+	})
+	teacherName?: string;
+
+	constructor(
+		commissionNumber: CommissionNumber | null,
+		teacherId?: string,
+		teacherName?: string,
+	) {
+		this.commissionNumber = commissionNumber;
+		this.teacherId = teacherId;
+		this.teacherName = teacherName;
+	}
+}
+
 export class SubjectResponseDto implements ISubjectResponse {
 	@ApiProperty({
 		type: String,
@@ -56,6 +99,13 @@ export class SubjectResponseDto implements ISubjectResponse {
 	teacherName?: string;
 
 	@ApiProperty({
+		type: [SubjectTeacherResponseDto],
+		description:
+			'Docentes de la materia: uno para toda la materia (commissionNumber null) o uno por comisión de taller.',
+	})
+	teachers: SubjectTeacherResponseDto[];
+
+	@ApiProperty({
 		type: String,
 		description: 'ID del curso al que pertenece la materia.',
 		example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
@@ -70,9 +120,14 @@ export class SubjectResponseDto implements ISubjectResponse {
 	})
 	hasSubjectAttendance?: boolean;
 
+	/**
+	 * teacherNames maps user ids to display names; an account missing from it
+	 * has no resolved name. teacherId / teacherName keep the single-teacher
+	 * shape older clients read (whole-subject teacher, else commission 1's).
+	 */
 	constructor(
 		subject: Subject,
-		teacherName?: string,
+		teacherNames?: ReadonlyMap<string, string>,
 		hasSubjectAttendance?: boolean,
 	) {
 		this.id = subject.id.getRaw();
@@ -81,8 +136,17 @@ export class SubjectResponseDto implements ISubjectResponse {
 		this.area = subject.area;
 		this.weeklyHours = subject.weeklyHours;
 		this.kind = subject.kind;
-		this.teacherId = subject.teacherId;
-		this.teacherName = teacherName ?? subject.teacherName;
+		this.teachers = subject.teachers.map(
+			(a) =>
+				new SubjectTeacherResponseDto(
+					a.commissionNumber,
+					a.teacherId,
+					(a.teacherId ? teacherNames?.get(a.teacherId) : undefined) ??
+						a.teacherName,
+				),
+		);
+		this.teacherId = this.teachers[0]?.teacherId;
+		this.teacherName = this.teachers[0]?.teacherName;
 		if (hasSubjectAttendance !== undefined)
 			this.hasSubjectAttendance = hasSubjectAttendance;
 	}

@@ -111,6 +111,7 @@ describe('subject access policy', () => {
 				'Math',
 				'teacher-1',
 				'tenant-1',
+				undefined,
 				false,
 			);
 			expect(() => assertSubjectHasOwnAttendance(subject)).toThrow(DomainError);

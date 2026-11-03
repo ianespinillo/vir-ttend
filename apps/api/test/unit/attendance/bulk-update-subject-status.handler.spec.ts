@@ -199,6 +199,7 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 				'Math',
 				'user-1',
 				'tenant-1',
+				undefined,
 				false,
 			),
 		);

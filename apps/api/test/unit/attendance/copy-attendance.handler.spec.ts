@@ -72,6 +72,8 @@ describe('CopyAttendanceHandler', () => {
 		expect(rosterService.getActiveRoster).toHaveBeenCalledWith(
 			expect.objectContaining({ id: 'sub-1' }),
 			targetDate,
+			undefined,
+			'all',
 		);
 		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
 		expect(saved.map((r) => r.studentId)).toEqual(['student-1']);
@@ -262,6 +264,7 @@ describe('CopyAttendanceHandler', () => {
 				'Math',
 				'teacher-1',
 				'tenant-1',
+				undefined,
 				false,
 			),
 		);

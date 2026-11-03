@@ -1,10 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { hasSubjectAttendance } from '@repo/common';
 
+import { Subject as AcademicSubject } from '../../../academic/domain/entities/subject.entity';
 import { ICourseRepository } from '../../../academic/domain/repositories/course.repository.interface';
 import { ISubjectRepository } from '../../../academic/domain/repositories/subject.repository.interface';
-import { Subject } from '../../domain/entities/subject.entity';
+import { Subject, SubjectTeacher } from '../../domain/entities/subject.entity';
 import { ISubjectPort } from '../../domain/ports/subject.port.interface';
+
+/** Only assignments with an account can match an acting user. */
+function toTeachers(subject: AcademicSubject): SubjectTeacher[] {
+	return subject.teachers.flatMap((a) =>
+		a.teacherId
+			? [{ commissionNumber: a.commissionNumber, teacherId: a.teacherId }]
+			: [],
+	);
+}
 
 @Injectable()
 export class SubjectAdapter implements ISubjectPort {
@@ -25,6 +35,7 @@ export class SubjectAdapter implements ISubjectPort {
 			subject.name,
 			subject.teacherId,
 			course?.tenantId ?? '',
+			toTeachers(subject),
 			// Unknown course: left as today (own attendance).
 			course ? hasSubjectAttendance({ kind: subject.kind, course }) : true,
 		);
@@ -38,7 +49,14 @@ export class SubjectAdapter implements ISubjectPort {
 			courses,
 		);
 		return subject.map((s) =>
-			Subject.reconstitute(s.id.getRaw(), s.courseId, s.name, s.teacherId),
+			Subject.reconstitute(
+				s.id.getRaw(),
+				s.courseId,
+				s.name,
+				s.teacherId,
+				'',
+				toTeachers(s),
+			),
 		);
 	}
 }
