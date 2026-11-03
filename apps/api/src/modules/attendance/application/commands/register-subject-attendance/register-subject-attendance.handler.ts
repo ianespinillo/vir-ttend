@@ -8,7 +8,10 @@ import { ISchedulePort } from '../../../domain/ports/schedule.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanWriteSubjectAttendance,
+	taughtCommissionsOf,
+} from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { RegisterSubjectAttendanceCommand } from './register-subject-attendance.command';
 
@@ -29,11 +32,12 @@ export class RegisterSubjectAttendanceHandler {
 	async execute(command: RegisterSubjectAttendanceCommand): Promise<void> {
 		const subject = await this.subjectPort.getSubjectById(command.subjectId);
 		if (!subject) throw new NotFoundError('Materia no encontrada');
-		assertCanWriteSubjectAttendance(subject, {
+		const actor = {
 			userId: command.userId,
 			role: command.userRole,
 			tenantId: command.tenantId,
-		});
+		};
+		assertCanWriteSubjectAttendance(subject, actor);
 		if (command.courseId && command.courseId !== subject.courseId) {
 			throw new DomainError('El curso no corresponde a la materia');
 		}
@@ -44,9 +48,14 @@ export class RegisterSubjectAttendanceHandler {
 		if (validDays.length === 0)
 			throw new DomainError('La materia no tiene clases el día seleccionado');
 		const roster = new Set(
-			(await this.subjectRoster.getActiveRoster(subject, command.date, slots)).map(
-				(student) => student.id,
-			),
+			(
+				await this.subjectRoster.getActiveRoster(
+					subject,
+					command.date,
+					slots,
+					taughtCommissionsOf(subject, actor),
+				)
+			).map((student) => student.id),
 		);
 		if (command.records.some((record) => !roster.has(record.studentId)))
 			throw new DomainError('Hay alumnos que no pertenecen a la materia');

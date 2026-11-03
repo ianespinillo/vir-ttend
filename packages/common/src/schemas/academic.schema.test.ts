@@ -78,6 +78,42 @@ describe('academic schemas', () => {
 		).toBe(false);
 	});
 
+	it('acepta un docente por comisión y rechaza comisiones inválidas', () => {
+		const base = {
+			courseId: validUUID,
+			name: 'Carpintería',
+			area: 'Taller',
+			weeklyHours: 4,
+		};
+		const split = createSubjectSchema.safeParse({
+			...base,
+			teachers: [
+				{ commissionNumber: 1, teacherId: 'a' },
+				{ commissionNumber: 2, teacherName: 'Laura Gómez' },
+			],
+		});
+		expect(split.success).toBe(true);
+		expect(
+			createSubjectSchema.safeParse({
+				...base,
+				teachers: [{ commissionNumber: null, teacherId: 'a' }],
+			}).success,
+		).toBe(true);
+		expect(
+			createSubjectSchema.safeParse({
+				...base,
+				teachers: [{ commissionNumber: 3, teacherId: 'a' }],
+			}).success,
+		).toBe(false);
+		expect(
+			createSubjectSchema.safeParse({
+				...base,
+				teachers: [{ commissionNumber: 1, teacherName: 'a'.repeat(256) }],
+			}).success,
+		).toBe(false);
+		expect(createSubjectSchema.safeParse(base).data?.teachers).toBeUndefined();
+	});
+
 	it('valida franja horaria e inhabilita hora fin anterior a hora inicio', () => {
 		const validSlot = scheduleSlotSchema.safeParse({
 			subjectId: 'sub-1',
