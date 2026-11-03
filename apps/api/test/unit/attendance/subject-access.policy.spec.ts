@@ -1,8 +1,9 @@
 import { ROLES } from '@repo/common';
-import { ForbiddenError } from '../../../src/common/errors';
+import { DomainError, ForbiddenError } from '../../../src/common/errors';
 import {
 	assertCanReadSubjectAttendance,
 	assertCanWriteSubjectAttendance,
+	assertSubjectHasOwnAttendance,
 } from '../../../src/modules/attendance/application/services/subject-access.policy';
 import { Subject } from '../../../src/modules/attendance/domain/entities/subject.entity';
 
@@ -94,5 +95,25 @@ describe('subject access policy', () => {
 		expect(() =>
 			assertCanWriteSubjectAttendance(subjectIn('tenant-1'), actor),
 		).toThrow(ForbiddenError);
+	});
+
+	describe('assertSubjectHasOwnAttendance', () => {
+		it('allows a subject with its own attendance', () => {
+			expect(() =>
+				assertSubjectHasOwnAttendance(subjectIn('tenant-1')),
+			).not.toThrow();
+		});
+
+		it('rejects a theory subject of a workshop-only course', () => {
+			const subject = Subject.reconstitute(
+				'sub-1',
+				'course-1',
+				'Math',
+				'teacher-1',
+				'tenant-1',
+				false,
+			);
+			expect(() => assertSubjectHasOwnAttendance(subject)).toThrow(DomainError);
+		});
 	});
 });

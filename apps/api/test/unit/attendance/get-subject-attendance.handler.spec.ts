@@ -234,4 +234,22 @@ describe('GetSubjectAttendanceQueryHandler', () => {
 		await expect(attempt).rejects.toBeInstanceOf(DomainError);
 		await expect(attempt).rejects.toThrow('La fecha no es válida');
 	});
+
+	it('should reject a theory subject of a workshop-only course (read roster)', async () => {
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute(
+				'sub-1',
+				'course-1',
+				'Math',
+				'teacher-1',
+				'tenant-1',
+				false,
+			),
+		);
+
+		await expect(handler.execute(buildQuery())).rejects.toThrow(
+			'Las materias teóricas de 7° año técnico no tienen asistencia por materia: se toma la asistencia de taller.',
+		);
+		expect(attendanceRepo.findBySubjectAndDate).not.toHaveBeenCalled();
+	});
 });

@@ -1,12 +1,15 @@
+import { WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE } from '@repo/common/constants';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
+	ArrowLeft,
 	BookOpen,
 	CheckCheck,
 	Clock,
 	CloudOff,
 	Users,
+	Wrench,
 } from 'lucide-react-native';
 import React, {
 	type RefObject,
@@ -51,6 +54,31 @@ import { useServerReachability } from '../../../../src/features/offline/use-serv
 import { useThemeColors } from '../../../../src/features/theme/use-theme-colors';
 
 const NO_STUDENTS: StudentItem[] = [];
+
+/** A theory subject of a workshop-only course has no per-subject attendance. */
+function NoSubjectAttendanceNotice({ subjectName }: { subjectName: string }) {
+	const theme = useThemeColors();
+	const router = useRouter();
+	return (
+		<SafeAreaView className="flex-1 bg-background">
+			<View className="flex-row items-center px-4 py-3">
+				<TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+					<ArrowLeft size={22} color={theme.neutral400} />
+				</TouchableOpacity>
+				<Text className="text-xl font-bold text-foreground">{subjectName}</Text>
+			</View>
+			<View className="flex-1 items-center justify-center px-6">
+				<Wrench size={36} color={theme.neutral400} />
+				<Text className="mt-2 text-base font-semibold text-neutral-700">
+					Sin asistencia por materia
+				</Text>
+				<Text className="mt-2 text-center text-sm text-muted-foreground">
+					{WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE}
+				</Text>
+			</View>
+		</SafeAreaView>
+	);
+}
 
 // NativeWind crash workaround: className must stay STATIC per render.
 // Dynamic visual state goes through inline `style` so css-interop never
@@ -105,6 +133,12 @@ export default function SubjectAttendanceScreen() {
 			hasUserEdits.current = false;
 		},
 	});
+
+	const noOwnAttendance =
+		mySubjects?.find((s) => s.subjectId === subjectId)?.hasSubjectAttendance ===
+		false;
+	if (noOwnAttendance)
+		return <NoSubjectAttendanceNotice subjectName={subjectName} />;
 
 	// `key` gives every day a fresh sheet: no edits carry over.
 	return (

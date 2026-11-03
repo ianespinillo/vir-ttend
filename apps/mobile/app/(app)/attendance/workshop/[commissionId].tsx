@@ -45,6 +45,7 @@ import {
 	type AttendanceDateNav,
 	useAttendanceDate,
 } from '../../../../src/features/attendance/use-attendance-date';
+import { useIsWorkshopOnlyCourse } from '../../../../src/features/attendance/use-is-workshop-only-course';
 import { useWorkshopNotHeld } from '../../../../src/features/attendance/use-session-not-held';
 import { useIsOnline } from '../../../../src/features/offline/use-is-online';
 import { useOutbox } from '../../../../src/features/offline/use-outbox';
@@ -151,10 +152,13 @@ function WorkshopSheet({
 		...attendanceQueries.courseSubjects(commission?.courseId ?? ''),
 		enabled: !!commission?.courseId,
 	});
+	const workshopOnly = useIsWorkshopOnlyCourse(commission?.courseId ?? '');
 	const availability =
 		commission && scheduleSlots && courseSubjects
 			? workshopAvailabilityOn(
-					workshopDaysOf(scheduleSlots, courseSubjects, commission.number),
+					workshopDaysOf(scheduleSlots, courseSubjects, commission.number, {
+						workshopOnly,
+					}),
 					dateStr,
 				)
 			: undefined;

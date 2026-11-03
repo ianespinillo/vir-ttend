@@ -1317,17 +1317,22 @@ export function createSeedState(): DemoState {
 	);
 
 	/** Weekdays a commission of a course has workshop (slots of its workshop subjects). */
-	const workshopDays = (courseId: string, number: number): DAYOFWEEK[] =>
-		schedules
+	const workshopDays = (courseId: string, number: number): DAYOFWEEK[] => {
+		// Theory subjects of a workshop-only course are taught in the workshop shift.
+		const course = courses.find((item) => item.id === courseId);
+		const theoryInWorkshop = course ? isWorkshopOnlyCourse(course) : false;
+		return schedules
 			.filter((slot) => {
 				const subject = subjects.find((item) => item.id === slot.subjectId);
 				return (
 					subject?.courseId === courseId &&
-					subject.kind === SUBJECT_KIND.WORKSHOP &&
+					(subject.kind === SUBJECT_KIND.WORKSHOP ||
+						(theoryInWorkshop && subject.kind === SUBJECT_KIND.THEORY)) &&
 					(slot.commissionNumber == null || slot.commissionNumber === number)
 				);
 			})
 			.map((slot) => slot.dayOfWeek);
+	};
 
 	// --- Attendance ---------------------------------------------------------
 

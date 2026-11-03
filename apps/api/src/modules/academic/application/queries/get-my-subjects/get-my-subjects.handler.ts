@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DAYOFWEEK } from '@repo/common';
+import { DAYOFWEEK, hasSubjectAttendance } from '@repo/common';
+import { Course } from '../../../domain/entities/course.entity';
 import { ScheduleSlot } from '../../../domain/entities/schedule-slot.entity';
+import { Subject } from '../../../domain/entities/subject.entity';
 import { IAcademicYearRepository } from '../../../domain/repositories/academic-year.repository.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { IScheduleRepository } from '../../../domain/repositories/schedule.repository.interface';
@@ -49,6 +51,7 @@ export class GetMySubjectsHandler {
 		const courseNames = new Map(
 			courses.map((c) => [c.id.getRaw(), CourseService.calculateFulName(c)]),
 		);
+		const courseById = new Map(courses.map((c) => [c.id.getRaw(), c]));
 		const subjects = await this.subjectRepo.findByTeacherAndCourses(
 			query.teacherId,
 			[...courseNames.keys()],
@@ -66,11 +69,20 @@ export class GetMySubjectsHandler {
 					area: subject.area,
 					courseId: subject.courseId,
 					courseName: courseNames.get(subject.courseId) ?? '',
+					hasSubjectAttendance: this.hasAttendance(subject, courseById),
 					slots: this.sortSlots(slotsBySubject[index]).map(
 						(slot) => new MySubjectSlotResponseDto(slot),
 					),
 				}),
 		);
+	}
+
+	private hasAttendance(
+		subject: Subject,
+		courses: Map<string, Course>,
+	): boolean {
+		const course = courses.get(subject.courseId);
+		return course ? hasSubjectAttendance({ kind: subject.kind, course }) : true;
 	}
 
 	private sortSlots(slots: ScheduleSlot[]): ScheduleSlot[] {

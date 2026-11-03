@@ -4,7 +4,10 @@ import { AttendanceRecord } from '../../../domain/entities/attendance-record.ent
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceCopyService } from '../../services/attendance-copy.service';
-import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanWriteSubjectAttendance,
+	assertSubjectHasOwnAttendance,
+} from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { CopyAttendanceCommand } from './copy-attendance.command';
 
@@ -26,6 +29,7 @@ export class CopyAttendanceHandler {
 			role: command.userRole,
 			tenantId: command.tenantId,
 		});
+		assertSubjectHasOwnAttendance(subject);
 		const sourceRecords = await this.copyAttendanceService.getLastClassRecords(
 			command.subjectId,
 			command.sourceDate ?? command.targetDate,

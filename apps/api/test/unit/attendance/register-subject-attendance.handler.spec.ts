@@ -352,4 +352,29 @@ describe('RegisterSubjectAttendanceHandler', () => {
 		await expect(attempt).rejects.toBeInstanceOf(DomainError);
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 	});
+
+	it('should reject a theory subject of a workshop-only course (register)', async () => {
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute(
+				'sub-1',
+				'course-1',
+				'Math',
+				'teacher-1',
+				'tenant-1',
+				false,
+			),
+		);
+
+		await expect(
+			handler.execute(
+				buildCommand(
+					[{ studentId: 'student-1', status: ATTENDANCE_STATUS.PRESENT }],
+					'teacher-1',
+				),
+			),
+		).rejects.toThrow(
+			'Las materias teóricas de 7° año técnico no tienen asistencia por materia: se toma la asistencia de taller.',
+		);
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+	});
 });

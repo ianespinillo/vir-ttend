@@ -62,7 +62,19 @@ export class SubjectResponseDto implements ISubjectResponse {
 	})
 	courseId: string;
 
-	constructor(subject: Subject, teacherName?: string) {
+	@ApiPropertyOptional({
+		type: Boolean,
+		description:
+			'Solo en los listados de materias del docente. Falso si la materia es teórica de un curso de 7° año técnico: su asistencia es la de taller.',
+		example: true,
+	})
+	hasSubjectAttendance?: boolean;
+
+	constructor(
+		subject: Subject,
+		teacherName?: string,
+		hasSubjectAttendance?: boolean,
+	) {
 		this.id = subject.id.getRaw();
 		this.courseId = subject.courseId;
 		this.name = subject.name;
@@ -71,5 +83,7 @@ export class SubjectResponseDto implements ISubjectResponse {
 		this.kind = subject.kind;
 		this.teacherId = subject.teacherId;
 		this.teacherName = teacherName ?? subject.teacherName;
+		if (hasSubjectAttendance !== undefined)
+			this.hasSubjectAttendance = hasSubjectAttendance;
 	}
 }

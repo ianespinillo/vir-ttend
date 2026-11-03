@@ -58,19 +58,34 @@ export function schoolWeekdayOf(date: string): DAYOFWEEK | undefined {
 	return WEEKDAY_BY_UTC_INDEX[parsed.getUTCDay()];
 }
 
+export interface WorkshopDaysOptions {
+	/**
+	 * The course is workshop-only (7th year technical, see
+	 * `isWorkshopOnlyCourse`): its theory subjects are taught in the workshop
+	 * shift, so their slots are workshop days too. Defaults to `false`.
+	 */
+	workshopOnly?: boolean;
+}
+
 /**
  * Weekdays on which the commission has a workshop: slots of workshop subjects
- * that are for the whole course or for this commission. Mirrors the API rule
- * behind `hasWorkshopToday`.
+ * that are for the whole course or for this commission. In a workshop-only
+ * course, theory subject slots count as well. Mirrors the API rule behind
+ * `hasWorkshopToday`.
  */
 export function workshopDaysOf(
 	slots: readonly WorkshopSlotInput[],
 	subjects: readonly WorkshopSubjectInput[],
 	commissionNumber: CommissionNumber | number,
+	{ workshopOnly = false }: WorkshopDaysOptions = {},
 ): DAYOFWEEK[] {
 	const workshopSubjectIds = new Set(
 		subjects
-			.filter((subject) => subject.kind === SUBJECT_KIND.WORKSHOP)
+			.filter(
+				(subject) =>
+					subject.kind === SUBJECT_KIND.WORKSHOP ||
+					(workshopOnly && subject.kind === SUBJECT_KIND.THEORY),
+			)
 			.map((subject) => subject.id),
 	);
 	const days = slots

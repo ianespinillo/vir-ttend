@@ -1,5 +1,5 @@
 import { WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE } from '@repo/common/constants';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
 	AlertCircle,
@@ -33,7 +33,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/context/auth-context';
 import { AttendanceDateBar } from '../../../src/features/attendance/attendance-date-bar';
-import { isCachedWorkshopOnlyCourse } from '../../../src/features/attendance/course-list';
 import { resolveDayDataState } from '../../../src/features/attendance/date-nav';
 import {
 	getJustifyBlockHint,
@@ -53,12 +52,9 @@ import { NotHeldLookupError } from '../../../src/features/attendance/not-held-lo
 import { NotHeldNotice } from '../../../src/features/attendance/not-held-notice';
 import { NotHeldSheet } from '../../../src/features/attendance/not-held-sheet';
 import { attendanceQueries } from '../../../src/features/attendance/queries';
-import { queryKeys } from '../../../src/features/attendance/query-keys';
 import { StatusPicker } from '../../../src/features/attendance/status-picker';
 import type {
 	AttendanceStatus,
-	CourseListItem,
-	PreceptorCourse,
 	RecordedAttendanceStatus,
 	StudentItem,
 } from '../../../src/features/attendance/types';
@@ -66,6 +62,7 @@ import {
 	type AttendanceDateNav,
 	useAttendanceDate,
 } from '../../../src/features/attendance/use-attendance-date';
+import { useIsWorkshopOnlyCourse } from '../../../src/features/attendance/use-is-workshop-only-course';
 import { useJustifyAttendance } from '../../../src/features/attendance/use-justify-attendance';
 import { useDailyNotHeld } from '../../../src/features/attendance/use-session-not-held';
 import { useIsOnline } from '../../../src/features/offline/use-is-online';
@@ -74,24 +71,6 @@ import { useServerReachability } from '../../../src/features/offline/use-server-
 import { useThemeColors } from '../../../src/features/theme/use-theme-colors';
 
 const NO_STUDENTS: StudentItem[] = [];
-
-/** Workshop-only (7th year technical) per the course rows already cached. */
-function useIsWorkshopOnlyCourse(courseId: string): boolean {
-	const queryClient = useQueryClient();
-	return useMemo(() => {
-		const dashboards = queryClient
-			.getQueriesData<CourseListItem[]>({
-				queryKey: queryKeys.preceptorDashboard('').slice(0, 1),
-			})
-			.map(([, data]) => data);
-		const assigned = queryClient
-			.getQueriesData<PreceptorCourse[]>({
-				queryKey: queryKeys.preceptorCourses('').slice(0, 2),
-			})
-			.map(([, data]) => data);
-		return isCachedWorkshopOnlyCourse(courseId, dashboards, assigned);
-	}, [queryClient, courseId]);
-}
 
 /** Daily attendance does not exist for a workshop-only course. */
 function WorkshopOnlyNotice({ courseName }: { courseName: string }) {

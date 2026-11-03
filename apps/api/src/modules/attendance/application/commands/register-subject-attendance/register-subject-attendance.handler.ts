@@ -8,7 +8,10 @@ import { ISchedulePort } from '../../../domain/ports/schedule.port.interface';
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanWriteSubjectAttendance,
+	assertSubjectHasOwnAttendance,
+} from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { RegisterSubjectAttendanceCommand } from './register-subject-attendance.command';
 
@@ -34,6 +37,7 @@ export class RegisterSubjectAttendanceHandler {
 			role: command.userRole,
 			tenantId: command.tenantId,
 		});
+		assertSubjectHasOwnAttendance(subject);
 		if (command.courseId && command.courseId !== subject.courseId) {
 			throw new DomainError('El curso no corresponde a la materia');
 		}

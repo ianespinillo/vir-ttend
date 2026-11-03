@@ -10,4 +10,9 @@ export interface ISubjectResponse {
 	kind?: SubjectKindType;
 	teacherId?: string;
 	teacherName?: string;
+	/**
+	 * Only sent in teacher subject lists. False for a theory subject of a
+	 * workshop-only course (attendance is the workshop one). Absent = true.
+	 */
+	hasSubjectAttendance?: boolean;
 }
