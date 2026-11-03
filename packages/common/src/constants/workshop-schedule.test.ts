@@ -81,6 +81,35 @@ describe('workshopDaysOf', () => {
 		expect(workshopDaysOf(theoryOnly, subjects, 1)).toEqual([]);
 	});
 
+	it('counts theory slots too in a workshop-only course', () => {
+		const withTheory = [
+			...slots,
+			{
+				subjectId: 'theory',
+				dayOfWeek: DAYOFWEEK.FRIDAY,
+				commissionNumber: 2 as const,
+			},
+		];
+		expect(
+			workshopDaysOf(withTheory, subjects, 1, { workshopOnly: true }),
+		).toEqual([DAYOFWEEK.MONDAY, DAYOFWEEK.WEDNESDAY, DAYOFWEEK.THURSDAY]);
+		expect(
+			workshopDaysOf(withTheory, subjects, 2, { workshopOnly: true }),
+		).toEqual([
+			DAYOFWEEK.TUESDAY,
+			DAYOFWEEK.WEDNESDAY,
+			DAYOFWEEK.THURSDAY,
+			DAYOFWEEK.FRIDAY,
+		]);
+	});
+
+	it('does not count theory slots when the course is not workshop-only', () => {
+		expect(workshopDaysOf(slots, subjects, 1, { workshopOnly: false })).toEqual(
+			workshopDaysOf(slots, subjects, 1),
+		);
+		expect(workshopDaysOf(slots, subjects, 1)).not.toContain(DAYOFWEEK.THURSDAY);
+	});
+
 	it('is empty when nothing is loaded', () => {
 		expect(workshopDaysOf([], [], 1)).toEqual([]);
 		expect(workshopDaysOf(slots, [], 1)).toEqual([]);
