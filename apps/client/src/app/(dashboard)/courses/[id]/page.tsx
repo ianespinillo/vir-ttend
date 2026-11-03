@@ -435,7 +435,7 @@ export default function CourseDetailPage() {
 						setSubjectModalState((prev) => ({ ...prev, open }))
 					}
 				>
-					<DialogContent className="sm:max-w-[500px]">
+					<DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[500px]">
 						<DialogHeader>
 							<DialogTitle>
 								{subjectModalState.subject
