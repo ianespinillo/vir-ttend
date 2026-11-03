@@ -5,11 +5,13 @@ import {
 	type AttendanceStatus,
 	type ErrorResponse,
 	type WorkshopAvailability,
+	isWorkshopOnlyCourse,
 	workshopAvailabilityOn,
 	workshopDaysOf,
 } from '@repo/common';
 import {
 	useBulkJustifyWorkshopAttendance,
+	useCourse,
 	useJustifyWorkshopAttendance,
 	useMarkWorkshopSessionNotHeld,
 	useMyWorkshopCommissions,
@@ -68,14 +70,23 @@ export default function AttendanceWorkshopPage() {
 	const scheduleCourseId = selectedCommission?.courseId;
 	const { data: scheduleSlots } = useSchedule(scheduleCourseId);
 	const { data: courseSubjects } = useSubjects(scheduleCourseId);
+	const { data: scheduleCourse } = useCourse(scheduleCourseId ?? '');
 	const workshopAvailability: WorkshopAvailability | undefined = useMemo(() => {
 		if (!selectedCommission || !scheduleSlots || !courseSubjects)
 			return undefined;
 		return workshopAvailabilityOn(
-			workshopDaysOf(scheduleSlots, courseSubjects, selectedCommission.number),
+			workshopDaysOf(scheduleSlots, courseSubjects, selectedCommission.number, {
+				workshopOnly: scheduleCourse ? isWorkshopOnlyCourse(scheduleCourse) : false,
+			}),
 			selectedDate,
 		);
-	}, [selectedCommission, scheduleSlots, courseSubjects, selectedDate]);
+	}, [
+		selectedCommission,
+		scheduleSlots,
+		courseSubjects,
+		scheduleCourse,
+		selectedDate,
+	]);
 
 	const {
 		data: attendance,
