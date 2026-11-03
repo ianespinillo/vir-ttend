@@ -5,6 +5,7 @@ import { AcademicYearOrmEntity } from './entities/academic-year.orm-entity';
 import { CourseOrmEntity } from './entities/courses.orm-entity';
 import { ScheduleSlotOrmEntity } from './entities/schedule-slot.orm-entity';
 import { StudentOrmEntity } from './entities/student.orm-entity';
+import { SubjectTeacherOrmEntity } from './entities/subject-teacher.orm-entity';
 import { SubjectOrmEntity } from './entities/subject.orm-entity';
 import { WorkshopCommissionOrmEntity } from './entities/workshop-commission.orm-entity';
 import { AcademicYearRepository } from './repositories/academic-year.repository';
@@ -21,6 +22,7 @@ import { WorkshopCommissionRepository } from './repositories/workshop-commission
 			CourseOrmEntity,
 			ScheduleSlotOrmEntity,
 			SubjectOrmEntity,
+			SubjectTeacherOrmEntity,
 			StudentOrmEntity,
 			WorkshopCommissionOrmEntity,
 		]),

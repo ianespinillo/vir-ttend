@@ -19,6 +19,7 @@ import { AcademicYearOrmEntity } from '../src/modules/academic/infrastructure/pe
 import { CourseOrmEntity } from '../src/modules/academic/infrastructure/persistence/entities/courses.orm-entity';
 import { ScheduleSlotOrmEntity } from '../src/modules/academic/infrastructure/persistence/entities/schedule-slot.orm-entity';
 import { StudentOrmEntity } from '../src/modules/academic/infrastructure/persistence/entities/student.orm-entity';
+import { SubjectTeacherOrmEntity } from '../src/modules/academic/infrastructure/persistence/entities/subject-teacher.orm-entity';
 import { SubjectOrmEntity } from '../src/modules/academic/infrastructure/persistence/entities/subject.orm-entity';
 import { AttendanceAlertOrmEntity } from '../src/modules/attendance/infrastructure/persistence/entities/attendance-alert.orm-entity';
 import { AttendanceRecordOrmEntity } from '../src/modules/attendance/infrastructure/persistence/entities/attendance-record.orm-entity';
@@ -852,12 +853,20 @@ async function main(): Promise<void> {
 				id: randomUUID(),
 				courseId: course.id,
 				course,
-				teacherId: userById.get(subjectSeed.teacherKey)?.id,
 				name: subjectSeed.name,
 				area: subjectSeed.area,
 				weeklyHours: subjectSeed.weeklyHours,
 			});
 			subjects.push(subject);
+			const seedTeacherId = userById.get(subjectSeed.teacherKey)?.id;
+			if (seedTeacherId) {
+				em.create(SubjectTeacherOrmEntity, {
+					id: randomUUID(),
+					subject,
+					commissionNumber: null,
+					teacherId: seedTeacherId,
+				});
+			}
 			for (const slot of subjectSeed.slots) {
 				em.create(ScheduleSlotOrmEntity, {
 					id: randomUUID(),
