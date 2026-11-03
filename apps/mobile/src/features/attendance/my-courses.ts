@@ -6,6 +6,10 @@ export interface CourseSubjects {
 	subjects: MySubject[];
 }
 
+/** Whether the subject takes its own attendance; a missing flag means it does. */
+export const hasOwnAttendance = (subject: MySubject): boolean =>
+	subject.hasSubjectAttendance !== false;
+
 /** Groups the teacher's subjects by course, both sorted by name. */
 export const groupSubjectsByCourse = (
 	subjects: MySubject[],

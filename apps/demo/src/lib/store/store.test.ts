@@ -1,4 +1,8 @@
-import { DAYOFWEEK, SUBJECT_KIND } from '@repo/common';
+import {
+	DAYOFWEEK,
+	SUBJECT_KIND,
+	WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE,
+} from '@repo/common';
 import { describe, expect, it } from 'vitest';
 import { createSeedState, demoIds } from './seed-data';
 import { isNonWorkingDay } from './selectors';
@@ -705,6 +709,27 @@ describe('workshop commissions', () => {
 						r.studentId === demoIds.student['agustin-barrios'] && r.date === date,
 				),
 		).toHaveLength(1);
+	});
+});
+
+describe('subject attendance of 7th-year theory subjects', () => {
+	it('rejects per-subject attendance for a theory subject of a workshop-only course', () => {
+		const store = freshStore();
+		const subject = store.createSubject({
+			courseId: demoIds.course['crs-7a'],
+			name: 'Gestión',
+			area: 'Teoría',
+			weeklyHours: 2,
+			kind: SUBJECT_KIND.THEORY,
+		});
+		expect(() =>
+			store.markSubjectAttendance(
+				subject.id,
+				demoIds.course['crs-7a'],
+				'2026-06-15',
+				[],
+			),
+		).toThrow(WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE);
 	});
 });
 

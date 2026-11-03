@@ -1,3 +1,4 @@
+import { DAYOFWEEK, SUBJECT_KIND } from '@repo/common';
 import { describe, expect, it } from 'vitest';
 import { createSeedState } from './seed-data';
 import { demoIds } from './seed-data';
@@ -23,6 +24,7 @@ import {
 	getUsers,
 	getWorkshopAttendance,
 	getWorkshopCommissions,
+	subjectHasAttendance,
 	weeklyTrendFromRecords,
 } from './selectors';
 
@@ -391,6 +393,65 @@ describe('reports', () => {
 
 describe('workshop commissions', () => {
 	const crs7a = demoIds.course['crs-7a'];
+
+	const withTheorySlot = (courseId: string, subjectId: string) => {
+		const next = structuredClone(state);
+		next.subjects.push({
+			id: subjectId,
+			courseId,
+			name: 'Gestión',
+			area: 'Teoría',
+			weeklyHours: 2,
+			kind: SUBJECT_KIND.THEORY,
+		});
+		next.schedules.push({
+			id: `${subjectId}-slot`,
+			subjectId,
+			dayOfWeek: DAYOFWEEK.MONDAY,
+			startTime: '08:00',
+			endTime: '10:00',
+		});
+		return next;
+	};
+
+	it('counts a theory subject of a 7th-year course as a workshop day', () => {
+		const next = withTheorySlot(crs7a, 'theory-7a');
+		const marcelo = {
+			id: demoIds.user['marcelo-torres'],
+			role: 'preceptor' as const,
+		};
+		const today = (st: typeof state) =>
+			getMyWorkshopCommissions(st, marcelo, '2026-06-15').map(
+				(c) => c.hasWorkshopToday,
+			);
+		// 7A2 has no Monday workshop in the seed; the theory slot adds it.
+		expect(today(state)).toEqual([true, false]);
+		expect(today(next)).toEqual([true, true]);
+		expect(
+			subjectHasAttendance(next, { courseId: crs7a, kind: SUBJECT_KIND.THEORY }),
+		).toBe(false);
+	});
+
+	it('does not count a theory subject of another course as a workshop day', () => {
+		const crs3a = demoIds.course['crs-3a'];
+		const next = withTheorySlot(crs3a, 'theory-3a');
+		expect(
+			subjectHasAttendance(next, { courseId: crs3a, kind: SUBJECT_KIND.THEORY }),
+		).toBe(true);
+		expect(
+			getMyWorkshopCommissions(
+				next,
+				{ id: demoIds.user['marcelo-torres'], role: 'preceptor' },
+				'2026-06-15',
+			),
+		).toEqual(
+			getMyWorkshopCommissions(
+				state,
+				{ id: demoIds.user['marcelo-torres'], role: 'preceptor' },
+				'2026-06-15',
+			),
+		);
+	});
 
 	it('lists the commissions of a course with code and alphabetical students', () => {
 		const commissions = getWorkshopCommissions(state, crs7a);

@@ -1,3 +1,4 @@
+import { WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE } from '@repo/common/constants';
 import { useQuery } from '@tanstack/react-query';
 import {
 	BookOpen,
@@ -17,6 +18,7 @@ import {
 import { useAuth } from '../../src/context/auth-context';
 import {
 	groupSubjectsByCourse,
+	hasOwnAttendance,
 	recordStudentNames,
 	studentNames,
 } from '../../src/features/attendance/my-courses';
@@ -127,7 +129,13 @@ function TeacherSubjects() {
 								subject.slots.length > 0 ? formatSlotRanges(subject.slots) : undefined
 							}
 						>
-							<SubjectRoster subjectId={subject.subjectId} />
+							{hasOwnAttendance(subject) ? (
+								<SubjectRoster subjectId={subject.subjectId} />
+							) : (
+								<Text className="py-2 text-xs text-muted-foreground">
+									{WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE}
+								</Text>
+							)}
 						</ExpandableCard>
 					))}
 				</View>
