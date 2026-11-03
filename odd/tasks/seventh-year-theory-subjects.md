@@ -47,6 +47,11 @@ Support theory subjects in 7th-year technical courses: they keep theory properti
 
 ## Progress
 - Exploration done (mapper): kind branches, `isWorkshopOnlyCourse` users, workshop days filters.
+- T1 done `b823d66` (route: delegated writer; first run stalled, resumed). +529/-30. `getWorkshopDays` counts THEORY slots in workshop-only courses (weighted absences and my workshop commissions reuse it); `assertSubjectHasOwnAttendance` in register, bulk, copy, get attendance, get history; `hasSubjectAttendance` in `GET /subjects/mine` and teacher subjects list.
+- T2 done `fc6e163` (route: delegated writer). +341/-24. Web filter + notice, mobile home/preload/my-courses/subject screen, demo selectors/seed/store.
+- Verification (writer): api 143 suites / 1114 tests (temporary jest config with `testRegex`, because jest's glob ignores the `.claude` path segment of this worktree; e2e skipped); common 78, hooks 59, ui 267, demo 184; `pnpm ts:check` 9/9; `pnpm --filter mobile ts:check` pass; `pnpm lint:check` clean. One flaky `tenancy-single-tenant.spec.ts` failure in one full run, green alone and on rerun.
+- RDD `cc725c0..fc6e163`: high (hot path bulk-update-subject-status), granted, 4 lenses, approved, acknowledged (lineage `review-d204ca8c3afba14e`, authority burned).
+- Advisory follow-ups (non-blocking): R4 subject history is also rejected for these subjects (records taken before this change become unreadable per subject); R4 mobile offline writes queued before the update are rejected on sync; R3 mobile notice can race the cached flag; R3 `subject.adapter.ts:28-29` derivation untested; R2 duplicated workshop-days rule and unknown-course fallback.
 
 ## Next step
-- T1.
+- Delivery: merge into `dev` together with or after `feat/subject-commission-teachers` (both touch subject attendance handlers; expect small conflicts).
