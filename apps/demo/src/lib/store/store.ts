@@ -32,6 +32,7 @@ import {
 	type Tenant,
 	type UpdateUserPayload,
 	WORKSHOP_ONLY_DAILY_ATTENDANCE_MESSAGE,
+	WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE,
 	describeShiftScope,
 	isWorkshopOnlyCourse,
 } from '@repo/common';
@@ -44,7 +45,7 @@ import {
 	saveState,
 } from './persistence';
 import { createSeedState, demoUuid } from './seed-data';
-import { getSubjectRoster } from './selectors';
+import { getSubjectRoster, subjectHasAttendance } from './selectors';
 import {
 	type Announcement,
 	type AttendanceEntry,
@@ -924,6 +925,10 @@ export function createDemoStore(
 		entries: AttendanceEntry[],
 	): void {
 		requireCourse(courseId);
+		const subject = state.subjects.find((item) => item.id === subjectId);
+		if (subject && !subjectHasAttendance(state, subject)) {
+			throw new Error(WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE);
+		}
 		const next = structuredClone(state);
 		// The roster of a workshop subject is the commission(s) its slots target.
 		const roster = new Set(

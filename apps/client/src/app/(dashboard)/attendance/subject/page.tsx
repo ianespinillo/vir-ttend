@@ -77,7 +77,14 @@ export default function AttendanceSubjectPage() {
 		return subjects.find((s) => s.id === selectedSubjectId);
 	}, [subjects, selectedSubjectId]);
 
-	const { data: scheduleSlots } = useSchedule(selectedSubject?.courseId);
+	// Theory subjects of a workshop-only course have no per-subject attendance:
+	// the page shows a notice and never queries their schedule or records.
+	const hasOwnAttendance = selectedSubject?.hasSubjectAttendance !== false;
+	const attendanceSubjectId = hasOwnAttendance ? selectedSubjectId : '';
+
+	const { data: scheduleSlots } = useSchedule(
+		hasOwnAttendance ? selectedSubject?.courseId : undefined,
+	);
 
 	const selectedDayOfWeek = useMemo(() => {
 		if (!selectedDate) return null;
@@ -113,7 +120,7 @@ export default function AttendanceSubjectPage() {
 		isLoading: isLoadingAttendance,
 		isRefetching,
 	} = useSubjectAttendance({
-		subjectId: selectedSubjectId,
+		subjectId: attendanceSubjectId,
 		date: selectedDate,
 	});
 

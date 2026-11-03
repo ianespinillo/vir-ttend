@@ -1,13 +1,21 @@
 'use client';
 
-import type {
-	AttendanceMetrics,
-	AttendanceRecord,
-	AttendanceStatus,
-	ISubjectResponse,
+import {
+	type AttendanceMetrics,
+	type AttendanceRecord,
+	type AttendanceStatus,
+	type ISubjectResponse,
+	WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE,
 } from '@repo/common';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Wrench } from 'lucide-react';
 import type { ReactNode } from 'react';
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from '../../../ui/empty';
 import { PageHeader } from '../../shared/page-header';
 import { AttendanceGrid } from './attendance-grid/attendance-grid';
 import type { StudentRowItem } from './attendance-grid/attendance-row';
@@ -50,6 +58,33 @@ export interface SubjectAttendancePageProps {
 	extraActions?: ReactNode;
 }
 
+/**
+ * Subjects offered for per-subject attendance: theory subjects of a
+ * workshop-only course (7th year technical) are excluded, their attendance is
+ * the workshop one. A missing flag counts as true.
+ */
+export function filterSubjectsWithAttendance(
+	subjects: readonly ISubjectResponse[],
+): ISubjectResponse[] {
+	return subjects.filter((subject) => subject.hasSubjectAttendance !== false);
+}
+
+function NoSubjectAttendanceNotice() {
+	return (
+		<Empty className="my-8 border border-dashed border-border">
+			<EmptyHeader>
+				<EmptyMedia variant="icon">
+					<Wrench className="h-6 w-6" />
+				</EmptyMedia>
+				<EmptyTitle>Sin asistencia por materia</EmptyTitle>
+				<EmptyDescription>
+					{WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE}
+				</EmptyDescription>
+			</EmptyHeader>
+		</Empty>
+	);
+}
+
 export function SubjectAttendancePage({
 	subjects,
 	gridStudents,
@@ -82,6 +117,11 @@ export function SubjectAttendancePage({
 	isSubmittingJustify,
 	extraActions,
 }: SubjectAttendancePageProps) {
+	const offeredSubjects = filterSubjectsWithAttendance(subjects);
+	const selectedHasNoAttendance =
+		subjects.find((subject) => subject.id === selectedSubjectId)
+			?.hasSubjectAttendance === false;
+	const showAttendance = Boolean(selectedSubjectId) && !selectedHasNoAttendance;
 	return (
 		<div className="space-y-6">
 			<PageHeader
@@ -90,7 +130,7 @@ export function SubjectAttendancePage({
 			/>
 
 			<AttendanceToolbar
-				subjects={subjects}
+				subjects={offeredSubjects}
 				selectedSubjectId={selectedSubjectId}
 				onSubjectChange={onSubjectChange}
 				selectedDate={selectedDate}
@@ -98,11 +138,13 @@ export function SubjectAttendancePage({
 				onMarkAll={onMarkAll}
 				isLoadingSubjects={isLoadingSubjects}
 				isBulkSaving={isBulkSaving}
-				disabled={!selectedSubjectId}
-				extraActions={extraActions}
+				disabled={!showAttendance}
+				extraActions={showAttendance ? extraActions : undefined}
 			/>
 
-			{!isClassDay && (
+			{selectedHasNoAttendance && <NoSubjectAttendanceNotice />}
+
+			{showAttendance && !isClassDay && (
 				<div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-900 dark:text-amber-200 text-xs">
 					<AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
 					<span>
@@ -113,7 +155,7 @@ export function SubjectAttendancePage({
 				</div>
 			)}
 
-			{selectedSubjectId && (
+			{showAttendance && (
 				<>
 					<AttendanceSummary metrics={metrics} isLoading={isLoadingAttendance} />
 
