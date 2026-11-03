@@ -67,6 +67,9 @@ Let a workshop subject have a different teacher per workshop commission (one tea
 - RDD `b1e7d7e..53d2b36`: high (hot path use-update-subject), granted, 4 lenses, approved, acknowledged (lineage `review-af81e302b9d4dd25`, authority burned). Reviewed boundary is now `53d2b36`.
 - Advisory follow-ups (non-blocking): R4 if the course commissions query is loading or failed, the form hides the per-commission choice and saving a split subject collapses it into one teacher (`subject-form.tsx:152-154`, fallback path :192-203) — worth guarding before the pilot; R3 `use-update-subject` branch untested; R2 naming/structure nits in `subject-teachers.ts` and `subject-form.tsx:80-97`.
 
+- Pilot migration rehearsal (2026-11-03): pilot `pg_dump -Fc` (sha256 `bfb611ef…3bf4`) restored into a throwaway local `postgres:16-alpine`; only pending migration was `Migration20261102120000_subject_teachers` (pilot at `session_not_held`). `up()`: 9 of 9 subjects with a teacher got one whole-subject row with identical values (1 account, 8 name-only), 0 per-commission rows, old columns dropped, 0 mismatches. `down()` restored the original values exactly (0 mismatches) and dropped the table; re-`up()` gave the same result. Pilot data: 10 subjects in 7° 1 and 7° 3 (7 workshops with per-commission slots, 3 theory subjects with 0 per-subject attendance records), both courses with 2 commissions.
+- Download pitfall: redirecting the dump with `>` in PowerShell 5.1 re-encodes it as UTF-16 (`FF FE` header) and corrupts it; use `scp` (`C:\Windows\System32\OpenSSH\scp.exe`) and compare sha256.
+
 ## Follow-ups
 - F1: block or warn on save while commissions are unknown for a split subject (R4, T3 review).
 - F2: tests for assign-teacher handler, repository teacher sync, `use-update-subject` branch.
