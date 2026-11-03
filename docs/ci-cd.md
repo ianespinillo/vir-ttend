@@ -62,7 +62,7 @@ Notas:
 - El filtro es de exclusión: `on.push.paths-ignore` en `.github/workflows/cd.yaml` (la fuente de verdad) lista lo que nunca llega a las imágenes ni al VM. Cualquier otro cambio despliega. Si se suma una app o carpeta que no se despliega, agregala ahí; si se olvida, el costo es un deploy de más, no producción desactualizada.
 - Un commit de `main` que no disparó `cd` no tiene imágenes `sha-<sha>` en GHCR: para un rollback usá el sha de un commit que sí se desplegó.
 - Cada environment resuelve sus propios secretos `SSH_*` y `GHCR_*`.
-- **Rollback:** Actions → `cd` → Run workflow → `target` = ambiente, `sha` = último commit bueno. El deploy hace `git fetch` + `git checkout --detach` de ese sha y levanta exactamente sus imágenes (`sha-<sha>`).
+- **Rollback:** Actions → `cd` → Run workflow → `target` = ambiente, `sha` = último commit bueno. El deploy hace `git fetch` + `git checkout --detach` de ese sha y levanta exactamente sus imágenes (`sha-<sha>`). Esto vuelve el **código**, no el esquema: si el release que se revierte agregó migraciones, seguí el runbook de [Rollback](#rollback).
 
 ## Agregar o quitar un entorno
 
@@ -169,7 +169,62 @@ docker compose -f compose.prod.yml -f compose.ci.yml up -d --wait
 docker compose -f compose.prod.yml -f compose.ci.yml ps
 ```
 
-Rollback preferido: disparar `cd` por `workflow_dispatch` con el `sha` del último commit bueno (ver "Despliegue parametrizado"). Fallback manual: exportar `IMAGE_TAG=sha-<sha>` y repetir los pasos de pull + `up -d --wait`.
+Rollback: ver [Rollback](#rollback).
+
+## Rollback
+
+Cada deploy guarda un backup **antes** de correr migraciones y falla si la API no responde al health check.
+
+| Qué hace el deploy | Detalle |
+|---|---|
+| Backup pre-deploy | `pg_dump -Fc` de la base en `/home/ubuntu/backups/pre-deploy-<fecha UTC>-<sha12>.dump`. Si el dump falla o no es un archivo válido (`PGDMP`), el deploy se corta antes de migrar. Se conservan los 10 más nuevos. La ruta queda impresa en el log del job |
+| Health check | 12 intentos de `GET /health` dentro del contenedor `api` (cada 5 s). Si ninguno responde, el job falla y muestra las últimas 100 líneas de log de `api` |
+
+El rollback se decide y se ejecuta a mano: el pipeline no baja migraciones solo, porque hacerlo después de que se cargaron datos nuevos puede borrarlos.
+
+### 1. El release no cambió el esquema
+
+Actions → `cd` → Run workflow → `target` = ambiente, `sha` = último commit bueno. Listo.
+
+### 2. El release agregó migraciones (el esquema nuevo no es compatible con el código viejo)
+
+Primero se baja el esquema con la imagen **nueva** (es la única que conoce esas migraciones) y después se vuelve el código. En la VM:
+
+```bash
+cd /home/ubuntu/vir-ttend
+export IMAGE_TAG=sha-<sha-del-release-roto>   # el que está desplegado ahora
+
+# Ver qué migraciones aplicó el release (las últimas de la lista)
+docker compose -f compose.prod.yml -f compose.ci.yml run --rm --no-deps \
+  api sh -c "cd apps/api && node node_modules/@mikro-orm/cli/cli.js migration:list"
+
+# Bajar UNA migración por vez, tantas como agregó el release
+docker compose -f compose.prod.yml -f compose.ci.yml run --rm --no-deps \
+  api sh -c "cd apps/api && node node_modules/@mikro-orm/cli/cli.js migration:down"
+```
+
+Después: Actions → `cd` → Run workflow con el `sha` del último commit bueno. Su `migration:up` no tiene nada pendiente y levanta el código viejo sobre el esquema viejo.
+
+Antes de bajar una migración, leé su `down()`: algunas no pueden representar en el esquema viejo lo que se cargó con el nuevo y lo pierden (por ejemplo, `Migration20261102120000_subject_teachers` conserva un solo docente por materia).
+
+### 3. Último recurso: restaurar el backup pre-deploy
+
+Pisa **todo** lo que se cargó después del deploy (asistencia incluida). Usarlo solo si el paso 2 no es posible o el `down()` falla.
+
+```bash
+cd /home/ubuntu/vir-ttend
+ls -1t /home/ubuntu/backups/pre-deploy-*.dump | head   # elegir el del deploy roto
+docker compose -f compose.prod.yml -f compose.ci.yml stop api client
+docker compose -f compose.prod.yml -f compose.ci.yml exec -T postgres \
+  sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner' \
+  < /home/ubuntu/backups/pre-deploy-<fecha>-<sha12>.dump
+```
+
+Después: Actions → `cd` → Run workflow con el `sha` del último commit bueno.
+
+### Bajar un backup a Windows
+
+Usar `scp` (`C:\Windows\System32\OpenSSH\scp.exe` si no está en el PATH) y comparar `sha256sum` en la VM con `Get-FileHash -Algorithm SHA256` local. No redirigir con `>` en PowerShell 5.1: reescribe el archivo en UTF-16 y lo corrompe.
 
 ## Setup checklist (first CD run)
 
