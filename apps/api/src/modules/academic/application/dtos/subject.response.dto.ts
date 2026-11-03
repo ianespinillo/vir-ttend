@@ -112,12 +112,24 @@ export class SubjectResponseDto implements ISubjectResponse {
 	})
 	courseId: string;
 
+	@ApiPropertyOptional({
+		type: Boolean,
+		description:
+			'Solo en los listados de materias del docente. Falso si la materia es teórica de un curso de 7° año técnico: su asistencia es la de taller.',
+		example: true,
+	})
+	hasSubjectAttendance?: boolean;
+
 	/**
 	 * teacherNames maps user ids to display names; an account missing from it
 	 * has no resolved name. teacherId / teacherName keep the single-teacher
 	 * shape older clients read (whole-subject teacher, else commission 1's).
 	 */
-	constructor(subject: Subject, teacherNames?: ReadonlyMap<string, string>) {
+	constructor(
+		subject: Subject,
+		teacherNames?: ReadonlyMap<string, string>,
+		hasSubjectAttendance?: boolean,
+	) {
 		this.id = subject.id.getRaw();
 		this.courseId = subject.courseId;
 		this.name = subject.name;
@@ -135,5 +147,7 @@ export class SubjectResponseDto implements ISubjectResponse {
 		);
 		this.teacherId = this.teachers[0]?.teacherId;
 		this.teacherName = this.teachers[0]?.teacherName;
+		if (hasSubjectAttendance !== undefined)
+			this.hasSubjectAttendance = hasSubjectAttendance;
 	}
 }

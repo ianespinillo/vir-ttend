@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { hasSubjectAttendance } from '@repo/common';
 import { IUserRepository } from '../../../../identity/domain/repositories/user.repository.interface';
 import { ICourseRepository } from '../../../domain/repositories/course.repository.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
@@ -21,6 +22,7 @@ export class GetTeacherSubjectsQueryHandler {
 			query.academicYearId,
 		);
 		if (courses.length === 0) return [];
+		const courseById = new Map(courses.map((c) => [c.id.getRaw(), c]));
 		const courseIds = courses.map((c) => c.id.getRaw());
 		const subjects = query.teacherId
 			? await this.subjectRepo.findByTeacherAndCourses(query.teacherId, courseIds)
@@ -28,6 +30,13 @@ export class GetTeacherSubjectsQueryHandler {
 
 		const teacherMap = await loadTeacherNames(this.userRepo, subjects);
 
-		return subjects.map((s) => new SubjectResponseDto(s, teacherMap));
+		return subjects.map((s) => {
+			const course = courseById.get(s.courseId);
+			return new SubjectResponseDto(
+				s,
+				teacherMap,
+				course ? hasSubjectAttendance({ kind: s.kind, course }) : true,
+			);
+		});
 	}
 }

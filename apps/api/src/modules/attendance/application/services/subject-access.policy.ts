@@ -1,5 +1,9 @@
-import { ROLES, Roles } from '@repo/common';
-import { ForbiddenError } from '../../../../common/errors';
+import {
+	ROLES,
+	Roles,
+	WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE,
+} from '@repo/common';
+import { DomainError, ForbiddenError } from '../../../../common/errors';
 import {
 	Subject,
 	TaughtCommissions,
@@ -54,6 +58,17 @@ export function assertCanReadSubjectAttendance(
 	assertSameTenant(subject, actor);
 	if (actor.role === ROLES.PRECEPTOR) return;
 	assertCanWriteSubjectAttendance(subject, actor);
+}
+
+/**
+ * A theory subject of a workshop-only course (7th year technical) is taught in
+ * the workshop shift: its attendance is the workshop one, taken by the
+ * commission's preceptor, so no per-subject attendance exists for it.
+ */
+export function assertSubjectHasOwnAttendance(subject: Subject): void {
+	if (!subject.hasOwnAttendance) {
+		throw new DomainError(WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE);
+	}
 }
 
 /**

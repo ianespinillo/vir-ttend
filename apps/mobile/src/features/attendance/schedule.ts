@@ -22,12 +22,16 @@ export const hasClassOnWeekday = (
 	weekday: WeekdayKey,
 ): boolean => subject.slots.some((slot) => slot.dayOfWeek === weekday);
 
-/** Subjects with a class on the weekday, ordered by their first slot. */
+/**
+ * Subjects with a class on the weekday, ordered by their first slot. Subjects
+ * without their own attendance (7th-year theory) are not offered.
+ */
 export const getTodaysSubjects = (
 	subjects: readonly MySubject[],
 	weekday: WeekdayKey,
 ): TodaySubject[] =>
 	subjects
+		.filter((subject) => subject.hasSubjectAttendance !== false)
 		.map((subject) => ({ subject, slots: slotsOnWeekday(subject, weekday) }))
 		.filter((entry) => entry.slots.length > 0)
 		.sort((a, b) => byStartTime(a.slots[0], b.slots[0]));

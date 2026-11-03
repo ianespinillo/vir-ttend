@@ -1,4 +1,4 @@
-import { DAYOFWEEK, LEVEL, SHIFT } from '@repo/common';
+import { DAYOFWEEK, LEVEL, SHIFT, SUBJECT_KIND } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { GetMySubjectsHandler } from '../../../../src/modules/academic/application/queries/get-my-subjects/get-my-subjects.handler';
 import { GetMySubjectsQuery } from '../../../../src/modules/academic/application/queries/get-my-subjects/get-my-subjects.query';
@@ -31,14 +31,19 @@ describe('GetMySubjectsHandler', () => {
 		createdAt: new Date(),
 		updatedAt: new Date(),
 	});
-	const buildCourse = (id: string, division: string) =>
+	const buildCourse = (
+		id: string,
+		division: string,
+		level: LEVEL = LEVEL.PRIMARY,
+		yearNumber = 1,
+	) =>
 		Course.reconstitute({
 			id,
 			tenantId: 'tenant-1',
 			academicYearId: 'year-1',
 			preceptorId: 'preceptor-1',
-			level: LEVEL.PRIMARY,
-			yearNumber: 1,
+			level,
+			yearNumber,
 			division,
 			shift: SHIFT.MORNING,
 			isActive: true,
@@ -158,5 +163,40 @@ describe('GetMySubjectsHandler', () => {
 
 		expect(result).toEqual([]);
 		expect(subjectRepo.findByTeacherAndCourses).not.toHaveBeenCalled();
+	});
+
+	it('should flag theory subjects of a workshop-only course as without own attendance', async () => {
+		academicYearRepo.findActive.mockResolvedValue(activeYear);
+		courseRepo.findByAcademicYear.mockResolvedValue([
+			buildCourse('course-1', 'A'),
+			buildCourse('course-7', 'A', LEVEL.SECONDARY, 7),
+		]);
+		const workshop = Subject.reconstitute({
+			id: 'sub-w',
+			courseId: 'course-7',
+			teacherId: 'teacher-1',
+			name: 'Taller',
+			area: 'Taller',
+			weeklyHours: 4,
+			kind: SUBJECT_KIND.WORKSHOP,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		subjectRepo.findByTeacherAndCourses.mockResolvedValue([
+			buildSubject('sub-1', 'course-1', 'Matemática'),
+			buildSubject('sub-7', 'course-7', 'Gestión'),
+			workshop,
+		]);
+		scheduleRepo.findBySubject.mockResolvedValue([]);
+
+		const result = await handler.execute(
+			new GetMySubjectsQuery('teacher-1', 'tenant-1'),
+		);
+
+		expect(result.map((r) => [r.subjectId, r.hasSubjectAttendance])).toEqual([
+			['sub-1', true],
+			['sub-7', false],
+			['sub-w', true],
+		]);
 	});
 });

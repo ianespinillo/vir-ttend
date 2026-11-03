@@ -71,6 +71,14 @@ export class MySubjectResponseDto {
 	courseName: string;
 
 	@ApiProperty({
+		type: Boolean,
+		description:
+			'Falso si la materia es teórica de un curso de 7° año técnico: no tiene asistencia por materia, se toma la de taller.',
+		example: true,
+	})
+	hasSubjectAttendance: boolean;
+
+	@ApiProperty({
 		type: [MySubjectSlotResponseDto],
 		description:
 			'Bloques horarios de la materia durante toda la semana, ordenados por día y hora de inicio.',
@@ -83,6 +91,7 @@ export class MySubjectResponseDto {
 		area?: string;
 		courseId: string;
 		courseName: string;
+		hasSubjectAttendance: boolean;
 		slots: MySubjectSlotResponseDto[];
 	}) {
 		this.subjectId = props.subjectId;
@@ -90,6 +99,7 @@ export class MySubjectResponseDto {
 		this.area = props.area;
 		this.courseId = props.courseId;
 		this.courseName = props.courseName;
+		this.hasSubjectAttendance = props.hasSubjectAttendance;
 		this.slots = props.slots;
 	}
 }

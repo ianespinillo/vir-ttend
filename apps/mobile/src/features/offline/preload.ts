@@ -140,6 +140,8 @@ export const runPreload = async ({
 	} else {
 		const subjects = (await load(attendanceQueries.mySubjects())) ?? [];
 		for (const subject of subjects) {
+			// No per-subject attendance (7th-year theory): nothing to take offline.
+			if (subject.hasSubjectAttendance === false) continue;
 			taskThunks.push(() =>
 				load(attendanceQueries.subjectStudents(subject.subjectId)),
 			);

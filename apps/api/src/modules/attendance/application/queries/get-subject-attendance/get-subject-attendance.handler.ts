@@ -6,6 +6,7 @@ import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.respon
 import { SubjectAttendanceResponseDto } from '../../dtos/subject-attendance.response.dto';
 import {
 	assertCanReadSubjectAttendance,
+	assertSubjectHasOwnAttendance,
 	taughtCommissionsOf,
 } from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
@@ -37,6 +38,7 @@ export class GetSubjectAttendanceQueryHandler {
 			tenantId: query.tenantId,
 		};
 		assertCanReadSubjectAttendance(subject, actor);
+		assertSubjectHasOwnAttendance(subject);
 		if (Number.isNaN(query.date.getTime()))
 			throw new DomainError('La fecha no es válida');
 

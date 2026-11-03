@@ -15,6 +15,7 @@ export class Subject {
 	private readonly _name: string;
 	private readonly _teacherId: string;
 	private readonly _tenantId: string;
+	private readonly _hasOwnAttendance: boolean;
 	private readonly _teachers: readonly SubjectTeacher[];
 	private constructor(
 		id: string,
@@ -23,12 +24,14 @@ export class Subject {
 		teacherId: string,
 		tenantId = '',
 		teachers?: readonly SubjectTeacher[],
+		hasOwnAttendance = true,
 	) {
 		this._id = id;
 		this._courseId = courseId;
 		this._name = subjectName;
 		this._teacherId = teacherId;
 		this._tenantId = tenantId;
+		this._hasOwnAttendance = hasOwnAttendance;
 		this._teachers =
 			teachers ?? (teacherId ? [{ commissionNumber: null, teacherId }] : []);
 	}
@@ -43,8 +46,17 @@ export class Subject {
 		teacherId: string,
 		tenantId = '',
 		teachers?: readonly SubjectTeacher[],
+		hasOwnAttendance = true,
 	) {
-		return new Subject(id, courseId, subjectName, teacherId, tenantId, teachers);
+		return new Subject(
+			id,
+			courseId,
+			subjectName,
+			teacherId,
+			tenantId,
+			teachers,
+			hasOwnAttendance,
+		);
 	}
 
 	get name(): string {
@@ -66,6 +78,14 @@ export class Subject {
 
 	get tenantId(): string {
 		return this._tenantId;
+	}
+
+	/**
+	 * False for a theory subject of a workshop-only course: it is taught in the
+	 * workshop shift and its attendance is the workshop one.
+	 */
+	get hasOwnAttendance(): boolean {
+		return this._hasOwnAttendance;
 	}
 
 	get teachers(): readonly SubjectTeacher[] {

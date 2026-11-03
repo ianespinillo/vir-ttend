@@ -255,4 +255,34 @@ describe('CopyAttendanceHandler', () => {
 		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
 		await expect(attempt).rejects.toThrow('Materia no encontrada');
 	});
+
+	it('should reject a theory subject of a workshop-only course (copy)', async () => {
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute(
+				'sub-1',
+				'course-1',
+				'Math',
+				'teacher-1',
+				'tenant-1',
+				undefined,
+				false,
+			),
+		);
+
+		await expect(
+			handler.execute(
+				new CopyAttendanceCommand(
+					'teacher-1',
+					ROLES.TEACHER,
+					'tenant-1',
+					'sub-1',
+					new Date('2026-07-10'),
+					undefined,
+				),
+			),
+		).rejects.toThrow(
+			'Las materias teóricas de 7° año técnico no tienen asistencia por materia: se toma la asistencia de taller.',
+		);
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+	});
 });
