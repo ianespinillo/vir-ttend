@@ -3,15 +3,22 @@ import { Settings } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../src/context/auth-context';
+import { ForceChangePasswordScreen } from '../../src/features/auth/force-change-password-screen';
 import { BrandMark } from '../../src/features/branding/brand-mark';
 import { OutboxProvider } from '../../src/features/offline/outbox-provider';
 import { PreloadProvider } from '../../src/features/offline/preload-provider';
 import { useThemeColors } from '../../src/features/theme/use-theme-colors';
 
 export default function AppLayout() {
-	const { config } = useAuth();
+	const { config, user } = useAuth();
 	const router = useRouter();
 	const colors = useThemeColors();
+
+	// Block the whole app (no outbox flush, no preload) until the temporary
+	// password is replaced, mirroring the web dashboard gate.
+	if (user?.mustChangePassword) {
+		return <ForceChangePasswordScreen />;
+	}
 
 	return (
 		<OutboxProvider>
