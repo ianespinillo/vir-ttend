@@ -38,10 +38,10 @@ const slot = (
 	});
 
 describe('WorkshopCommissionAdapter.getWorkshopDays', () => {
-	const build = () =>
+	const build = (course: unknown = { level: 'SECONDARY', yearNumber: 3 }) =>
 		new WorkshopCommissionAdapter(
 			{} as never,
-			{} as never,
+			{ findById: jest.fn().mockResolvedValue(course) } as never,
 			{} as never,
 			{
 				findByCourse: jest
@@ -76,6 +76,25 @@ describe('WorkshopCommissionAdapter.getWorkshopDays', () => {
 
 	it('ignores slots of theory subjects', async () => {
 		const days = await build().getWorkshopDays('course-1', 1);
+		expect(days).not.toContain(DAYOFWEEK.THURSDAY);
+	});
+
+	it('counts theory slots as workshop days in a workshop-only course', async () => {
+		const adapter = build({ level: 'SECONDARY', yearNumber: 7 });
+		expect(await adapter.getWorkshopDays('course-1', 1)).toEqual([
+			DAYOFWEEK.MONDAY,
+			DAYOFWEEK.TUESDAY,
+			DAYOFWEEK.THURSDAY,
+		]);
+		expect(await adapter.getWorkshopDays('course-1', 2)).toEqual([
+			DAYOFWEEK.MONDAY,
+			DAYOFWEEK.WEDNESDAY,
+			DAYOFWEEK.THURSDAY,
+		]);
+	});
+
+	it('keeps only workshop slots when the course is unknown', async () => {
+		const days = await build(null).getWorkshopDays('course-1', 1);
 		expect(days).not.toContain(DAYOFWEEK.THURSDAY);
 	});
 });

@@ -4,7 +4,10 @@ import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.response.dto';
 import { SubjectAttendanceResponseDto } from '../../dtos/subject-attendance.response.dto';
-import { assertCanReadSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanReadSubjectAttendance,
+	assertSubjectHasOwnAttendance,
+} from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { GetSubjectAttendanceQuery } from './get-subject-attendance.query';
 
@@ -33,6 +36,7 @@ export class GetSubjectAttendanceQueryHandler {
 			role: query.userRole,
 			tenantId: query.tenantId,
 		});
+		assertSubjectHasOwnAttendance(subject);
 		if (Number.isNaN(query.date.getTime()))
 			throw new DomainError('La fecha no es válida');
 

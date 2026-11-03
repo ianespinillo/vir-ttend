@@ -190,4 +190,33 @@ describe('BulkUpdateSubjectStatusHandler', () => {
 
 		await expect(handler.execute(crossTenant)).rejects.toThrow(ForbiddenError);
 	});
+
+	it('should reject a theory subject of a workshop-only course (no own attendance)', async () => {
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute(
+				'sub-1',
+				'course-1',
+				'Math',
+				'user-1',
+				'tenant-1',
+				false,
+			),
+		);
+
+		await expect(
+			handler.execute(
+				new BulkUpdateSubjectStatusCommand(
+					'user-1',
+					ROLES.TEACHER,
+					'tenant-1',
+					'sub-1',
+					date,
+					ATTENDANCE_STATUS.PRESENT,
+				),
+			),
+		).rejects.toThrow(
+			'Las materias teóricas de 7° año técnico no tienen asistencia por materia: se toma la asistencia de taller.',
+		);
+		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
+	});
 });
