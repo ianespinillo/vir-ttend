@@ -3,8 +3,10 @@ import {
 	DAYOFWEEK,
 	LEVEL,
 	ROLES,
+	Roles,
 	SHIFT,
 	STUDENTSTATUS,
+	SUBJECT_KIND,
 	StudentStatus,
 } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
@@ -268,5 +270,76 @@ describe('GetSubjectStudentsHandler', () => {
 			'La materia no pertenece a su escuela.',
 		);
 		expect(studentRepo.findByCourse).not.toHaveBeenCalled();
+	});
+
+	describe('teachers per commission', () => {
+		const splitSubject = () =>
+			Subject.reconstitute({
+				id: 'sub-1',
+				courseId: 'course-1',
+				kind: SUBJECT_KIND.WORKSHOP,
+				teachers: [
+					{ commissionNumber: 1, teacherId: 'teacher-a' },
+					{ commissionNumber: 2, teacherId: 'teacher-b' },
+				],
+				name: 'Carpintería',
+				area: 'Taller',
+				weeklyHours: 4,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			});
+		const idsFor = async (userId: string, role: Roles = ROLES.TEACHER) =>
+			(
+				await handler.execute(
+					new GetSubjectStudentsQuery('sub-1', 'tenant-1', userId, role),
+				)
+			).map((s) => s.id);
+
+		beforeEach(() => {
+			subjectRepo.findById.mockResolvedValue(splitSubject());
+		});
+
+		it('lets the teacher of a commission read only that commission', async () => {
+			expect(await idsFor('teacher-a')).toEqual(['s-1']);
+			expect(await idsFor('teacher-b')).toEqual(['s-2']);
+			expect(studentRepo.findByCourse).not.toHaveBeenCalled();
+		});
+
+		it('intersects the teacher commission with the slot audience', async () => {
+			scheduleRepo.findBySubject.mockResolvedValue([
+				buildSlot(DAYOFWEEK.MONDAY, 1),
+				buildSlot(DAYOFWEEK.TUESDAY, 2),
+			]);
+
+			expect(await idsFor('teacher-b')).toEqual(['s-2']);
+		});
+
+		it('returns nobody when the slots target the other commission', async () => {
+			scheduleRepo.findBySubject.mockResolvedValue([
+				buildSlot(DAYOFWEEK.MONDAY, 2),
+			]);
+
+			expect(await idsFor('teacher-a')).toEqual([]);
+		});
+
+		it('keeps the full roster for admins and preceptors', async () => {
+			expect(await idsFor('admin-1', ROLES.ADMIN)).toEqual(['s-1', 's-2']);
+			expect(await idsFor('preceptor-1', ROLES.PRECEPTOR)).toEqual(['s-1', 's-2']);
+		});
+
+		it('rejects a teacher who teaches no commission of the subject', async () => {
+			await expectRejection(
+				handler.execute(
+					new GetSubjectStudentsQuery(
+						'sub-1',
+						'tenant-1',
+						'teacher-c',
+						ROLES.TEACHER,
+					),
+				),
+				ForbiddenError,
+				'La materia no está asignada a este docente.',
+			);
+		});
 	});
 });

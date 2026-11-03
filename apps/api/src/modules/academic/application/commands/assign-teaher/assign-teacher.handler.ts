@@ -3,6 +3,8 @@ import { ROLES } from '@repo/common';
 import { DomainError, NotFoundError } from '../../../../../common/errors';
 import { IMembershipPort } from '../../../domain/ports/membership.port.interface';
 import { ISubjectRepository } from '../../../domain/repositories/subject.repository.interface';
+import { IWorkshopCommissionRepository } from '../../../domain/repositories/workshop-commission.repository.interface';
+import { assertCommissionsExist } from '../../services/subject-teacher-assignments';
 import { AssignTeacherCommand } from './assign-teacher.command';
 
 @Injectable()
@@ -12,6 +14,8 @@ export class AssignTeacherHandler {
 		private readonly subjectRepo: ISubjectRepository,
 		@Inject('IMembershipPort')
 		private readonly memberRepo: IMembershipPort,
+		@Inject('IWorkshopCommissionRepository')
+		private readonly commissionRepo: IWorkshopCommissionRepository,
 	) {}
 	async execute(command: AssignTeacherCommand) {
 		const subject = await this.subjectRepo.findById(command.subjectId);
@@ -23,7 +27,11 @@ export class AssignTeacherHandler {
 		);
 		if (!belongs)
 			throw new DomainError('El usuario indicado no es docente de la escuela.');
-		subject.assignTeacher(command.teacherId);
+		const commissionNumber = command.commissionNumber ?? null;
+		await assertCommissionsExist(this.commissionRepo, subject.courseId, [
+			{ commissionNumber },
+		]);
+		subject.assignTeacher(command.teacherId, commissionNumber);
 		await this.subjectRepo.save(subject);
 	}
 }

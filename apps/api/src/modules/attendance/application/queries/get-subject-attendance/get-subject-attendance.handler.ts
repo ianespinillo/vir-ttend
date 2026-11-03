@@ -4,7 +4,10 @@ import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { AttendanceRecordResponseDto } from '../../dtos/attendance-record.response.dto';
 import { SubjectAttendanceResponseDto } from '../../dtos/subject-attendance.response.dto';
-import { assertCanReadSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanReadSubjectAttendance,
+	taughtCommissionsOf,
+} from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { GetSubjectAttendanceQuery } from './get-subject-attendance.query';
 
@@ -28,17 +31,23 @@ export class GetSubjectAttendanceQueryHandler {
 	): Promise<SubjectAttendanceResponseDto> {
 		const subject = await this.subjectPort.getSubjectById(query.subjectId);
 		if (!subject) throw new NotFoundError('Materia no encontrada');
-		assertCanReadSubjectAttendance(subject, {
+		const actor = {
 			userId: query.userId,
 			role: query.userRole,
 			tenantId: query.tenantId,
-		});
+		};
+		assertCanReadSubjectAttendance(subject, actor);
 		if (Number.isNaN(query.date.getTime()))
 			throw new DomainError('La fecha no es válida');
 
 		const [records, students] = await Promise.all([
 			this.attendanceRepo.findBySubjectAndDate(query.subjectId, query.date),
-			this.subjectRoster.getActiveRoster(subject, query.date),
+			this.subjectRoster.getActiveRoster(
+				subject,
+				query.date,
+				undefined,
+				taughtCommissionsOf(subject, actor),
+			),
 		]);
 		const recordByStudent = new Map(records.map((r) => [r.studentId, r]));
 		const roster = [...students]

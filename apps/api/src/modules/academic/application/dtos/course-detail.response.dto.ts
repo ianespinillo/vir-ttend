@@ -18,6 +18,12 @@ export class CourseDetailResponseDto extends CourseResponseDto {
 				area: 'Ciencias Exactas',
 				weeklyHours: 5,
 				teacherId: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+				teachers: [
+					{
+						commissionNumber: null,
+						teacherId: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+					},
+				],
 			},
 		],
 	})
@@ -43,16 +49,10 @@ export class CourseDetailResponseDto extends CourseResponseDto {
 		subjects: Subject[],
 		slots: ScheduleSlot[],
 		preceptorName: string,
-		teacherNames?: Map<string, string>,
+		teacherNames?: ReadonlyMap<string, string>,
 	) {
 		super(course, preceptorName);
-		this.subjects = subjects.map(
-			(s) =>
-				new SubjectResponseDto(
-					s,
-					s.teacherId ? teacherNames?.get(s.teacherId) : undefined,
-				),
-		);
+		this.subjects = subjects.map((s) => new SubjectResponseDto(s, teacherNames));
 		this.schedule = slots.map((s) => new ScheduleSlotResponseDto(s));
 	}
 }

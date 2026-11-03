@@ -10,6 +10,7 @@ import { Clock, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '../../../ui/badge';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
+import { formatSlotTeacher } from '../subjects/subject-teachers';
 
 export interface ScheduleGridProps {
 	slots: IScheduleSlotResponse[];
@@ -97,6 +98,9 @@ export function ScheduleGrid({
 									daySlots.map((slot) => {
 										const subject = subjectMap.get(slot.subjectId);
 										const colorClass = subjectColorMap.get(slot.subjectId) || COLORS[0];
+										const teacherLabel = subject
+											? formatSlotTeacher(subject, slot.commissionNumber)
+											: undefined;
 
 										return (
 											<div
@@ -126,10 +130,8 @@ export function ScheduleGrid({
 														</span>
 													)}
 												</p>
-												{subject?.teacherName && (
-													<p className="text-[11px] opacity-80">
-														Prof. {subject.teacherName}
-													</p>
+												{teacherLabel && (
+													<p className="text-[11px] opacity-80">Prof. {teacherLabel}</p>
 												)}
 											</div>
 										);
