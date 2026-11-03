@@ -10,7 +10,10 @@ import {
 	StudentSubjectRecordDto,
 	SubjectHistoryResponseDto,
 } from '../../dtos/subject-history.response.dto';
-import { assertCanReadSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanReadSubjectAttendance,
+	assertSubjectHasOwnAttendance,
+} from '../../services/subject-access.policy';
 import { GetSubjectHistoryQuery } from './get-subject-history.query';
 
 @Injectable()
@@ -33,6 +36,7 @@ export class GetSubjectHistoryQueryHandler {
 			role: query.userRole,
 			tenantId: query.tenantId,
 		});
+		assertSubjectHasOwnAttendance(subject);
 		const records = await this.attendanceRepo.findBySubjectAndDateRange(
 			query.subjectId,
 			query.from,

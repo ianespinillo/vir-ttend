@@ -13,6 +13,7 @@ import {
 	type ShiftType,
 	type WorkshopAttendance,
 	getStandardNationalHolidays,
+	hasSubjectAttendance,
 	isWorkshopOnlyCourse,
 } from '@repo/common';
 import { resolveSubjectAudience, weekdayOfIsoDate } from './subject-audience';
@@ -487,11 +488,30 @@ export function getSchedule(
 		);
 }
 
+/**
+ * Whether a subject takes its own attendance: not a theory subject of a
+ * workshop-only course (its attendance is the workshop one).
+ */
+export function subjectHasAttendance(
+	state: DemoState,
+	subject: Pick<ISubjectResponse, 'courseId' | 'kind'>,
+): boolean {
+	const course = subject.courseId
+		? getCourseById(state, subject.courseId)
+		: undefined;
+	return course ? hasSubjectAttendance({ kind: subject.kind, course }) : true;
+}
+
 export function getTeacherSubjects(
 	state: DemoState,
 	teacherId: string,
 ): ISubjectResponse[] {
-	return state.subjects.filter((subject) => subject.teacherId === teacherId);
+	return state.subjects
+		.filter((subject) => subject.teacherId === teacherId)
+		.map((subject) => ({
+			...subject,
+			hasSubjectAttendance: subjectHasAttendance(state, subject),
+		}));
 }
 
 // ---------------------------------------------------------------------------
@@ -562,10 +582,17 @@ function commissionWorkshopDays(
 	courseId: string,
 	number: number,
 ): Set<string> {
+	// In a workshop-only course (7th year) theory subjects are taught in the
+	// workshop shift, so their slots are workshop days too.
+	const course = getCourseById(state, courseId);
+	const theoryInWorkshop = course ? isWorkshopOnlyCourse(course) : false;
 	const workshopSubjectIds = new Set(
 		state.subjects
 			.filter(
-				(subject) => subject.courseId === courseId && subject.kind === 'workshop',
+				(subject) =>
+					subject.courseId === courseId &&
+					(subject.kind === 'workshop' ||
+						(theoryInWorkshop && subject.kind === 'theory')),
 			)
 			.map((subject) => subject.id),
 	);

@@ -86,6 +86,76 @@ describe('WorkshopAttendancePage', () => {
 		);
 	});
 
+	describe('workshop schedule', () => {
+		const notHeldProps = {
+			selectedCommissionId: 'c-1',
+			onMarkNotHeld: vi.fn(),
+		};
+
+		it('hides the not-held action and says so on a day without workshop', () => {
+			renderPage({ ...notHeldProps, workshopAvailability: 'unscheduled' });
+			expect(
+				screen.queryByRole('button', { name: /Taller no dictado/ }),
+			).not.toBeInTheDocument();
+			expect(screen.getByText('No corresponde taller este día')).toBeVisible();
+		});
+
+		it('keeps the not-held action on a day with workshop', () => {
+			renderPage({ ...notHeldProps, workshopAvailability: 'scheduled' });
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeInTheDocument();
+			expect(
+				screen.queryByText('No corresponde taller este día'),
+			).not.toBeInTheDocument();
+			expect(screen.queryByRole('status')).not.toBeInTheDocument();
+		});
+
+		it('warns without hiding the action when no schedule is loaded', () => {
+			renderPage({
+				...notHeldProps,
+				workshopAvailability: 'no-schedule',
+				scheduleHref: '/courses/course-1',
+			});
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeInTheDocument();
+			expect(screen.getByRole('status')).toHaveTextContent(
+				'no tiene el horario de taller cargado',
+			);
+			expect(
+				screen.getByRole('link', { name: 'Ir al horario del curso' }),
+			).toHaveAttribute('href', '/courses/course-1');
+			expect(
+				screen.queryByText('No corresponde taller este día'),
+			).not.toBeInTheDocument();
+		});
+
+		it('keeps the action and shows nothing while the schedule is unknown', () => {
+			renderPage({
+				...notHeldProps,
+				commissions: [{ ...commission, hasWorkshopToday: true }],
+			});
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeInTheDocument();
+			expect(
+				screen.queryByText('No corresponde taller este día'),
+			).not.toBeInTheDocument();
+		});
+
+		it('shows the not-held notice, not the schedule message, on a marked day', () => {
+			renderPage({
+				...notHeldProps,
+				workshopAvailability: 'unscheduled',
+				notHeld: {},
+			});
+			expect(
+				screen.queryByText('No corresponde taller este día'),
+			).not.toBeInTheDocument();
+		});
+	});
+
 	it('marks everyone present and confirms changes', () => {
 		const props = renderPage({ selectedCommissionId: 'c-1' });
 		fireEvent.click(screen.getByText('Todos Presentes'));

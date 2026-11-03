@@ -1,4 +1,5 @@
 import { SubjectKindType } from '@repo/common';
+import { SubjectTeacherAssignment } from '../../../domain/value-objects/subject-teacher-assignment.vo';
 
 export class CreateSubjectCommand {
 	constructor(
@@ -9,5 +10,7 @@ export class CreateSubjectCommand {
 		readonly weeklyHours: number,
 		readonly kind?: SubjectKindType,
 		readonly teacherName?: string,
+		/** Per-commission teachers; wins over teacherId / teacherName. */
+		readonly teachers?: SubjectTeacherAssignment[],
 	) {}
 }

@@ -10,13 +10,12 @@ import { BaseEntity } from '../../../../shared/database/entities/base.entity';
 import { SubjectRepository } from '../repositories/subject.repository';
 import { CourseOrmEntity } from './courses.orm-entity';
 import { ScheduleSlotOrmEntity } from './schedule-slot.orm-entity';
+import { SubjectTeacherOrmEntity } from './subject-teacher.orm-entity';
 
 // subject.orm-entity.ts
 @Entity({ tableName: 'subjects', repository: () => SubjectRepository })
 export class SubjectOrmEntity extends BaseEntity {
 	@Property() courseId!: string;
-	@Property({ nullable: true }) teacherId: string | null = null;
-	@Property({ nullable: true }) teacherName: string | null = null;
 	@Property() name!: string;
 	@Property() area!: string;
 	@Property() weeklyHours!: number;
@@ -36,4 +35,11 @@ export class SubjectOrmEntity extends BaseEntity {
 		},
 	)
 	slots = new Collection<ScheduleSlotOrmEntity>(this);
+
+	@OneToMany(
+		() => SubjectTeacherOrmEntity,
+		(teacher) => teacher.subject,
+		{ orphanRemoval: true },
+	)
+	teachers = new Collection<SubjectTeacherOrmEntity>(this);
 }

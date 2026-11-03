@@ -2,7 +2,9 @@ import { queryOptions } from '@tanstack/react-query';
 import {
 	fetchActiveAcademicYear,
 	fetchCourseHistory,
+	fetchCourseSchedule,
 	fetchCourseStudents,
+	fetchCourseSubjects,
 	fetchDailyAttendance,
 	fetchMySubjects,
 	fetchMyWorkshopCommissions,
@@ -85,5 +87,17 @@ export const attendanceQueries = {
 		queryOptions({
 			queryKey: queryKeys.workshopNotHeld(commissionId, date),
 			queryFn: () => getWorkshopNotHeld(commissionId, date),
+		}),
+	courseSchedule: (courseId: string) =>
+		queryOptions({
+			queryKey: queryKeys.courseSchedule(courseId),
+			queryFn: () => fetchCourseSchedule(courseId),
+			staleTime: 1000 * 60 * 5,
+		}),
+	courseSubjects: (courseId: string) =>
+		queryOptions({
+			queryKey: queryKeys.courseSubjects(courseId),
+			queryFn: () => fetchCourseSubjects(courseId),
+			staleTime: 1000 * 60 * 5,
 		}),
 };

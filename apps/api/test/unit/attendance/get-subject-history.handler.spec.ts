@@ -91,4 +91,23 @@ describe('GetSubjectHistoryQueryHandler', () => {
 		await expect(attempt).rejects.toBeInstanceOf(NotFoundError);
 		await expect(attempt).rejects.toThrow('Materia no encontrada');
 	});
+
+	it('should reject a theory subject of a workshop-only course (history)', async () => {
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute(
+				'sub-1',
+				'course-1',
+				'Math',
+				'teacher-1',
+				'tenant-1',
+				undefined,
+				false,
+			),
+		);
+
+		await expect(handler.execute(buildQuery())).rejects.toThrow(
+			'Las materias teóricas de 7° año técnico no tienen asistencia por materia: se toma la asistencia de taller.',
+		);
+		expect(attendanceRepo.findBySubjectAndDateRange).not.toHaveBeenCalled();
+	});
 });

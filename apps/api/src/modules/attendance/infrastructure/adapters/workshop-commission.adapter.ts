@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CommissionNumber, DAYOFWEEK, SUBJECT_KIND } from '@repo/common';
+import {
+	CommissionNumber,
+	DAYOFWEEK,
+	SUBJECT_KIND,
+	isWorkshopOnlyCourse,
+} from '@repo/common';
 import { Course as AcademicCourse } from '../../../academic/domain/entities/course.entity';
 import { WorkshopCommission } from '../../../academic/domain/entities/workshop-commission.entity';
 import { ICourseRepository } from '../../../academic/domain/repositories/course.repository.interface';
@@ -80,9 +85,17 @@ export class WorkshopCommissionAdapter implements IWorkshopCommissionPort {
 		courseId: string,
 		commissionNumber: CommissionNumber,
 	): Promise<DAYOFWEEK[]> {
+		// In a workshop-only course (7th year) the theory subjects are taught in the
+		// workshop shift, so their slots are workshop days too.
+		const course = await this.courseRepository.findById(courseId);
+		const theoryInWorkshop = course ? isWorkshopOnlyCourse(course) : false;
 		const workshopSubjectIds = new Set(
 			(await this.subjectRepository.findByCourse(courseId))
-				.filter((subject) => subject.kind === SUBJECT_KIND.WORKSHOP)
+				.filter(
+					(subject) =>
+						subject.kind === SUBJECT_KIND.WORKSHOP ||
+						(theoryInWorkshop && subject.kind === SUBJECT_KIND.THEORY),
+				)
 				.map((subject) => subject.id.getRaw()),
 		);
 		const slots = await this.scheduleRepository.findByCourse(courseId);

@@ -1,16 +1,23 @@
 'use client';
 
-import type {
-	AttendanceRecord,
-	AttendanceStatus,
-	ErrorResponse,
+import {
+	type AttendanceRecord,
+	type AttendanceStatus,
+	type ErrorResponse,
+	type WorkshopAvailability,
+	isWorkshopOnlyCourse,
+	workshopAvailabilityOn,
+	workshopDaysOf,
 } from '@repo/common';
 import {
 	useBulkJustifyWorkshopAttendance,
+	useCourse,
 	useJustifyWorkshopAttendance,
 	useMarkWorkshopSessionNotHeld,
 	useMyWorkshopCommissions,
 	useRegisterWorkshopAttendance,
+	useSchedule,
+	useSubjects,
 	useUnmarkWorkshopSessionNotHeld,
 	useWorkshopAttendance,
 	useWorkshopSessionNotHeld,
@@ -54,6 +61,32 @@ export default function AttendanceWorkshopPage() {
 
 	const { data: commissions, isLoading: isLoadingCommissions } =
 		useMyWorkshopCommissions(selectedDate);
+
+	// What the commission's schedule says about the day. Unknown while loading
+	// or if it fails to load: the not-held action then stays available.
+	const selectedCommission = commissions?.find(
+		(commission) => commission.commissionId === selectedCommissionId,
+	);
+	const scheduleCourseId = selectedCommission?.courseId;
+	const { data: scheduleSlots } = useSchedule(scheduleCourseId);
+	const { data: courseSubjects } = useSubjects(scheduleCourseId);
+	const { data: scheduleCourse } = useCourse(scheduleCourseId ?? '');
+	const workshopAvailability: WorkshopAvailability | undefined = useMemo(() => {
+		if (!selectedCommission || !scheduleSlots || !courseSubjects)
+			return undefined;
+		return workshopAvailabilityOn(
+			workshopDaysOf(scheduleSlots, courseSubjects, selectedCommission.number, {
+				workshopOnly: scheduleCourse ? isWorkshopOnlyCourse(scheduleCourse) : false,
+			}),
+			selectedDate,
+		);
+	}, [
+		selectedCommission,
+		scheduleSlots,
+		courseSubjects,
+		scheduleCourse,
+		selectedDate,
+	]);
 
 	const {
 		data: attendance,
@@ -406,6 +439,8 @@ export default function AttendanceWorkshopPage() {
 			}
 			notHeldStatus={notHeldStatus}
 			onRetryNotHeld={handleRetryNotHeld}
+			workshopAvailability={workshopAvailability}
+			scheduleHref={scheduleCourseId ? `/courses/${scheduleCourseId}` : undefined}
 		/>
 	);
 }

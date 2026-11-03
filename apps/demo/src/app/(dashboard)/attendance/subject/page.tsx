@@ -34,10 +34,16 @@ export default function AttendanceSubjectPage() {
 		allSubjects,
 		user?.id,
 		user?.role,
-	);
+	).map((subject) => ({
+		...subject,
+		hasSubjectAttendance: selectors.subjectHasAttendance(state, subject),
+	}));
 
 	const [selectedSubjectId, setSelectedSubjectId] = useState(
-		() => searchParams.get('subjectId') || scopedSubjects[0]?.id || '',
+		() =>
+			searchParams.get('subjectId') ||
+			scopedSubjects.find((s) => s.hasSubjectAttendance)?.id ||
+			'',
 	);
 	const [selectedDate, setSelectedDate] = useState(
 		() => searchParams.get('date') || getInitialAttendanceDate(demoTodayDate()),

@@ -6,7 +6,11 @@ import { AttendanceRegisteredEvent } from '../../../domain/events/attendance-reg
 import { ISubjectPort } from '../../../domain/ports/subject.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
-import { assertCanWriteSubjectAttendance } from '../../services/subject-access.policy';
+import {
+	assertCanWriteSubjectAttendance,
+	assertSubjectHasOwnAttendance,
+	taughtCommissionsOf,
+} from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
 import { BulkUpdateSubjectStatusCommand } from './bulk-update-subject-status.command';
 
@@ -32,14 +36,18 @@ export class BulkUpdateSubjectStatusHandler {
 			command.subjectId,
 		);
 		if (!subject) throw new NotFoundError('Materia no encontrada');
-		assertCanWriteSubjectAttendance(subject, {
+		const actor = {
 			userId: command.userId,
 			role: command.userRole,
 			tenantId: command.tenantId,
-		});
+		};
+		assertCanWriteSubjectAttendance(subject, actor);
+		assertSubjectHasOwnAttendance(subject);
 		const students = await this.subjectRoster.getActiveRoster(
 			subject,
 			command.date,
+			undefined,
+			taughtCommissionsOf(subject, actor),
 		);
 		const changedRecords = await this.unitOfWork.run(async () => {
 			const existingByStudent = new Map(

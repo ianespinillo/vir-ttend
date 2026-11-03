@@ -458,11 +458,13 @@ export default function CourseDetailPage() {
 												? ''
 												: subjectModalState.subject.teacherName || '',
 											kind: subjectModalState.subject.kind,
+											teachers: subjectModalState.subject.teachers,
 										}
 									: undefined
 							}
 							onSubmit={handleSaveSubject}
 							teachers={teachers?.items || []}
+							commissionNumbers={commissions?.map((c) => c.number)}
 							isLoading={
 								createSubjectMutation.isPending || updateSubjectMutation.isPending
 							}
