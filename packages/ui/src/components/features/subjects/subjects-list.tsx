@@ -14,6 +14,7 @@ import {
 	TableRow,
 } from '../../../ui/table';
 import { EmptyState } from '../../shared/empty-state';
+import { formatSubjectTeachers } from './subject-teachers';
 
 export interface SubjectsListProps {
 	subjects: ISubjectResponse[];
@@ -89,10 +90,10 @@ export function SubjectsList({
 									{subject.weeklyHours} hs
 								</TableCell>
 								<TableCell>
-									{subject.teacherName ? (
+									{formatSubjectTeachers(subject) ? (
 										<span className="flex items-center gap-1.5 text-sm font-medium">
 											<UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-											{subject.teacherName}
+											{formatSubjectTeachers(subject)}
 										</span>
 									) : (
 										<span className="text-sm text-muted-foreground italic">
