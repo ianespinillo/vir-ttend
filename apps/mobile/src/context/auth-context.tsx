@@ -57,6 +57,8 @@ interface AuthContextType {
 	) => Promise<{ requiresTenantSelection: boolean }>;
 	selectTenant: (tenantId: string) => Promise<void>;
 	logout: () => Promise<void>;
+	/** Clears the `mustChangePassword` flag in memory and in secure storage. */
+	markPasswordChanged: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -253,6 +255,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		void revokeSessionOnServer(credentials);
 	};
 
+	const markPasswordChanged = async () => {
+		if (!user) return;
+		const updated: MobileUser = { ...user, mustChangePassword: false };
+		await SecureStore.setItemAsync(USER_KEY, JSON.stringify(updated));
+		setUser(updated);
+	};
+
 	return (
 		<AuthContext.Provider
 			value={{
@@ -266,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				login,
 				selectTenant,
 				logout,
+				markPasswordChanged,
 			}}
 		>
 			{children}
