@@ -1,17 +1,25 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import {
+	ApiCookieAuth,
 	ApiOperation,
 	ApiParam,
 	ApiQuery,
 	ApiResponse,
 	ApiTags,
 } from '@nestjs/swagger';
+import { ROLES } from '@repo/common';
+import { RolesDecorator } from '../../../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
+import { RolesGuard } from '../../../../common/guard/roles.guard';
 import { StudentReportResponseDto } from '../../application/dtos/student-report.response.dto';
 import { GetStudentReportQueryHandler } from '../../application/queries/get-student-report/get-student-report.handler';
 import { GetStudentReportQuery } from '../../application/queries/get-student-report/get-student-report.query';
 
 @ApiTags('Reports')
+@ApiCookieAuth('access_token')
 @Controller('reports/student')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 export class StudentReportsController {
 	constructor(
 		private readonly getStudentReportHandler: GetStudentReportQueryHandler,
@@ -21,7 +29,7 @@ export class StudentReportsController {
 	@ApiOperation({
 		summary: 'Obtener reporte de asistencia de un estudiante',
 		description:
-			'Devuelve el detalle de asistencia mensual, los totales y las alertas de un estudiante durante un año académico. Rol: cualquier usuario autenticado. Ejemplo de URL: /reports/student/b7d2e4f1-8a3c-4d5e-9f6a-2c1b0d3e5f7a?academicYearId=a3c7e1f9-2b4d-4f5e-8a9c-1d0e2f3a4b5c',
+			'Devuelve el detalle de asistencia mensual, los totales y las alertas de un estudiante durante un año académico. Roles: PRECEPTOR, ADMIN. Ejemplo de URL: /reports/student/b7d2e4f1-8a3c-4d5e-9f6a-2c1b0d3e5f7a?academicYearId=a3c7e1f9-2b4d-4f5e-8a9c-1d0e2f3a4b5c',
 	})
 	@ApiParam({
 		name: 'studentId',
