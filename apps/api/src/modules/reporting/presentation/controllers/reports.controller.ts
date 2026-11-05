@@ -1,11 +1,24 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
+	Body,
+	Controller,
+	Get,
+	Param,
+	Post,
+	Query,
+	UseGuards,
+} from '@nestjs/common';
+import {
+	ApiCookieAuth,
 	ApiOperation,
 	ApiParam,
 	ApiQuery,
 	ApiResponse,
 	ApiTags,
 } from '@nestjs/swagger';
+import { ROLES } from '@repo/common';
+import { RolesDecorator } from '../../../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../../../common/guard/jwt-auth.guard';
+import { RolesGuard } from '../../../../common/guard/roles.guard';
 import { GenerateMonthlyReportCommand } from '../../application/commands/generate-monthly-report/generate-monthly-report.command';
 import { GenerateMonthlyReportHandler } from '../../application/commands/generate-monthly-report/generate-monthly-report.handler';
 import { AvailableReportsResponseDto } from '../../application/dtos/available-reports.response.dto';
@@ -20,7 +33,10 @@ import { GetReportsByCourseQueryHandler } from '../../application/queries/get-re
 import { GetReportsByCourseQuery } from '../../application/queries/get-reports-by-course/get-reports-by-course.query';
 
 @ApiTags('Reports')
+@ApiCookieAuth('access_token')
 @Controller('reports')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@RolesDecorator(ROLES.PRECEPTOR, ROLES.ADMIN)
 export class ReportsController {
 	constructor(
 		private readonly getMonthlyReportHandler: GetMonthlyReportQueryHandler,
@@ -33,7 +49,7 @@ export class ReportsController {
 	@ApiOperation({
 		summary: 'Obtener reporte mensual de un curso',
 		description:
-			'Devuelve el reporte mensual de asistencia de un curso para un mes y año determinados. Rol: cualquier usuario autenticado. Ejemplo de URL: /reports/monthly?courseId=6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44&month=7&year=2026',
+			'Devuelve el reporte mensual de asistencia de un curso para un mes y año determinados. Roles: PRECEPTOR, ADMIN. Ejemplo de URL: /reports/monthly?courseId=6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44&month=7&year=2026',
 	})
 	@ApiQuery({
 		name: 'courseId',
@@ -96,7 +112,7 @@ export class ReportsController {
 	@ApiOperation({
 		summary: 'Generar reporte mensual de un curso',
 		description:
-			'Genera y persiste el reporte mensual de asistencia de un curso para un mes y año determinados. Rol: cualquier usuario autenticado. Ejemplo de body: {"courseId": "6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44", "month": 7, "year": 2026}',
+			'Genera y persiste el reporte mensual de asistencia de un curso para un mes y año determinados. Roles: PRECEPTOR, ADMIN. Ejemplo de body: {"courseId": "6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44", "month": 7, "year": 2026}',
 	})
 	@ApiResponse({
 		status: 201,
@@ -136,7 +152,7 @@ export class ReportsController {
 	@ApiOperation({
 		summary: 'Obtener resumen de asistencia de un curso',
 		description:
-			'Devuelve el promedio de asistencia mensual de un curso a lo largo de un año académico. Rol: cualquier usuario autenticado. Ejemplo de URL: /reports/course/6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44/summary?academicYearId=a3c7e1f9-2b4d-4f5e-8a9c-1d0e2f3a4b5c',
+			'Devuelve el promedio de asistencia mensual de un curso a lo largo de un año académico. Roles: PRECEPTOR, ADMIN. Ejemplo de URL: /reports/course/6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44/summary?academicYearId=a3c7e1f9-2b4d-4f5e-8a9c-1d0e2f3a4b5c',
 	})
 	@ApiParam({
 		name: 'courseId',
@@ -189,7 +205,7 @@ export class ReportsController {
 	@ApiOperation({
 		summary: 'Listar reportes disponibles de un curso',
 		description:
-			'Devuelve los períodos (mes y año) que ya tienen reporte mensual generado para un curso. Rol: cualquier usuario autenticado. Ejemplo de URL: /reports/course/6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44/available',
+			'Devuelve los períodos (mes y año) que ya tienen reporte mensual generado para un curso. Roles: PRECEPTOR, ADMIN. Ejemplo de URL: /reports/course/6f9b5d2e-8c4a-4f1e-a3d7-0b2e1c9a7f44/available',
 	})
 	@ApiParam({
 		name: 'courseId',
