@@ -110,6 +110,22 @@ Al levantar la instancia por primera vez con una base de datos limpia, el servic
 
 Ver [Paso 6: Marca de la instancia](#paso-6-marca-de-la-instancia-opcional).
 
+### 3.5 Variables de Email (SMTP)
+
+Se usan para los correos transaccionales: bienvenida, contraseña temporal cuando un admin la restablece y código de recuperación de contraseña ("olvidé mi contraseña").
+
+| Variable | Requerida | Valor por Defecto | Descripción |
+|---|---|---|---|
+| `EMAIL_ENABLED` | No | `false` | Si es `false`, no se envía ningún correo. Si es `true` y falta `SMTP_HOST`, los correos se escriben en `logs/emails.ndjson` (modo captura). |
+| `SMTP_HOST` | **Sí** en producción si `EMAIL_ENABLED=true` | — | Host del servidor SMTP (ej. `smtp-relay.brevo.com`). |
+| `SMTP_PORT` | No | `587` | `465` usa TLS implícito; cualquier otro puerto usa STARTTLS. |
+| `SMTP_USER` | No | — | Usuario SMTP. Sin valor, se conecta sin autenticación. |
+| `SMTP_PASS` | No | — | Clave SMTP (en Brevo, una SMTP key; en Gmail, una contraseña de aplicación). |
+| `SMTP_FROM` | **Sí** en producción si `EMAIL_ENABLED=true` | `no-reply@vir-ttend.local` | Remitente, ej. `"Vir-ttend <no-reply@tu-dominio>"`. Debe estar verificado en el proveedor. |
+
+> [!WARNING]
+> Sin email habilitado, la recuperación de contraseña desde el login no entrega el código: el usuario no tiene otra forma de recibirlo.
+
 ---
 
 ## 4. Configuración Paso a Paso: Modo Multi-Tenant (SaaS)
@@ -404,8 +420,8 @@ Los perfiles `*-general` no compilarán hasta definir la URL del servidor compar
 
 ### 7.6 Desarrollo local
 
-- La app corre en Expo Go sobre un dispositivo Android conectado por USB: `pnpm --filter mobile android:usb` crea los túneles `adb reverse` (3001 para la API, 8081 para Metro) e inicia Expo.
-- Si se desconecta el cable o se reinicia `adb`, los túneles se pierden: `pnpm --filter mobile android:reverse` los restaura.
+- La app corre en Expo Go y llega a la API y a Metro por la red (misma wifi o Tailscale), sin USB ni `adb`: `EXPO_PUBLIC_API_URL` en `apps/mobile/.env` apunta a la IP de la PC (ej. `http://192.168.1.100:3001`) y `pnpm --filter mobile android` inicia Expo en la LAN.
+- Si el teléfono no llega a Metro, `pnpm --filter mobile android:tunnel` lo expone por túnel de Expo (la API igual tiene que ser accesible en `EXPO_PUBLIC_API_URL`).
 - Para probar una variante: `APP_VARIANT=eest3 npx expo start` (dentro de `apps/mobile`). Si `.env.local` define `EXPO_PUBLIC_API_URL`, esa URL tiene prioridad sobre la de la variante.
 - Las variables `EXPO_PUBLIC_TENANCY_MODE`, `EXPO_PUBLIC_APP_NAME` y `EXPO_PUBLIC_DEFAULT_TENANT_*` ya no se usan y pueden eliminarse.
 - El contenedor de la API debe reconstruirse tras cambios de backend (`docker compose up -d --build api`); de lo contrario la app consume una versión anterior de la API.
@@ -431,7 +447,7 @@ Los perfiles `*-general` no compilarán hasta definir la URL del servidor compar
 - En modo single, si se necesita reiniciar el acceso del administrador inicial y la base de datos ya contiene registros, un operador de base de datos puede actualizar el hash o invocar el comando correspondiente vía CLI institucional.
 
 ### App móvil: "No se puede conectar con el servidor"
-- **Causa común 1 (desarrollo):** se perdió el túnel `adb reverse tcp:3001 tcp:3001`. Verificar con `adb reverse --list` y restaurar con `pnpm --filter mobile android:reverse`.
+- **Causa común 1 (desarrollo):** el teléfono no llega a la API por la red. Abrir `http://<ip-de-la-pc>:3001/health` en el navegador del teléfono; si falla, revisar que estén en la misma red, que la IP no haya cambiado (actualizar `EXPO_PUBLIC_API_URL` y reiniciar Expo con `--clear`) y que el firewall permita el puerto 3001.
 - **Causa común 2:** la API no está levantada o la URL de la variante es incorrecta. Verificar `https://<dominio>/api/health`.
 - La app reintenta automáticamente y sincroniza los cambios pendientes cuando el servidor vuelve a responder.
 

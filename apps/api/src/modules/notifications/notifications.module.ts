@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { MailerService } from './application/mailer.service';
 import { TemplateRenderer } from './application/template-renderer.service';
 import { EMAIL_SENDER } from './domain/email-sender.interface';
+import { PasswordResetRequestedEmailListener } from './infrastructure/events/password-reset-requested.listener';
 import { UserCreatedEmailListener } from './infrastructure/events/user-created.listener';
+import { UserPasswordResetEmailListener } from './infrastructure/events/user-password-reset.listener';
 import { UserTenantLinkedEmailListener } from './infrastructure/events/user-tenant-linked.listener';
 
 @Module({
@@ -17,6 +19,8 @@ import { UserTenantLinkedEmailListener } from './infrastructure/events/user-tena
 		},
 		UserCreatedEmailListener,
 		UserTenantLinkedEmailListener,
+		UserPasswordResetEmailListener,
+		PasswordResetRequestedEmailListener,
 	],
 	exports: [EMAIL_SENDER],
 })

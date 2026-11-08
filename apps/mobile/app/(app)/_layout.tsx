@@ -92,6 +92,13 @@ export default function AppLayout() {
 						}}
 					/>
 					<Stack.Screen
+						name="change-password"
+						options={{
+							title: 'Cambiar contraseña',
+							headerBackTitle: 'Atrás',
+						}}
+					/>
+					<Stack.Screen
 						name="settings"
 						options={{
 							title: 'Configuración',
