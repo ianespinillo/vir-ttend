@@ -139,9 +139,24 @@ export default function LoginScreen() {
 
 						{/* Password input */}
 						<View className="mb-6">
-							<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-600">
-								Contraseña
-							</Text>
+							<View className="mb-1.5 flex-row items-center justify-between">
+								<Text className="text-xs font-semibold uppercase tracking-wider text-neutral-600">
+									Contraseña
+								</Text>
+								<TouchableOpacity
+									hitSlop={8}
+									onPress={() =>
+										router.push({
+											pathname: '/(auth)/forgot-password',
+											params: email.trim() ? { email: email.trim().toLowerCase() } : {},
+										})
+									}
+								>
+									<Text className="text-xs font-semibold text-primary dark:text-primary-ink">
+										¿Olvidaste tu contraseña?
+									</Text>
+								</TouchableOpacity>
+							</View>
 							<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary dark:focus:border-primary-ink">
 								<Lock size={18} color={theme.mutedForeground} />
 								<TextInput

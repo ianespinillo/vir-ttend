@@ -13,6 +13,7 @@ export * from './features/auth/use-select-tenant';
 export * from './features/auth/use-exit-tenant';
 export * from './features/auth/use-current-user';
 export * from './features/auth/use-logout';
+export * from './features/auth/use-forgot-password';
 
 // tenants
 export * from './features/tenants/use-tenants';
