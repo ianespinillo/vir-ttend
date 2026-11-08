@@ -41,4 +41,5 @@
 - T1 done: RED observed (3 suites failed before implementation), GREEN: identity+notifications suites 32/32. api ts:check clean except pre-existing stale `@repo/common` dist errors (hasSubjectAttendance); full api jest has 12 suites failing for that same reason; biome clean on apps/api.
 - After rebuilding `@repo/common`: root `pnpm run ts:check` 9/9 pass; full api jest 1185 passed / 2 failed (failing suites not identified: output truncated, re-run killed by low system memory) — pending. Pre-commit hook (ts:check + `biome check .`) green. T1 commit: `1e66d65`.
 - T2 done: `pnpm --filter mobile ts:check` pass; biome clean. App not run manually. T2 commit: see branch log (`feat(mobile): let users change their password`).
-- Next: identify the 2 failing api tests; manual check of the email and the mobile screen.
+- Full api jest re-run on the branch: 150/150 suites, 1187/1187 tests pass. The earlier 2 failures did not reproduce (that run spanned a machine sleep, likely timeouts).
+- Next: manual check of the email and the mobile screen.
