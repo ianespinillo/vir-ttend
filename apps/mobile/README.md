@@ -2,32 +2,33 @@
 
 Expo (SDK 57) app for preceptors and teachers.
 
-## Running against the dockerized API over USB (Android)
+## Running against the dockerized API over the network
 
-The API runs in Docker and is published on the laptop at port `3001`. A physical
-phone cannot reach the laptop's `localhost`, so the ports are forwarded over USB
-with `adb reverse`. The app defaults to `http://localhost:3001` on every
-platform (see `src/config/app-config.ts`), which works on devices and emulators
-once the reverse is active.
+The API runs in Docker and is published on the laptop at port `3001`. The phone
+reaches it, and Metro, over the network: same wifi (LAN IP) or Tailscale. No
+USB cable or `adb` is needed.
 
 1. Start the API: `docker compose up -d` (check `http://localhost:3001/health`).
-2. Enable USB debugging on the phone, connect it and confirm `adb devices` lists it.
+2. Copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL` to the laptop's
+   address, e.g. `http://192.168.1.100:3001` (LAN) or its Tailscale IP. Check it
+   from the phone's browser: `http://<ip>:3001/health`.
 3. From the repo root run:
 
    ```bash
-   pnpm --filter mobile android:usb
+   pnpm --filter mobile android
    ```
 
-   It runs `adb reverse` for the API (`3001`) and Metro (`8081`), then starts
-   Expo. To only (re)create the forwarding, run
-   `pnpm --filter mobile android:reverse`.
+   It starts Expo on the LAN; scan the QR code with Expo Go. If the phone
+   cannot reach Metro (different network, firewall), use
+   `pnpm --filter mobile android:tunnel` instead. The API still has to be
+   reachable at `EXPO_PUBLIC_API_URL`.
 
-`adb reverse` rules are dropped when the phone is unplugged or `adb` restarts;
-run `android:reverse` again if requests stop reaching the API.
+If requests stop reaching the API, check that the laptop's IP has not changed
+and that the firewall allows ports `3001` and `8081`.
 
 ### Cleartext http
 
-The API is plain `http` on `localhost`. This works without extra config in Expo
+The dev API is plain `http`. This works without extra config in Expo
 Go and in debug development builds (`expo run:android`), which allow cleartext
 traffic. Release builds block it on Android 9+, so use an `https` API URL
 (or add `expo-build-properties` with `android.usesCleartextTraffic`) there.
@@ -56,7 +57,7 @@ project. The release builds read their API URL from the variant
 
 1. `EXPO_PUBLIC_API_URL` (dev override, or set per profile in `eas.json`).
 2. The variant's `extra.apiUrl`.
-3. `http://localhost:3001` (the `adb reverse` dev flow above).
+3. `http://localhost:3001` (only reachable when the app runs on the dev machine).
 
 ### Running a variant locally
 

@@ -4,7 +4,7 @@ import axios from 'axios';
 /**
  * Whether the API server answers, as seen by our own requests. It is separate
  * from device connectivity (NetInfo): a phone can be online while the server
- * is down, or while the USB `adb reverse` tunnel to it is not set up.
+ * is down, or while it is not reachable over the network from the phone.
  *
  * - `unknown`: nothing observed yet (or the device went offline).
  * - `reachable`: the last request got an HTTP response.
