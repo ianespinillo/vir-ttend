@@ -1,4 +1,5 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES } from '@repo/common';
 import { MockProxy, mock } from 'jest-mock-extended';
 import {
@@ -191,6 +192,7 @@ describe('user handlers answer NotFoundError in Spanish', () => {
 				userRepo,
 				memberRepo,
 				mock<PasswordService>(),
+				mock<EventEmitter2>(),
 			).execute(new ResetUserPasswordCommand('u-1', ROLES.ADMIN, 't-1')),
 		).rejects.toStrictEqual(userNotFound);
 	});
