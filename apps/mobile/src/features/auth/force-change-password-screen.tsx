@@ -1,10 +1,4 @@
-import {
-	Eye,
-	EyeOff,
-	KeyRound,
-	LogOut,
-	ShieldAlert,
-} from 'lucide-react-native';
+import { KeyRound, LogOut, ShieldAlert } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
 	ActivityIndicator,
@@ -12,7 +6,6 @@ import {
 	Platform,
 	ScrollView,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
@@ -28,6 +21,7 @@ import {
 	getChangePasswordErrorMessage,
 	validateChangePassword,
 } from './change-password';
+import { PasswordField } from './password-field';
 
 const FIELDS: ReadonlyArray<{
 	name: ChangePasswordField;
@@ -65,9 +59,6 @@ export function ForceChangePasswordScreen() {
 		newPassword: '',
 		confirmNewPassword: '',
 	});
-	const [visible, setVisible] = useState<
-		Partial<Record<ChangePasswordField, boolean>>
-	>({});
 	const [fieldErrors, setFieldErrors] = useState<ChangePasswordFieldErrors>({});
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,46 +129,17 @@ export function ForceChangePasswordScreen() {
 
 						<View className="mt-4">
 							{FIELDS.map(({ name, label, placeholder }) => (
-								<View key={name} className="mb-4">
-									<Text className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-600">
-										{label}
-									</Text>
-									<View className="flex-row items-center rounded-xl border border-neutral-300 bg-background px-3.5 py-3 focus:border-primary dark:focus:border-primary-ink">
-										<TextInput
-											className="flex-1 text-base text-foreground"
-											placeholder={placeholder}
-											placeholderTextColor={theme.neutral400}
-											secureTextEntry={!visible[name]}
-											autoCapitalize="none"
-											autoCorrect={false}
-											editable={!isSubmitting}
-											value={values[name]}
-											onChangeText={(text) =>
-												setValues((prev) => ({ ...prev, [name]: text }))
-											}
-										/>
-										<TouchableOpacity
-											onPress={() =>
-												setVisible((prev) => ({ ...prev, [name]: !prev[name] }))
-											}
-											accessibilityLabel={
-												visible[name] ? 'Ocultar contraseña' : 'Mostrar contraseña'
-											}
-											hitSlop={8}
-										>
-											{visible[name] ? (
-												<EyeOff size={18} color={theme.mutedForeground} />
-											) : (
-												<Eye size={18} color={theme.mutedForeground} />
-											)}
-										</TouchableOpacity>
-									</View>
-									{fieldErrors[name] && (
-										<Text className="mt-1 text-xs font-medium text-red-700 dark:text-red-300">
-											{fieldErrors[name]}
-										</Text>
-									)}
-								</View>
+								<PasswordField
+									key={name}
+									label={label}
+									placeholder={placeholder}
+									value={values[name]}
+									error={fieldErrors[name]}
+									editable={!isSubmitting}
+									onChangeText={(text) =>
+										setValues((prev) => ({ ...prev, [name]: text }))
+									}
+								/>
 							))}
 						</View>
 

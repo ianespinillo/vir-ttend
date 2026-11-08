@@ -1,5 +1,7 @@
 import { useRouter } from 'expo-router';
 import {
+	ChevronRight,
+	KeyRound,
 	LogOut,
 	type LucideIcon,
 	Palette,
@@ -197,6 +199,19 @@ export default function SettingsScreen() {
 						</View>
 					</View>
 				</View>
+
+				{/* Change password */}
+				<TouchableOpacity
+					onPress={() => router.push('/(app)/change-password')}
+					accessibilityRole="button"
+					className="mb-4 flex-row items-center rounded-2xl border border-border bg-card px-5 py-4 shadow-sm"
+				>
+					<KeyRound size={18} color={colors.primaryInk} />
+					<Text className="ml-3 flex-1 text-sm font-bold text-foreground">
+						Cambiar contraseña
+					</Text>
+					<ChevronRight size={18} color={colors.mutedForeground} />
+				</TouchableOpacity>
 
 				{/* Logout Action */}
 				<TouchableOpacity

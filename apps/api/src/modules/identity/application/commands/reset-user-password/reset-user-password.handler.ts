@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ROLES } from '@repo/common';
 import { ForbiddenError, NotFoundError } from '../../../../../common/errors';
+import { UserPasswordResetEvent } from '../../../domain/events/user-password-reset.event';
 import { IUserTenantMembershipRepository } from '../../../domain/repositories/user-tenant-membership.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { AuthorizationService } from '../../../domain/services/authorization.service';
@@ -24,6 +26,7 @@ export class ResetUserPasswordHandler {
 		@Inject('IUserTenantMembershipRepository')
 		private readonly memberRepo: IUserTenantMembershipRepository,
 		private readonly passwordService: PasswordService,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	async execute(
@@ -58,6 +61,17 @@ export class ResetUserPasswordHandler {
 
 		user.resetTemporaryPassword(hash);
 		await this.userRepository.save(user);
+
+		this.eventEmitter.emit(
+			'user.password-reset',
+			new UserPasswordResetEvent(
+				user.id,
+				user.email,
+				user.firstName,
+				user.lastName,
+				rawPassword.getRaw(),
+			),
+		);
 
 		return {
 			userId: user.id,
