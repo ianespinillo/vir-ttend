@@ -13,6 +13,8 @@ describe('Contrato de rutas vs apps/api/README.md', () => {
 		expect(AUTH_ROUTES.selectTenant).toBe('/auth/select-tenant');
 		expect(AUTH_ROUTES.refresh).toBe('/auth/refresh');
 		expect(AUTH_ROUTES.logout).toBe('/auth/logout');
+		expect(AUTH_ROUTES.forgotPassword).toBe('/auth/forgot-password');
+		expect(AUTH_ROUTES.resetPassword).toBe('/auth/reset-password');
 	});
 
 	it('USER_ROUTES cubre los endpoints de usuarios', () => {

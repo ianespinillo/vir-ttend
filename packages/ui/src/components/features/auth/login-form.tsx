@@ -20,12 +20,15 @@ export interface LoginFormProps {
 	onSubmit: (values: LoginFormValues) => void;
 	isLoading?: boolean;
 	errorMessage?: string | null;
+	/** Shows the "¿Olvidaste tu contraseña?" link when provided. */
+	onForgotPassword?: () => void;
 }
 
 export function LoginForm({
 	onSubmit,
 	isLoading = false,
 	errorMessage,
+	onForgotPassword,
 }: LoginFormProps) {
 	const form = useForm<LoginFormValues>({
 		resolver: zodResolver(loginSchema),
@@ -80,7 +83,18 @@ export function LoginForm({
 						name="password"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Contraseña</FormLabel>
+								<div className="flex items-center justify-between">
+									<FormLabel>Contraseña</FormLabel>
+									{onForgotPassword && (
+										<button
+											type="button"
+											onClick={onForgotPassword}
+											className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+										>
+											¿Olvidaste tu contraseña?
+										</button>
+									)}
+								</div>
 								<FormControl>
 									<PasswordInput
 										placeholder="••••••••"
