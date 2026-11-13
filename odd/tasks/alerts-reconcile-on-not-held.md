@@ -30,7 +30,7 @@ API attendance module, `packages/common`/`packages/hooks`/`packages/ui` as neede
 - Schedule enforcement for daily or subject attendance.
 
 ## Checklist
-- [ ] T1 — Alert reconciliation after not-held deletions (daily + workshop) + alert repository delete + unit tests. Route: delegated writer (2+ non-trivial files).
+- [x] T1 — Alert reconciliation after not-held deletions (daily + workshop) + alert repository delete + unit tests. Route: delegated writer (2+ non-trivial files).
 - [x] T2 — API: reject workshop registration on a non-workshop day of the commission (schedule loaded); unit tests. Route: delegated writer.
 - [ ] T3 — Commission picker filtered by date (web + mobile) incl. commissions with saved records; mark-not-held available on unscheduled days with saved records. Route: delegated writer.
 - [ ] T4 — Hand the user the SQL to clean today's wrong records and their stale alerts. Route: inline.
@@ -55,5 +55,7 @@ Strategy `ask-on-risk`. Forecast ~800 authored lines (T1 ~250, T2 ~150, T3 ~400)
 - Password-reset listener: fixed on `fix/password-reset-email-listener`, PR #120 merged into `dev` (`8919881`) after resolving the overlap with PR #118. `dev` merged into this branch (`b44b09b`).
 - T2 done (delegated writer; parent read the policy and handler diff, re-ran `jest workshop` 18 suites/178 tests). `assertWorkshopScheduledOn` (`application/services/workshop-schedule.policy.ts`) uses `IWorkshopCommissionPort.getWorkshopDays` + `@repo/common` `workshopAvailabilityOn`: only `'unscheduled'` blocks (400, "La comisión no tiene taller ese día según el horario del curso."), `'no-schedule'` is allowed. Called in `RegisterWorkshopAttendanceHandler` (bulk delegates to it). No workshop copy command exists. Register is an upsert, so editing a record on an unscheduled day is also rejected; such a day is cleared via mark not-held + unmark, which stays unguarded (test covers it). Swagger 400 descriptions updated. Writer checks: api jest 155 suites/1224 tests; `ts:check` 9/9; `lint:check` clean.
 
+- Native review of T1 + T2 (base `dev` at `92e581f`, 15 files/609 lines, medium, user granted): 1 lens (reliability), approved and acknowledged (lineage `review-122c31dfa33cf0b4`, authority burned). Slices adjusted: the API slice holds T1 + T2 (one PR), T3 goes in its own PR.
+
 ## Next step
-Native review of the PR1 slice (T1 + T2), then T3.
+Open the API slice PR (T1 + T2) against `dev`; then T3.
