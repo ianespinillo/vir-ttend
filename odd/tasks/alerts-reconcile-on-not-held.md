@@ -49,6 +49,8 @@ Strategy `ask-on-risk`. Forecast ~800 authored lines (T1 ~250, T2 ~150, T3 ~400)
 
 ## Progress / evidence
 - Feature document created; scope widened after the user confirmed the hidden workshop button and asked to restrict the picker.
+- T1 done (delegated writer; parent read the service, handler and repository diff, confirmed no cache in the weighted absence read path, re-ran `jest alert-reconciliation session-not-held` 5 suites/72 tests). New `AlertReconciliationService.reconcile(courseId, studentIds)`; `IAttendanceAlertRepository.deleteAboveThreshold` (`threshold > total`, scoped to student + academic year); both mark handlers collect affected students before the delete and reconcile inside the unit of work when records were deleted. No trigger date on purpose (it can only raise the total). Writer checks: api jest 151 suites/1197 tests; `ts:check` 9/9; `lint:check` clean. Commit `f169f7e` (PR1 slice). Assess (`--base-ref 759055b --committed-only`): medium, `under_budget`. Native review (user granted; base `eae76c3`, so it also covered PR #117): 4 lenses, terminal `escalated` / `native_stop_required` on `R3/R4-listener-not-registered` — `UserPasswordResetEmailListener` is imported but missing from `NotificationsModule.providers` (PR #117, already on `dev`): reset emails are never sent. Not a T1 finding; follow-up pending user decision.
+- Unrelated: user asked to delete `schools-data/`; committed separately as `4439367` on `chore/remove-schools-data` (from `dev`).
 
 ## Next step
-T1 (writer running).
+User decision on the password-reset listener fix; then T2.
