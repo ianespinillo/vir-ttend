@@ -45,6 +45,9 @@ import { AuthController } from './presentation/controllers/auth.controller';
 import { TenantsController } from './presentation/controllers/tenants.controller';
 import { UsersController } from './presentation/controllers/users.controller';
 
+import { ConfirmPasswordResetHandler } from './application/commands/confirm-password-reset/confirm-password-reset.handler';
+import { RequestPasswordResetHandler } from './application/commands/request-password-reset/request-password-reset.handler';
+import { RedisPasswordResetCodeRepository } from './infrastructure/persistence/repositories/password-reset-code.repository';
 // identity.module.ts
 @Module({
 	imports: [
@@ -84,6 +87,8 @@ import { UsersController } from './presentation/controllers/users.controller';
 		PublishAnnouncementHandler,
 		DeleteAnnouncementHandler,
 		ChangePasswordHandler,
+		RequestPasswordResetHandler,
+		ConfirmPasswordResetHandler,
 		CreateMembershipHandler,
 		UpdateUserHandler,
 
@@ -98,6 +103,12 @@ import { UsersController } from './presentation/controllers/users.controller';
 		GetAnnouncementHandler,
 		GetAnnouncementsForUserHandler,
 		GetAdminAnalyticsHandler,
+
+		// Repositorios fuera de Postgres
+		{
+			provide: 'IPasswordResetCodeRepository',
+			useClass: RedisPasswordResetCodeRepository,
+		},
 
 		// Guards
 		JwtAuthGuard,

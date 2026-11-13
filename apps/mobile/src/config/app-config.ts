@@ -32,10 +32,9 @@ export const getUrlHost = (url: string): string =>
 /**
  * Single source of truth for the API base URL.
  *
- * Defaults to `http://localhost:3001` on every platform. On a physical Android
- * device (or emulator) `localhost` reaches the host machine through
- * `adb reverse` (see `pnpm --filter mobile android:reverse`). Set
- * `EXPO_PUBLIC_API_URL` to point at a different API; release builds get theirs
+ * Defaults to `http://localhost:3001`, which only works when the app runs on
+ * the same machine as the API. On a physical phone set `EXPO_PUBLIC_API_URL`
+ * to the dev machine's LAN (or Tailscale) address; release builds get theirs
  * from the build variant.
  */
 export const API_URL: string = resolveApiUrl(

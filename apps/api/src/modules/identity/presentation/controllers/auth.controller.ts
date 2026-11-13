@@ -1,6 +1,8 @@
 import {
 	Body,
 	Controller,
+	HttpCode,
+	HttpStatus,
 	Post,
 	Req,
 	Res,
@@ -20,20 +22,29 @@ import {
 	JwtAuthGuard,
 } from '../../../../common/guard/jwt-auth.guard';
 import { getTenancyConfig } from '../../../shared/config/tenancy.config';
+import { ConfirmPasswordResetCommand } from '../../application/commands/confirm-password-reset/confirm-password-reset.command';
+import { ConfirmPasswordResetHandler } from '../../application/commands/confirm-password-reset/confirm-password-reset.handler';
 import { LoginCommand } from '../../application/commands/login/login.command';
 import { LoginHandler } from '../../application/commands/login/login.handler';
 import { LogoutCommand } from '../../application/commands/logout/logout.command';
 import { LogoutHandler } from '../../application/commands/logout/logout.handler';
 import { RefreshTokenCommand } from '../../application/commands/refresh-token/refresh-token.command';
 import { RefreshTokenHandler } from '../../application/commands/refresh-token/refresh-token.handler';
+import { RequestPasswordResetCommand } from '../../application/commands/request-password-reset/request-password-reset.command';
+import { RequestPasswordResetHandler } from '../../application/commands/request-password-reset/request-password-reset.handler';
 import { SelectTenantCommand } from '../../application/commands/select-tenant/select-tenant.command';
 import { SelectTenantHandler } from '../../application/commands/select-tenant/select-tenant.handler';
 import { AuthResponseDto } from '../../application/dto/auth.response.dto';
+import {
+	ForgotPasswordRequestDto,
+	ResetPasswordRequestDto,
+} from '../../application/dto/forgot-password.request.dto';
 import { LoginRequestDto } from '../../application/dto/login.request.dto';
 import { LoginResponseDto } from '../../application/dto/login.response.dto';
 import { RefreshTokenRequestDto } from '../../application/dto/refresh-token.request.dto';
 import { SelectTenantRequestDto } from '../../application/dto/select-tenant.request.dto';
 import { TokenService } from '../../domain/services/token.service';
+import { Password } from '../../domain/value-objects/password.vo';
 
 // auth.controller.ts
 
@@ -81,7 +92,46 @@ export class AuthController {
 		private readonly logoutHandler: LogoutHandler,
 		private readonly refreshTokenHandler: RefreshTokenHandler,
 		private readonly tokenService: TokenService,
+		private readonly requestPasswordResetHandler: RequestPasswordResetHandler,
+		private readonly confirmPasswordResetHandler: ConfirmPasswordResetHandler,
 	) {}
+
+	@Post('forgot-password')
+	@HttpCode(HttpStatus.OK)
+	@ApiOperation({
+		summary: 'Pedir un código para restablecer la contraseña',
+		description:
+			'Público. Envía un código de 6 dígitos (válido 15 minutos) al correo de la cuenta. Responde siempre igual, exista o no el correo, para no revelar qué cuentas existen. Si ya se envió un código hace menos de 1 minuto no se manda otro. Body: { "email": "m.gonzalez@escuela.edu.ar" }. La respuesta no devuelve datos (data es null). Roles permitidos: ninguno (público).',
+	})
+	@ApiResponse({ status: 200, description: 'Solicitud recibida.' })
+	@ApiResponse({ status: 400, description: 'Validación falló' })
+	async forgotPassword(@Body() dto: ForgotPasswordRequestDto): Promise<void> {
+		await this.requestPasswordResetHandler.execute(
+			new RequestPasswordResetCommand(dto.email),
+		);
+	}
+
+	@Post('reset-password')
+	@HttpCode(HttpStatus.OK)
+	@ApiOperation({
+		summary: 'Restablecer la contraseña con el código recibido',
+		description:
+			'Público. Valida el código de 6 dígitos enviado por POST /auth/forgot-password y define la nueva contraseña. El código sirve una sola vez y se descarta tras 5 intentos fallidos. Cierra todas las sesiones abiertas del usuario. Body: { "email": "...", "code": "042917", "newPassword": "NuevaClave1!", "confirmNewPassword": "NuevaClave1!" }. La respuesta no devuelve datos (data es null). Roles permitidos: ninguno (público).',
+	})
+	@ApiResponse({ status: 200, description: 'Contraseña restablecida.' })
+	@ApiResponse({
+		status: 400,
+		description: 'Validación falló, contraseña débil, o código inválido/expirado',
+	})
+	async resetPassword(@Body() dto: ResetPasswordRequestDto): Promise<void> {
+		await this.confirmPasswordResetHandler.execute(
+			new ConfirmPasswordResetCommand(
+				dto.email,
+				dto.code,
+				new Password(dto.newPassword),
+			),
+		);
+	}
 
 	@Post('login')
 	@ApiOperation({

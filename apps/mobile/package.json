@@ -1,6 +1,6 @@
 {
 	"name": "mobile",
-	"version": "1.6.0",
+	"version": "1.7.0",
 	"main": "expo-router/entry",
 	"dependencies": {
 		"@react-native-async-storage/async-storage": "2.2.0",
@@ -38,9 +38,8 @@
 	},
 	"scripts": {
 		"start": "expo start",
-		"android": "expo start --android",
-		"android:reverse": "adb reverse tcp:3001 tcp:3001 && adb reverse tcp:8081 tcp:8081",
-		"android:usb": "pnpm android:reverse && expo start --android",
+		"android": "expo start --lan",
+		"android:tunnel": "expo start --tunnel",
 		"ios": "expo start --ios",
 		"web": "expo start --web",
 		"postinstall": "pnpm --filter @repo/common --filter @repo/branding build",

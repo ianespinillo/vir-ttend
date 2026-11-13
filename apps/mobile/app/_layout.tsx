@@ -62,6 +62,10 @@ export default function RootLayout() {
 										options={{ title: 'Iniciar Sesión' }}
 									/>
 									<Stack.Screen
+										name="(auth)/forgot-password"
+										options={{ title: 'Recuperar contraseña' }}
+									/>
+									<Stack.Screen
 										name="(auth)/select-tenant"
 										options={{ title: 'Seleccionar Escuela' }}
 									/>

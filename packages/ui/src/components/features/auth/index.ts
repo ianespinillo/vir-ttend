@@ -1,5 +1,6 @@
 export * from './password-input';
 export * from './auth-layout';
 export * from './login-form';
+export * from './forgot-password-form';
 export * from './tenant-selector';
 export * from './force-change-password-dialog';

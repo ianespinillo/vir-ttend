@@ -1,6 +1,7 @@
 import { AlertCircle, CloudOff, RefreshCw } from 'lucide-react-native';
 import React from 'react';
 import { Text, View } from 'react-native';
+import { API_URL, getUrlHost } from '../../config/app-config';
 import type { StatusTone, ThemePalette } from '../theme/theme-tokens';
 import { useThemeColors } from '../theme/use-theme-colors';
 import { usePreload } from './preload-provider';
@@ -50,7 +51,8 @@ export function SyncIndicator() {
 	const Icon =
 		tone === 'offline' ? CloudOff : tone === 'error' ? AlertCircle : RefreshCw;
 
-	// Development only: the usual cause is a missing USB tunnel to the API.
+	// Development only: the usual cause is a phone that cannot reach the dev API
+	// over the network (wrong EXPO_PUBLIC_API_URL, other wifi, API not running).
 	const showDevHint = __DEV__ && online && serverStatus === 'unreachable';
 
 	return (
@@ -69,7 +71,8 @@ export function SyncIndicator() {
 			</View>
 			{showDevHint ? (
 				<Text className="mt-1.5 text-[11px] text-muted-foreground">
-					¿Está activo `adb reverse tcp:3001 tcp:3001`? (pnpm android:reverse)
+					No se llega a {getUrlHost(API_URL)}. ¿El teléfono está en la misma red y
+					EXPO_PUBLIC_API_URL apunta a la IP de la PC?
 				</Text>
 			) : null}
 		</View>

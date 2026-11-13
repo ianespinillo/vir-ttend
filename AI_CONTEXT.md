@@ -91,7 +91,7 @@ vir-ttend/
   - `general` → `com.virttend.app` / Vir-ttend (servidor compartido, aún no desplegado).
   - `eest3` → `com.virttend.eest3` / EEST Nº3 Eva Perón — API: `https://eest3.virttend.app/api`.
 - **Precedencia de URL de API:** `EXPO_PUBLIC_API_URL` > `extra.apiUrl` de la variante > `http://localhost:3001`.
-- **Desarrollo sobre USB:** `pnpm --filter mobile android:usb` (flujo ADB reverse).
+- **Desarrollo por red:** `pnpm --filter mobile android` (Expo en LAN; `EXPO_PUBLIC_API_URL` con la IP de la PC). `android:tunnel` si el teléfono no llega a Metro.
 - **Builds:** EAS vía `.github/workflows/mobile-release.yaml` → APKs publicados en GitHub Releases en cada push a `main` que toque la app.
 - **Funcionalidades implementadas:** Asistencia (diaria + por materia), branding, soporte offline y configuración.
 - **Autenticación:** `src/config/app-config.ts`; la información de tenant proviene de `GET /config/public`, nunca hardcodeada.
@@ -200,7 +200,7 @@ pnpm --filter api dev          # Solo Backend
 pnpm --filter client dev       # Solo Frontend Client
 pnpm --filter demo dev         # Solo Demo Comercial
 pnpm --filter site dev         # Solo Landing Pública
-pnpm --filter mobile android:usb  # App móvil sobre USB (ADB reverse)
+pnpm --filter mobile android      # App móvil por red (LAN, Expo Go)
 
 # Base de datos (MikroORM)
 cd apps/api

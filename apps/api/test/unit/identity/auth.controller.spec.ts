@@ -3,11 +3,13 @@ import { UnauthorizedException } from '@nestjs/common';
 import { validate } from 'class-validator';
 import { Request, Response } from 'express';
 import { MockProxy, mock } from 'jest-mock-extended';
+import { ConfirmPasswordResetHandler } from '../../../src/modules/identity/application/commands/confirm-password-reset/confirm-password-reset.handler';
 import { LoginHandler } from '../../../src/modules/identity/application/commands/login/login.handler';
 import { LogoutCommand } from '../../../src/modules/identity/application/commands/logout/logout.command';
 import { LogoutHandler } from '../../../src/modules/identity/application/commands/logout/logout.handler';
 import { RefreshTokenCommand } from '../../../src/modules/identity/application/commands/refresh-token/refresh-token.command';
 import { RefreshTokenHandler } from '../../../src/modules/identity/application/commands/refresh-token/refresh-token.handler';
+import { RequestPasswordResetHandler } from '../../../src/modules/identity/application/commands/request-password-reset/request-password-reset.handler';
 import { SelectTenantHandler } from '../../../src/modules/identity/application/commands/select-tenant/select-tenant.handler';
 import { RefreshTokenRequestDto } from '../../../src/modules/identity/application/dto/refresh-token.request.dto';
 import { TokenService } from '../../../src/modules/identity/domain/services/token.service';
@@ -38,6 +40,8 @@ describe('AuthController (refresh / logout)', () => {
 			logoutHandler,
 			refreshTokenHandler,
 			mock<TokenService>(),
+			mock<RequestPasswordResetHandler>(),
+			mock<ConfirmPasswordResetHandler>(),
 		);
 	});
 

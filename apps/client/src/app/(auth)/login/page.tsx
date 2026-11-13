@@ -87,6 +87,7 @@ export default function LoginPage() {
 			onSubmit={handleSubmit}
 			isLoading={isLoading}
 			errorMessage={error}
+			onForgotPassword={() => router.push('/forgot-password')}
 		/>
 	);
 }

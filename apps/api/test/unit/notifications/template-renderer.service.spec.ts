@@ -47,4 +47,17 @@ describe('TemplateRenderer', () => {
 		expect(html).toContain('Tmp12345');
 		expect(html).toContain('administrador');
 	});
+
+	it('renders password-reset-code with the code and its expiry', () => {
+		const html = renderer.render('password-reset-code', {
+			firstName: 'Jane',
+			lastName: 'Roe',
+			code: '042917',
+			expiresInMinutes: 15,
+		});
+
+		expect(html).toContain('Jane');
+		expect(html).toContain('042917');
+		expect(html).toContain('15 minutos');
+	});
 });
