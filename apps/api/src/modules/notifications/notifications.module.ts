@@ -18,6 +18,7 @@ import { UserTenantLinkedEmailListener } from './infrastructure/events/user-tena
 		},
 		UserCreatedEmailListener,
 		UserTenantLinkedEmailListener,
+		UserPasswordResetEmailListener,
 	],
 	exports: [EMAIL_SENDER],
 })

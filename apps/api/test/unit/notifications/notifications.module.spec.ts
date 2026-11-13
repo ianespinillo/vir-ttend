@@ -2,6 +2,9 @@ import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { TemplateRenderer } from '../../../src/modules/notifications/application/template-renderer.service';
 import { EMAIL_SENDER } from '../../../src/modules/notifications/domain/email-sender.interface';
+import { UserCreatedEmailListener } from '../../../src/modules/notifications/infrastructure/events/user-created.listener';
+import { UserPasswordResetEmailListener } from '../../../src/modules/notifications/infrastructure/events/user-password-reset.listener';
+import { UserTenantLinkedEmailListener } from '../../../src/modules/notifications/infrastructure/events/user-tenant-linked.listener';
 import { NotificationsModule } from '../../../src/modules/notifications/notifications.module';
 
 describe('NotificationsModule', () => {
@@ -18,6 +21,29 @@ describe('NotificationsModule', () => {
 
 		expect(moduleRef.get(TemplateRenderer)).toBeInstanceOf(TemplateRenderer);
 		expect(moduleRef.get(EMAIL_SENDER)).toBeDefined();
+
+		await moduleRef.close();
+	});
+
+	// Regression: the password reset listener was imported but not registered,
+	// so `user.password-reset` had no subscriber and the email was never sent.
+	it('registers every email listener', async () => {
+		const moduleRef = await Test.createTestingModule({
+			imports: [
+				ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
+				NotificationsModule,
+			],
+		}).compile();
+
+		expect(moduleRef.get(UserCreatedEmailListener)).toBeInstanceOf(
+			UserCreatedEmailListener,
+		);
+		expect(moduleRef.get(UserTenantLinkedEmailListener)).toBeInstanceOf(
+			UserTenantLinkedEmailListener,
+		);
+		expect(moduleRef.get(UserPasswordResetEmailListener)).toBeInstanceOf(
+			UserPasswordResetEmailListener,
+		);
 
 		await moduleRef.close();
 	});
