@@ -140,4 +140,16 @@ export class AttendanceAlertRepository
 		}
 		await this.em.flush();
 	}
+
+	async deleteAboveThreshold(
+		studentId: string,
+		academicYearId: string,
+		total: number,
+	): Promise<number> {
+		return this.nativeDelete({
+			studentId,
+			academicYearId,
+			threshold: { $gt: total },
+		});
+	}
 }

@@ -25,4 +25,14 @@ export interface IAttendanceAlertRepository {
 	): Promise<PaginatedResponse<AttendanceAlert>>;
 
 	save(alert: AttendanceAlert): Promise<void>;
+
+	/**
+	 * Deletes the alerts of the student for the academic year whose threshold is
+	 * above `total`, and returns how many were removed.
+	 */
+	deleteAboveThreshold(
+		studentId: string,
+		academicYearId: string,
+		total: number,
+	): Promise<number>;
 }

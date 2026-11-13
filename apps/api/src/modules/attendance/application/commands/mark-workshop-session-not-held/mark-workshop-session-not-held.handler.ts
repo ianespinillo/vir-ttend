@@ -5,6 +5,7 @@ import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interfa
 import { IWorkshopCommissionPort } from '../../../domain/ports/workshop-commission.port.interface';
 import { IWorkshopAttendanceRecordRepository } from '../../../domain/repositories/workshop-attendance-record.repository.interface';
 import { IWorkshopSessionNotHeldRepository } from '../../../domain/repositories/workshop-session-not-held.repository.interface';
+import { AlertReconciliationService } from '../../services/alert-reconciliation.service';
 import { assertCanManageWorkshopAttendance } from '../../services/workshop-attendance-access.policy';
 import { MarkWorkshopSessionNotHeldCommand } from './mark-workshop-session-not-held.command';
 
@@ -25,6 +26,7 @@ export class MarkWorkshopSessionNotHeldHandler {
 		private readonly attendanceRepo: IWorkshopAttendanceRecordRepository,
 		@Inject('IUnitOfWorkPort')
 		private readonly unitOfWork: IUnitOfWorkPort,
+		private readonly alertReconciliation: AlertReconciliationService,
 	) {}
 
 	async execute(
@@ -40,10 +42,23 @@ export class MarkWorkshopSessionNotHeldHandler {
 
 		const reason = command.reason?.trim() || undefined;
 		return this.unitOfWork.run(async () => {
+			// Collected before the delete: they are the students whose alerts may
+			// no longer hold.
+			const affectedStudentIds = (
+				await this.attendanceRepo.findByCommissionAndDate(
+					commission.id,
+					command.date,
+				)
+			).map((record) => record.studentId);
 			const deletedRecords = await this.attendanceRepo.deleteByCommissionAndDate(
 				commission.id,
 				command.date,
 			);
+			if (deletedRecords > 0)
+				await this.alertReconciliation.reconcile(
+					commission.courseId,
+					affectedStudentIds,
+				);
 			const existing = await this.notHeldRepo.findByCommissionAndDate(
 				commission.id,
 				command.date,
