@@ -85,7 +85,8 @@ export class WorkshopAttendanceController {
 	@ApiResponse({ status: 201, description: 'Asistencia de taller registrada.' })
 	@ApiResponse({
 		status: 400,
-		description: 'Validación falló o hay estudiantes que no son de la comisión',
+		description:
+			'Validación falló, hay estudiantes que no son de la comisión, el día está marcado como no dictado o la comisión no tiene taller ese día según el horario del curso',
 	})
 	@ApiResponse({
 		status: 403,
@@ -116,7 +117,11 @@ export class WorkshopAttendanceController {
 			'Asigna el mismo estado a todos los estudiantes activos de la comisión en la fecha indicada. Roles permitidos: admin, y preceptor asignado a la comisión.',
 	})
 	@ApiResponse({ status: 201, description: 'Asistencia masiva registrada.' })
-	@ApiResponse({ status: 400, description: 'Validación falló' })
+	@ApiResponse({
+		status: 400,
+		description:
+			'Validación falló, el día está marcado como no dictado o la comisión no tiene taller ese día según el horario del curso',
+	})
 	@ApiResponse({
 		status: 403,
 		description: 'No sos el preceptor de la comisión',

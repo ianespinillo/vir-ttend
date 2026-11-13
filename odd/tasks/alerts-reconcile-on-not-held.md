@@ -31,7 +31,7 @@ API attendance module, `packages/common`/`packages/hooks`/`packages/ui` as neede
 
 ## Checklist
 - [ ] T1 — Alert reconciliation after not-held deletions (daily + workshop) + alert repository delete + unit tests. Route: delegated writer (2+ non-trivial files).
-- [ ] T2 — API: reject workshop registration on a non-workshop day of the commission (schedule loaded); unit tests. Route: delegated writer.
+- [x] T2 — API: reject workshop registration on a non-workshop day of the commission (schedule loaded); unit tests. Route: delegated writer.
 - [ ] T3 — Commission picker filtered by date (web + mobile) incl. commissions with saved records; mark-not-held available on unscheduled days with saved records. Route: delegated writer.
 - [ ] T4 — Hand the user the SQL to clean today's wrong records and their stale alerts. Route: inline.
 
@@ -52,5 +52,8 @@ Strategy `ask-on-risk`. Forecast ~800 authored lines (T1 ~250, T2 ~150, T3 ~400)
 - T1 done (delegated writer; parent read the service, handler and repository diff, confirmed no cache in the weighted absence read path, re-ran `jest alert-reconciliation session-not-held` 5 suites/72 tests). New `AlertReconciliationService.reconcile(courseId, studentIds)`; `IAttendanceAlertRepository.deleteAboveThreshold` (`threshold > total`, scoped to student + academic year); both mark handlers collect affected students before the delete and reconcile inside the unit of work when records were deleted. No trigger date on purpose (it can only raise the total). Writer checks: api jest 151 suites/1197 tests; `ts:check` 9/9; `lint:check` clean. Commit `f169f7e` (PR1 slice). Assess (`--base-ref 759055b --committed-only`): medium, `under_budget`. Native review (user granted; base `eae76c3`, so it also covered PR #117): 4 lenses, terminal `escalated` / `native_stop_required` on `R3/R4-listener-not-registered` — `UserPasswordResetEmailListener` is imported but missing from `NotificationsModule.providers` (PR #117, already on `dev`): reset emails are never sent. Not a T1 finding; follow-up pending user decision.
 - Unrelated: user asked to delete `schools-data/`; committed separately as `4439367` on `chore/remove-schools-data` (from `dev`).
 
+- Password-reset listener: fixed on `fix/password-reset-email-listener`, PR #120 merged into `dev` (`8919881`) after resolving the overlap with PR #118. `dev` merged into this branch (`b44b09b`).
+- T2 done (delegated writer; parent read the policy and handler diff, re-ran `jest workshop` 18 suites/178 tests). `assertWorkshopScheduledOn` (`application/services/workshop-schedule.policy.ts`) uses `IWorkshopCommissionPort.getWorkshopDays` + `@repo/common` `workshopAvailabilityOn`: only `'unscheduled'` blocks (400, "La comisión no tiene taller ese día según el horario del curso."), `'no-schedule'` is allowed. Called in `RegisterWorkshopAttendanceHandler` (bulk delegates to it). No workshop copy command exists. Register is an upsert, so editing a record on an unscheduled day is also rejected; such a day is cleared via mark not-held + unmark, which stays unguarded (test covers it). Swagger 400 descriptions updated. Writer checks: api jest 155 suites/1224 tests; `ts:check` 9/9; `lint:check` clean.
+
 ## Next step
-User decision on the password-reset listener fix; then T2.
+Native review of the PR1 slice (T1 + T2), then T3.
