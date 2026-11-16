@@ -43,5 +43,7 @@ Strategy `ask-on-risk`. Forecast ~250 authored lines: under budget, single PR ag
 - Isolation evidence: subject records have `subjectId` set; weighted absences read only `findDailyByStudentAndDateRange`/`findDailyByCourseAndDateRange` (`subjectId: null`, attendance-record.repository.ts) plus workshop records (student-weighted-absences.service.ts, course-snapshot-builder.service.ts); reports use the daily ports (report-generation.service.ts). The `attendance.registered` event emitted by subject saves only re-runs `GenerateAlertHandler`, which recomputes from the same daily+workshop sources. No gap found.
 - Checks: `pnpm ts:check` pass (9 pkgs incl. mobile, demo); `pnpm lint:check` pass; vitest common 93, ui 283, hooks 59, demo 184 pass; `pnpm --filter api test` 1195 pass; `pnpm --filter client build` pass; mobile has no test script.
 
+- Native review (base `59fecb5`, high, user granted, 4 lenses): approved and acknowledged (lineage `review-336d1f246bfee2dd`, authority burned). Advisory findings confirmed as introduced by T1: no-class warning and extra actions rendered without a selected subject; page test deleted. Fixed inline in `ae107b3` (restored the selected-subject gate) with a new page test (3 tests). PR #123 against `dev`.
+
 ## Next step
-Open the PR against `dev` (user decision) after review.
+Merge PR #123 (user), then the `dev` -> `main` PR.
