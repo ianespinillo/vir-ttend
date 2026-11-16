@@ -32,8 +32,8 @@ API attendance module, `packages/common`/`packages/hooks`/`packages/ui` as neede
 ## Checklist
 - [x] T1 — Alert reconciliation after not-held deletions (daily + workshop) + alert repository delete + unit tests. Route: delegated writer (2+ non-trivial files).
 - [x] T2 — API: reject workshop registration on a non-workshop day of the commission (schedule loaded); unit tests. Route: delegated writer.
-- [ ] T3 — Commission picker filtered by date (web + mobile) incl. commissions with saved records; mark-not-held available on unscheduled days with saved records. Route: delegated writer.
-- [ ] T4 — Hand the user the SQL to clean today's wrong records and their stale alerts. Route: inline.
+- [x] T3 — Commission picker filtered by date (web + mobile) incl. commissions with saved records; mark-not-held available on unscheduled days with saved records. Route: delegated writer.
+- [x] T4 — Hand the user the SQL to clean today's wrong records and their stale alerts. Route: inline.
 
 ## Acceptance criteria
 - Marking a day not held removes alerts whose threshold exceeds the recomputed total; alerts still reached stay; untouched students unchanged; zero deleted records → no alert work.
@@ -56,6 +56,10 @@ Strategy `ask-on-risk`. Forecast ~800 authored lines (T1 ~250, T2 ~150, T3 ~400)
 - T2 done (delegated writer; parent read the policy and handler diff, re-ran `jest workshop` 18 suites/178 tests). `assertWorkshopScheduledOn` (`application/services/workshop-schedule.policy.ts`) uses `IWorkshopCommissionPort.getWorkshopDays` + `@repo/common` `workshopAvailabilityOn`: only `'unscheduled'` blocks (400, "La comisión no tiene taller ese día según el horario del curso."), `'no-schedule'` is allowed. Called in `RegisterWorkshopAttendanceHandler` (bulk delegates to it). No workshop copy command exists. Register is an upsert, so editing a record on an unscheduled day is also rejected; such a day is cleared via mark not-held + unmark, which stays unguarded (test covers it). Swagger 400 descriptions updated. Writer checks: api jest 155 suites/1224 tests; `ts:check` 9/9; `lint:check` clean.
 
 - Native review of T1 + T2 (base `dev` at `92e581f`, 15 files/609 lines, medium, user granted): 1 lens (reliability), approved and acknowledged (lineage `review-122c31dfa33cf0b4`, authority burned). Slices adjusted: the API slice holds T1 + T2 (one PR), T3 goes in its own PR.
+- T3 done (delegated writer). Saved-record detection: `GET /attendance/workshop/my-commissions` now also returns `workshopAvailability` (`workshopAvailabilityOn` over `getWorkshopDays`, same rule as the register policy) and `hasSavedRecords` (one query, `IWorkshopAttendanceRecordRepository.findCommissionIdsWithRecordsOn`); chosen over per-commission client queries (N schedule/attendance fetches). Shared pure filter `commissionsOfferedOn`/`isCommissionOfferedOn` in `@repo/common` (unknown availability from an older API keeps the commission). Web page filters the picker, keeps the selected commission while it shows its not-held notice, clears the selection when it stops being offered; `WorkshopAttendancePage` shows the not-held action (and no not-scheduled text) on an unscheduled day with saved records; unmark/register invalidate the commissions query. Mobile: home workshop list filtered by the helper; commission sheet treats an unscheduled day with saved records as schedulable for the not-held action. Demo app untouched (fields optional, unfiltered). Checks: `ts:check` 9/9; `lint:check` clean; common vitest 101, hooks 59, ui 288; api jest 155 suites/1227 tests; `client build` ok. Commit `bee6232`.
+
+- T3 assess (`--base-ref 39e0bde --committed-only`): medium, `under_budget` (338 lines), no review due. Parent spot check: `@repo/common` vitest 101 passed.
+- T4 done: SQL handed to the user in chat (inspect, delete in a transaction, list the affected alerts for manual review; the weighted total is not recomputed in SQL). Not run by the agent.
 
 ## Next step
-Open the API slice PR (T1 + T2) against `dev`; then T3.
+Push and open the API slice PR (T1 + T2, `fix/alerts-reconcile-on-not-held`) against `dev`, then the T3 PR (`fix/workshop-commission-picker-by-day`). User decision.

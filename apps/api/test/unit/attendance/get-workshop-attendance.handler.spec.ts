@@ -101,7 +101,7 @@ describe('GetMyWorkshopCommissionsQueryHandler', () => {
 	const run = async (days: DAYOFWEEK[], date = tuesday) => {
 		const port = buildPort(commission());
 		port.getWorkshopDays.mockResolvedValue(days);
-		const handler = new GetMyWorkshopCommissionsQueryHandler(port);
+		const handler = new GetMyWorkshopCommissionsQueryHandler(port, buildRepo());
 		const result = await handler.execute(
 			new GetMyWorkshopCommissionsQuery(
 				TENANT,
@@ -133,9 +133,50 @@ describe('GetMyWorkshopCommissionsQueryHandler', () => {
 		expect(result[0].hasWorkshopToday).toBe(false);
 	});
 
+	it('reports the schedule availability of the date', async () => {
+		expect((await run([DAYOFWEEK.TUESDAY])).result[0].workshopAvailability).toBe(
+			'scheduled',
+		);
+		expect((await run([DAYOFWEEK.MONDAY])).result[0].workshopAvailability).toBe(
+			'unscheduled',
+		);
+		expect((await run([])).result[0].workshopAvailability).toBe('no-schedule');
+	});
+
+	it('flags commissions that already have saved records on the date', async () => {
+		const port = buildPort(commission());
+		port.getWorkshopDays.mockResolvedValue([DAYOFWEEK.MONDAY]);
+		const repo = buildRepo();
+		repo.findCommissionIdsWithRecordsOn.mockResolvedValue(['commission-1']);
+		const handler = new GetMyWorkshopCommissionsQueryHandler(port, repo);
+
+		const result = await handler.execute(
+			new GetMyWorkshopCommissionsQuery(
+				TENANT,
+				PRECEPTOR_ID,
+				ROLES.PRECEPTOR,
+				tuesday,
+			),
+		);
+
+		expect(repo.findCommissionIdsWithRecordsOn).toHaveBeenCalledWith(
+			['commission-1'],
+			tuesday,
+		);
+		expect(result[0]).toMatchObject({
+			workshopAvailability: 'unscheduled',
+			hasSavedRecords: true,
+		});
+	});
+
+	it('has no saved records when the commission has none on the date', async () => {
+		const { result } = await run([DAYOFWEEK.TUESDAY]);
+		expect(result[0].hasSavedRecords).toBe(false);
+	});
+
 	it('lists every tenant commission for an admin', async () => {
 		const port = buildPort(commission());
-		const handler = new GetMyWorkshopCommissionsQueryHandler(port);
+		const handler = new GetMyWorkshopCommissionsQueryHandler(port, buildRepo());
 		await handler.execute(
 			new GetMyWorkshopCommissionsQuery(TENANT, 'admin-1', ROLES.ADMIN, tuesday),
 		);

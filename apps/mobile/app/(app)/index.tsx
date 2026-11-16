@@ -1,3 +1,4 @@
+import { commissionsOfferedOn } from '@repo/common/constants';
 import { onlineManager, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
@@ -80,7 +81,12 @@ export default function HomeScreen() {
 		...attendanceQueries.myWorkshopCommissions(todayStr),
 		enabled: isPreceptor,
 	});
-	const commissions = commissionsQuery.data ?? [];
+	// Only commissions with workshop today, with an unknown schedule or with
+	// records already saved today (so mistaken ones can be cleared).
+	const commissions = useMemo(
+		() => commissionsOfferedOn(commissionsQuery.data ?? []),
+		[commissionsQuery.data],
+	);
 	const commissionIds = useMemo(
 		() => commissions.map((c) => c.commissionId),
 		[commissions],

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DAYOFWEEK } from './day-of-week.enum.js';
 import { SUBJECT_KIND } from './subject-kind.enum.js';
 import {
+	commissionsOfferedOn,
 	hasWorkshopOn,
 	schoolWeekdayOf,
 	workshopAvailabilityOn,
@@ -132,5 +133,46 @@ describe('hasWorkshopOn and workshopAvailabilityOn', () => {
 
 	it('reports no schedule when the commission has no workshop day at all', () => {
 		expect(workshopAvailabilityOn([], '2026-11-02')).toBe('no-schedule');
+	});
+});
+
+describe('commissionsOfferedOn', () => {
+	const scheduled = { id: 'a', workshopAvailability: 'scheduled' as const };
+	const unscheduled = { id: 'b', workshopAvailability: 'unscheduled' as const };
+	const noSchedule = { id: 'c', workshopAvailability: 'no-schedule' as const };
+	const unscheduledWithRecords = {
+		id: 'd',
+		workshopAvailability: 'unscheduled' as const,
+		hasSavedRecords: true,
+	};
+	const unknown = { id: 'e' };
+
+	it('shows a commission with workshop that day', () => {
+		expect(commissionsOfferedOn([scheduled])).toEqual([scheduled]);
+	});
+
+	it('hides a commission without workshop that day', () => {
+		expect(commissionsOfferedOn([unscheduled])).toEqual([]);
+	});
+
+	it('keeps a commission whose course has no schedule loaded', () => {
+		expect(commissionsOfferedOn([noSchedule])).toEqual([noSchedule]);
+	});
+
+	it('shows a commission without workshop that day when it has saved records', () => {
+		expect(commissionsOfferedOn([unscheduledWithRecords])).toEqual([
+			unscheduledWithRecords,
+		]);
+	});
+
+	it('keeps a commission with unknown availability and preserves order', () => {
+		expect(
+			commissionsOfferedOn([
+				unscheduled,
+				unknown,
+				scheduled,
+				unscheduledWithRecords,
+			]),
+		).toEqual([unknown, scheduled, unscheduledWithRecords]);
 	});
 });

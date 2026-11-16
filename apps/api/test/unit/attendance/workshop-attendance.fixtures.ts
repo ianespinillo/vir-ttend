@@ -101,6 +101,7 @@ export function buildRepo(
 		findByCommissionAndDate: jest
 			.fn()
 			.mockImplementation(async () => [...store.values()]),
+		findCommissionIdsWithRecordsOn: jest.fn().mockResolvedValue([]),
 		findByStudentAndDateRange: jest.fn().mockResolvedValue([]),
 		findByCourseAndDateRange: jest.fn().mockResolvedValue([]),
 		bulkSave: jest.fn().mockImplementation(async (records) => {

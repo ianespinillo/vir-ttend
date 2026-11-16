@@ -162,7 +162,12 @@ function WorkshopSheet({
 					dateStr,
 				)
 			: undefined;
-	const isNotScheduled = availability === 'unscheduled';
+	// A day without workshop that already has saved records (taken by mistake)
+	// can still be cleared by marking it as not held.
+	const hasSavedRecords =
+		commission?.hasSavedRecords === true ||
+		(workshop?.records ?? []).some((record) => Boolean(record.status));
+	const isNotScheduled = availability === 'unscheduled' && !hasSavedRecords;
 	const hasNoSchedule = availability === 'no-schedule';
 
 	// Not-held status of the workshop on this day.
