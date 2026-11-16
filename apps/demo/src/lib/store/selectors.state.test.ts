@@ -24,7 +24,6 @@ import {
 	getUsers,
 	getWorkshopAttendance,
 	getWorkshopCommissions,
-	subjectHasAttendance,
 	weeklyTrendFromRecords,
 } from './selectors';
 
@@ -427,17 +426,11 @@ describe('workshop commissions', () => {
 		// 7A2 has no Monday workshop in the seed; the theory slot adds it.
 		expect(today(state)).toEqual([true, false]);
 		expect(today(next)).toEqual([true, true]);
-		expect(
-			subjectHasAttendance(next, { courseId: crs7a, kind: SUBJECT_KIND.THEORY }),
-		).toBe(false);
 	});
 
 	it('does not count a theory subject of another course as a workshop day', () => {
 		const crs3a = demoIds.course['crs-3a'];
 		const next = withTheorySlot(crs3a, 'theory-3a');
-		expect(
-			subjectHasAttendance(next, { courseId: crs3a, kind: SUBJECT_KIND.THEORY }),
-		).toBe(true);
 		expect(
 			getMyWorkshopCommissions(
 				next,

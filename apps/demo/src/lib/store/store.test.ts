@@ -1,8 +1,4 @@
-import {
-	DAYOFWEEK,
-	SUBJECT_KIND,
-	WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE,
-} from '@repo/common';
+import { DAYOFWEEK, SUBJECT_KIND } from '@repo/common';
 import { describe, expect, it } from 'vitest';
 import { createSeedState, demoIds } from './seed-data';
 import { isNonWorkingDay } from './selectors';
@@ -713,23 +709,27 @@ describe('workshop commissions', () => {
 });
 
 describe('subject attendance of 7th-year theory subjects', () => {
-	it('rejects per-subject attendance for a theory subject of a workshop-only course', () => {
+	it('takes per-subject attendance for the whole course', () => {
 		const store = freshStore();
+		const courseId = demoIds.course['crs-7a'];
 		const subject = store.createSubject({
-			courseId: demoIds.course['crs-7a'],
+			courseId,
 			name: 'Gestión',
 			area: 'Teoría',
 			weeklyHours: 2,
 			kind: SUBJECT_KIND.THEORY,
 		});
-		expect(() =>
-			store.markSubjectAttendance(
-				subject.id,
-				demoIds.course['crs-7a'],
-				'2026-06-15',
-				[],
-			),
-		).toThrow(WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE);
+		const studentId = demoIds.student['agustin-barrios'];
+		store.markSubjectAttendance(subject.id, courseId, '2026-06-15', [
+			{ studentId, status: 'absent' },
+		]);
+		const records = store
+			.getState()
+			.attendance.filter(
+				(item) => item.subjectId === subject.id && item.studentId === studentId,
+			);
+		expect(records).toHaveLength(1);
+		expect(records[0]?.status).toBe('absent');
 	});
 });
 

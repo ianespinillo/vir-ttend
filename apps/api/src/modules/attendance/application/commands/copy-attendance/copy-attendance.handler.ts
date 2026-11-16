@@ -6,7 +6,6 @@ import { IAttendanceRecordRepository } from '../../../domain/repositories/attend
 import { AttendanceCopyService } from '../../services/attendance-copy.service';
 import {
 	assertCanWriteSubjectAttendance,
-	assertSubjectHasOwnAttendance,
 	taughtCommissionsOf,
 } from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
@@ -31,7 +30,6 @@ export class CopyAttendanceHandler {
 			tenantId: command.tenantId,
 		};
 		assertCanWriteSubjectAttendance(subject, actor);
-		assertSubjectHasOwnAttendance(subject);
 		const sourceRecords = await this.copyAttendanceService.getLastClassRecords(
 			command.subjectId,
 			command.sourceDate ?? command.targetDate,

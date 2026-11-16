@@ -321,6 +321,36 @@ describe('RegisterSubjectAttendanceHandler', () => {
 		expect(saved.map((r) => r.studentId)).toEqual(['student-1', 'student-2']);
 	});
 
+	it('should let the teacher of a 7th-year theory subject register the whole course', async () => {
+		// Workshop-only course: split into commissions, but a theory subject (slots
+		// for the whole course, one teacher for all of it) is not commission-scoped.
+		subjectPort.getSubjectById.mockResolvedValue(
+			Subject.reconstitute(
+				'sub-1',
+				'course-1',
+				'Gestión',
+				'teacher-1',
+				'tenant-1',
+				[{ commissionNumber: null, teacherId: 'teacher-1' }],
+			),
+		);
+		attendanceRepo.findBySubjectAndDate.mockResolvedValue([]);
+
+		await handler.execute(
+			buildCommand(
+				[
+					{ studentId: 'student-1', status: ATTENDANCE_STATUS.PRESENT },
+					{ studentId: 'student-2', status: ATTENDANCE_STATUS.ABSENT },
+				],
+				'teacher-1',
+			),
+		);
+
+		const saved = attendanceRepo.bulkSave.mock.calls[0][0];
+		expect(saved.map((r) => r.studentId)).toEqual(['student-1', 'student-2']);
+		expect(commissionPort.getActiveStudents).not.toHaveBeenCalled();
+	});
+
 	it('should reject students outside the subject roster and save nothing', async () => {
 		schedulePort.findBySubject.mockResolvedValue([
 			ScheduleSlot.reconstitute('sub-1', DAYOFWEEK.MONDAY, '08:00', '12:00', 1),
@@ -350,32 +380,6 @@ describe('RegisterSubjectAttendanceHandler', () => {
 		);
 
 		await expect(attempt).rejects.toBeInstanceOf(DomainError);
-		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
-	});
-
-	it('should reject a theory subject of a workshop-only course (register)', async () => {
-		subjectPort.getSubjectById.mockResolvedValue(
-			Subject.reconstitute(
-				'sub-1',
-				'course-1',
-				'Math',
-				'teacher-1',
-				'tenant-1',
-				undefined,
-				false,
-			),
-		);
-
-		await expect(
-			handler.execute(
-				buildCommand(
-					[{ studentId: 'student-1', status: ATTENDANCE_STATUS.PRESENT }],
-					'teacher-1',
-				),
-			),
-		).rejects.toThrow(
-			'Las materias teóricas de 7° año técnico no tienen asistencia por materia: se toma la asistencia de taller.',
-		);
 		expect(attendanceRepo.bulkSave).not.toHaveBeenCalled();
 	});
 });
