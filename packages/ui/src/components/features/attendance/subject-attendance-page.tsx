@@ -82,6 +82,7 @@ export function SubjectAttendancePage({
 	isSubmittingJustify,
 	extraActions,
 }: SubjectAttendancePageProps) {
+	const showAttendance = Boolean(selectedSubjectId);
 	return (
 		<div className="space-y-6">
 			<PageHeader
@@ -98,11 +99,11 @@ export function SubjectAttendancePage({
 				onMarkAll={onMarkAll}
 				isLoadingSubjects={isLoadingSubjects}
 				isBulkSaving={isBulkSaving}
-				disabled={!selectedSubjectId}
-				extraActions={extraActions}
+				disabled={!showAttendance}
+				extraActions={showAttendance ? extraActions : undefined}
 			/>
 
-			{!isClassDay && (
+			{showAttendance && !isClassDay && (
 				<div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-900 dark:text-amber-200 text-xs">
 					<AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
 					<span>
@@ -113,7 +114,7 @@ export function SubjectAttendancePage({
 				</div>
 			)}
 
-			{selectedSubjectId && (
+			{showAttendance && (
 				<>
 					<AttendanceSummary metrics={metrics} isLoading={isLoadingAttendance} />
 
