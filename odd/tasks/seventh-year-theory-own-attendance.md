@@ -45,5 +45,7 @@ Strategy `ask-on-risk`. Forecast ~250 authored lines: under budget, single PR ag
 
 - Native review (base `59fecb5`, high, user granted, 4 lenses): approved and acknowledged (lineage `review-336d1f246bfee2dd`, authority burned). Advisory findings confirmed as introduced by T1: no-class warning and extra actions rendered without a selected subject; page test deleted. Fixed inline in `ae107b3` (restored the selected-subject gate) with a new page test (3 tests). PR #123 against `dev`.
 
+- Re-review after the fix (base `92e581f`, high, user granted, 4 lenses): approved and acknowledged (lineage `review-df4e166fc5904111`, authority burned). Only non-blocking suggestions (a 7th-year test name, an unrelated notifications test change, a teacher-subjects handler nit).
+
 ## Next step
 Merge PR #123 (user), then the `dev` -> `main` PR.
