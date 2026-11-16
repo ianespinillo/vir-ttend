@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { hasSubjectAttendance } from '@repo/common';
 
 import { Subject as AcademicSubject } from '../../../academic/domain/entities/subject.entity';
 import { ICourseRepository } from '../../../academic/domain/repositories/course.repository.interface';
@@ -36,8 +35,6 @@ export class SubjectAdapter implements ISubjectPort {
 			subject.teacherId,
 			course?.tenantId ?? '',
 			toTeachers(subject),
-			// Unknown course: left as today (own attendance).
-			course ? hasSubjectAttendance({ kind: subject.kind, course }) : true,
 		);
 	}
 	async getByTeacherAndCourses(

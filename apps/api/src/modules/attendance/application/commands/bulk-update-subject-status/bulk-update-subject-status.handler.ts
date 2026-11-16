@@ -8,7 +8,6 @@ import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interfa
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import {
 	assertCanWriteSubjectAttendance,
-	assertSubjectHasOwnAttendance,
 	taughtCommissionsOf,
 } from '../../services/subject-access.policy';
 import { SubjectRosterService } from '../../services/subject-roster.service';
@@ -42,7 +41,6 @@ export class BulkUpdateSubjectStatusHandler {
 			tenantId: command.tenantId,
 		};
 		assertCanWriteSubjectAttendance(subject, actor);
-		assertSubjectHasOwnAttendance(subject);
 		const students = await this.subjectRoster.getActiveRoster(
 			subject,
 			command.date,
