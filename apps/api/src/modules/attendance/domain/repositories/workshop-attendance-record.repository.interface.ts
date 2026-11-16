@@ -9,6 +9,11 @@ export interface IWorkshopAttendanceRecordRepository {
 		date: Date,
 	): Promise<WorkshopAttendanceRecord[]>;
 	/** Records of the student with a date between `from` and `to`, inclusive. */
+	/** Ids of the commissions (among `commissionIds`) with records on the date. */
+	findCommissionIdsWithRecordsOn(
+		commissionIds: string[],
+		date: Date,
+	): Promise<string[]>;
 	findByStudentAndDateRange(
 		studentId: string,
 		from: Date,

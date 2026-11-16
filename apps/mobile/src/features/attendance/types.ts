@@ -120,6 +120,10 @@ export interface MyWorkshopCommission {
 	/** Course name, e.g. `1° 4°`. */
 	courseName: string;
 	hasWorkshopToday: boolean;
+	/** Schedule verdict for the requested date; absent in older API responses. */
+	workshopAvailability?: 'scheduled' | 'unscheduled' | 'no-schedule';
+	/** The commission already has saved workshop records on the requested date. */
+	hasSavedRecords?: boolean;
 }
 
 /**

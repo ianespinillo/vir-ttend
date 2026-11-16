@@ -92,12 +92,43 @@ describe('WorkshopAttendancePage', () => {
 			onMarkNotHeld: vi.fn(),
 		};
 
-		it('hides the not-held action and says so on a day without workshop', () => {
-			renderPage({ ...notHeldProps, workshopAvailability: 'unscheduled' });
+		it('hides the not-held action and says so on a day without workshop or records', () => {
+			renderPage({
+				...notHeldProps,
+				workshopAvailability: 'unscheduled',
+				gridStudents: [{ id: 's-1', name: 'Perez, Juan' }],
+			});
 			expect(
 				screen.queryByRole('button', { name: /Taller no dictado/ }),
 			).not.toBeInTheDocument();
 			expect(screen.getByText('No corresponde taller este día')).toBeVisible();
+		});
+
+		it('keeps the not-held action on a day without workshop that has saved records', () => {
+			renderPage({ ...notHeldProps, workshopAvailability: 'unscheduled' });
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeInTheDocument();
+			expect(
+				screen.queryByText('No corresponde taller este día'),
+			).not.toBeInTheDocument();
+		});
+
+		it('keeps the not-held action when the commission is flagged with saved records', () => {
+			renderPage({
+				...notHeldProps,
+				commissions: [
+					{ ...commission, hasWorkshopToday: false, hasSavedRecords: true },
+				],
+				gridStudents: [{ id: 's-1', name: 'Perez, Juan' }],
+				workshopAvailability: 'unscheduled',
+			});
+			expect(
+				screen.getByRole('button', { name: /Taller no dictado/ }),
+			).toBeInTheDocument();
+			expect(
+				screen.getByText('Sin taller este día · con asistencia guardada'),
+			).toBeInTheDocument();
 		});
 
 		it('keeps the not-held action on a day with workshop', () => {

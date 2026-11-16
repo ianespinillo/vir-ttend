@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ATTENDANCE_STATUS, AttendanceStatus } from '@repo/common';
+import {
+	ATTENDANCE_STATUS,
+	AttendanceStatus,
+	WorkshopAvailability,
+} from '@repo/common';
 import { JustificationResponseDto } from './justification.response.dto';
 
 export class WorkshopAttendanceRecordResponseDto {
@@ -100,6 +104,19 @@ export class MyWorkshopCommissionResponseDto {
 			'Indica si la comisión tiene taller en el día de la semana de la fecha consultada',
 	})
 	readonly hasWorkshopToday!: boolean;
+
+	@ApiProperty({
+		description:
+			'Qué dice el horario del curso sobre la fecha consultada: "scheduled" (hay taller), "unscheduled" (tiene taller otros días) o "no-schedule" (el curso no tiene horario de taller cargado)',
+		enum: ['scheduled', 'unscheduled', 'no-schedule'],
+	})
+	readonly workshopAvailability!: WorkshopAvailability;
+
+	@ApiProperty({
+		description:
+			'Indica si la comisión ya tiene asistencia de taller guardada en la fecha consultada',
+	})
+	readonly hasSavedRecords!: boolean;
 
 	constructor(props: MyWorkshopCommissionResponseDto) {
 		Object.assign(this, props);

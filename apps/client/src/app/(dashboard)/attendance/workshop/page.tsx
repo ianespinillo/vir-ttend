@@ -5,6 +5,7 @@ import {
 	type AttendanceStatus,
 	type ErrorResponse,
 	type WorkshopAvailability,
+	isCommissionOfferedOn,
 	isWorkshopOnlyCourse,
 	workshopAvailabilityOn,
 	workshopDaysOf,
@@ -59,8 +60,41 @@ export default function AttendanceWorkshopPage() {
 	const [selectedDate, setSelectedDate] = useState<string>(getInitialDate);
 	const [selectedCommissionId, setSelectedCommissionId] = useState('');
 
-	const { data: commissions, isLoading: isLoadingCommissions } =
+	const { data: allCommissions, isLoading: isLoadingCommissions } =
 		useMyWorkshopCommissions(selectedDate);
+
+	const {
+		data: notHeldData,
+		isLoading: isLoadingNotHeld,
+		isError: isNotHeldError,
+		refetch: refetchNotHeld,
+	} = useWorkshopSessionNotHeld(selectedCommissionId, selectedDate);
+
+	// The picker offers the commissions with workshop on the date, those whose
+	// schedule is unknown and those with saved records (to clear mistaken ones).
+	// The selected one stays while it shows its not-held notice, so it can be
+	// unmarked even after marking emptied the day.
+	const commissions = useMemo(
+		() =>
+			allCommissions?.filter(
+				(commission) =>
+					isCommissionOfferedOn(commission) ||
+					(commission.commissionId === selectedCommissionId &&
+						notHeldData?.notHeld === true),
+			),
+		[allCommissions, selectedCommissionId, notHeldData],
+	);
+
+	// A commission that is not offered on the new date cannot stay selected.
+	useEffect(() => {
+		if (
+			commissions &&
+			selectedCommissionId &&
+			!commissions.some((c) => c.commissionId === selectedCommissionId)
+		) {
+			setSelectedCommissionId('');
+		}
+	}, [commissions, selectedCommissionId]);
 
 	// What the commission's schedule says about the day. Unknown while loading
 	// or if it fails to load: the not-held action then stays available.
@@ -97,12 +131,6 @@ export default function AttendanceWorkshopPage() {
 		date: selectedDate,
 	});
 
-	const {
-		data: notHeldData,
-		isLoading: isLoadingNotHeld,
-		isError: isNotHeldError,
-		refetch: refetchNotHeld,
-	} = useWorkshopSessionNotHeld(selectedCommissionId, selectedDate);
 	const notHeld = notHeldData?.notHeld ? { reason: notHeldData.reason } : null;
 	// Unknown status: never offer registering as if the workshop was held.
 	const notHeldStatus = isNotHeldError

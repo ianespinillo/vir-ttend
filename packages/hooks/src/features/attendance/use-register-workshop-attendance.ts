@@ -40,6 +40,9 @@ export function useRegisterWorkshopAttendance() {
 					variables.date,
 				),
 			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.attendance.workshopCommissions(variables.date),
+			});
 		},
 	});
 }
