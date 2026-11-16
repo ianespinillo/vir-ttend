@@ -5,6 +5,7 @@ import { ICoursePort } from '../../../domain/ports/courses.port.interface';
 import { IUnitOfWorkPort } from '../../../domain/ports/unit-of-work.port.interface';
 import { IAttendanceRecordRepository } from '../../../domain/repositories/attendance-record.repository.interface';
 import { IDailySessionNotHeldRepository } from '../../../domain/repositories/daily-session-not-held.repository.interface';
+import { AlertReconciliationService } from '../../services/alert-reconciliation.service';
 import { assertCourseHasDailyAttendance } from '../../services/daily-attendance.policy';
 import { MarkDailySessionNotHeldCommand } from './mark-daily-session-not-held.command';
 
@@ -27,6 +28,7 @@ export class MarkDailySessionNotHeldHandler {
 		private readonly unitOfWork: IUnitOfWorkPort,
 		@Inject('ICoursePort')
 		private readonly coursePort: ICoursePort,
+		private readonly alertReconciliation: AlertReconciliationService,
 	) {}
 
 	async execute(
@@ -41,10 +43,23 @@ export class MarkDailySessionNotHeldHandler {
 
 		const reason = command.reason?.trim() || undefined;
 		return this.unitOfWork.run(async () => {
+			// Collected before the delete: they are the students whose alerts may
+			// no longer hold.
+			const affectedStudentIds = (
+				await this.attendanceRepo.findDailyByCourseAndDate(
+					command.courseId,
+					command.date,
+				)
+			).map((record) => record.studentId);
 			const deletedRecords = await this.attendanceRepo.deleteDailyByCourseAndDate(
 				command.courseId,
 				command.date,
 			);
+			if (deletedRecords > 0)
+				await this.alertReconciliation.reconcile(
+					command.courseId,
+					affectedStudentIds,
+				);
 			const existing = await this.notHeldRepo.findByCourseAndDate(
 				command.courseId,
 				command.date,

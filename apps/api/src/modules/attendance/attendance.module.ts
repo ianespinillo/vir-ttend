@@ -36,6 +36,7 @@ import { GetSubjectHistoryQueryHandler } from './application/queries/get-subject
 import { GetUnseenAlertsQueryHandler } from './application/queries/get-unseen-alerts/get-unseen-alerts.handler';
 import { GetWorkshopAttendanceQueryHandler } from './application/queries/get-workshop-attendance/get-workshop-attendance.handler';
 import { GetWorkshopSessionNotHeldQueryHandler } from './application/queries/get-workshop-session-not-held/get-workshop-session-not-held.handler';
+import { AlertReconciliationService } from './application/services/alert-reconciliation.service';
 import { AttendanceCalculationService } from './application/services/attendance-calculation.service';
 import { AttendanceCopyService } from './application/services/attendance-copy.service';
 import { CourseSnapshotBuilderService } from './application/services/course-snapshot-builder.service';
@@ -131,6 +132,7 @@ import { WorkshopAttendanceController } from './presentation/controllers/worksho
 		GetAlertsCountQueryHandler,
 		GetStudentAlertsQueryHandler,
 		//domain services
+		AlertReconciliationService,
 		AttendanceCalculationService,
 		AttendanceCopyService,
 		CourseSnapshotBuilderService,

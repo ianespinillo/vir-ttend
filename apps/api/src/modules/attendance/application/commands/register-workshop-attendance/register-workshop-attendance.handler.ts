@@ -9,13 +9,16 @@ import { IWorkshopCommissionPort } from '../../../domain/ports/workshop-commissi
 import { IWorkshopAttendanceRecordRepository } from '../../../domain/repositories/workshop-attendance-record.repository.interface';
 import { IWorkshopSessionNotHeldRepository } from '../../../domain/repositories/workshop-session-not-held.repository.interface';
 import { assertCanManageWorkshopAttendance } from '../../services/workshop-attendance-access.policy';
+import { assertWorkshopScheduledOn } from '../../services/workshop-schedule.policy';
 import { assertWorkshopSessionHeld } from '../../services/workshop-session-held.policy';
 import { RegisterWorkshopAttendanceCommand } from './register-workshop-attendance.command';
 
 /**
  * Upserts the workshop attendance of a commission for a date. Only the
  * commission's ACTIVE students can be recorded. Idempotent: unchanged records
- * are not saved. Rejected on a day marked as not held. Announces each created or changed record so the student's
+ * are not saved. Rejected on a day marked as not held and on a day the commission has no
+ * workshop per the course schedule (a course without schedule is not blocked).
+ * Announces each created or changed record so the student's
  * absence alerts are re-evaluated once the transaction committed.
  */
 @Injectable()
@@ -40,6 +43,12 @@ export class RegisterWorkshopAttendanceHandler {
 			role: command.role,
 			tenantId: command.tenantId,
 		});
+
+		await assertWorkshopScheduledOn(
+			this.commissionPort,
+			commission,
+			command.date,
+		);
 
 		const activeIds = new Set(
 			(await this.commissionPort.getActiveStudents(commission.id)).map(

@@ -19,7 +19,9 @@ import { UnmarkDailySessionNotHeldCommand } from '../../../src/modules/attendanc
 import { UnmarkDailySessionNotHeldHandler } from '../../../src/modules/attendance/application/commands/unmark-daily-session-not-held/unmark-daily-session-not-held.handler';
 import { GetDailySessionNotHeldQueryHandler } from '../../../src/modules/attendance/application/queries/get-daily-session-not-held/get-daily-session-not-held.handler';
 import { GetDailySessionNotHeldQuery } from '../../../src/modules/attendance/application/queries/get-daily-session-not-held/get-daily-session-not-held.query';
+import { AlertReconciliationService } from '../../../src/modules/attendance/application/services/alert-reconciliation.service';
 import { DAILY_SESSION_NOT_HELD_MESSAGE } from '../../../src/modules/attendance/application/services/daily-attendance.policy';
+import { AttendanceRecord } from '../../../src/modules/attendance/domain/entities/attendance-record.entity';
 import { Course } from '../../../src/modules/attendance/domain/entities/course.entity';
 import { DailySessionNotHeld } from '../../../src/modules/attendance/domain/entities/daily-session-not-held.entity';
 import { ICoursePort } from '../../../src/modules/attendance/domain/ports/courses.port.interface';
@@ -63,9 +65,12 @@ describe('daily session not held', () => {
 	let notHeldRepo: MockProxy<IDailySessionNotHeldRepository>;
 	let coursePort: MockProxy<ICoursePort>;
 	let unitOfWork: MockProxy<IUnitOfWorkPort>;
+	let alertReconciliation: MockProxy<AlertReconciliationService>;
 
 	beforeEach(() => {
 		attendanceRepo = mock<IAttendanceRecordRepository>();
+		attendanceRepo.findDailyByCourseAndDate.mockResolvedValue([]);
+		alertReconciliation = mock<AlertReconciliationService>();
 		notHeldRepo = mock<IDailySessionNotHeldRepository>();
 		notHeldRepo.findByCourseAndDate.mockResolvedValue(null);
 		coursePort = mock<ICoursePort>();
@@ -81,6 +86,7 @@ describe('daily session not held', () => {
 				attendanceRepo,
 				unitOfWork,
 				coursePort,
+				alertReconciliation,
 			).execute(
 				new MarkDailySessionNotHeldCommand(
 					'tenant-id',
@@ -108,6 +114,41 @@ describe('daily session not held', () => {
 			expect(saved.date).toBe(date);
 			expect(saved.reason).toBe('Ausencia del docente');
 			expect(saved.createdBy).toBe('user-id');
+		});
+
+		it('reconciles the alerts of the students whose records were deleted', async () => {
+			const record = (studentId: string) =>
+				AttendanceRecord.create({
+					tenantId: 'tenant-id',
+					courseId: 'course-id',
+					studentId,
+					date,
+					status: ATTENDANCE_STATUS.ABSENT,
+					editedBy: 'user-id',
+				});
+			attendanceRepo.findDailyByCourseAndDate.mockResolvedValue([
+				record('s1'),
+				record('s2'),
+			]);
+			attendanceRepo.deleteDailyByCourseAndDate.mockResolvedValue(2);
+
+			await run();
+
+			expect(alertReconciliation.reconcile).toHaveBeenCalledWith('course-id', [
+				's1',
+				's2',
+			]);
+			expect(
+				attendanceRepo.deleteDailyByCourseAndDate.mock.invocationCallOrder[0],
+			).toBeLessThan(alertReconciliation.reconcile.mock.invocationCallOrder[0]);
+		});
+
+		it('does no alert work when no record was deleted', async () => {
+			attendanceRepo.deleteDailyByCourseAndDate.mockResolvedValue(0);
+
+			await run();
+
+			expect(alertReconciliation.reconcile).not.toHaveBeenCalled();
 		});
 
 		it('runs the deletion and the marker inside one unit of work', async () => {
