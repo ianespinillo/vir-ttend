@@ -59,6 +59,41 @@ describe('SubjectAdapter teachers', () => {
 		expect(subject?.commissionsTaughtBy('teacher-a')).toEqual([1]);
 	});
 
+	it('keeps a theory subject of a 7th-year course taught for the whole course', async () => {
+		courseRepo.findById.mockResolvedValue(
+			Course.reconstitute({
+				id: 'course-1',
+				tenantId: 'tenant-1',
+				academicYearId: 'ay-1',
+				preceptorId: 'preceptor-1',
+				level: LEVEL.SECONDARY,
+				yearNumber: 7,
+				division: 'A',
+				shift: SHIFT.MORNING,
+				isActive: true,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			}),
+		);
+		subjectRepo.findById.mockResolvedValue(
+			AcademicSubject.reconstitute({
+				id: 'sub-2',
+				courseId: 'course-1',
+				kind: SUBJECT_KIND.THEORY,
+				teachers: [{ commissionNumber: null, teacherId: 'teacher-a' }],
+				name: 'Gestión',
+				area: 'Teoría',
+				weeklyHours: 2,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			}),
+		);
+
+		const subject = await adapter.getSubjectById('sub-2');
+
+		expect(subject?.commissionsTaughtBy('teacher-a')).toBe('all');
+	});
+
 	it('maps the teacher subjects with their assignments', async () => {
 		subjectRepo.findByTeacherAndCourses.mockResolvedValue([split]);
 

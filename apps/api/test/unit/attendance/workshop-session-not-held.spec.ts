@@ -17,6 +17,7 @@ import { UnmarkWorkshopSessionNotHeldCommand } from '../../../src/modules/attend
 import { UnmarkWorkshopSessionNotHeldHandler } from '../../../src/modules/attendance/application/commands/unmark-workshop-session-not-held/unmark-workshop-session-not-held.handler';
 import { GetWorkshopSessionNotHeldQueryHandler } from '../../../src/modules/attendance/application/queries/get-workshop-session-not-held/get-workshop-session-not-held.handler';
 import { GetWorkshopSessionNotHeldQuery } from '../../../src/modules/attendance/application/queries/get-workshop-session-not-held/get-workshop-session-not-held.query';
+import { AlertReconciliationService } from '../../../src/modules/attendance/application/services/alert-reconciliation.service';
 import { WORKSHOP_SESSION_NOT_HELD_MESSAGE } from '../../../src/modules/attendance/application/services/workshop-session-held.policy';
 import { IUnitOfWorkPort } from '../../../src/modules/attendance/domain/ports/unit-of-work.port.interface';
 import {
@@ -34,8 +35,10 @@ import {
 
 describe('workshop session not held', () => {
 	let unitOfWork: MockProxy<IUnitOfWorkPort>;
+	let alertReconciliation: MockProxy<AlertReconciliationService>;
 
 	beforeEach(() => {
+		alertReconciliation = mock<AlertReconciliationService>();
 		unitOfWork = mock<IUnitOfWorkPort>();
 		unitOfWork.run.mockImplementation(async (work) => work());
 	});
@@ -66,6 +69,7 @@ describe('workshop session not held', () => {
 				notHeldRepo,
 				repo,
 				unitOfWork,
+				alertReconciliation,
 			),
 		});
 
@@ -86,6 +90,28 @@ describe('workshop session not held', () => {
 			expect(saved.date).toBe(DATE);
 			expect(saved.reason).toBe('Ausencia del docente');
 			expect(saved.createdBy).toBe(PRECEPTOR_ID);
+		});
+
+		it('reconciles the alerts of the students whose records were deleted', async () => {
+			const { handler, repo } = build();
+
+			await handler.execute(command());
+
+			expect(alertReconciliation.reconcile).toHaveBeenCalledWith('course-1', [
+				's1',
+				's2',
+			]);
+			expect(
+				repo.deleteByCommissionAndDate.mock.invocationCallOrder[0],
+			).toBeLessThan(alertReconciliation.reconcile.mock.invocationCallOrder[0]);
+		});
+
+		it('does no alert work when no record was deleted', async () => {
+			const { handler } = build(commission(), buildRepo([]));
+
+			await handler.execute(command());
+
+			expect(alertReconciliation.reconcile).not.toHaveBeenCalled();
 		});
 
 		it('runs the deletion and the marker inside one unit of work', async () => {

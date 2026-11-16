@@ -132,6 +132,11 @@ export function WorkshopAttendancePage({
 		savedRecordsCount ??
 		gridStudents.filter((student) => Boolean(student.attendanceRecord?.id))
 			.length;
+	// An unscheduled day with saved records (taken by mistake) can still be
+	// cleared by marking it as not held.
+	const hasSavedRecords = savedCount > 0 || selected?.hasSavedRecords === true;
+	const showNotScheduled = isNotScheduled && !hasSavedRecords;
+	const canMarkNotHeld = !isNotScheduled || hasSavedRecords;
 
 	return (
 		<div className="space-y-6">
@@ -147,8 +152,8 @@ export function WorkshopAttendancePage({
 				/>
 				{selected && (
 					<div className="flex flex-wrap items-center gap-2">
-						{isNotScheduled && !isNotHeld && <WorkshopNotScheduledMessage />}
-						{onMarkNotHeld && !isNotHeld && !isNotScheduled && selectedDate && (
+						{showNotScheduled && !isNotHeld && <WorkshopNotScheduledMessage />}
+						{onMarkNotHeld && !isNotHeld && canMarkNotHeld && selectedDate && (
 							<MarkNotHeldButton
 								kind="workshop"
 								savedRecordsCount={savedCount}
@@ -200,7 +205,9 @@ export function WorkshopAttendancePage({
 								<span className="text-xs text-muted-foreground">
 									{commission.hasWorkshopToday
 										? 'Hay taller este día'
-										: 'Sin taller este día'}
+										: commission.hasSavedRecords
+											? 'Sin taller este día · con asistencia guardada'
+											: 'Sin taller este día'}
 								</span>
 							</button>
 						))}

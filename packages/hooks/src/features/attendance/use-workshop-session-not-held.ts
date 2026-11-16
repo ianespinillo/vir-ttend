@@ -69,6 +69,7 @@ export function useMarkWorkshopSessionNotHeld() {
 
 /** Reopens registration for the day; deleted records are not restored. */
 export function useUnmarkWorkshopSessionNotHeld() {
+	const queryClient = useQueryClient();
 	const invalidateDay = useInvalidateWorkshopDay();
 
 	return useMutation<
@@ -81,6 +82,14 @@ export function useUnmarkWorkshopSessionNotHeld() {
 				params: { commissionId, date },
 			});
 		},
-		onSuccess: (_, { commissionId, date }) => invalidateDay(commissionId, date),
+		onSuccess: (_, { commissionId, date }) => {
+			invalidateDay(commissionId, date);
+			// The commission may no longer have saved records on an unscheduled day,
+			// which decides whether the picker still offers it. (Marking does not
+			// invalidate it: the commission stays offered while it shows the notice.)
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.attendance.workshopCommissions(date),
+			});
+		},
 	});
 }

@@ -27,6 +27,18 @@ export class WorkshopAttendanceRecordRepository
 		return orms.map((orm) => WorkshopAttendanceRecordMapper.toDomain(orm));
 	}
 
+	async findCommissionIdsWithRecordsOn(
+		commissionIds: string[],
+		date: Date,
+	): Promise<string[]> {
+		if (commissionIds.length === 0) return [];
+		const orms = await this.find(
+			{ workshopCommissionId: { $in: commissionIds }, date },
+			{ fields: ['workshopCommissionId'] },
+		);
+		return [...new Set(orms.map((orm) => orm.workshopCommissionId))];
+	}
+
 	async findByStudentAndDateRange(
 		studentId: string,
 		from: Date,

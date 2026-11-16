@@ -116,3 +116,29 @@ export function workshopAvailabilityOn(
 	if (workshopDays.length === 0) return 'no-schedule';
 	return hasWorkshopOn(workshopDays, date) ? 'scheduled' : 'unscheduled';
 }
+
+/** The part of a commission needed to decide whether to offer it on a date. */
+export interface CommissionDayInfo {
+	workshopAvailability?: WorkshopAvailability;
+	hasSavedRecords?: boolean;
+}
+
+/**
+ * Whether attendance can be offered for the commission on its requested date:
+ * it has workshop that day, its schedule is not loaded (cannot be decided), or
+ * it already has saved records that day (so mistaken ones can be cleared).
+ * Unknown availability (older API, nothing loaded) keeps the commission.
+ */
+export function isCommissionOfferedOn(commission: CommissionDayInfo): boolean {
+	return (
+		commission.workshopAvailability !== 'unscheduled' ||
+		commission.hasSavedRecords === true
+	);
+}
+
+/** Commissions to offer on the date they were fetched for. */
+export function commissionsOfferedOn<T extends CommissionDayInfo>(
+	commissions: readonly T[],
+): T[] {
+	return commissions.filter(isCommissionOfferedOn);
+}

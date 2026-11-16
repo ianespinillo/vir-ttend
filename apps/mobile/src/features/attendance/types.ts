@@ -102,11 +102,6 @@ export interface MySubject {
 	area?: string;
 	courseId: string;
 	courseName: string;
-	/**
-	 * False for a theory subject of a workshop-only course (7th year technical):
-	 * its attendance is the workshop one. Absent (older API) means true.
-	 */
-	hasSubjectAttendance?: boolean;
 	slots: SubjectSlot[];
 }
 
@@ -120,6 +115,10 @@ export interface MyWorkshopCommission {
 	/** Course name, e.g. `1° 4°`. */
 	courseName: string;
 	hasWorkshopToday: boolean;
+	/** Schedule verdict for the requested date; absent in older API responses. */
+	workshopAvailability?: 'scheduled' | 'unscheduled' | 'no-schedule';
+	/** The commission already has saved workshop records on the requested date. */
+	hasSavedRecords?: boolean;
 }
 
 /**

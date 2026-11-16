@@ -1,33 +1,21 @@
-import {
-	type ISubjectResponse,
-	WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE,
-} from '@repo/common';
+import type { ISubjectResponse } from '@repo/common';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
 	SubjectAttendancePage,
 	type SubjectAttendancePageProps,
-	filterSubjectsWithAttendance,
 } from './subject-attendance-page';
 
-const subject = (
-	id: string,
-	hasSubjectAttendance?: boolean,
-): ISubjectResponse => ({
-	id,
-	name: `Materia ${id}`,
+const subject: ISubjectResponse = {
+	id: 's-1',
+	name: 'Materia s-1',
 	area: 'Area',
 	weeklyHours: 2,
-	hasSubjectAttendance,
-});
-
-const regular = subject('s-1', true);
-const legacy = subject('s-2');
-const workshopShiftTheory = subject('s-3', false);
+};
 
 function renderPage(overrides: Partial<SubjectAttendancePageProps> = {}) {
 	const props: SubjectAttendancePageProps = {
-		subjects: [regular, legacy, workshopShiftTheory],
+		subjects: [subject],
 		gridStudents: [],
 		metrics: null,
 		selectedSubjectId: '',
@@ -52,31 +40,26 @@ function renderPage(overrides: Partial<SubjectAttendancePageProps> = {}) {
 		onCloseJustify: vi.fn(),
 		onConfirmJustify: vi.fn(),
 		isSubmittingJustify: false,
+		extraActions: <button type="button">extra-action</button>,
 		...overrides,
 	};
 	return render(<SubjectAttendancePage {...props} />);
 }
 
-describe('filterSubjectsWithAttendance', () => {
-	it('leaves out subjects without own attendance and keeps a missing flag', () => {
-		expect(
-			filterSubjectsWithAttendance([regular, legacy, workshopShiftTheory]),
-		).toEqual([regular, legacy]);
-	});
-});
-
 describe('SubjectAttendancePage', () => {
-	it('explains that a workshop-shift theory subject has no own attendance', () => {
-		renderPage({ selectedSubjectId: 's-3' });
-		expect(
-			screen.getByText(WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE),
-		).toBeTruthy();
+	it('hides the no-class warning and extra actions until a subject is selected', () => {
+		renderPage({ isClassDay: false });
+		expect(screen.queryByText(/no tiene clase agendada/)).toBeNull();
+		expect(screen.queryByText('extra-action')).toBeNull();
 	});
 
-	it('shows no notice for a regular subject', () => {
+	it('warns about a day without class once a subject is selected', () => {
+		renderPage({ selectedSubjectId: 's-1', isClassDay: false });
+		expect(screen.getByText(/no tiene clase agendada/)).toBeTruthy();
+	});
+
+	it('shows the extra actions for a selected subject', () => {
 		renderPage({ selectedSubjectId: 's-1' });
-		expect(
-			screen.queryByText(WORKSHOP_SHIFT_THEORY_SUBJECT_ATTENDANCE_MESSAGE),
-		).toBeNull();
+		expect(screen.getByText('extra-action')).toBeTruthy();
 	});
 });
